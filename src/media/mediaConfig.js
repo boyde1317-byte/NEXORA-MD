@@ -56,14 +56,14 @@ export const mediaConfig = {
     } catch (err) {
       console.error('[MEDIA CONFIG] Load failed, resetting to defaults:', err);
       const defaults = {
-        menuAudio: true,
+        menuAudio: false,
         menuImage: true,
         menuThumbnail: true,
         autoVoiceNote: false,
         menu: {
           audio: './media/audio/menu.mp3',
-          image: './media/images/menu.jpg',
-          thumbnail: './media/thumbnails/menu.jpg',
+          image: './media/images/menu/menu_default.jpg',
+          thumbnail: './media/thumbnails/default.jpg',
           enabled: true
         }
       };
