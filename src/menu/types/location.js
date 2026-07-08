@@ -1,34 +1,29 @@
 import { buildTextMenu } from '../formatter.js';
-import { imageManager } from '../../images/imageManager.js';
 
 export const locationMenu = {
   id: 8,
   name: 'location',
-  description: 'Interactive Location card at Googleplex HQ with menu caption',
+  description: 'Native location card with menu listing',
   supportedMessages: ['locationMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
-    const imgData = await imageManager.getMenuImage(8);
-
     // ── Tier 1: Native location card ─────────────────────────────────────
-    // Wrapped individually — menu text always sends even if location fails.
     try {
       await sock.sendMessage(m.from, {
         location: {
-          degreesLatitude:  37.4220,
-          degreesLongitude: -122.0841,
-          name:    `📍 ${menuData.botName.toUpperCase()} DEV HQ`,
-          address: `1600 Amphitheatre Pkwy, Mountain View, CA 94043 • Active Console`
+          degreesLatitude:  5.6037,
+          degreesLongitude: -0.1870,
+          name: menuData.botName || 'NEXORA MD'
         }
       }, { quoted: m });
     } catch (err) {
-      console.warn('[MENU location] Location card failed (non-fatal), continuing to text:', err.message);
+      console.warn('[MENU location] Location card failed (non-fatal):', err.message);
     }
 
     // ── Tier 2: Menu text listing (always sent) ───────────────────────────
     return await sock.sendMessage(m.from, {
-      text: `🗺️ *CONSOLE GEOLOCATION ESTABLISHED*\n\n` + buildTextMenu(menuData)
-    });
+      text: buildTextMenu(menuData)
+    }, { quoted: m });
   }
 };
 
