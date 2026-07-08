@@ -12,14 +12,14 @@ const ensureDatabase = () => {
   
   if (!fs.existsSync(DB_PATH)) {
     const defaultConfig = {
-      menuAudio: true,
+      menuAudio: false,
       menuImage: true,
       menuThumbnail: true,
       autoVoiceNote: false,
       menu: {
         audio: './media/audio/menu.mp3',
-        image: './media/images/menu.jpg',
-        thumbnail: './media/thumbnails/menu.jpg',
+        image: './media/images/menu/menu_default.jpg',
+        thumbnail: './media/thumbnails/default.jpg',
         enabled: true
       }
     };
@@ -31,6 +31,7 @@ const ensureDatabase = () => {
 const ensureMediaDirectories = () => {
   const dirs = [
     './media/images',
+    './media/images/menu',
     './media/videos',
     './media/audio',
     './media/thumbnails',
@@ -98,8 +99,8 @@ export const mediaConfig = {
     const data = this.load();
     return data.menu || {
       audio: './media/audio/menu.mp3',
-      image: './media/images/menu.jpg',
-      thumbnail: './media/thumbnails/menu.jpg',
+      image: './media/images/menu/menu_default.jpg',
+      thumbnail: './media/thumbnails/default.jpg',
       enabled: true
     };
   },
