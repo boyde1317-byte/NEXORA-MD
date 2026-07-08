@@ -1,0 +1,2 @@
+- [Serializer quoted-message crash](serializer-crash-fix.md) — contextInfo.participant can be undefined in DMs/self-quotes; always normalise before calling .includes()
+- [Nexora-MD production hardening](nexora-production-hardening.md) — audit decisions for Pterodactyl/Railway/Render/Replit/Termux deployments
