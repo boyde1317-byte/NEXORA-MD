@@ -19,7 +19,7 @@ export const mediaMenu = {
       externalAdReply: {
         title: `🤖 ${menuData.botName.toUpperCase()} CORE`,
         body: `Uptime: ${menuData.uptime} | Active Plugins: ${menuData.totalCommands}`,
-        sourceUrl: 'https://ai.studio/build',
+        sourceUrl: `https://wa.me/${menuData.ownerNumber || '233597514499'}`,
         mediaType: 1, // Photo style
         renderLargerThumbnail: true, // Display full-sized card image
         showAdAttribution: true

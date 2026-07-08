@@ -11,14 +11,7 @@ export const documentInteractiveMenu = {
   renderer: async ({ sock, m, menuData }) => {
     const imgData = await imageManager.getMenuImage(1);
 
-    const footerText  = `${menuData.botName} • Uptime: ${menuData.uptime}`;
-    const virtualDoc  = Buffer.from(
-      `\n📝 === ${menuData.botName.toUpperCase()} CONSOLE ===\n\n` +
-      `Active Prefix: ${menuData.prefix}\n` +
-      `Total Commands: ${menuData.totalCommands}\n` +
-      `Uptime: ${menuData.uptime}\n` +
-      `Owner: ${menuData.ownerName}\n\n===================================`
-    );
+    const footerText = `${menuData.botName} • Uptime: ${menuData.uptime}`;
 
     const buttons = [
       { name: 'quick_reply', params: { display_text: '💬 Category Menu', id: `${menuData.prefix}menulist` } },
@@ -26,20 +19,15 @@ export const documentInteractiveMenu = {
       { name: 'quick_reply', params: { display_text: '🏓 Ping Bot',      id: `${menuData.prefix}ping` } }
     ];
 
+    // Plain text header — fake documentMessage caused "unsupported message" because
+    // the file was never actually uploaded to WhatsApp servers.
     const msgContent = {
       interactiveMessage: {
         body:   { text: buildTextMenu(menuData) },
         footer: { text: footerText },
         header: {
           title:              '📜 Bot Interactive Menu',
-          hasMediaAttachment: true,
-          documentMessage: {
-            mimetype:   'application/pdf',
-            title:      'Bot_Menu.pdf',
-            fileLength: String(virtualDoc.length),
-            fileName:   'Bot_Menu.pdf',
-            contextInfo: {}
-          }
+          hasMediaAttachment: false
         },
         nativeFlowMessage: {
           buttons: buttons.map(btn => ({
@@ -50,7 +38,7 @@ export const documentInteractiveMenu = {
       }
     };
 
-    // ── Tier 1: Interactive document relay ────────────────────────────────
+    // ── Tier 1: Interactive relay ─────────────────────────────────────────
     try {
       return await baileysBridge.relayMessage(
         sock, m.from,

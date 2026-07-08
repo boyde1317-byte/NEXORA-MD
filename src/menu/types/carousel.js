@@ -28,8 +28,9 @@ export const carouselMenu = {
           { name: 'quick_reply', params: { display_text: `⚡ Trigger ${cat.toUpperCase()}`, id: `${menuData.prefix}menu` } }
         ]
       };
+      // image must carry the actual buffer so sendCarousel can build a real imageMessage
       if (imgData.buffer) {
-        cardPayload.image = { mimetype: imgData.mimetype, jpegThumbnail: imgData.thumbnail };
+        cardPayload.image = { url: imgData.buffer, mimetype: imgData.mimetype, jpegThumbnail: imgData.thumbnail };
       }
       return cardPayload;
     });

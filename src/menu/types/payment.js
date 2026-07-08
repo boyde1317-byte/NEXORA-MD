@@ -25,38 +25,8 @@ export const paymentMenu = {
       console.warn('[MENU payment] Tier 1 (payment card) failed, trying media banner:', err.message);
     }
 
-    // ── Tier 2: Image banner with externalAdReply ─────────────────────────
-    try {
-      const adReply = {
-        title:                 `${menuData.botName} • Premium Console`,
-        body:                  `${menuData.totalCommands} commands • Uptime: ${menuData.uptime}`,
-        sourceUrl:             'https://wa.me/233533416608',
-        mediaType:             1,
-        renderLargerThumbnail: true
-      };
-
-      if (imgData.source?.startsWith('http')) {
-        adReply.thumbnailUrl = imgData.source;
-        return await sock.sendMessage(m.from, {
-          image:       { url: imgData.source },
-          caption:     noteContent,
-          contextInfo: { externalAdReply: adReply }
-        }, { quoted: m });
-      } else if (imgData.buffer) {
-        adReply.thumbnail = imgData.thumbnail;
-        return await sock.sendMessage(m.from, {
-          image:       imgData.buffer,
-          mimetype:    imgData.mimetype,
-          caption:     noteContent,
-          contextInfo: { externalAdReply: adReply }
-        }, { quoted: m });
-      }
-    } catch (err) {
-      console.warn('[MENU payment] Tier 2 (image banner) failed, escalating to text:', err.message);
-    }
-
-    // ── Tier 3: Escalate — runWithFallback renders plain text ─────────────
-    throw new Error('payment: all render tiers exhausted');
+    // ── Tier 2: Plain text (no image — requestPaymentMessage is already a rich card) ──
+    return await sock.sendMessage(m.from, { text: noteContent }, { quoted: m });
   }
 };
 

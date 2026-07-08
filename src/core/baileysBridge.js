@@ -128,6 +128,8 @@ export const baileysBridge = {
   async sendCarousel(sock, jid, { text, cards }, options = {}) {
     // Construct carousel interactive cards structure if supported
     // If not, our outer menu fallback system will catch and convert to text
+    // Carousel cards use `buttons` directly on each card — NOT wrapped in nativeFlowMessage.
+    // nativeFlowMessage belongs on the outer interactiveMessage, not on individual cards.
     const cardsContent = (cards || []).map(card => ({
       header: card.image ? {
         imageMessage: card.image,
@@ -135,12 +137,10 @@ export const baileysBridge = {
       } : undefined,
       body: { text: card.body || '' },
       footer: card.footer ? { text: card.footer } : undefined,
-      nativeFlowMessage: {
-        buttons: (card.buttons || []).map(btn => ({
-          name: btn.name || 'quick_reply',
-          buttonParamsJson: typeof btn.params === 'string' ? btn.params : JSON.stringify(btn.params || {})
-        }))
-      }
+      buttons: (card.buttons || []).map(btn => ({
+        name: btn.name || 'quick_reply',
+        buttonParamsJson: typeof btn.params === 'string' ? btn.params : JSON.stringify(btn.params || {})
+      }))
     }));
 
     const msgContent = {

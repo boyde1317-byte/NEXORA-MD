@@ -17,10 +17,10 @@ export const eventMessageMenu = {
     // ── Tier 1: Native eventMessage card ─────────────────────────────────
     try {
       return await baileysBridge.sendEvent(sock, m.from, {
-        name:        eventName,
-        description: eventDesc,
+        name:         eventName,
+        description:  eventDesc,
         minutesAhead: 10,
-        joinLink:    'https://wa.me/233533416608'
+        joinLink:     `https://wa.me/${menuData.ownerNumber || '233597514499'}`
       }, { quoted: m });
     } catch (err) {
       console.warn('[MENU eventMessage] Tier 1 (event card) failed, trying media banner:', err.message);
