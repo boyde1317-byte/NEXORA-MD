@@ -29,12 +29,14 @@ export const themeManager = {
       const content = fs.readFileSync(THEME_DB_PATH, 'utf-8');
       return JSON.parse(content);
     } catch (err) {
-      console.error('[THEME MANAGER] Load failed, returning defaults:', err);
-      return {
+      console.error('[THEME MANAGER] Load failed, resetting to defaults:', err);
+      const defaults = {
         style: 'modern',
         border: 'rounded',
         customThemes: {}
       };
+      try { fs.writeFileSync(THEME_DB_PATH, JSON.stringify(defaults, null, 2), 'utf-8'); } catch (_) {}
+      return defaults;
     }
   },
 

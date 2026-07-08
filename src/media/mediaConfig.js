@@ -54,8 +54,8 @@ export const mediaConfig = {
       const content = fs.readFileSync(DB_PATH, 'utf-8');
       return JSON.parse(content);
     } catch (err) {
-      console.error('[MEDIA CONFIG] Load failed, returning defaults:', err);
-      return {
+      console.error('[MEDIA CONFIG] Load failed, resetting to defaults:', err);
+      const defaults = {
         menuAudio: true,
         menuImage: true,
         menuThumbnail: true,
@@ -67,6 +67,8 @@ export const mediaConfig = {
           enabled: true
         }
       };
+      try { fs.writeFileSync(DB_PATH, JSON.stringify(defaults, null, 2), 'utf-8'); } catch (_) {}
+      return defaults;
     }
   },
 
