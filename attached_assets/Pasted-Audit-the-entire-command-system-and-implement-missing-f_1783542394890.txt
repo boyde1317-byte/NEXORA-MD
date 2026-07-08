@@ -1,0 +1,86 @@
+Audit the entire command system and implement missing fallbacks where needed, especially around menu rendering and advanced WhatsApp message types.
+
+Before adding anything:
+- First inspect existing fallback logic
+- Do not duplicate existing handlers
+- Reuse current helper functions and architecture where possible
+
+Focus areas:
+
+1. Menu System
+Inspect all menu-related commands/features:
+- main menu
+- category menus
+- interactive menus
+- carousel menus
+- list menus
+- button menus
+- newsletter/status quoted menu messages
+
+Check whether each advanced message format has a safe fallback.
+
+Examples:
+If carousel messages are unsupported:
+→ fallback to buttons if available
+→ fallback to list message if available
+→ fallback to normal text/image menu
+
+If interactive messages fail:
+→ fallback to a simpler supported format
+
+Do not remove advanced menu features.
+Only add graceful degradation.
+
+2. Message Compatibility
+Check outgoing and incoming message handling for:
+- unsupported client versions
+- Baileys changes
+- missing message type support
+- failed generation functions
+
+Implement fallback paths for:
+- interactiveMessage
+- carouselMessage
+- buttons
+- list messages
+- template messages
+- media menus
+- quoted newsletter/status messages where applicable
+
+3. Command Reliability
+Inspect every command execution path.
+
+Add protection so:
+- failed rich messages do not make commands silent
+- unsupported formats automatically downgrade
+- users always receive a response when a command succeeds
+- errors are logged clearly
+
+4. Avoid Duplicates
+Before creating any fallback:
+Search existing:
+- send helpers
+- message builders
+- command utilities
+- menu functions
+
+If a fallback already exists:
+- improve it instead of creating another
+
+5. Production Requirements
+The bot must work on:
+- latest WhatsApp clients
+- older WhatsApp clients
+- multi-device sessions
+- hosted deployments
+
+Keep:
+- current UI style
+- Yuzuki theme/personality
+- existing command structure
+
+After implementation provide:
+- files changed
+- fallback chain added
+- duplicated logic removed
+- remaining unsupported message types if any

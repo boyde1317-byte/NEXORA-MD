@@ -10,21 +10,57 @@ export const productMenu = {
   supportedMessages: ['productMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
-    // Dynamically query image selector for style 5
     const imgData = await imageManager.getMenuImage(5);
 
     const productTitle = `🛒 ${menuData.botName.toUpperCase()} CONSOLE`;
-    const productDesc = `Complete Multi-Device Command catalog.\n\n` + buildTextMenu(menuData);
-    
-    // Send standard Product message using the bridge helper
-    return await baileysBridge.sendProduct(sock, m.from, {
-      productId: 'bot-service-pack-01',
-      title: productTitle,
-      description: productDesc,
-      currency: 'USD',
-      price: 1.99, // Interactive pricing placeholder
-      footer: footerManager.getFooter()
-    }, { quoted: m });
+    const productDesc  = `Complete Multi-Device Command catalog.\n\n` + buildTextMenu(menuData);
+
+    // ── Tier 1: Native product card ───────────────────────────────────────
+    try {
+      return await baileysBridge.sendProduct(sock, m.from, {
+        productId:   'bot-service-pack-01',
+        title:       productTitle,
+        description: productDesc,
+        currency:    'USD',
+        price:       1.99,
+        footer:      footerManager.getFooter()
+      }, { quoted: m });
+    } catch (err) {
+      console.warn('[MENU product] Tier 1 (product card) failed, trying media banner:', err.message);
+    }
+
+    // ── Tier 2: Image banner with externalAdReply ─────────────────────────
+    try {
+      const adReply = {
+        title:                 productTitle,
+        body:                  `${menuData.totalCommands} commands • ${menuData.uptime} uptime`,
+        sourceUrl:             'https://wa.me/233533416608',
+        mediaType:             1,
+        renderLargerThumbnail: true
+      };
+
+      if (imgData.source?.startsWith('http')) {
+        adReply.thumbnailUrl = imgData.source;
+        return await sock.sendMessage(m.from, {
+          image:       { url: imgData.source },
+          caption:     `🛒 *${productTitle}*\n\n` + buildTextMenu(menuData),
+          contextInfo: { externalAdReply: adReply }
+        }, { quoted: m });
+      } else if (imgData.buffer) {
+        adReply.thumbnail = imgData.thumbnail;
+        return await sock.sendMessage(m.from, {
+          image:       imgData.buffer,
+          mimetype:    imgData.mimetype,
+          caption:     `🛒 *${productTitle}*\n\n` + buildTextMenu(menuData),
+          contextInfo: { externalAdReply: adReply }
+        }, { quoted: m });
+      }
+    } catch (err) {
+      console.warn('[MENU product] Tier 2 (image banner) failed, escalating to text:', err.message);
+    }
+
+    // ── Tier 3: Escalate — runWithFallback renders plain text ─────────────
+    throw new Error('product: all render tiers exhausted');
   }
 };
 

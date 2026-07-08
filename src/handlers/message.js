@@ -151,8 +151,18 @@ export async function handleMessage(rawMessage, sock) {
       react: m.react
     };
 
-    await command.execute(ctx);
-    console.log(`[CMD] ${command.name} ← ${sender.split('@')[0]} in ${isGroupMsg ? jid : 'DM'}`);
+    try {
+      await command.execute(ctx);
+      console.log(`[CMD] ${command.name} ← ${sender.split('@')[0]} in ${isGroupMsg ? jid : 'DM'}`);
+    } catch (execErr) {
+      // Always notify the user — silent failures confuse and frustrate
+      console.error(`[CMD ERROR] ${command.name} threw:`, execErr.message || execErr);
+      try {
+        await sock.sendMessage(jid, {
+          text: `❌ *Command Error*\n\n\`${command.name}\` encountered an unexpected error.\n_${execErr.message || 'Unknown error'}_`
+        }, { quoted: rawMessage });
+      } catch (_) {}
+    }
 
   } catch (err) {
     console.error('[HANDLER ERROR] handleMessage crashed:', err.message || err);

@@ -8,20 +8,24 @@ export const locationMenu = {
   supportedMessages: ['locationMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
-    // Dynamically query image selector for style 8
     const imgData = await imageManager.getMenuImage(8);
 
-    // 1. Send the native location card
-    await sock.sendMessage(m.from, {
-      location: {
-        degreesLatitude: 37.4220,
-        degreesLongitude: -122.0841,
-        name: `📍 ${menuData.botName.toUpperCase()} DEV HQ`,
-        address: `1600 Amphitheatre Pkwy, Mountain View, CA 94043 • Active Console`
-      }
-    }, { quoted: m });
+    // ── Tier 1: Native location card ─────────────────────────────────────
+    // Wrapped individually — menu text always sends even if location fails.
+    try {
+      await sock.sendMessage(m.from, {
+        location: {
+          degreesLatitude:  37.4220,
+          degreesLongitude: -122.0841,
+          name:    `📍 ${menuData.botName.toUpperCase()} DEV HQ`,
+          address: `1600 Amphitheatre Pkwy, Mountain View, CA 94043 • Active Console`
+        }
+      }, { quoted: m });
+    } catch (err) {
+      console.warn('[MENU location] Location card failed (non-fatal), continuing to text:', err.message);
+    }
 
-    // 2. Deliver the formatted menu list as a companion message immediately after
+    // ── Tier 2: Menu text listing (always sent) ───────────────────────────
     return await sock.sendMessage(m.from, {
       text: `🗺️ *CONSOLE GEOLOCATION ESTABLISHED*\n\n` + buildTextMenu(menuData)
     });

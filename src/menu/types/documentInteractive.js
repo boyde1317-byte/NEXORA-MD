@@ -7,77 +7,94 @@ export const documentInteractiveMenu = {
   name: 'documentInteractive',
   description: 'Interactive Message with Document Header card',
   supportedMessages: ['interactiveMessage', 'documentMessage'],
-  
+
   renderer: async ({ sock, m, menuData }) => {
-    // Dynamically retrieve menu image metadata to support selectors & Modes
     const imgData = await imageManager.getMenuImage(1);
 
-    // 1. Compile menu text body
-    const bodyText = `📂 *DOCUMENT INTERACTIVE MENU*\n\n` + 
-                     `Welcome to the Interactive Console!\n` +
-                     `Use the quick buttons below to interact.`;
-                     
-    const footerText = `${menuData.botName} • Uptime: ${menuData.uptime}`;
-    
-    // 2. Generate a neat virtual document buffer for the card header
-    const virtualDoc = Buffer.from(`\n📝 === ${menuData.botName.toUpperCase()} CONSOLE ===\n\nActive Prefix: ${menuData.prefix}\nTotal Commands: ${menuData.totalCommands}\nUptime: ${menuData.uptime}\nOwner: ${menuData.ownerName}\n\n===================================`);
-    
-    // 3. Build a document message payload to embed in the interactive header
-    const documentMessage = {
-      document: virtualDoc,
-      mimetype: 'application/pdf',
-      fileName: 'Active_Console_Menu.pdf',
-      title: 'Console Menu'
-    };
+    const footerText  = `${menuData.botName} • Uptime: ${menuData.uptime}`;
+    const virtualDoc  = Buffer.from(
+      `\n📝 === ${menuData.botName.toUpperCase()} CONSOLE ===\n\n` +
+      `Active Prefix: ${menuData.prefix}\n` +
+      `Total Commands: ${menuData.totalCommands}\n` +
+      `Uptime: ${menuData.uptime}\n` +
+      `Owner: ${menuData.ownerName}\n\n===================================`
+    );
 
-    // 4. Buttons parameters for Native Flow inside Interactive Message
     const buttons = [
-      {
-        name: 'quick_reply',
-        params: {
-          display_text: '💬 Category Menu',
-          id: '.menulist'
-        }
-      },
-      {
-        name: 'quick_reply',
-        params: {
-          display_text: '⚡ System Info',
-          id: '.menu aiDynamic'
-        }
-      }
+      { name: 'quick_reply', params: { display_text: '💬 Category Menu', id: `${menuData.prefix}menulist` } },
+      { name: 'quick_reply', params: { display_text: '⚡ System Info',   id: `${menuData.prefix}menu aiDynamic` } },
+      { name: 'quick_reply', params: { display_text: '🏓 Ping Bot',      id: `${menuData.prefix}ping` } }
     ];
 
-    // Build the structural interactiveMessage with document header
     const msgContent = {
       interactiveMessage: {
-        body: { text: buildTextMenu(menuData) },
+        body:   { text: buildTextMenu(menuData) },
         footer: { text: footerText },
         header: {
-          title: '📜 Bot Interactive Menu',
+          title:              '📜 Bot Interactive Menu',
           hasMediaAttachment: true,
           documentMessage: {
-            url: '', // Will be uploaded locally if needed, or sent inline since it's small
-            mimetype: 'application/pdf',
-            title: 'Bot_Menu.pdf',
+            mimetype:   'application/pdf',
+            title:      'Bot_Menu.pdf',
             fileLength: String(virtualDoc.length),
-            fileName: 'Bot_Menu.pdf',
+            fileName:   'Bot_Menu.pdf',
             contextInfo: {}
           }
         },
         nativeFlowMessage: {
           buttons: buttons.map(btn => ({
-            name: btn.name,
+            name:             btn.name,
             buttonParamsJson: JSON.stringify(btn.params)
           }))
         }
       }
     };
 
-    // Send using the bridge relay helper
-    return await baileysBridge.relayMessage(sock, m.from, { 
-      viewOnceMessage: { message: msgContent } 
-    }, { quoted: m });
+    // ── Tier 1: Interactive document relay ────────────────────────────────
+    try {
+      return await baileysBridge.relayMessage(
+        sock, m.from,
+        { viewOnceMessage: { message: msgContent } },
+        { quoted: m }
+      );
+    } catch (err) {
+      console.warn('[MENU documentInteractive] Tier 1 (interactive relay) failed, trying image+caption:', err.message);
+    }
+
+    // ── Tier 2: Image with caption + externalAdReply ──────────────────────
+    try {
+      const adReply = {
+        title:                `${menuData.botName} Console`,
+        body:                 `${menuData.totalCommands} commands • Uptime: ${menuData.uptime}`,
+        sourceUrl:            'https://wa.me/233533416608',
+        mediaType:            1,
+        renderLargerThumbnail: true
+      };
+
+      if (imgData.source?.startsWith('http')) {
+        adReply.thumbnailUrl = imgData.source;
+
+        return await sock.sendMessage(m.from, {
+          image:       { url: imgData.source },
+          caption:     `📂 *${menuData.botName.toUpperCase()} COMMAND CONSOLE*\n\n` + buildTextMenu(menuData),
+          contextInfo: { externalAdReply: adReply }
+        }, { quoted: m });
+      } else if (imgData.buffer) {
+        adReply.thumbnail = imgData.thumbnail || imgData.buffer;
+
+        return await sock.sendMessage(m.from, {
+          image:       imgData.buffer,
+          caption:     `📂 *${menuData.botName.toUpperCase()} COMMAND CONSOLE*\n\n` + buildTextMenu(menuData),
+          mimetype:    imgData.mimetype,
+          contextInfo: { externalAdReply: adReply }
+        }, { quoted: m });
+      }
+    } catch (imgErr) {
+      console.warn('[MENU documentInteractive] Tier 2 (image) failed, escalating to text:', imgErr.message);
+    }
+
+    // ── Tier 3: Escalate — runWithFallback will render plain text ─────────
+    throw new Error('documentInteractive: all render tiers exhausted');
   }
 };
 

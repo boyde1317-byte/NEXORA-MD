@@ -8,34 +8,43 @@ export const reactionMenu = {
   supportedMessages: ['react', 'edit'],
 
   renderer: async ({ sock, m, menuData }) => {
-    // Dynamically retrieve menu image metadata to support selectors & Modes
     const imgData = await imageManager.getMenuImage(11);
 
-    // 1. React to the incoming user message with a loading state emoji
-    try {
-      await m.react('⏳');
-    } catch (e) {}
+    // 1. React with a loading emoji (non-critical — ignore failure)
+    try { await m.react('⏳'); } catch (_) {}
 
-    // 2. Send a temporary loading banner in the thread
+    // 2. Send the loading placeholder
     const loadingMsg = await sock.sendMessage(m.from, {
       text: `🤖 *${menuData.botName.toUpperCase()} CONSOLE*\n\n⏳ _Synchronizing plugins and command directories..._`
     }, { quoted: m });
 
-    // 3. Wait a brief moment to simulate processing and let the UI breath
+    // 3. Brief pause for UX
     await new Promise(resolve => setTimeout(resolve, 1200));
 
-    // 4. Update the trigger reaction to complete state
-    try {
-      await m.react('✅');
-    } catch (e) {}
+    // 4. Update reaction to complete (non-critical)
+    try { await m.react('✅'); } catch (_) {}
 
-    // 5. Compile the beautiful compact list and live-edit the sent message
+    // 5. Build the final menu text
     const finalMenuText = buildCompactMenu(menuData);
-    
-    return await sock.sendMessage(m.from, {
-      text: finalMenuText,
-      edit: loadingMsg.key
-    });
+
+    // ── Tier 1: Live-edit the loading message ─────────────────────────────
+    if (loadingMsg?.key) {
+      try {
+        return await sock.sendMessage(m.from, {
+          text: finalMenuText,
+          edit: loadingMsg.key
+        });
+      } catch (editErr) {
+        console.warn('[MENU reaction] Tier 1 (live-edit) failed on this client, sending new message:', editErr.message);
+        // Attempt to delete the stale loading message so it doesn't confuse the user
+        try {
+          await sock.sendMessage(m.from, { delete: loadingMsg.key });
+        } catch (_) {}
+      }
+    }
+
+    // ── Tier 2: Send as a fresh message (edit unsupported) ────────────────
+    return await sock.sendMessage(m.from, { text: finalMenuText }, { quoted: m });
   }
 };
 
