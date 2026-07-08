@@ -12,7 +12,7 @@ const ensureDatabase = () => {
   
   if (!fs.existsSync(DB_PATH)) {
     const defaultConfig = {
-      menuAudio: false,
+      menuAudio: true,
       menuImage: true,
       menuThumbnail: true,
       autoVoiceNote: false,
@@ -57,7 +57,7 @@ export const mediaConfig = {
     } catch (err) {
       console.error('[MEDIA CONFIG] Load failed, resetting to defaults:', err);
       const defaults = {
-        menuAudio: false,
+        menuAudio: true,
         menuImage: true,
         menuThumbnail: true,
         autoVoiceNote: false,

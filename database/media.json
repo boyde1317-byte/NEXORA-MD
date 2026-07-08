@@ -1,5 +1,5 @@
 {
-  "menuAudio": false,
+  "menuAudio": true,
   "menuImage": true,
   "menuThumbnail": true,
   "autoVoiceNote": false,
