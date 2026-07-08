@@ -510,9 +510,31 @@ Built on top of the [Baileys](https://github.com/WhiskeySockets/Baileys) WhatsAp
 
 ---
 
+## 📬 Connect with the Developer
+
+<div align="center">
+
+**Aizen** — Creator & Lead Developer of NEXORA MD
+
+| Platform | Link |
+|----------|------|
+| 💬 WhatsApp | [wa.me/233533416608](https://wa.me/233533416608) |
+| ✈️ Telegram | [@DeathCore_Xr](https://t.me/DeathCore_Xr) |
+| 📢 WhatsApp Channel | [Join for updates & announcements](https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326) |
+
+> Star ⭐ the repo if you find it useful. For bugs, feature requests, or forks — reach out via WhatsApp or Telegram.
+
+</div>
+
+---
+
 <div align="center">
 
 **© NEXORA MD — By Aizen**
+
+[![WhatsApp](https://img.shields.io/badge/WhatsApp-Contact-25D366?style=flat-square&logo=whatsapp&logoColor=white)](https://wa.me/233533416608)
+[![Telegram](https://img.shields.io/badge/Telegram-@DeathCore__Xr-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/DeathCore_Xr)
+[![Channel](https://img.shields.io/badge/WA%20Channel-Updates-25D366?style=flat-square&logo=whatsapp&logoColor=white)](https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326)
 
 *Use responsibly. This project is not affiliated with or endorsed by WhatsApp Inc.*
 
