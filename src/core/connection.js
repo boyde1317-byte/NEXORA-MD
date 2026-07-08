@@ -1,7 +1,8 @@
-import makeWASocket, { 
-  useMultiFileAuthState, 
-  DisconnectReason, 
-  makeCacheableSignalKeyStore 
+import makeWASocket, {
+  useMultiFileAuthState,
+  DisconnectReason,
+  makeCacheableSignalKeyStore,
+  fetchLatestBaileysVersion
 } from 'baileys';
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
@@ -17,72 +18,104 @@ import { handleGroupParticipantsUpdate } from '../handlers/group.js';
 import { client } from './client.js';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname  = path.dirname(__filename);
 
 const logger = pino({ level: 'silent' });
 
 let reconnectAttempts = 0;
+const BASE_DELAY_MS   = 5000;
+const MAX_DELAY_MS    = 60000;
+
+/**
+ * Exponential backoff delay: 5s, 10s, 20s, 40s … capped at 60s
+ */
+function getReconnectDelay(attempt) {
+  return Math.min(BASE_DELAY_MS * Math.pow(2, attempt - 1), MAX_DELAY_MS);
+}
 
 export async function connectToWhatsApp() {
-  console.log('Initializing connection with WhatsApp multi-device...');
-  
+  console.log('[CONNECTION] Initializing WhatsApp multi-device connection...');
+
   // Ensure session directory exists
   const sessionDir = path.resolve(config.sessionPath);
   if (!fs.existsSync(sessionDir)) {
     fs.mkdirSync(sessionDir, { recursive: true });
   }
 
+  // Fetch latest Baileys protocol version for compatibility
+  let version;
+  try {
+    const { version: v } = await fetchLatestBaileysVersion();
+    version = v;
+    console.log(`[CONNECTION] Using WA version: ${v.join('.')}`);
+  } catch {
+    version = [2, 3000, 1015901307];
+    console.warn('[CONNECTION] Could not fetch latest version — using bundled fallback.');
+  }
+
   const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
 
   const sock = makeWASocket({
+    version,
     auth: {
       creds: state.creds,
-      keys: makeCacheableSignalKeyStore(state.keys, logger),
+      keys: makeCacheableSignalKeyStore(state.keys, logger)
     },
     logger,
     printQRInTerminal: !config.pairing.enabled,
     browser: ['Ubuntu', 'Chrome', '20.0.0'],
     markOnlineOnConnect: true,
+    syncFullHistory: false,
+    connectTimeoutMs: 60000,
+    keepAliveIntervalMs: 30000,
+    retryRequestDelayMs: 2000,
+    // Required for proper message retry / decryption on some WA versions
+    getMessage: async (key) => {
+      return { conversation: '' };
+    }
   });
 
   client.socket = sock;
 
-  // Handle pairing code registration if enabled and not already logged in
+  // ── Pairing code request ──────────────────────────────────────────────────
   if (config.pairing.enabled && !sock.authState.creds.me) {
     if (!config.pairing.phoneNumber) {
-      console.error('[ERROR] Pairing code enabled but no phoneNumber provided in config/index.js');
+      console.error('[CONNECTION] Pairing mode enabled but no phoneNumber set in config/index.js');
     } else {
       setTimeout(async () => {
         try {
           const cleanPhone = config.pairing.phoneNumber.replace(/[^0-9]/g, '');
-          console.log(`[INFO] Requesting pairing code for phone number: ${cleanPhone}`);
+          console.log(`[CONNECTION] Requesting pairing code for: ${cleanPhone}`);
           const code = await sock.requestPairingCode(cleanPhone);
-          console.log(`\n==================================================`);
+          console.log(`\n${'='.repeat(50)}`);
           console.log(`🔑 WHATSAPP PAIRING CODE: ${code}`);
-          console.log(`👉 Enter this code on your WhatsApp companion device.`);
-          console.log(`==================================================\n`);
+          console.log(`👉 Go to WhatsApp → Settings → Linked Devices → Link a Device`);
+          console.log(`   Then tap "Link with phone number instead" and enter the code above.`);
+          console.log(`${'='.repeat(50)}\n`);
         } catch (err) {
-          console.error('[ERROR] Failed to request pairing code from WhatsApp:', err);
+          console.error('[CONNECTION] Failed to request pairing code:', err.message || err);
         }
-      }, 5000); // Wait 5 seconds for socket connection to initialize
+      }, 5000);
     }
   }
 
-  // Bind auth credentials save trigger
+  // ── Auth credentials persistence ──────────────────────────────────────────
   sock.ev.on('creds.update', saveCreds);
 
-  // Monitor socket connection states
+  // ── Connection lifecycle ──────────────────────────────────────────────────
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr && !config.pairing.enabled) {
-      console.log('[INFO] Scan this QR code to connect to WhatsApp:');
+      console.log('[CONNECTION] Scan this QR code to authenticate:');
       qrcode.generate(qr, { small: true });
     }
 
     if (connection === 'connecting') {
-      console.log('[INFO] Connecting to WhatsApp servers...');
+      console.log('[CONNECTION] Connecting to WhatsApp servers...');
+
     } else if (connection === 'open') {
+      reconnectAttempts = 0;
       console.log(`\n╭─────────────────────╮`);
       console.log(`│      NEXORA MD      │`);
       console.log(`│                     │`);
@@ -90,52 +123,72 @@ export async function connectToWhatsApp() {
       console.log(`│                     │`);
       console.log(`│ Successfully Online │`);
       console.log(`╰─────────────────────╯\n`);
-      console.log(`🤖 Logged in as: ${sock.user.name || 'Bot'} (${sock.user.id.split(':')[0]})\n`);
-      reconnectAttempts = 0; // Reset connection counter
-    } else if (connection === 'close') {
-      const statusCode = lastDisconnect?.error?.output?.statusCode;
-      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-      
-      console.log(`[WARN] Connection closed (Reason Code: ${statusCode}). Reconnecting: ${shouldReconnect}`);
+      console.log(`🤖 Logged in as: ${sock.user?.name || 'Bot'} (${sock.user?.id?.split(':')[0]})\n`);
 
-      if (shouldReconnect) {
-        if (reconnectAttempts < config.reconnectLimit) {
-          reconnectAttempts++;
-          console.log(`[RETRY] Reconnect attempt ${reconnectAttempts}/${config.reconnectLimit} starting in 5s...`);
-          setTimeout(connectToWhatsApp, 5000);
-        } else {
-          console.error(`[CRITICAL] Max reconnection attempts (${config.reconnectLimit}) reached. Bot shutting down.`);
-          db.save();
-          process.exit(1);
-        }
+    } else if (connection === 'close') {
+      const statusCode   = lastDisconnect?.error?.output?.statusCode;
+      const errorMessage = lastDisconnect?.error?.message || 'Unknown';
+
+      // Determine whether this disconnect is recoverable
+      const loggedOut          = statusCode === DisconnectReason.loggedOut;
+      const connectionReplaced = statusCode === DisconnectReason.connectionReplaced;
+      const badSession         = statusCode === DisconnectReason.badSession;
+
+      if (loggedOut) {
+        console.error('[CONNECTION] Session logged out by WhatsApp. Clear the session/ directory and re-pair.');
+        db.save();
+        process.exit(1);
+        return;
+      }
+
+      if (connectionReplaced) {
+        console.error('[CONNECTION] Another device opened this session. Bot shutting down to avoid conflicts.');
+        db.save();
+        process.exit(1);
+        return;
+      }
+
+      if (badSession) {
+        console.error('[CONNECTION] Bad session file detected. Delete session/ and re-pair.');
+        db.save();
+        process.exit(1);
+        return;
+      }
+
+      // Recoverable disconnect — attempt reconnect with exponential backoff
+      console.warn(`[CONNECTION] Closed (code: ${statusCode}, reason: ${errorMessage}). Attempting reconnect...`);
+
+      if (reconnectAttempts < config.reconnectLimit) {
+        reconnectAttempts++;
+        const delay = getReconnectDelay(reconnectAttempts);
+        console.log(`[CONNECTION] Reconnect attempt ${reconnectAttempts}/${config.reconnectLimit} in ${delay / 1000}s...`);
+        setTimeout(connectToWhatsApp, delay);
       } else {
-        console.error('[CRITICAL] Session logged out. Please clear session directory and pair again.');
+        console.error(`[CONNECTION] Max reconnect attempts (${config.reconnectLimit}) reached. Shutting down.`);
         db.save();
         process.exit(1);
       }
     }
   });
 
-  // Handle incoming messages
+  // ── Incoming messages ─────────────────────────────────────────────────────
   sock.ev.on('messages.upsert', async (chatUpdate) => {
-    try {
-      // type can be 'notify' (new incoming) or 'append' (history load)
-      if (chatUpdate.type === 'notify') {
-        for (const rawMessage of chatUpdate.messages) {
-          await handleMessage(rawMessage, sock);
-        }
+    if (chatUpdate.type !== 'notify') return;
+    for (const rawMessage of chatUpdate.messages) {
+      try {
+        await handleMessage(rawMessage, sock);
+      } catch (err) {
+        console.error('[HANDLER ERROR] Uncaught error in message handler:', err.message || err);
       }
-    } catch (err) {
-      console.error('[ERROR] Error processing messages upsert event:', err);
     }
   });
 
-  // Handle group participants update (welcome/goodbye)
+  // ── Group participant events ───────────────────────────────────────────────
   sock.ev.on('group-participants.update', async (update) => {
     try {
       await handleGroupParticipantsUpdate(update, sock);
     } catch (err) {
-      console.error('[ERROR] Error processing group participants update event:', err);
+      console.error('[HANDLER ERROR] Uncaught error in group handler:', err.message || err);
     }
   });
 

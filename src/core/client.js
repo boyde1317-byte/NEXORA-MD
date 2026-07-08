@@ -3,13 +3,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname  = path.dirname(__filename);
 
 export const client = {
-  commands: new Map(),
-  aliases: new Map(),
+  commands:  new Map(),
+  aliases:   new Map(),
   cooldowns: new Map(),
-  socket: null, // Holds the active socket reference
+  socket:    null,
 
   async loadPlugins() {
     this.commands.clear();
@@ -20,36 +20,71 @@ export const client = {
       fs.mkdirSync(pluginsDir, { recursive: true });
     }
 
-    const files = fs.readdirSync(pluginsDir).filter(file => file.endsWith('.js'));
+    const files = fs.readdirSync(pluginsDir).filter(f => f.endsWith('.js'));
     console.log(`\n=== Loading Plugins (${files.length} files found) ===`);
+
+    const failed = [];
 
     for (const file of files) {
       try {
         const filePath = path.join(pluginsDir, file);
-        const fileUrl = new URL(`file://${filePath}`);
-        // Cache bust using timestamp for true Hot Reload support
-        const pluginModule = await import(`${fileUrl.href}?t=${Date.now()}`);
-        const plugin = pluginModule.default;
+        const fileUrl  = new URL(`file://${filePath}`);
+        // Cache-bust with timestamp for hot-reload support
+        const mod    = await import(`${fileUrl.href}?t=${Date.now()}`);
+        const plugin = mod.default;
 
-        if (!plugin || !plugin.name || !plugin.execute) {
-          console.warn(`[WARN] Skipping ${file}: invalid or missing default export (must contain name and execute).`);
+        if (!plugin || typeof plugin !== 'object') {
+          const reason = 'No default export found';
+          console.warn(`[PLUGIN WARN] Skipping ${file}: ${reason}`);
+          failed.push({ file, reason });
+          continue;
+        }
+
+        if (!plugin.name || typeof plugin.name !== 'string') {
+          const reason = 'Missing or invalid "name" field';
+          console.warn(`[PLUGIN WARN] Skipping ${file}: ${reason}`);
+          failed.push({ file, reason });
+          continue;
+        }
+
+        if (typeof plugin.execute !== 'function') {
+          const reason = 'Missing "execute" function';
+          console.warn(`[PLUGIN WARN] Skipping ${file}: ${reason}`);
+          failed.push({ file, reason });
           continue;
         }
 
         const cmdName = plugin.name.toLowerCase();
         this.commands.set(cmdName, plugin);
 
-        if (plugin.aliases && Array.isArray(plugin.aliases)) {
+        if (Array.isArray(plugin.aliases)) {
           for (const alias of plugin.aliases) {
             this.aliases.set(alias.toLowerCase(), cmdName);
           }
         }
+
         console.log(`[OK] Loaded command: ${plugin.name} (${plugin.category || 'general'})`);
       } catch (err) {
-        console.error(`[ERROR] Failed to load plugin file ${file}:`, err);
+        const reason = err.message || String(err);
+        console.error(`[PLUGIN ERROR] Failed to load ${file}: ${reason}`);
+        failed.push({ file, reason });
       }
     }
-    console.log(`=== Loaded ${this.commands.size} commands, ${this.aliases.size} aliases ===\n`);
+
+    // ── Startup summary ───────────────────────────────────────────────────
+    const loaded = this.commands.size;
+    console.log(`\n=== Plugin Load Summary ===`);
+    console.log(`  Total found : ${files.length}`);
+    console.log(`  Successful  : ${loaded}`);
+    console.log(`  Aliases     : ${this.aliases.size}`);
+    console.log(`  Failed      : ${failed.length}`);
+    if (failed.length > 0) {
+      console.warn(`  Failed files:`);
+      for (const { file, reason } of failed) {
+        console.warn(`    ✗ ${file} — ${reason}`);
+      }
+    }
+    console.log(`===========================\n`);
   }
 };
 

@@ -2,96 +2,124 @@ import { downloadMediaMessage } from 'baileys';
 import { config } from '../../config/index.js';
 import { messageFormatter } from '../ui/messageFormatter.js';
 
+/**
+ * Extracts the body text from a raw message content object.
+ */
+function extractBody(type, msgContent) {
+  if (!msgContent) return '';
+
+  switch (type) {
+    case 'conversation':
+      return typeof msgContent === 'string' ? msgContent : (msgContent || '');
+    case 'extendedTextMessage':
+      return msgContent.text || '';
+    case 'imageMessage':
+    case 'videoMessage':
+    case 'documentMessage':
+      return msgContent.caption || '';
+    case 'documentWithCaptionMessage':
+      return msgContent.message?.documentMessage?.caption || '';
+    case 'buttonsResponseMessage':
+      return msgContent.selectedButtonId || '';
+    case 'listResponseMessage':
+      return msgContent.singleSelectReply?.selectedRowId || '';
+    case 'templateButtonReplyMessage':
+      return msgContent.selectedId || '';
+    case 'interactiveResponseMessage': {
+      try {
+        const parsed = JSON.parse(msgContent.nativeFlowResponseMessage?.paramsJson || '{}');
+        return parsed.id || '';
+      } catch {
+        return '';
+      }
+    }
+    case 'ephemeralMessage':
+      // Unwrap disappearing message envelope
+      return extractBody(
+        Object.keys(msgContent.message || {})[0] || '',
+        Object.values(msgContent.message || {})[0]
+      );
+    case 'viewOnceMessage':
+    case 'viewOnceMessageV2': {
+      // Unwrap view-once envelope — body is usually empty for commands but expose it
+      const inner = msgContent.message || {};
+      const innerType = Object.keys(inner)[0] || '';
+      return extractBody(innerType, inner[innerType]);
+    }
+    default:
+      return '';
+  }
+}
+
+/**
+ * Safely normalise a raw JID that might have a device suffix (:14) or be undefined.
+ */
+function normaliseJid(raw) {
+  if (!raw) return '';
+  return raw.includes(':') ? raw.split(':')[0] + '@s.whatsapp.net' : raw;
+}
+
 export async function serialize(m, sock) {
   if (!m) return m;
 
-  // Clone or copy key
   const message = { ...m };
-  
+
   if (message.key) {
-    message.id = message.key.id;
-    message.from = message.key.remoteJid;
-    message.fromMe = message.key.fromMe;
-    message.isGroup = message.from.endsWith('@g.us');
-    
-    // Normalize sender JID (strip connection suffix if needed)
-    const rawSender = message.key.participant || message.key.remoteJid;
-    message.sender = rawSender.includes(':') 
-      ? rawSender.split(':')[0] + '@s.whatsapp.net' 
-      : rawSender;
-      
+    message.id       = message.key.id;
+    message.from     = message.key.remoteJid;
+    message.fromMe   = message.key.fromMe;
+    message.isGroup  = message.from?.endsWith('@g.us') ?? false;
+
+    const rawSender  = message.key.participant || message.key.remoteJid;
+    message.sender   = normaliseJid(rawSender);
     message.senderNumber = message.sender.split('@')[0];
-    message.isOwner = config.owner.includes(message.senderNumber);
+    message.isOwner  = config.owner.includes(message.senderNumber);
   }
 
   if (message.message) {
-    // Get actual message type
     const types = Object.keys(message.message);
-    // Ignore messageContextInfo, senderKeyDistributionMessage, protocols
-    const type = types.find(t => 
-      t !== 'messageContextInfo' && 
-      t !== 'senderKeyDistributionMessage' && 
+
+    // Skip pure protocol / key-distribution messages
+    const type = types.find(t =>
+      t !== 'messageContextInfo' &&
+      t !== 'senderKeyDistributionMessage' &&
       t !== 'protocolMessage'
     ) || types[0];
 
-    message.type = type;
+    message.type    = type;
     const msgContent = message.message[type];
-    message.msg = msgContent;
+    message.msg     = msgContent;
 
-    // Extract raw text content
-    message.body = '';
-    if (type === 'conversation') {
-      message.body = msgContent;
-    } else if (type === 'extendedTextMessage') {
-      message.body = msgContent.text || '';
-    } else if (type === 'imageMessage' || type === 'videoMessage') {
-      message.body = msgContent.caption || '';
-    } else if (type === 'buttonsResponseMessage') {
-      message.body = msgContent.selectedButtonId || '';
-    } else if (type === 'listResponseMessage') {
-      message.body = msgContent.singleSelectReply?.selectedRowId || '';
-    } else if (type === 'templateButtonReplyMessage') {
-      message.body = msgContent.selectedId || '';
-    } else if (type === 'interactiveResponseMessage') {
-      const responseData = JSON.parse(msgContent.nativeFlowResponseMessage?.paramsJson || '{}');
-      message.body = responseData.id || '';
-    }
+    // Extract body text — safe for every known message shape
+    message.body = extractBody(type, msgContent);
 
-    // Quoted Message parsing
+    // ── Quoted message parsing ──────────────────────────────────────────────
     const contextInfo = msgContent?.contextInfo;
-    if (contextInfo && contextInfo.quotedMessage) {
+    if (contextInfo?.quotedMessage) {
       const qMessage = contextInfo.quotedMessage;
-      const qTypes = Object.keys(qMessage);
-      const qType = qTypes.find(t => t !== 'messageContextInfo') || qTypes[0];
+      const qTypes   = Object.keys(qMessage);
+      const qType    = qTypes.find(t => t !== 'messageContextInfo') || qTypes[0];
       const qContent = qMessage[qType];
 
-      // Normalize quoted sender
-      const rawQuotedSender = contextInfo.participant;
-      const quotedSender = rawQuotedSender.includes(':')
-        ? rawQuotedSender.split(':')[0] + '@s.whatsapp.net'
-        : rawQuotedSender;
-
-      let quotedBody = '';
-      if (qType === 'conversation') quotedBody = qContent;
-      else if (qType === 'extendedTextMessage') quotedBody = qContent.text || '';
-      else if (qType === 'imageMessage' || qType === 'videoMessage') quotedBody = qContent.caption || '';
+      // Guard: participant can be absent in DMs or self-quoting — never crash
+      const rawQuotedSender = contextInfo.participant || message.key.remoteJid || '';
+      const quotedSender    = normaliseJid(rawQuotedSender);
 
       message.quoted = {
-        id: contextInfo.stanzaId,
-        sender: quotedSender,
+        id:           contextInfo.stanzaId,
+        sender:       quotedSender,
         senderNumber: quotedSender.split('@')[0],
-        isOwner: config.owner.includes(quotedSender.split('@')[0]),
-        type: qType,
-        message: qMessage,
-        msg: qContent,
-        body: quotedBody,
-        // Helper to download quoted message media
+        isOwner:      config.owner.includes(quotedSender.split('@')[0]),
+        type:         qType,
+        message:      qMessage,
+        msg:          qContent,
+        body:         extractBody(qType, qContent),
         download: async () => {
           const fakeMessage = {
             key: {
-              remoteJid: message.from,
-              fromMe: quotedSender === (sock.user?.id ? sock.user.id.split(':')[0] + '@s.whatsapp.net' : ''),
-              id: contextInfo.stanzaId,
+              remoteJid:   message.from,
+              fromMe:      quotedSender === normaliseJid(sock.user?.id),
+              id:          contextInfo.stanzaId,
               participant: contextInfo.participant
             },
             message: qMessage
@@ -102,91 +130,60 @@ export async function serialize(m, sock) {
     }
   }
 
-  // Group helpers
+  // ── Group helpers ──────────────────────────────────────────────────────────
   message.getGroupMetadata = async () => {
     if (!message.isGroup) return null;
     try {
       return await sock.groupMetadata(message.from);
     } catch (e) {
-      console.error(`Failed to fetch group metadata for ${message.from}:`, e);
+      console.error(`[SERIALIZER] Failed to fetch group metadata for ${message.from}:`, e.message);
       return null;
     }
   };
 
   message.isAdmin = async () => {
     if (!message.isGroup) return false;
-    const metadata = await message.getGroupMetadata();
-    if (!metadata) return false;
-    const participant = metadata.participants.find(p => {
-      const pJid = p.id.includes(':') ? p.id.split(':')[0] + '@s.whatsapp.net' : p.id;
-      return pJid === message.sender;
-    });
-    return !!(participant && (participant.admin === 'admin' || participant.admin === 'superadmin'));
+    const meta = await message.getGroupMetadata();
+    if (!meta) return false;
+    const p = meta.participants.find(p => normaliseJid(p.id) === message.sender);
+    return !!(p && (p.admin === 'admin' || p.admin === 'superadmin'));
   };
 
   message.isBotAdmin = async () => {
     if (!message.isGroup) return false;
-    const metadata = await message.getGroupMetadata();
-    if (!metadata) return false;
-    const botJid = sock.user.id.includes(':')
-      ? sock.user.id.split(':')[0] + '@s.whatsapp.net'
-      : sock.user.id;
-    const participant = metadata.participants.find(p => {
-      const pJid = p.id.includes(':') ? p.id.split(':')[0] + '@s.whatsapp.net' : p.id;
-      return pJid === botJid;
-    });
-    return !!(participant && (participant.admin === 'admin' || participant.admin === 'superadmin'));
+    const meta = await message.getGroupMetadata();
+    if (!meta) return false;
+    const botJid = normaliseJid(sock.user?.id);
+    const p = meta.participants.find(p => normaliseJid(p.id) === botJid);
+    return !!(p && (p.admin === 'admin' || p.admin === 'superadmin'));
   };
 
-  // Reply helper with decorated message modernization formatters
+  // ── Reply helper ──────────────────────────────────────────────────────────
   const replyFn = async (text, options = {}) => {
-    return await sock.sendMessage(
-      message.from, 
-      { text }, 
-      { quoted: m, ...options }
-    );
+    return await sock.sendMessage(message.from, { text }, { quoted: m, ...options });
   };
 
-  replyFn.success = async (text, options = {}) => {
-    return await replyFn(messageFormatter.success(text), options);
-  };
-
-  replyFn.error = async (text, options = {}) => {
-    return await replyFn(messageFormatter.error(text), options);
-  };
-
-  replyFn.warn = async (text, options = {}) => {
-    return await replyFn(messageFormatter.warn(text), options);
-  };
-
-  replyFn.info = async (text, title = 'INFO', options = {}) => {
-    return await replyFn(messageFormatter.info(text, title), options);
-  };
-
-  replyFn.loading = async (text = 'Downloading media...', options = {}) => {
-    return await replyFn(messageFormatter.loading(text), options);
-  };
+  replyFn.success = async (text, options = {}) =>
+    replyFn(messageFormatter.success(text), options);
+  replyFn.error   = async (text, options = {}) =>
+    replyFn(messageFormatter.error(text), options);
+  replyFn.warn    = async (text, options = {}) =>
+    replyFn(messageFormatter.warn(text), options);
+  replyFn.info    = async (text, title = 'INFO', options = {}) =>
+    replyFn(messageFormatter.info(text, title), options);
+  replyFn.loading = async (text = 'Processing...', options = {}) =>
+    replyFn(messageFormatter.loading(text), options);
 
   message.reply = replyFn;
 
-  // React helper
+  // ── React helper ──────────────────────────────────────────────────────────
   message.react = async (emoji) => {
     return await sock.sendMessage(message.from, {
-      react: {
-        text: emoji,
-        key: message.key
-      }
+      react: { text: emoji, key: message.key }
     });
   };
 
-  // Delete helper
-  message.delete = async () => {
-    return await sock.sendMessage(message.from, {
-      delete: message.key
-    });
-  };
-
-  // Edit helper
+  // ── Edit helper ───────────────────────────────────────────────────────────
   message.edit = async (newText) => {
     return await sock.sendMessage(message.from, {
       text: newText,
@@ -194,7 +191,12 @@ export async function serialize(m, sock) {
     });
   };
 
-  // Download current media helper
+  // ── Delete helper ─────────────────────────────────────────────────────────
+  message.delete = async () => {
+    return await sock.sendMessage(message.from, { delete: message.key });
+  };
+
+  // ── Media download helper ─────────────────────────────────────────────────
   message.download = async () => {
     if (!message.message) return null;
     return await downloadMediaMessage(m, 'buffer', {});
@@ -202,3 +204,5 @@ export async function serialize(m, sock) {
 
   return message;
 }
+
+export default serialize;
