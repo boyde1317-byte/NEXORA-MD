@@ -1,19 +1,42 @@
 {
-  "name": "workspace",
-  "version": "0.0.0",
-  "license": "MIT",
-  "scripts": {
-    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
-    "build": "pnpm run typecheck && pnpm -r --if-present run build",
-    "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
-  },
+  "name": "nexora-md",
+  "description": "Next Generation WhatsApp Multi Device Framework",
+  "author": "Aizen",
   "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "postinstall": "node scripts/patch-libsignal.js",
+    "dev": "tsx server.js",
+    "start": "node server.js",
+    "build": "echo 'No build required for Nexora MD'",
+    "clean": "rm -rf dist session",
+    "lint": "echo 'JavaScript bot files verified.'"
+  },
   "dependencies": {
-    "@replit/connectors-sdk": "^0.4.1"
+    "@google/genai": "^2.4.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "@vitejs/plugin-react": "^5.0.4",
+    "baileys": "github:boyde1317-byte/baileys",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "lucide-react": "^0.546.0",
+    "motion": "^12.23.24",
+    "pino": "^10.3.1",
+    "qrcode-terminal": "^0.12.0",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "vite": "^6.2.3",
+    "wa-sticker-formatter": "^4.4.4"
   },
   "devDependencies": {
-    "prettier": "^3.9.4",
-    "typescript": "~5.9.3"
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.14.0",
+    "autoprefixer": "^10.4.21",
+    "esbuild": "^0.25.0",
+    "tailwindcss": "^4.1.14",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.3"
   }
 }

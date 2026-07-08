@@ -1,45 +1,46 @@
-# [Project name]
+# NEXORA MD
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Next Generation WhatsApp Multi-Device Framework built on Baileys.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `node server.js` — start the bot (runs Express server + connects to WhatsApp)
+- `npm install` — install dependencies
+- QR code or pairing code prints to the console on first run
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Node.js (ESM), Express
+- Baileys (WhatsApp multi-device)
+- Gemini AI (`@google/genai`)
+- pino (logging), qrcode-terminal, wa-sticker-formatter
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `server.js` — entry point; starts Express + loads plugins + connects WhatsApp
+- `src/core/` — Baileys socket, connection, client, serializer, credits
+- `src/plugins/` — all bot commands (~30 plugins)
+- `src/handlers/` — message and group event handlers
+- `src/ui/` — ASCII builder, theme manager, message formatter
+- `src/greetings/`, `src/menu/`, `src/newsletter/`, `src/images/`, `src/media/` — feature modules
+- `src/assets/` — AI asset generation and management
+- `config/` — brand, owner, layout settings
+- `database/` — JSON databases (assets, images, media, theme)
+- `media/` — thumbnails and images
+- `scripts/patch-libsignal.js` — postinstall patch for libsignal
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
-
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
+- All bot commands live in `src/plugins/` and are dynamically loaded at startup via `client.loadPlugins()`
+- Session credentials stored in `session/` directory (gitignored)
+- Pairing code vs QR code controlled by `config/index.js` (`pairing.enabled`)
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+_Populate as you build._
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Set `GEMINI_API_KEY` secret for AI features
+- On first run, check console logs for QR code to scan with WhatsApp
+- To reset session, delete the `session/` directory and restart
