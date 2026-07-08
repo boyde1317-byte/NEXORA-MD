@@ -58,7 +58,11 @@ export async function handleMessage(rawMessage, sock) {
     const adminOnly      = perms.admin      ?? command.adminOnly      ?? false;
     const botAdminRequired = perms.botAdmin ?? command.botAdmin       ?? false;
 
-    const ownerCheck = isOwnerJid(sender);
+    // LID fix: WhatsApp may present sender as an opaque LID instead of a phone number.
+    // If the message is fromMe, it came from one of the owner's own devices — treat as owner.
+    const botNumber = sock?.user?.id?.split('@')[0]?.split(':')[0];
+    const botIsOwner = botNumber && config.owner.includes(botNumber);
+    const ownerCheck = isOwnerJid(sender) || (m.fromMe && !!botIsOwner);
 
     // 1. Owner-only guard
     if (ownerOnly && !ownerCheck) {

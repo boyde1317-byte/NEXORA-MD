@@ -73,7 +73,11 @@ export async function serialize(m, sock) {
     const rawSender  = message.key.participant || message.key.remoteJid;
     message.sender   = normaliseJid(rawSender);
     message.senderNumber = message.sender.split('@')[0];
-    message.isOwner  = config.owner.includes(message.senderNumber);
+    // LID fix: WhatsApp may present the sender as an opaque LID instead of a phone number.
+    // If fromMe is true, the message came from one of the owner's own devices.
+    const botNumber = sock?.user?.id?.split('@')[0]?.split(':')[0];
+    const botIsOwner = botNumber && config.owner.includes(botNumber);
+    message.isOwner  = config.owner.includes(message.senderNumber) || (message.fromMe && !!botIsOwner);
   }
 
   if (message.message) {
