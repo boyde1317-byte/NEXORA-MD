@@ -14,7 +14,14 @@ function getAiClient() {
     throw new Error('GEMINI_API_KEY is not defined in the environment');
   }
 
-  aiClient = new GoogleGenAI({ apiKey });
+  aiClient = new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build'
+      }
+    }
+  });
 
   return aiClient;
 }
