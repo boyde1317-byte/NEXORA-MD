@@ -15,16 +15,33 @@ export const baileysBridge = {
   },
 
   /**
-   * Relays a fully formed proto.IMessage payload directly to WhatsApp servers
+   * Relays a fully formed proto.IMessage payload directly to WhatsApp servers.
+   *
+   * IMPORTANT: every viewOnceMessage must carry a messageContextInfo block with a
+   * random 32-byte messageSecret so WhatsApp clients can decrypt it. Without it
+   * modern clients show "unsupported message" or silently drop the message.
+   * We inject it here centrally so every caller gets it automatically.
    */
   async relayMessage(sock, jid, messageContent, options = {}) {
-    const msgId = options.messageId || generateMessageID();
+    if (messageContent.viewOnceMessage?.message) {
+      const inner = messageContent.viewOnceMessage.message;
+      if (!inner.messageContextInfo) {
+        inner.messageContextInfo = {
+          deviceListMetadata: {},
+          deviceListMetadataVersion: 2,
+          messageSecret: randomBytes(32),
+        };
+      }
+    }
+
     const message = await generateWAMessageFromContent(jid, messageContent, {
       userJid: sock.user?.id || '0@s.whatsapp.net',
       quoted: options.quoted,
     });
-    
-    await sock.relayMessage(jid, message.message, { messageId: message.key.id, ...options });
+
+    // sock.relayMessage only accepts MessageRelayOptions — do not spread `options`
+    // as it contains `quoted` which is not a valid relay param.
+    await sock.relayMessage(jid, message.message, { messageId: message.key.id });
     return message;
   },
 
@@ -84,18 +101,29 @@ export const baileysBridge = {
   },
 
   /**
-   * Sends a custom Event Invitation card using the fork's native capability
+   * Sends a custom Event Invitation card.
+   * Built directly as a viewOnceMessage so it benefits from the central
+   * messageSecret injection in relayMessage — avoids the unreliable
+   * sock.sendMessage → extended-handler route.
    */
   async sendEvent(sock, jid, { name, description, startTime, minutesAhead, joinLink }, options = {}) {
-    const calculatedStartTime = startTime || Math.floor(Date.now() / 1000) + ((minutesAhead || 30) * 60);
-    return await sock.sendMessage(jid, {
+    const calculatedStartTime = startTime
+      ? (typeof startTime === 'string' ? parseInt(startTime, 10) : startTime)
+      : Math.floor(Date.now() / 1000) + ((minutesAhead || 30) * 60);
+
+    const msgContent = {
       eventMessage: {
+        isCanceled: false,
         name,
         description: description || 'Bot Dynamic Event',
-        startTime: String(calculatedStartTime),
-        joinLink: joinLink || 'https://call.whatsapp.com/video/ai-studio'
+        location: { degreesLatitude: 0, degreesLongitude: 0, name: 'Location' },
+        joinLink: joinLink || '',
+        startTime: calculatedStartTime,
+        extraGuestsAllowed: true,
       }
-    }, options);
+    };
+
+    return await this.relayMessage(sock, jid, { viewOnceMessage: { message: msgContent } }, options);
   },
 
   /**
