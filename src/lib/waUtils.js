@@ -42,13 +42,26 @@ export const STATUS_JID = 'status@broadcast'
  * @example
  * await sendFakeQuote(sock, m.from, 'Hello!', 'WhatsApp notification', { quoted: m })
  */
+/**
+ * Generate a Baileys-compatible fake stanza ID.
+ * Quoted contextInfo requires a non-empty stanzaId or several WA clients
+ * silently degrade the reply header to plain text.
+ * Format mirrors real Baileys IDs: "3EB0" + 12 random hex chars (uppercase).
+ * @returns {string}
+ */
+function fakeStanzaId() {
+  const hex = () => Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0').toUpperCase()
+  return '3EB0' + hex() + hex()
+}
+
 export async function sendFakeQuote(sock, jid, text, fakeText = '\u200e', opts = {}) {
   return sock.sendMessage(jid, {
     text,
     contextInfo: {
+      stanzaId:      fakeStanzaId(),   // required for reliable reply-bar rendering
       quotedMessage: { conversation: fakeText },
-      participant:   WA_JID,
-      remoteJid:     WA_JID,
+      participant:   WA_JID,           // "WhatsApp" shown as the quoted sender
+      remoteJid:     jid,              // must be the actual destination chat, not WA_JID
     },
   }, opts)
 }
@@ -242,6 +255,14 @@ export async function sendVideoStatus(sock, video, opts = {}) {
  * await sendStatus(sock, 'video', videoBuffer, { caption: 'Check this out' })
  */
 export async function sendStatus(sock, type = 'text', content, opts = {}) {
+  if (!sock)    throw new TypeError('sendStatus: sock is required')
+  if (!content && content !== 0) throw new TypeError('sendStatus: content is required')
+
+  const validTypes = ['text', 'image', 'video']
+  if (!validTypes.includes(type)) {
+    throw new TypeError(`sendStatus: invalid type "${type}" — must be one of: ${validTypes.join(', ')}`)
+  }
+
   switch (type) {
     case 'image': return sendImageStatus(sock, content, opts)
     case 'video': return sendVideoStatus(sock, content, opts)
