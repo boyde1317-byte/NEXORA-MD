@@ -86,7 +86,7 @@ export default {
 
         if (isSupported) {
           const payload = offerOverlayBuilder.build(testData);
-          await baileysBridge.relayMessage(sock, m.from, { viewOnceMessage: { message: payload } }, { quoted: m });
+          await baileysBridge.relayMessage(sock, m.from, payload, { quoted: m });
           await m.reply(`✅ *PAYLOAD SENT:* Offer overlay dispatch succeeded!`);
         } else {
           await offerOverlayBuilder.fallback(sock, m.from, testData, { quoted: m });

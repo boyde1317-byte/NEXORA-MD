@@ -34,13 +34,14 @@ import capabilities from '../../core/capabilities.js';
       };
 
       // ── Tier 1: Interactive relay ─────────────────────────────────────────────────────────────
-      // Gated on both flags: viewOnceMessage+interactiveMessage can succeed silently
-      // on clients that don't support the type, leaving the user with no response.
+      // Sent flat (no viewOnceMessage wrap) — interactiveMessage/nativeFlow has no
+      // view-once semantics and clients drop it silently when wrapped that way.
+      // relayMessage injects the required messageSecret for us automatically.
       if (capabilities.interactive && capabilities.nativeFlow) {
         try {
           return await baileysBridge.relayMessage(
             sock, m.from,
-            { viewOnceMessage: { message: msgContent } },
+            msgContent,
             { quoted: m }
           );
         } catch (err) {

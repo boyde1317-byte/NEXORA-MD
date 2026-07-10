@@ -17,18 +17,41 @@ export const baileysBridge = {
   /**
    * Relays a fully formed proto.IMessage payload directly to WhatsApp servers.
    *
-   * IMPORTANT: every viewOnceMessage must carry a messageContextInfo block with a
-   * random 32-byte messageSecret so WhatsApp clients can decrypt it. Without it
-   * modern clients show "unsupported message" or silently drop the message.
-   * We inject it here centrally so every caller gets it automatically.
+   * IMPORTANT: several message types (eventMessage, pollCreationMessage*,
+   * interactiveMessage w/ nativeFlow, productMessage) require a top-level
+   * messageContextInfo.messageSecret so WhatsApp clients can decrypt/render
+   * them — this is unrelated to viewOnceMessage. Do NOT wrap these types in
+   * viewOnceMessage just to get a secret injected; viewOnceMessage carries
+   * real self-destruct-after-one-view semantics and most clients drop
+   * eventMessage/productMessage/interactiveMessage payloads placed inside it.
+   * We inject the secret centrally, keyed off message type, so callers never
+   * need the viewOnceMessage workaround.
    */
   async relayMessage(sock, jid, messageContent, options = {}) {
+    // Legacy/explicit viewOnceMessage still gets its secret (real view-once sends).
     if (messageContent.viewOnceMessage?.message) {
       const inner = messageContent.viewOnceMessage.message;
       if (!inner.messageContextInfo) {
         inner.messageContextInfo = {
           deviceListMetadata: {},
           deviceListMetadataVersion: 2,
+          messageSecret: randomBytes(32),
+        };
+      }
+    } else {
+      // Flat (non-view-once) payload: inject messageSecret at the top level
+      // for the types that require it, without any viewOnceMessage wrapper.
+      const SECRET_REQUIRED_KEYS = [
+        'eventMessage',
+        'productMessage',
+        'interactiveMessage',
+        'pollCreationMessage',
+        'pollCreationMessageV2',
+        'pollCreationMessageV3',
+      ];
+      const hasSecretRequiredType = SECRET_REQUIRED_KEYS.some(key => key in messageContent);
+      if (hasSecretRequiredType && !messageContent.messageContextInfo) {
+        messageContent.messageContextInfo = {
           messageSecret: randomBytes(32),
         };
       }
@@ -69,7 +92,7 @@ export const baileysBridge = {
       }
     };
 
-    return await this.relayMessage(sock, jid, { viewOnceMessage: { message: msgContent } }, options);
+    return await this.relayMessage(sock, jid, msgContent, options);
   },
 
   /**
@@ -123,7 +146,7 @@ export const baileysBridge = {
       }
     };
 
-    return await this.relayMessage(sock, jid, { viewOnceMessage: { message: msgContent } }, options);
+    return await this.relayMessage(sock, jid, msgContent, options);
   },
 
   /**
@@ -180,7 +203,7 @@ export const baileysBridge = {
       }
     };
 
-    return await this.relayMessage(sock, jid, { viewOnceMessage: { message: msgContent } }, options);
+    return await this.relayMessage(sock, jid, msgContent, options);
   },
 
   /**
@@ -202,7 +225,7 @@ export const baileysBridge = {
       }
     };
 
-    return await this.relayMessage(sock, jid, { viewOnceMessage: { message: payload } }, options);
+    return await this.relayMessage(sock, jid, payload, options);
   },
 
   /**
