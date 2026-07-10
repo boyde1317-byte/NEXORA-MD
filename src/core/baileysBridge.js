@@ -1,4 +1,4 @@
-import { generateWAMessageFromContent, generateMessageID, proto } from 'baileys';
+import { generateWAMessageFromContent, generateWAMessage, generateMessageID, proto } from 'baileys';
 import { randomBytes } from 'node:crypto';
 
 /**
@@ -69,9 +69,40 @@ export const baileysBridge = {
   },
 
   /**
+   * Uploads a raw image payload (buffer/url/stream — the same shape you'd
+   * pass to sock.sendMessage({ image: ... })) to WhatsApp's media servers
+   * and returns a fully-formed proto.Message.IImageMessage (url, mediaKey,
+   * fileEncSha256, directPath, etc). Headers/cards embedding an image MUST
+   * use this — passing a raw buffer/url object directly as `imageMessage`
+   * produces an invalid proto with hasMediaAttachment:true but no real
+   * media behind it, so WhatsApp shows no image (or drops the message).
+   */
+  async _uploadImageMessage(sock, jid, imageContent, options = {}) {
+    // Already an uploaded proto (has fileSha256/mediaKey) — pass through untouched.
+    if (imageContent?.fileSha256 || imageContent?.mediaKey) {
+      return imageContent;
+    }
+    const msg = await generateWAMessage(
+      jid,
+      { image: imageContent },
+      {
+        upload: sock.waUploadToServer,
+        userJid: sock.user?.id || '0@s.whatsapp.net',
+        quoted: options.quoted,
+      },
+    );
+    return msg.message.imageMessage;
+  },
+
+  /**
    * Sends a premium Interactive Message (standard or custom)
    */
   async sendInteractive(sock, jid, { body, footer, header, buttons }, options = {}) {
+    let headerImageMessage = header?.imageMessage;
+    if (!headerImageMessage && header?.image) {
+      headerImageMessage = await this._uploadImageMessage(sock, jid, header.image, options);
+    }
+
     const msgContent = {
       interactiveMessage: {
         body: { text: body },
@@ -81,7 +112,7 @@ export const baileysBridge = {
           subtitle: header.subtitle || '',
           hasMediaAttachment: !!header.hasMediaAttachment,
           ...(header.documentMessage ? { documentMessage: header.documentMessage } : {}),
-          ...(header.imageMessage ? { imageMessage: header.imageMessage } : {})
+          ...(headerImageMessage ? { imageMessage: headerImageMessage } : {})
         } : undefined,
         nativeFlowMessage: buttons ? {
           buttons: buttons.map(btn => ({
@@ -181,17 +212,26 @@ export const baileysBridge = {
     // If not, our outer menu fallback system will catch and convert to text
     // Carousel cards use `buttons` directly on each card — NOT wrapped in nativeFlowMessage.
     // nativeFlowMessage belongs on the outer interactiveMessage, not on individual cards.
-    const cardsContent = (cards || []).map(card => ({
-      header: card.image ? {
-        imageMessage: card.image,
-        hasMediaAttachment: true
-      } : undefined,
-      body: { text: card.body || '' },
-      footer: card.footer ? { text: card.footer } : undefined,
-      buttons: (card.buttons || []).map(btn => ({
-        name: btn.name || 'quick_reply',
-        buttonParamsJson: typeof btn.params === 'string' ? btn.params : JSON.stringify(btn.params || {})
-      }))
+    // Each card.image is a raw payload (buffer/url) and must be uploaded to WhatsApp's
+    // media servers first — embedding it directly as `imageMessage` produces an invalid
+    // proto (hasMediaAttachment:true with no real media behind it) and the image never renders.
+    const cardsContent = await Promise.all((cards || []).map(async card => {
+      const imageMessage = card.image
+        ? await this._uploadImageMessage(sock, jid, card.image, options)
+        : undefined;
+
+      return {
+        header: imageMessage ? {
+          imageMessage,
+          hasMediaAttachment: true
+        } : undefined,
+        body: { text: card.body || '' },
+        footer: card.footer ? { text: card.footer } : undefined,
+        buttons: (card.buttons || []).map(btn => ({
+          name: btn.name || 'quick_reply',
+          buttonParamsJson: typeof btn.params === 'string' ? btn.params : JSON.stringify(btn.params || {})
+        }))
+      };
     }));
 
     const msgContent = {
