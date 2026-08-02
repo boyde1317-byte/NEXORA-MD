@@ -1,5 +1,4 @@
-import { actionCardWithAd } from '../../lib/interactiveKit.js';
-import { getBrandThumbnail } from '../../lib/cosmetics.js';
+import { actionCard } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 
 const TRUTHS = [
@@ -31,19 +30,14 @@ export default {
     const prompt = TRUTHS[Math.floor(Math.random() * TRUTHS.length)];
 
     try {
-      const thumbnail = await getBrandThumbnail();
-      return await actionCardWithAd(sock, m.from, {
+      return await actionCard(sock, m.from, {
         text:   `🤔 *TRUTH*\n\n${prompt}`,
         footer: 'NEXORA GAMES',
       }, [
         { label: '🤔 Another Truth', cmd: `${p}truth` },
         { label: '🔥 Dare Instead',  cmd: `${p}dare` },
         { label: '🎱 8-Ball',        cmd: `${p}8ball Will they tell the truth?` },
-      ], {
-        title: '🤔 TRUTH OR DARE',
-        body:  prompt,
-        thumbnail,
-      }, { quoted: m });
+      ], { quoted: m });
     } catch (err) {
       return await m.reply(`✦ *TRUTH* ✦\n\n🤔 ${prompt}`);
     }

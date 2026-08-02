@@ -1,5 +1,5 @@
-import { withReactionStatus, replyTable } from '../../lib/cosmetics.js';
-import { mixedCard } from '../../lib/interactiveKit.js';
+import { withReactionStatus, replyTable, getBrandThumbnail } from '../../lib/cosmetics.js';
+import { mixedCard, actionCardWithAd } from '../../lib/interactiveKit.js';
 
 const IP_RE   = /^(\d{1,3}\.){3}\d{1,3}$/;
 const HOST_RE = /^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$/;
@@ -42,16 +42,22 @@ export default {
       ].filter(([, v]) => v !== 'N/A' && v !== '');
 
       const mapsUrl = `https://maps.google.com/?q=${d.latitude},${d.longitude}`;
+      const thumbnail = await getBrandThumbnail();
       try {
-        await mixedCard(sock, m.from, {
+        await actionCardWithAd(sock, m.from, {
           text:   `🌐 *IP INFO — ${d.ip}*
 
 ${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}`,
-          footer: `📍 Open in Google Maps`,
+          footer: '📍 Tap thumbnail for Maps',
         }, [
-          { kind: 'url',  label: '📍 View on Maps',   url: mapsUrl },
-          { kind: 'copy', label: '📋 Copy IP',        value: d.ip },
-        ], { quoted: m });
+          { label: '🔍 Lookup Another', cmd: `${m.body?.split(' ')[0]?.replace(/[^.a-z]/gi, '') || '.'}ip` },
+        ], {
+          title:    `🌐 ${d.ip}`,
+          body:     `${d.flag?.emoji ?? ''} ${d.country ?? ''} • ${d.city ?? ''}`,
+          sourceUrl: mapsUrl,
+          thumbnail,
+          renderLargerThumbnail: true,
+        }, { quoted: m });
       } catch (_) {
         await replyTable(m, sock, {
           caption: `🌐 IP INFO — ${d.ip}`,

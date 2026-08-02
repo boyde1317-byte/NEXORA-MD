@@ -5,7 +5,8 @@
  * URL button) with copyResultCard fallback for all article links.
  */
 import { Providers } from '../../lib/webClient.js';
-import { copyResultCard } from '../../lib/interactiveKit.js';
+import { copyResultCard, actionCardWithAd } from '../../lib/interactiveKit.js';
+import { getBrandThumbnail } from '../../lib/cosmetics.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 
 export default {

@@ -8,8 +8,7 @@
  * interactive follow-up styling used by the rest of the fun category
  * (see quoter.js).
  */
-import { actionCardWithAd } from '../../lib/interactiveKit.js';
-import { getBrandThumbnail } from '../../lib/cosmetics.js';
+import { actionCard } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 
 const ANSWERS = [
@@ -52,19 +51,14 @@ export default {
     const answer = ANSWERS[Math.floor(Math.random() * ANSWERS.length)];
 
     try {
-      const thumbnail = await getBrandThumbnail();
-      return await actionCardWithAd(sock, m.from, {
+      return await actionCard(sock, m.from, {
         text:   `🎱 *MAGIC 8-BALL*\n\nQ: ${question}\nA: ${answer}`,
         footer: 'Ask another question anytime',
       }, [
         { label: '🔁 Ask Again',  cmd: `${p}8ball ${question}` },
         { label: '🤔 Truth',      cmd: `${p}truth` },
         { label: '🔥 Dare',       cmd: `${p}dare` },
-      ], {
-        title: '🎱 MAGIC 8-BALL',
-        body:  question,
-        thumbnail,
-      }, { quoted: m });
+      ], { quoted: m });
     } catch (err) {
       console.warn('[eightball] actionCardWithAd failed, using styled fallback:', err.message);
       return await m.reply(asciiBuilder.box('🎱 MAGIC 8-BALL', [

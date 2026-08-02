@@ -1,5 +1,6 @@
 import { Providers } from '../../lib/webClient.js';
-import { copyResultCard } from '../../lib/interactiveKit.js';
+import { copyResultCard, actionCardWithAd } from '../../lib/interactiveKit.js';
+import { getBrandThumbnail } from '../../lib/cosmetics.js';
 
 export default {
   name: 'search',
@@ -29,11 +30,19 @@ export default {
         text += `No direct abstract found for this query.`;
       }
 
-      await copyResultCard(sock, m.from, {
+      const thumbnail = await getBrandThumbnail();
+      const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
+      await actionCardWithAd(sock, m.from, {
         text,
         footer: 'Provided by DuckDuckGo',
-        copyLabel: '📋 Copy Results',
-        copyValue: text
+      }, [
+        { label: '🔍 Search Again', cmd: `${prefix || '.'}search` },
+      ], {
+        title:    `🔍 ${query.toUpperCase()}`,
+        body:     'DuckDuckGo Search Results',
+        sourceUrl: searchUrl,
+        thumbnail,
+        renderLargerThumbnail: false,
       }, { quoted: m });
     } catch (err) {
       await m.reply.error(`Failed to fetch search results: ${err.message}`);

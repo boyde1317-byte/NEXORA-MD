@@ -1,6 +1,7 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
-import { actionCard } from '../../lib/interactiveKit.js';
+import { actionCard, actionCardWithAd } from '../../lib/interactiveKit.js';
+import { getBrandThumbnail } from '../../lib/cosmetics.js';
 import { getLyrics } from '../../lib/downloader.js';
 
 export default {
@@ -24,10 +25,18 @@ export default {
       const lyrics = await getLyrics(artist.trim(), title);
       const trimmed = lyrics.length > 3500 ? `${lyrics.slice(0, 3500)}\n\n… (truncated)` : lyrics;
       const lyricsText = asciiBuilder.box(`LYRICS — ${title.toUpperCase()}`, [trimmed]);
+      const thumbnail = await getBrandThumbnail();
+      const searchUrl = `https://genius.com/search?q=${encodeURIComponent(`${artist.trim()} ${title}`)}`;
       try {
-        await actionCard(sock, m.from, { text: lyricsText }, [
+        await actionCardWithAd(sock, m.from, { text: lyricsText }, [
           { label: '🎵 Search Another', cmd: `${prefix}lyrics` },
-        ], { quoted: m });
+        ], {
+          title:    `🎵 ${title.toUpperCase()}`,
+          body:     `by ${artist.trim()}`,
+          sourceUrl: searchUrl,
+          thumbnail,
+          renderLargerThumbnail: false,
+        }, { quoted: m });
       } catch (_) {
         await m.reply(lyricsText);
       }

@@ -5,7 +5,8 @@
  * display, with mixedCard follow-up for map and refresh actions.
  */
 import { Providers } from '../../lib/webClient.js';
-import { richTableCard, mixedCard } from '../../lib/interactiveKit.js';
+import { richTableCard, mixedCard, actionCardWithAd } from '../../lib/interactiveKit.js';
+import { getBrandThumbnail } from '../../lib/cosmetics.js';
 
 export default {
   name: 'weather',
@@ -54,14 +55,22 @@ export default {
           ? `https://maps.google.com/?q=${encodeURIComponent(locName)}`
           : `https://maps.google.com/?q=${encodeURIComponent(location)}`;
 
-        return await mixedCard(sock, m.from, {
-          text:   `📍 *${locName}*`,
-          footer: `${current.weatherDesc[0].value} • ${current.temp_C}°C`,
+        const thumbnail = await getBrandThumbnail();
+        return await actionCardWithAd(sock, m.from, {
+          text:   `📍 *${locName}*
+
+${current.weatherDesc[0].value} • ${current.temp_C}°C`,
+          footer: 'Powered by wttr.in',
         }, [
-          { kind: 'url',    label: '🗺️ View on Maps',      url:   mapsUrl },
-          { kind: 'action', label: '🔄 Refresh Weather',   cmd:   `${p}weather ${location}` },
-          { kind: 'action', label: '🕐 Check Time',        cmd:   `${p}time ${location}` },
-        ], { quoted: m });
+          { label: '🔄 Refresh Weather', cmd: `${p}weather ${location}` },
+          { label: '🕐 Check Time',      cmd: `${p}time ${location}` },
+        ], {
+          title:    `🌤️ ${locName.toUpperCase()}`,
+          body:     `${current.weatherDesc[0].value} • ${current.temp_C}°C`,
+          sourceUrl: mapsUrl,
+          thumbnail,
+          renderLargerThumbnail: true,
+        }, { quoted: m });
       } catch (err) {
         console.warn('[weather] Tier 1 (richTableCard) failed, plain-text fallback:', err.message);
       }
