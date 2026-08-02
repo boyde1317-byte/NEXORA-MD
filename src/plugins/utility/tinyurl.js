@@ -1,5 +1,6 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { copyResultCard } from '../../lib/interactiveKit.js';
 
 const URL_RE = /^https?:\/\/.{3,}/i;
 
@@ -31,7 +32,15 @@ export default {
         `🔗 Original : ${url.length > 55 ? url.slice(0, 52) + '...' : url}`,
         `✂️  Short    : *${short}*`,
       ]);
-      await m.reply(text);
+      try {
+        await copyResultCard(sock, m.from, {
+          text:       text,
+          copyLabel:  '📋 Copy Short URL',
+          copyValue:  short,
+        }, { quoted: m });
+      } catch (_) {
+        await m.reply(text);
+      }
     });
   }
 };

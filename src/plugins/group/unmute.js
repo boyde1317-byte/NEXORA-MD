@@ -1,3 +1,5 @@
+import { actionCard } from '../../lib/interactiveKit.js';
+
 export default {
   name: 'unmute',
   aliases: ['opengroup'],
@@ -8,7 +10,16 @@ export default {
   execute: async ({ m, sock }) => {
     try {
       await sock.groupSettingUpdate(m.from, 'not_announcement');
-      await m.reply.success('Group unmuted. All participants can send messages now.');
+      try {
+        await actionCard(sock, m.from, {
+          text:   '🔔 Group unmuted. All participants can send messages now.',
+          footer: 'Tap below to re-mute',
+        }, [
+          { label: '🔇 Mute Group', cmd: `${m.body?.split(' ')[0]?.replace(/[^.a-z]/gi, '') || '.'}mute` },
+        ], { quoted: m });
+      } catch (_) {
+        await m.reply.success('Group unmuted. All participants can send messages now.');
+      }
     } catch (err) {
       await m.reply.error(`Failed to unmute group: ${err.message}`);
     }

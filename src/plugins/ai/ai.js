@@ -47,11 +47,8 @@ export default {
           text:   '🤖 *What would you like to do next?*',
           footer: 'NEXORA Intelligence • Powered by Gemini',
         }, [
-          { kind: 'action', label: '🔁 Ask Again',          cmd: `${p}ai ${shortPrompt}` },
-          { kind: 'action', label: '🧠 Brainstorm Ideas',   cmd: `${p}brainstorm ${shortPrompt}` },
-          { kind: 'action', label: '💻 Review Code',        cmd: `${p}code ` },
-          { kind: 'action', label: '✍️  Proofread Text',    cmd: `${p}proofread ` },
-          { kind: 'copy',   label: '📋 Copy My Prompt',     value: prompt },
+          { kind: 'action', label: '🔁 Ask Again',      cmd: `${p}ai ${shortPrompt}` },
+          { kind: 'copy',   label: '📋 Copy My Prompt',  value: prompt },
         ], { quoted: m });
       } catch (_) { /* follow-up is non-critical */ }
     });

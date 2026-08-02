@@ -37,11 +37,8 @@ export default {
           text:   `${tagText}\n\n✅ *${participants.length} members tagged.*\n\nWhat would you like to do next?`,
           footer: `${metadata.subject || 'Group'} Admin Panel`,
         }, [
-          { label: '🔇 Mute Group',     cmd: `${p}mute` },
-          { label: '🔔 Unmute Group',   cmd: `${p}unmute` },
-          { label: '📋 Group Info',     cmd: `${p}groupinfo` },
-          { label: '🚫 Close Invites',  cmd: `${p}closeinvite` },
-          { label: '📢 Tag Again',      cmd: `${p}tagall ${customMessage}` },
+          { label: '📢 Tag Again',  cmd: `${p}tagall ${customMessage}` },
+          { label: '📋 Group Info', cmd: `${p}groupinfo` },
         ], {
           title:        '📢 GROUP ANNOUNCEMENT',
           body:         metadata.subject || 'Attention everyone!',

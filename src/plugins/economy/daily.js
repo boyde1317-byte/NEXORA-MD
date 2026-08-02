@@ -93,10 +93,8 @@ export default {
           text:   `🎯 Keep the streak going — claim again in 24 hours!`,
           footer: `${brand?.name ?? 'NEXORA'} Economy`,
         }, [
-          { label: '💰 Check Balance',   cmd: `${p}balance` },
-          { label: '🏆 Leaderboard',     cmd: `${p}top` },
-          { label: '🛒 Browse Shop',     cmd: `${p}shop` },
-          { label: '📊 Economy Stats',   cmd: `${p}stats` },
+          { label: '💰 Check Balance', cmd: `${p}balance` },
+          { label: '🏆 Leaderboard',   cmd: `${p}top` },
         ], {
           title: '💰 DAILY REWARD CLAIMED',
           body:  `Streak: ${streak} day${streak !== 1 ? 's' : ''}`,

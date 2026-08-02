@@ -1,6 +1,7 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { messageFormatter } from '../../ui/messageFormatter.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { actionCard } from '../../lib/interactiveKit.js';
 
 const MAX_WARNINGS = 3;
 
@@ -73,8 +74,7 @@ export default {
           await m.reply.error(`Could not kick user after ${MAX_WARNINGS} warnings: ${err.message}`);
         }
       } else {
-        await m.reply(
-          asciiBuilder.box('⚠️ WARNING ISSUED', [
+        const warningText = asciiBuilder.box('⚠️ WARNING ISSUED', [
             `👤 User    : @${targetNum}`,
             `⚠️  Strike  : ${newCount}/${MAX_WARNINGS}`,
             `📝 Reason  : ${reason}`,
@@ -82,8 +82,17 @@ export default {
             newCount === MAX_WARNINGS - 1
               ? `⚡ *Final warning!* One more and they will be kicked.`
               : `${MAX_WARNINGS - newCount} more warning(s) before automatic kick.`,
-          ]), { mentions: [target] }
-        );
+          ]);
+        try {
+          await actionCard(sock, m.from, {
+            text:   warningText,
+            footer: `Strike ${newCount}/${MAX_WARNINGS}`,
+          }, [
+            { label: '♻️ Reset Warnings', cmd: `.warn reset @${targetNum}` },
+          ], { mentions: [target], quoted: m });
+        } catch (_) {
+          await m.reply(warningText, { mentions: [target] });
+        }
       }
     });
   }

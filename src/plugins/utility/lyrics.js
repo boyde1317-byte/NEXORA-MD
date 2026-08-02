@@ -1,5 +1,6 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { actionCard } from '../../lib/interactiveKit.js';
 import { getLyrics } from '../../lib/downloader.js';
 
 export default {
@@ -22,7 +23,14 @@ export default {
       const title = rest.join('-').trim();
       const lyrics = await getLyrics(artist.trim(), title);
       const trimmed = lyrics.length > 3500 ? `${lyrics.slice(0, 3500)}\n\n… (truncated)` : lyrics;
-      await m.reply(asciiBuilder.box(`LYRICS — ${title.toUpperCase()}`, [trimmed]));
+      const lyricsText = asciiBuilder.box(`LYRICS — ${title.toUpperCase()}`, [trimmed]);
+      try {
+        await actionCard(sock, m.from, { text: lyricsText }, [
+          { label: '🎵 Search Another', cmd: `${prefix}lyrics` },
+        ], { quoted: m });
+      } catch (_) {
+        await m.reply(lyricsText);
+      }
     });
   }
 };

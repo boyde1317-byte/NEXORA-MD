@@ -1,4 +1,5 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
+import { mixedCard } from '../../lib/interactiveKit.js';
 
 export default {
   name: 'grouplink',
@@ -21,7 +22,14 @@ export default {
 
       const link = `https://chat.whatsapp.com/${code}`;
       const text = `🔗 *Group Invite Link*\n\n${link}\n\n_Tap to join • Share responsibly_${doReset ? '\n\n♻️ _This is a new link — the old one has been revoked._' : ''}`;
-      await m.reply(text);
+      try {
+        await mixedCard(sock, m.from, { text }, [
+          { kind: 'copy',   label: '📋 Copy Link',     value: link },
+          { kind: 'action', label: '♻️ Reset Link',    cmd: `${args[0] ? '.' : '.'}grouplink reset` },
+        ], { quoted: m });
+      } catch (_) {
+        await m.reply(text);
+      }
     });
   }
 };

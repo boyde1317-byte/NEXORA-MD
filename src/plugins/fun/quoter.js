@@ -43,11 +43,9 @@ export default {
           text:   bodyText,
           footer: `Quote of the Moment • ${authorName}`,
         }, [
-          { kind: 'copy',   label: '📋 Copy Quote',         value: `${quoteText}\n— ${authorName}` },
+          { kind: 'copy',   label: '📋 Copy Quote',     value: `${quoteText}\n— ${authorName}` },
           { kind: 'url',    label: `🔎 About ${authorName.split(' ')[0]}`, url: authorUrl },
-          { kind: 'action', label: '🔁 Another Quote',       cmd:   `${p}quote${tagArg}` },
-          { kind: 'action', label: '💡 Wisdom Category',     cmd:   `${p}quote wisdom` },
-          { kind: 'action', label: '🌟 Success Mindset',     cmd:   `${p}quote success` },
+          { kind: 'action', label: '🔁 Another Quote',  cmd:   `${p}quote${tagArg}` },
         ], { quoted: m });
       } catch (err) {
         console.warn('[quoter] Tier 1 failed:', err.message);

@@ -1,4 +1,5 @@
 import { withReactionStatus, replyTable } from '../../lib/cosmetics.js';
+import { mixedCard } from '../../lib/interactiveKit.js';
 
 const IP_RE   = /^(\d{1,3}\.){3}\d{1,3}$/;
 const HOST_RE = /^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$/;
@@ -40,11 +41,24 @@ export default {
         ['Tor',         d.security?.tor  ? '⚠️ Yes' : '✅ No'],
       ].filter(([, v]) => v !== 'N/A' && v !== '');
 
-      await replyTable(m, sock, {
-        caption: `🌐 IP INFO — ${d.ip}`,
-        rows,
-        footer: `Maps: https://maps.google.com/?q=${d.latitude},${d.longitude}`,
-      });
+      const mapsUrl = `https://maps.google.com/?q=${d.latitude},${d.longitude}`;
+      try {
+        await mixedCard(sock, m.from, {
+          text:   `🌐 *IP INFO — ${d.ip}*
+
+${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}`,
+          footer: `📍 Open in Google Maps`,
+        }, [
+          { kind: 'url',  label: '📍 View on Maps',   url: mapsUrl },
+          { kind: 'copy', label: '📋 Copy IP',        value: d.ip },
+        ], { quoted: m });
+      } catch (_) {
+        await replyTable(m, sock, {
+          caption: `🌐 IP INFO — ${d.ip}`,
+          rows,
+          footer: `Maps: ${mapsUrl}`,
+        });
+      }
     });
   }
 };
