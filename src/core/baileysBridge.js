@@ -1,30 +1,5 @@
 import { generateWAMessageFromContent, generateWAMessage, generateMessageID, generateMessageIDV2, proto } from 'baileys';
-import { randomBytes, getRandomValues } from 'node:crypto';
-
-// ─── Rich message helpers (inlined so we don't rely on a deep import path) ───
-// Mirrors wrapToBotForwardedMessage + botMetadata* from the fork's
-// lib/Utils/rich-message-utils.js so richResponseMessage renders with the
-// Meta AI bot badge without requiring `baileys/lib/Utils/rich-message-utils.js`
-// to be individually accessible (exports-map varies by install method).
-function _botCert(length = 685) {
-  const c = Buffer.alloc(length); c[0] = 48; c[1] = 130;
-  getRandomValues(c.subarray(2)); return c;
-}
-function _buildBotForwardedMessage(richResponseMessage, disclaimerText) {
-  const sig = Buffer.alloc(64); getRandomValues(sig);
-  const msg = {
-    messageContextInfo: {
-      botMetadata: {
-        verificationMetadata: {
-          proofs: [{ certificateChain: [_botCert(685), _botCert(892)], version: 1, useCase: 1, signature: sig }],
-        },
-        ...(disclaimerText ? { messageDisclaimerText: disclaimerText } : {}),
-      },
-    },
-    botForwardedMessage: { message: { richResponseMessage } },
-  };
-  return msg;
-}
+import { randomBytes } from 'node:crypto';
 
 /**
  * Unified facade for interfacing with the custom Baileys fork.
@@ -281,12 +256,19 @@ export const baileysBridge = {
     // caller that passes both `text` and `image` silently loses the image.
     // We must send `caption` (not `text`) whenever media is attached; `title`
     // becomes the header title text in that path.
+    //
+    // FORK LIMITATION: when no media is attached, `title` is passed but the
+    // fork ignores it — the `text` branch sets `body = { text }` and never
+    // enters the header branch, so `title` has no effect. The title only
+    // renders when `caption` is used (media path). Callers that need a title
+    // without media should embed it in the `text` body instead.
     const hasMedia = !!(image || video);
     return await sock.sendMessage(jid, {
       nativeFlow: buttons,
       ...(hasMedia ? { caption: text, title: title || '' } : { text }),
       footer,
-      ...(!hasMedia && title ? { title }                                     : {}),
+      // title without media is silently dropped by the fork — don't pass it
+      // to avoid implying it will render. Callers should fold it into `text`.
       ...(image     ? { image }                                             : {}),
       ...(video     ? { video }                                             : {}),
       ...(offerText  ? {

@@ -339,12 +339,16 @@ export async function richTableCard(sock, jid, { title, headers, rows, footer, b
   if (capabilities.richResponse) {
     try {
       const tableRows = [
-        ...(headers ? [{ items: headers.map(String) }] : []),
+        ...(headers ? [{ items: headers.map(String), isHeading: true }] : []),
         ...rows.map(r => ({ items: r.map(String) })),
       ];
+      // The fork's prepareRichResponseMessage only handles `table` inside a
+      // richResponse submessage — flat `table` in the else branch is silently
+      // dropped. Pass it as a submessage with the title.
       await baileysBridge.sendRichResponse(sock, jid, {
-        title: title,
-        table: tableRows.map(r => r.items),
+        richResponse: [
+          { title, table: tableRows },
+        ],
         footerText: footer || '',
       }, sendOptions);
       if (buttons.length > 0) {
@@ -436,8 +440,14 @@ export async function richCodeCard(sock, jid, { code, language = 'javascript', c
  */
 export async function richCarouselCard(sock, jid, items, sendOptions = {}) {
   if (capabilities.richResponse) {
-    // Pass links: [] to trigger prepareRichResponseMessage natively for top-level items property
-    return await baileysBridge.sendRichResponse(sock, jid, { items, links: [] }, sendOptions);
+    // items must be passed as a flat field to trigger prepareRichResponseMessage's
+    // CONTENT_ITEMS handler — but the fork expects itemsMetadata shape, not
+    // { title, text }. Map to the fork's expected format.
+    const mappedItems = items.map(i => ({
+      title: i.title,
+      text: i.text,
+    }));
+    return await baileysBridge.sendRichResponse(sock, jid, { items: mappedItems }, sendOptions);
   }
   const text = items.map(i => `*├ ${i.title}*\n│ ${i.text}`).join('\n\n');
   return sock.sendMessage(jid, { text }, sendOptions);
@@ -448,17 +458,20 @@ export async function richCarouselCard(sock, jid, items, sendOptions = {}) {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function richMediaCard(sock, jid, { type = 'image', url, caption, alignment, tapLinkUrl }, sendOptions = {}) {
   if (capabilities.richResponse) {
-    const payload = { links: [] }; // trigger flag
-    if (type === 'image') {
-      payload.inlineImage = url;
-      payload.imageText = caption;
+    if (type === 'video') {
+      // FORK LIMITATION: inlineVideo maps to RichSubMessageType.TEXT with
+      // messageText='INLINE_VIDEO' — literally renders the string "INLINE_VIDEO"
+      // instead of a video. Fall through to the plain media fallback.
+      console.warn('[interactiveKit.richMediaCard] inlineVideo is not supported by the fork — using plain video fallback');
     } else {
-      payload.inlineVideo = url;
-      payload.contentText = caption;
+      const payload = {
+        inlineImage: url,
+        imageText: caption,
+      };
+      if (alignment) payload.alignment = alignment;
+      if (tapLinkUrl) payload.tapLinkUrl = tapLinkUrl;
+      return await baileysBridge.sendRichResponse(sock, jid, payload, sendOptions);
     }
-    if (alignment) payload.alignment = alignment;
-    if (tapLinkUrl) payload.tapLinkUrl = tapLinkUrl;
-    return await baileysBridge.sendRichResponse(sock, jid, payload, sendOptions);
   }
   const payload = type === 'image' ? { image: { url }, caption } : { video: { url }, caption };
   return sock.sendMessage(jid, payload, sendOptions);
