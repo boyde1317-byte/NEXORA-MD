@@ -3,6 +3,7 @@ import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { newsletterManager } from '../../newsletter/newsletterManager.js';
 import brand from '../../../config/brand.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 
 /**
  * Newsletter Menu (id: 7)
@@ -63,7 +64,7 @@ export const newsletterMenu = {
           await sock.sendMessage(m.from, {
             image:    imgData.buffer,
             mimetype: imgData.mimetype,
-            caption:  `📡 *${menuData.botName.toUpperCase()}* — Broadcasting now`,
+            caption:  `📡 *${toSmallcaps(menuData.botName)}* — ${toSmallcaps('Broadcasting now')}`,
           }, { quoted: menuData.audioQuote || m });
         } else if (imgData.source?.startsWith('http')) {
           await sock.sendMessage(m.from, {

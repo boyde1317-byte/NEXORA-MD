@@ -1,6 +1,7 @@
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 
 // Maximum carousel cards sent in a single batch.
 // The fork relays each card individually with a 1500ms inter-card delay
@@ -43,7 +44,7 @@ export const carouselMenu = {
     const imgData = await imageManager.getMenuImage(6);
 
     const headerText =
-      `🎠 *${menuData.botName.toUpperCase()} CAROUSEL CONTROL* 🎠\n\n` +
+      `🎠 *${toSmallcaps(menuData.botName + ' Carousel Control')}* 🎠\n\n` +
       `Swipe sideways through the cards below to browse command modules:`;
 
     const categories = Object.keys(menuData.categories).sort();
@@ -68,7 +69,7 @@ export const carouselMenu = {
         const cmdList = cmds.map(c => `• ${menuData.prefix}${c.name}`).slice(0, 5).join('\n');
         const overflow = cmds.length > 5 ? `\n  _+ ${cmds.length - 5} more_` : '';
         return {
-          caption:   `📂 *${cat.toUpperCase()} COMMAND PACK*\n\n${cmdList}${overflow}\n\nTotal: ${cmds.length} commands`,
+          caption:   `📂 *${toSmallcaps(cat + ' Command Pack')}*\n\n${cmdList}${overflow}\n\n${toSmallcaps('Total')}: ${cmds.length} ${toSmallcaps('commands')}`,
           footer:    `Card ${idx + 1} of ${capped.length}`,
           nativeFlow: [
             { text: `⚡ ${cat.toUpperCase()}`, id: `${menuData.prefix}menu` },

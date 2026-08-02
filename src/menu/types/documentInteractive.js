@@ -3,6 +3,7 @@ import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { footerManager } from '../../core/footer.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 
 /**
  * Document Interactive Menu (id: 1) — rewritten for itsliaaa 0.3.18-final fork.
@@ -29,7 +30,7 @@ export const documentInteractiveMenu = {
   renderer: async ({ sock, m, menuData }) => {
     const imgData    = await imageManager.getMenuImage(1);
     const footerText = footerManager.getFooter() || `${menuData.botName} • Uptime: ${menuData.uptime}`;
-    const bodyText   = `✦ *${menuData.botName.toUpperCase()}* ✦\n\n` + buildTextMenu(menuData);
+    const bodyText   = `✦ *${toSmallcaps(menuData.botName)}* ✦\n\n` + buildTextMenu(menuData);
 
     // Resolve image payload: prefer the { url } form — WA fetches it directly,
     // no local buffer download/re-upload round trip. Buffer is only a fallback

@@ -2,6 +2,7 @@ import { themeManager } from '../themeManager.js';
 import { layoutConfig } from '../../../config/layout.js';
 import brand from '../../../config/brand.js';
 import owner from '../../../config/owner.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 
 export const menuTemplate = (menuData) => {
   const borders = themeManager.getBorders();
@@ -34,47 +35,47 @@ export const menuTemplate = (menuData) => {
   // Header Box
   if (styleName === 'minimal') {
     formattedLines.push(`── {botName} ──`);
-    formattedLines.push(` Owner: {owner}`);
-    formattedLines.push(` Version: {version}`);
-    formattedLines.push(` Runtime: {runtime}`);
-    formattedLines.push(` Prefix: {prefix}`);
+    formattedLines.push(` ${toSmallcaps("Owner")}: {owner}`);
+    formattedLines.push(` ${toSmallcaps("Version")}: {version}`);
+    formattedLines.push(` ${toSmallcaps("Runtime")}: {runtime}`);
+    formattedLines.push(` ${toSmallcaps("Prefix")}: {prefix}`);
   } else if (styleName === 'classic') {
     formattedLines.push(`┏━━━━━━━━━━━━━━━━━━━━━━━`);
     formattedLines.push(`┃  {botName}`);
     formattedLines.push(`┣━━━━━━━━━━━━━━━━━━━━━━━`);
-    formattedLines.push(`┃ Owner: {owner}`);
-    formattedLines.push(`┃ Version: {version}`);
-    formattedLines.push(`┃ Runtime: {runtime}`);
-    formattedLines.push(`┃ Prefix: {prefix}`);
+    formattedLines.push(`┃ ${toSmallcaps("Owner")}: {owner}`);
+    formattedLines.push(`┃ ${toSmallcaps("Version")}: {version}`);
+    formattedLines.push(`┃ ${toSmallcaps("Runtime")}: {runtime}`);
+    formattedLines.push(`┃ ${toSmallcaps("Prefix")}: {prefix}`);
   } else {
     // Modern
     formattedLines.push(`${borders.topLeft}${borders.headerStart}{botName}${borders.headerEnd}`);
     formattedLines.push(`${borders.line}`);
-    formattedLines.push(`${borders.line} Owner: {owner}`);
-    formattedLines.push(`${borders.line} Version: {version}`);
-    formattedLines.push(`${borders.line} Runtime: {runtime}`);
-    formattedLines.push(`${borders.line} Prefix: {prefix}`);
+    formattedLines.push(`${borders.line} ${toSmallcaps("Owner")}: {owner}`);
+    formattedLines.push(`${borders.line} ${toSmallcaps("Version")}: {version}`);
+    formattedLines.push(`${borders.line} ${toSmallcaps("Runtime")}: {runtime}`);
+    formattedLines.push(`${borders.line} ${toSmallcaps("Prefix")}: {prefix}`);
   }
 
   // Iterate categories and format command lists
   const sortedCategories = Object.keys(menuData.categories).sort();
   for (const cat of sortedCategories) {
     if (styleName === 'minimal') {
-      formattedLines.push(`\n── ${cat.toUpperCase()} ──`);
+      formattedLines.push(`\n── ${toSmallcaps(cat)} ──`);
     } else if (styleName === 'classic') {
       formattedLines.push(`┣━━━━━━━━━━━━━━━━━━━━━━━`);
-      formattedLines.push(`┃  ${cat.toUpperCase()}`);
+      formattedLines.push(`┃  ${toSmallcaps(cat)}`);
       formattedLines.push(`┣━━━━━━━━━━━━━━━━━━━━━━━`);
     } else {
       // Modern
       formattedLines.push(`${borders.line}`);
-      formattedLines.push(`${borders.divider}${borders.headerStart}${cat.toUpperCase()}${borders.headerEnd}`);
+      formattedLines.push(`${borders.divider}${borders.headerStart}${toSmallcaps(cat)}${borders.headerEnd}`);
       formattedLines.push(`${borders.line}`);
     }
 
     const cmds = menuData.categories[cat];
     for (const cmd of cmds) {
-      const desc = cmd.description ? ` — ${cmd.description}` : '';
+      const desc = cmd.description ? ` — ${toSmallcaps(cmd.description)}` : '';
       if (styleName === 'minimal') {
         formattedLines.push(`  ${bulletIcon} ${cmd.name}${desc}`);
       } else if (styleName === 'classic') {

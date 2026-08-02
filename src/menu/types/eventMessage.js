@@ -2,6 +2,7 @@ import { capabilities } from '../../core/capabilities.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 
 /**
  * Event Message Menu (id: 3)
@@ -34,13 +35,13 @@ export const eventMessageMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData   = await imageManager.getMenuImage(3);
-    const eventName = `✦ ${menuData.botName.toUpperCase()} ✦`;
+    const eventName = `✦ ${toSmallcaps(menuData.botName)} ✦`;
     const eventDesc =
-      `⚡ Active System Stats:\n` +
-      `• Total Commands: ${menuData.totalCommands}\n` +
-      `• Uptime: ${menuData.uptime}\n` +
-      `• Prefix: ${menuData.prefix}\n` +
-      `• Users Connected: ${menuData.users}`;
+      `⚡ ${toSmallcaps('Active System Stats')}:\n` +
+      `• ${toSmallcaps('Total Commands')}: ${menuData.totalCommands}\n` +
+      `• ${toSmallcaps('Uptime')}: ${menuData.uptime}\n` +
+      `• ${toSmallcaps('Prefix')}: ${menuData.prefix}\n` +
+      `• ${toSmallcaps('Users Connected')}: ${menuData.users}`;
 
     // ── Tier 1: Native eventMessage card ──────────────────────────────────
     // capabilities.eventMessage is a static true (confirmed in WAProto.proto).

@@ -2,6 +2,7 @@ import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { buildFakeLiveLocationQuote } from '../../lib/waUtils.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 
 /**
  * Location Menu (id: 8) — rewritten for itsliaaa 0.3.18-final fork.
@@ -43,7 +44,7 @@ export const locationMenu = {
     const footerText = `${menuData.botName} • ${menuData.totalCommands} commands`;
 
     const locationQuote = buildFakeLiveLocationQuote({
-      caption: `📍 ${menuData.botName || 'NEXORA-MD'} — Bot Command ✦`,
+      caption: `📍 ${toSmallcaps(menuData.botName || 'NEXORA-MD')} — ${toSmallcaps('Bot Command')} ✦`,
     });
 
     // Resolve image payload: prefer the { url } form — WA fetches it directly,

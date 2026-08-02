@@ -1,5 +1,6 @@
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 
 export const mediaMenu = {
   id: 10,
@@ -9,7 +10,7 @@ export const mediaMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     // Elegant menu caption
-    const caption = `🎨 *MEDIA SHOWCASE DASHBOARD*\n\n` + buildTextMenu(menuData);
+    const caption = `🎨 *${toSmallcaps('Media Showcase Dashboard')}*\n\n` + buildTextMenu(menuData);
 
     // Retrieve selected style 10 dynamic image (static, random, rotate, url)
     const imgData = await imageManager.getMenuImage(10);
