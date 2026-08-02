@@ -69,9 +69,21 @@ export async function connectToWhatsApp() {
     connectTimeoutMs: 60000,
     keepAliveIntervalMs: 30000,
     retryRequestDelayMs: 2000,
-    // Required for proper message retry / decryption on some WA versions
+    // In-memory message store for retries and quoted message decryption.
+    // The previous empty-conversation fallback caused decryption failures
+    // when WhatsApp retried a message or needed the original content for a
+    // quoted reply. We cache the last 500 messages per chat to keep memory
+    // bounded while covering the vast majority of retry scenarios.
+    messageStore: new Map(),
     getMessage: async (key) => {
-      return { conversation: '' };
+      const chat = key?.remoteJid;
+      if (!chat) return { conversation: '' };
+      const store = sock.opts?.messageStore;
+      if (!store) return { conversation: '' };
+      const msgs = store.get(chat);
+      if (!msgs) return { conversation: '' };
+      const msg = msgs.get(key.id);
+      return msg || { conversation: '' };
     }
   });
 
@@ -185,6 +197,23 @@ export async function connectToWhatsApp() {
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     if (chatUpdate.type !== 'notify') return;
     for (const rawMessage of chatUpdate.messages) {
+      // Cache message for getMessage retries
+      try {
+        const chat = rawMessage?.key?.remoteJid;
+        if (chat && rawMessage?.key?.id) {
+          if (!sock.opts.messageStore.has(chat)) {
+            sock.opts.messageStore.set(chat, new Map());
+          }
+          sock.opts.messageStore.get(chat).set(rawMessage.key.id, rawMessage);
+          // Bound memory: keep last 500 messages per chat
+          const chatMsgs = sock.opts.messageStore.get(chat);
+          if (chatMsgs.size > 500) {
+            const firstKey = chatMsgs.keys().next().value;
+            chatMsgs.delete(firstKey);
+          }
+        }
+      } catch (_) {}
+
       try {
         await handleMessage(rawMessage, sock);
       } catch (err) {
@@ -220,6 +249,26 @@ export async function connectToWhatsApp() {
       }
     }
   });
+
+  // ── Graceful shutdown ──────────────────────────────────────────────────────
+  // The DB uses a 2s debounced save — without this, killing the process
+  // loses the most recent writes (user data, warnings, economy state, etc.)
+  let shuttingDown = false;
+  const gracefulShutdown = (signal) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`\n[SHUTDOWN] Received ${signal}, saving database...`);
+    try {
+      db.saveSync();
+      console.log('[SHUTDOWN] Database saved. Goodbye.');
+    } catch (err) {
+      console.error('[SHUTDOWN] Failed to save database:', err.message);
+    }
+    process.exit(0);
+  };
+
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
   return sock;
 }

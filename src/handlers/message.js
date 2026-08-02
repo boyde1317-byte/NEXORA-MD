@@ -404,6 +404,16 @@ Did you mean: *${prefix}${suggestion}*?`,
       try {
         await command.execute(ctx);
         console.log(`[CMD] ${command.name} ← ${sender.split('@')[0]} in ${isGroupMsg ? jid : 'DM'}`);
+
+        // ── Track command usage statistics ───────────────────────────────
+        // stats.commandsUsed is read by the menu collector and aiDynamic menu
+        // type but was never written — the counters were always empty.
+        try {
+          if (!db.data.stats) db.data.stats = {};
+          if (!db.data.stats.commandsUsed) db.data.stats.commandsUsed = {};
+          db.data.stats.commandsUsed[command.name] = (db.data.stats.commandsUsed[command.name] || 0) + 1;
+          db.save();
+        } catch (_) {}
       } catch (execErr) {
         console.error(`[CMD ERROR] ${command.name} threw:`, execErr.message || execErr);
         try {

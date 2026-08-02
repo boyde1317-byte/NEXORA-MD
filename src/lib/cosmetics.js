@@ -108,12 +108,19 @@ export async function sendTable(sock, jid, { caption, rows = [], footer } = {}, 
     // Route through sendRichResponse which wraps richResponseMessage in the
     // required botForwardedMessage + botMetadata proof chain so WA clients
     // actually render the table bubble (plain relayMessage({richResponseMessage}) fails).
+    //
+    // FORK QUIRK: prepareRichResponseMessage only processes flat `table` in
+    // the else branch (when richResponse is NOT an array). When richResponse
+    // IS an array, flat `table` is silently dropped. Include table as a
+    // submessage inside the richResponse array instead.
+    const richResponse = [];
+    if (caption) richResponse.push({ text: caption });
+    richResponse.push({
+      title: caption || undefined,
+      table: rows.map(r => ({ items: r.map(String) })),
+    });
     const sent = await baileysBridge.sendRichResponse(sock, jid, {
-      richResponse: caption ? [{ text: caption }] : [],
-      table: {
-        title: caption || undefined,
-        rows:  rows.map(r => ({ items: r.map(String) })),
-      },
+      richResponse,
       footerText: footer || '',
     }, options)
     return sent
