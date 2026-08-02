@@ -20,10 +20,7 @@ export default {
 
     try {
       const apiKey = process.env.NEWS_API_KEY;
-      if (!apiKey) {
-        return await m.reply.error('NEWS_API_KEY is not configured in environment variables.');
-      }
-
+      // No key? Use free Hacker News fallback (no key required)
       const result = await Providers.news(query, apiKey);
       if (!result.articles?.length) {
         return await m.reply.info('No news articles found for that topic.', 'NEWS');
