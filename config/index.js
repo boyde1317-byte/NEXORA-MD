@@ -1,27 +1,36 @@
 import brand from './brand.js';
 
+function parseOwnerNumbers() {
+  const raw = process.env.OWNER_NUMBERS;
+  if (raw && raw.trim()) {
+    return raw.split(',').map(n => n.trim().replace(/[^0-9]/g, '')).filter(Boolean);
+  }
+  // Fallback defaults — should be overridden via .env
+  return ["233597514499", "233533416608"];
+}
+
 export const config = {
   botName: brand.name,
-  owner: ["233597514499", "233533416608"], // Owner phone numbers without @s.whatsapp.net
+  owner: parseOwnerNumbers(),
   prefix: ["!", ".", "/"],
   pairing: {
-    enabled: true, // Set to true to use pairing code, false for QR code terminal
-    phoneNumber: "233597514499" // Default phone number for pairing code (must include country code, e.g., 44xxx or 1xxx)
+    enabled: true,
+    phoneNumber: process.env.PAIRING_PHONE || "233597514499",
   },
   sessionPath: "./session",
   reconnectLimit: 5,
-  cooldownTime: 1500, // 1.5 seconds default command cooldown
-  autoRead: true, // Auto-read incoming messages
-  publicMode: true, // True = public bot, False = owner-only commands
+  cooldownTime: 1500,
+  autoRead: true,
+  publicMode: true,
   dbPath: "./src/database/db.json",
-  channelJid: "120363406397452589@newsletter", // WhatsApp Channel JID for newsletter menu type
+  channelJid: process.env.CHANNEL_JID || "120363406397452589@newsletter",
 
   // XP / leveling system
   xp: {
-    perMessageMin: 5,        // Minimum XP awarded per eligible message
-    perMessageMax: 15,       // Maximum XP awarded per eligible message
-    messageCooldownMs: 60000, // 60s cooldown per user per chat before XP can be earned again
-    levelUpAnnounce: true,   // Post a level-up card in the chat when a user levels up from chatting
-    levelUpCoinBonus: 50,    // Coins awarded per level gained from chat activity (celebratory bonus)
+    perMessageMin: 5,
+    perMessageMax: 15,
+    messageCooldownMs: 60000,
+    levelUpAnnounce: true,
+    levelUpCoinBonus: 50,
   },
 };

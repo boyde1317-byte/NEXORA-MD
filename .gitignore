@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# WhatsApp session credentials — NEVER commit these
+session/

@@ -58,6 +58,8 @@ export async function withReactionStatus(m, task, opts = {}) {
   const { processing = '⏳', success = '✅', error = '❌', clearOnSuccess = false } = opts
 
   if (processing) { try { await m.react(processing) } catch (_) {} }
+  // Send "composing" presence so the user sees the bot is working
+  try { await m.sock?.sendPresenceUpdate?.('composing', m.from).catch(() => {}); } catch (_) {}
 
   try {
     const result = await task()

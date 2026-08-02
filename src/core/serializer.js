@@ -218,6 +218,7 @@ export async function serialize(m, sock) {
     message.id       = message.key.id;
     message.from     = message.key.remoteJid;
     message.fromMe   = message.key.fromMe;
+    message.sock     = sock;
     message.isGroup  = message.from?.endsWith('@g.us') ?? false;
 
     const rawSender  = message.key.participant || message.key.remoteJid;

@@ -3,6 +3,8 @@ import { config as dotenvConfig } from 'dotenv';
 dotenvConfig();
 
 import express from 'express';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { connectToWhatsApp } from './src/core/connection.js';
 import { client } from './src/core/client.js';
 import { assetManager } from './src/assets/assetManager.js';
@@ -10,7 +12,33 @@ import { db } from './src/database/db.js';
 import brand from './config/brand.js';
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
+// ─── Security Middleware ─────────────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: false, // We serve a simple inline page — no CSP needed
+  crossOriginEmbedderPolicy: false,
+}));
+
+// Rate limit all API routes — prevent abuse
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+
+// Stricter limit on the health endpoint to prevent monitoring abuse
+const healthLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api/', apiLimiter);
+app.use('/api/health', healthLimiter);
 
 // ─── Graceful Shutdown ────────────────────────────────────────────────────────
 let httpServer = null;

@@ -74,13 +74,14 @@ export const menuTemplate = (menuData) => {
 
     const cmds = menuData.categories[cat];
     for (const cmd of cmds) {
+      const desc = cmd.description ? ` — ${cmd.description}` : '';
       if (styleName === 'minimal') {
-        formattedLines.push(`  ${bulletIcon} ${cmd.name}`);
+        formattedLines.push(`  ${bulletIcon} ${cmd.name}${desc}`);
       } else if (styleName === 'classic') {
-        formattedLines.push(`┃ ${bulletIcon} ${cmd.name}`);
+        formattedLines.push(`┃ ${bulletIcon} ${cmd.name}${desc}`);
       } else {
         // Modern (use bulletLine: ├ )
-        formattedLines.push(`${borders.bulletLine}${bulletIcon} ${cmd.name}`);
+        formattedLines.push(`${borders.bulletLine}${bulletIcon} ${cmd.name}${desc}`);
       }
     }
   }

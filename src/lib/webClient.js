@@ -2,6 +2,9 @@ import crypto from 'crypto';
 
 const cache = new Map();
 
+// Max response body size — 10MB. Prevents OOM from large/malicious responses.
+const MAX_RESPONSE_BYTES = 10 * 1024 * 1024;
+
 export class WebClient {
   constructor(options = {}) {
     this.timeout = options.timeout || 15000;
@@ -33,14 +36,33 @@ export class WebClient {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
+        // ── Guard against oversized responses ────────────────────────────
+        const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
+        if (contentLength > MAX_RESPONSE_BYTES) {
+          throw new Error(`Response too large: ${contentLength} bytes exceeds ${MAX_RESPONSE_BYTES} limit`);
+        }
+
         const contentType = response.headers.get('content-type') || '';
         let data;
+
         if (contentType.includes('application/json')) {
-          data = await response.json();
+          // Read as text first, then parse — allows size checking before full allocation
+          const text = await response.text();
+          if (Buffer.byteLength(text) > MAX_RESPONSE_BYTES) {
+            throw new Error(`Response body exceeds ${MAX_RESPONSE_BYTES} byte limit`);
+          }
+          data = JSON.parse(text);
         } else if (contentType.includes('text/')) {
           data = await response.text();
+          if (Buffer.byteLength(data) > MAX_RESPONSE_BYTES) {
+            throw new Error(`Response body exceeds ${MAX_RESPONSE_BYTES} byte limit`);
+          }
         } else {
-          data = Buffer.from(await response.arrayBuffer());
+          const buf = Buffer.from(await response.arrayBuffer());
+          if (buf.length > MAX_RESPONSE_BYTES) {
+            throw new Error(`Response body exceeds ${MAX_RESPONSE_BYTES} byte limit`);
+          }
+          data = buf;
         }
 
         if (useCache && cacheKey) {
@@ -68,81 +90,39 @@ export const Providers = {
   },
   news: async (query, apiKey) => {
     if (!apiKey) throw new Error("NEWS_API_KEY environment variable is required.");
-    const url = query 
+    const url = query
       ? `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&apiKey=${apiKey}`
       : `https://newsapi.org/v2/top-headlines?country=us&apiKey=${apiKey}`;
-    const { data } = await webClient.fetch(url, { useCache: true, cacheTtl: 300000 });
-    return data;
-  },
-  weather: async (query) => {
-    const { data } = await webClient.fetch(`https://wttr.in/${encodeURIComponent(query)}?format=j1`, { useCache: true });
-    return data;
-  },
-  translate: async (text, targetLang = 'en') => {
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
     const { data } = await webClient.fetch(url);
-    if (!data || !data[0]) throw new Error('Translation failed');
-    return data[0].map(item => item[0]).join('');
-  },
-  define: async (word) => {
-    const { data } = await webClient.fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, { useCache: true });
     return data;
   },
-  
-  // Developer
-  github: async (repo) => {
-    const { data } = await webClient.fetch(`https://api.github.com/repos/${repo}`, { useCache: true });
+  summary: async (url, apiKey) => {
+    if (!apiKey) throw new Error("SMMRY_API_KEY environment variable is required.");
+    const { data } = await webClient.fetch(`https://smmry.com/api?SM_API_KEY=${apiKey}&SM_URL=${encodeURIComponent(url)}`);
     return data;
   },
-  npm: async (pkg) => {
-    const { data } = await webClient.fetch(`https://registry.npmjs.org/${pkg}`, { useCache: true });
+  omdb: async (title, apiKey) => {
+    if (!apiKey) throw new Error("OMDB_API_KEY environment variable is required.");
+    const { data } = await webClient.fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${apiKey}`);
     return data;
   },
-  docs: async (query) => {
-    const { data } = await webClient.fetch(`https://developer.mozilla.org/api/v1/search?q=${encodeURIComponent(query)}`, { useCache: true });
-    return data;
+  // Currency
+  currency: async (from, to) => {
+    const { data } = await webClient.fetch(`https://api.exchangerate-api.com/v4/latest/${from.toUpperCase()}`);
+    const rate = data?.rates?.[to.toUpperCase()];
+    if (!rate) throw new Error(`Could not find exchange rate for ${from.toUpperCase()}/${to.toUpperCase()}`);
+    return { rate, date: data.date };
   },
-
-  // Web
-  summary: async (url) => {
-    // We could use an external free API like smmry or similar, but often they need keys.
-    // Let's use a public summarizer or just standard readablity parsing if we could.
-    // For now, let's use Wikipedia summary if it's a topic, or use text parsing.
-    // Wait, the prompt says "summary" could summarize an article.
-    const { data } = await webClient.fetch(`https://smmry.com/api?SM_API_KEY=${process.env.SMMRY_API_KEY || ''}&SM_URL=${encodeURIComponent(url)}`);
-    return data;
+  // Weather (Open-Meteo — no API key needed)
+  weather: async (city) => {
+    const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
+    const { data: geoData } = await webClient.fetch(geoUrl);
+    if (!geoData?.results?.length) throw new Error(`City "${city}" not found`);
+    const { latitude, longitude, name, country } = geoData.results[0];
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m`;
+    const { data: weatherData } = await webClient.fetch(weatherUrl);
+    return { ...weatherData, location: { name, country } };
   },
-  dns: async (domain) => {
-    const { data } = await webClient.fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}`, { useCache: true });
-    return data;
-  },
-  whois: async (domain) => {
-    const { data } = await webClient.fetch(`https://networkcalc.com/api/dns/whois/${encodeURIComponent(domain)}`, { useCache: true });
-    return data;
-  },
-  headers: async (url) => {
-    const { headers } = await webClient.fetch(url, { method: 'HEAD' });
-    const obj = {};
-    headers.forEach((v, k) => obj[k] = v);
-    return obj;
-  },
-  screenshot: async (url) => {
-    const apiUrl = `https://api.screenshotmachine.com/?key=demo&url=${encodeURIComponent(url)}&dimension=1366x768&format=jpg&cacheLimit=0`;
-    const { data } = await webClient.fetch(apiUrl, { timeout: 25000 });
-    return data;
-  },
-
-  // Utility
-  currency: async (base = 'USD') => {
-    const { data } = await webClient.fetch(`https://api.exchangerate-api.com/v4/latest/${base.toUpperCase()}`, { useCache: true, cacheTtl: 3600000 });
-    return data;
-  },
-  time: async (timezone) => {
-    const { data } = await webClient.fetch(`https://worldtimeapi.org/api/timezone/${timezone}`, { useCache: true });
-    return data;
-  },
-  calculator: async (expr) => {
-    const { data } = await webClient.fetch(`https://api.mathjs.org/v4/?expr=${encodeURIComponent(expr)}`);
-    return data;
-  }
 };
+
+export default { webClient, Providers };

@@ -17,6 +17,7 @@ import { config } from '../../config/index.js';
     } from '../economy/leveling.js';
     import { getDisplayName } from '../lib/displayName.js';
     import { getRandomResponse } from '../nexora-messages.js';
+    import { suggestCommand } from '../lib/fuzzyMatch.js';
 
     /**
     * Passive XP-from-activity: every real, non-command, non-bot message earns
@@ -114,7 +115,7 @@ import { config } from '../../config/index.js';
       if (isGroupMsg && !m.fromMe) {
         const groupData = db.getGroup(jid);
         if (groupData?.antilink) {
-          const LINK_RE = /(?:https?:\/\/|www\.)|chat\.whatsapp\.com\/\S+|t\.me\/\S+/i;
+          const LINK_RE = /(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+\.[a-z]{2,}(?:\/\S*)?|chat\.whatsapp\.com\/\S+|t\.me\/\S+|instagram\.com\/\S+|x\.com\/\S+|twitter\.com\/\S+|tiktok\.com\/\S+|youtube\.com\/\S+|youtu\.be\/\S+|facebook\.com\/\S+|fb\.me\/\S+|discord\.gg\/\S+|discord\.com\/\S+/i;
           if (LINK_RE.test(body)) {
             try {
               const senderIsAdmin = await m.isAdmin();
@@ -242,6 +243,41 @@ import { config } from '../../config/index.js';
         return;
       }
 
+      // ── First-time user onboarding ─────────────────────────────────────────
+      // Detect if this is the user's first interaction and send a welcome guide.
+      if (!m.fromMe) {
+        try {
+          const userRec = db.getUser(sender);
+          if (!userRec.hasOnboarded && !userRec.banned) {
+            db.setUser(sender, { hasOnboarded: true });
+            const number = sender.split('@')[0].split(':')[0];
+            const p = config.prefix[0] || '.';
+            await sock.sendMessage(jid, {
+              text: [
+                `👋 *Welcome to ${config.botName}!*
+`,
+                `Hey @${number}! I'm your assistant. Here's how to get started:
+`,
+                `┌──────────────────┐`,
+                `│ *QUICK START*`,
+                `├──────────────────┤`,
+                `│ ${p}menu  — Interactive command console`,
+                `│ ${p}help  — Detailed command guide`,
+                `│ ${p}ping  — Check if I'm alive`,
+                `│ ${p}ai    — Chat with AI`,
+                `│ ${p}daily — Claim daily rewards`,
+                `└──────────────────┘
+`,
+                `Type *${p}menu* to see everything I can do!`,
+              ].join('\n'),
+              mentions: [sender],
+            }, { quoted: rawMessage }).catch(() => {});
+          }
+        } catch (err) {
+          console.error('[ONBOARDING] Error:', err.message);
+        }
+      }
+
       // Only respond to prefixed commands
       const prefix = config.prefix.find(p => body.startsWith(p));
       if (!prefix) return;
@@ -252,7 +288,21 @@ import { config } from '../../config/index.js';
 
       const resolvedName = client.aliases.get(commandName) || commandName;
       const command = client.commands.get(resolvedName);
-      if (!command) return;
+      if (!command) {
+        // ── "Did you mean?" fuzzy suggestion ──────────────────────────────
+        // Instead of silently ignoring, suggest the closest command match.
+        const allNames = [...client.commands.keys(), ...client.aliases.keys()];
+        const suggestion = suggestCommand(commandName, allNames);
+        if (suggestion) {
+          await m.reply.info(
+            `Unknown command: *${prefix}${commandName}*
+
+Did you mean: *${prefix}${suggestion}*?`,
+            'COMMAND NOT FOUND'
+          );
+        }
+        return;
+      }
 
       // ── Permission flags ────────────────────────────────────────────────────
       const perms = command.permissions || {};
@@ -313,7 +363,7 @@ import { config } from '../../config/index.js';
 
       if (lastUsed && now - lastUsed < cooldownMs) {
         const remaining = ((cooldownMs - (now - lastUsed)) / 1000).toFixed(1);
-        await m.reply.warn(`Please wait ${remaining}s before using that command again.`);
+        await m.reply.warn(`⏳ *${command.name}* is on cooldown. Please wait ${remaining}s before using it again.`);
         return;
       }
 
@@ -346,14 +396,22 @@ import { config } from '../../config/index.js';
         react: m.react
       };
 
+      // ── Send "composing" presence so users see the bot is working ────────
+      try {
+        await sock.sendPresenceUpdate('composing', jid).catch(() => {});
+      } catch (_) {}
+
       try {
         await command.execute(ctx);
         console.log(`[CMD] ${command.name} ← ${sender.split('@')[0]} in ${isGroupMsg ? jid : 'DM'}`);
       } catch (execErr) {
         console.error(`[CMD ERROR] ${command.name} threw:`, execErr.message || execErr);
         try {
-          await m.reply(`❌ *Command Error*\n\n\`${command.name}\` encountered an unexpected error.\n_${execErr.message || 'Unknown error'}_`);
+          await m.reply(`❌ *Command Error*\n\n\`${command.name}\` encountered an unexpected error.\n_${execErr.message || 'Unknown error'}_\n\n_If this keeps happening, contact the bot owner._`);
         } catch (_) {}
+      } finally {
+        // Stop "composing" presence regardless of success/failure
+        try { await sock.sendPresenceUpdate('paused', jid).catch(() => {}); } catch (_) {}
       }
 
     } catch (err) {

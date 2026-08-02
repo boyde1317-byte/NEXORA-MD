@@ -62,6 +62,7 @@ export const db = {
         banned: false,
         premium: false,
         warnings: 0,
+        hasOnboarded: false,
         createdAt: Date.now()
       };
     }
