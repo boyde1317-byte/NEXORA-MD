@@ -342,9 +342,10 @@ export async function richTableCard(sock, jid, { title, headers, rows, footer, b
         ...(headers ? [{ items: headers.map(String), isHeading: true }] : []),
         ...rows.map(r => ({ items: r.map(String) })),
       ];
-      // The fork's prepareRichResponseMessage only handles `table` inside a
-      // richResponse submessage — flat `table` in the else branch is silently
-      // dropped. Pass it as a submessage with the title.
+      // The fork's prepareRichResponseMessage handles flat `table` (array of
+      // arrays) in its else branch — auto-marks the first row as heading.
+      // We use the richResponse submessage path instead for explicit isHeading
+      // control and to combine table + text in a single rich response.
       await baileysBridge.sendRichResponse(sock, jid, {
         richResponse: [
           { title, table: tableRows },
