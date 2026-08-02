@@ -47,9 +47,9 @@ export default {
           text:   `⬆️ *@${targetNumber}* has been promoted to Group Admin.`,
           footer: 'NEXORA Guard • Group Management',
         }, [
-          { label: '⬇️  Demote Again',     cmd: `${p}demote @${targetNumber}` },
-          { label: '🚫 Remove Member',     cmd: `${p}kick` },
-          { label: '📋 Group Info',        cmd: `${p}groupinfo` },
+          { label: 'Demote Again',         cmd: `${p}demote @${targetNumber}` },
+          { label: 'Remove Member',        cmd: `${p}kick` },
+          { label: 'Group Info',           cmd: `${p}groupinfo` },
         ], { quoted: m, mentions: [target] });
       } catch (_) {
         // Tier 2: plain reply

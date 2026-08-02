@@ -24,10 +24,10 @@ async function runQuickReply(sock, m, prefix) {
     text:   '⚡ *QUICK REPLY TEST*\n\nTap a button — the bot will execute that command.',
     footer: 'quick_reply: { text, id }',
   }, [
-    { label: '🏓 Ping Bot',         cmd: `${p}ping` },
-    { label: '📋 About Bot',        cmd: `${p}about` },
-    { label: '🎨 Browse Menus',     cmd: `${p}menulist` },
-    { label: '🤖 System Stats',     cmd: `${p}menu aiDynamic` },
+    { label: 'Ping Bot',         cmd: `${p}ping` },
+    { label: 'About Bot',        cmd: `${p}about` },
+    { label: 'Browse Menus',     cmd: `${p}menulist` },
+    { label: 'System Stats',     cmd: `${p}menu aiDynamic` },
   ], { quoted: m });
   return 'quick_reply ✓';
 }
@@ -37,20 +37,20 @@ async function runCtaUrl(sock, m) {
     text:   '🌐 *CTA URL TEST*\n\nButtons below open external URLs in the browser.',
     footer: 'cta_url: { text, url }',
   }, [
-    { kind: 'url', label: '💬 WhatsApp',      url: 'https://wa.me/233533416608' },
-    { kind: 'url', label: '📢 Channel',        url: 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326' },
-    { kind: 'url', label: '🐙 GitHub (Fork)',  url: 'https://github.com/boyde1317-byte/NEXORA-MD' },
+    { kind: 'url', label: 'WhatsApp',      url: 'https://wa.me/233533416608' },
+    { kind: 'url', label: 'Channel',        url: 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326' },
+    { kind: 'url', label: 'GitHub (Fork)',  url: 'https://github.com/boyde1317-byte/NEXORA-MD' },
   ], { quoted: m });
   return 'cta_url ✓';
 }
 
 async function runCtaCopy(sock, m) {
   await copyResultCard(sock, m.from, {
-    text:       '📋 *CTA COPY TEST*\n\nTap the button to copy the sample code.',
+    text:       '*CTA COPY TEST*\n\nTap the button to copy the sample code.',
     footer:     'cta_copy: { text, copy }',
-    copyLabel:  '📋 Copy Sample Code',
+    copyLabel:  'Copy Sample Code',
     copyValue:  'const nexora = require("nexora-md"); nexora.start();',
-    extraButtons: [{ text: '🔁 Another Copy', copy: 'git clone https://github.com/boyde1317-byte/NEXORA-MD' }],
+    extraButtons: [{ text: 'Another Copy', copy: 'git clone https://github.com/boyde1317-byte/NEXORA-MD' }],
   }, { quoted: m });
   return 'cta_copy ✓';
 }
@@ -58,25 +58,25 @@ async function runCtaCopy(sock, m) {
 async function runSingleSelect(sock, m, prefix) {
   const p = prefix || '.';
   await selectMenu(sock, m.from, {
-    text:   '📋 *SINGLE SELECT TEST*\n\nOpen the list to pick a category.',
+    text:   '*SINGLE SELECT TEST*\n\nOpen the list to pick a category.',
     footer: 'single_select: { text, sections: [{title, rows}] }',
-  }, '📋 Open Command Browser', [
+  }, 'Open Command Browser', [
     { title: 'General', rows: [
-      { id: `${p}ping`,    title: '🏓 Ping',    description: 'Measure bot latency' },
-      { id: `${p}about`,   title: '📋 About',   description: 'System information' },
-      { id: `${p}version`, title: '🔢 Version', description: 'Runtime version details' },
+      { id: `${p}ping`,    title: 'Ping',    description: 'Measure bot latency' },
+      { id: `${p}about`,   title: 'About',   description: 'System information' },
+      { id: `${p}version`, title: 'Version', description: 'Runtime version details' },
     ]},
     { title: 'Utility', rows: [
-      { id: `${p}encode`,   title: '🔐 Base64 Encode',  description: 'Encode text to base64' },
-      { id: `${p}decode`,   title: '🔓 Base64 Decode',  description: 'Decode base64 text' },
-      { id: `${p}checkchid`,title: '🆔 Chat ID',        description: 'Get current chat JID' },
+      { id: `${p}encode`,   title: 'Base64 Encode',  description: 'Encode text to base64' },
+      { id: `${p}decode`,   title: 'Base64 Decode',  description: 'Decode base64 text' },
+      { id: `${p}checkchid`,title: 'Chat ID',        description: 'Get current chat JID' },
     ]},
     { title: 'Economy', rows: [
-      { id: `${p}daily`,   title: '💰 Daily Reward', description: 'Claim your daily XP and coins' },
-      { id: `${p}balance`, title: '🪙 Balance',      description: 'Check your coin balance' },
+      { id: `${p}daily`,   title: 'Daily Reward', description: 'Claim your daily XP and coins' },
+      { id: `${p}balance`, title: 'Balance',      description: 'Check your coin balance' },
     ]},
   ], [
-    { kind: 'action', label: '📋 Full Menu', cmd: `${p}menu` },
+    { kind: 'action', label: 'Full Menu',    cmd: `${p}menu` },
   ], { quoted: m });
   return 'single_select ✓';
 }
@@ -84,16 +84,16 @@ async function runSingleSelect(sock, m, prefix) {
 async function runBottomSheet(sock, m, prefix) {
   const p = prefix || '.';
   await bottomSheetCard(sock, m.from, {
-    text:   '📑 *BOTTOM SHEET TEST*\n\nTap the button below to open the command sheet.\nAll rows collapse into a native WA modal.',
+    text:   '*BOTTOM SHEET TEST*\n\nTap the button below to open the command sheet.\nAll rows collapse into a native WA modal.',
     footer: 'optionText + optionTitle → bottom_sheet overlay',
-  }, '📑 Browse All Commands', 'NEXORA COMMAND SHEET', [
-    { text: '🏓 Ping Bot',          id: `${p}ping` },
-    { text: '📋 About',             id: `${p}about` },
-    { text: '🎨 Menu Styles',       id: `${p}menulist` },
-    { text: '💰 Daily Reward',      id: `${p}daily` },
-    { text: '🔐 Encode Base64',     id: `${p}encode` },
-    { text: '💬 Contact Developer', url: 'https://wa.me/233533416608' },
-    { text: '📢 Official Channel',  url: 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326' },
+  }, 'Browse All Commands', 'NEXORA COMMAND SHEET', [
+    { text: 'Ping Bot',          id: `${p}ping` },
+    { text: 'About',              id: `${p}about` },
+    { text: 'Menu Styles',        id: `${p}menulist` },
+    { text: 'Daily Reward',       id: `${p}daily` },
+    { text: 'Encode Base64',      id: `${p}encode` },
+    { text: 'Contact Developer',  url: 'https://wa.me/233533416608' },
+    { text: 'Official Channel',   url: 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326' },
   ], { quoted: m });
   return 'bottom_sheet ✓';
 }
@@ -101,13 +101,13 @@ async function runBottomSheet(sock, m, prefix) {
 async function runOffer(sock, m, prefix) {
   const p = prefix || '.';
   await offerCard(sock, m.from, {
-    text:      '🛍️ *OFFER BANNER TEST*\n\nThis card has a limited_time_offer banner at the top.',
+    text:      '*OFFER BANNER TEST*\n\nThis card has a limited_time_offer banner at the top.',
     footer:    'offerText + offerUrl → limited_time_offer in messageParamsJson',
     offerText: '🎁 Free Premium Access — Limited Time',
     offerUrl:  'https://wa.me/233533416608',
     buttons: [
       { text: '💬 Contact Dev',   url:  'https://wa.me/233533416608' },
-      { text: '📋 Copy Code',     copy: 'NEXORA-FREE-2026' },
+      { text: 'Copy Code',     copy: 'NEXORA-FREE-2026' },
       { text: '⚡ Claim Reward',  id:   `${p}daily` },
     ],
   }, { quoted: m });

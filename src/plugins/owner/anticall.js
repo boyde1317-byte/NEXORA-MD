@@ -57,11 +57,11 @@ export default {
         text:   `📵 *ANTI-CALL STATUS*\n\nAnti-call is currently *${status}*.`,
         footer: enabled ? 'Incoming calls are being rejected automatically.' : 'Calls ring through normally.',
       }, [
-        { label: enabled ? '❌ Disable Now' : '✅ Enable Now', cmd: `${p}anticall ${enabled ? 'off' : 'on'}` },
+        { label: enabled ? 'Disable Now' : 'Enable Now', cmd: `${p}anticall ${enabled ? 'off' : 'on'}` },
         { label: '🔒 Private Mode', cmd: `${p}self` },
         { label: '🌐 Public Mode',  cmd: `${p}public` },
       ], {
-        title: '📵 ANTI-CALL',
+        title: 'ANTI-CALL',
         body:  status,
         thumbnail,
       }, { quoted: m });
@@ -84,7 +84,7 @@ export default {
       { label: '🔒 Private Mode', cmd: `${p}self` },
       { label: '🌐 Public Mode',  cmd: `${p}public` },
     ], {
-      title: '📵 ANTI-CALL',
+      title: 'ANTI-CALL',
       body:  'Setting saved',
       thumbnail,
     }, { quoted: m });

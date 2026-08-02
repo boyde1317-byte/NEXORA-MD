@@ -42,11 +42,11 @@ export default {
             text:   messageFormatter.warn(`Already claimed today!\n\n⏰ Next claim in *${h}h ${min}m*`, 'DAILY REWARD'),
             footer: `Streak: ${userData.streak ?? 0} day${(userData.streak ?? 0) !== 1 ? 's' : ''}`,
           }, [
-            { label: '💰 Check Balance',  cmd: `${p}balance` },
-            { label: '🏆 Leaderboard',    cmd: `${p}top` },
-            { label: '🛒 Coin Shop',      cmd: `${p}shop` },
+            { label: 'Check Balance',     cmd: `${p}balance` },
+            { label: 'Leaderboard',       cmd: `${p}top` },
+            { label: 'Coin Shop',          cmd: `${p}shop` },
           ], {
-            title: '💰 DAILY REWARD',
+            title: 'DAILY REWARD',
             body:  `Streak: ${userData.streak ?? 0} day${(userData.streak ?? 0) !== 1 ? 's' : ''}`,
             thumbnail,
           }, { quoted: m });
@@ -90,13 +90,13 @@ export default {
 
         const thumbnail = await getBrandThumbnail();
         return await actionCardWithAd(sock, m.from, {
-          text:   `🎯 Keep the streak going — claim again in 24 hours!`,
+          text:   `Keep the streak going — claim again in 24 hours!`,
           footer: `${brand?.name ?? 'NEXORA'} Economy`,
         }, [
-          { label: '💰 Check Balance', cmd: `${p}balance` },
-          { label: '🏆 Leaderboard',   cmd: `${p}top` },
+          { label: 'Check Balance',     cmd: `${p}balance` },
+          { label: 'Leaderboard',       cmd: `${p}top` },
         ], {
-          title: '💰 DAILY REWARD CLAIMED',
+          title: 'DAILY REWARD',
           body:  `Streak: ${streak} day${streak !== 1 ? 's' : ''}`,
           thumbnail,
         }, { quoted: m });

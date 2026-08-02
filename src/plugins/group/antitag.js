@@ -59,7 +59,7 @@ export default {
         text:   `🏷️ *ANTI-TAG STATUS*\n\nAnti-tag protection is currently *${status}* in this group.`,
         footer: enabled ? `Mass-mentions of ${MASS_MENTION_THRESHOLD}+ members are being blocked.` : 'All members can mention freely.',
       }, [
-        { label: enabled ? '❌ Disable Now' : '✅ Enable Now', cmd: `${p}antitag ${enabled ? 'off' : 'on'}` },
+        { label: enabled ? 'Disable Now' : 'Enable Now', cmd: `${p}antitag ${enabled ? 'off' : 'on'}` },
         { label: '🛡️ Anti-Link Settings',                      cmd: `${p}antilink` },
         { label: '📋 Group Info',                               cmd: `${p}groupinfo` },
       ], {

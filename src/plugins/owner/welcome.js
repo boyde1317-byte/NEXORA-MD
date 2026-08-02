@@ -18,6 +18,6 @@ export default {
 
     const enabled = opt === 'on';
     greetingConfig.setEnabled(enabled);
-    await m.reply.success(`Global welcome notification is now *${enabled ? 'ENABLED' : 'DISABLED'}*!`);
+    await m.reply.success(`👋 Global welcome notification is now *${enabled ? 'ENABLED' : 'DISABLED'}*!`);
   }
 };

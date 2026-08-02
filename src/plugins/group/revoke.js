@@ -8,7 +8,7 @@ export default {
   execute: async ({ m, sock }) => {
     try {
       await sock.groupRevokeInvite(m.from);
-      await m.reply.success('Group invite link has been revoked and reset.');
+      await m.reply.success('🔗 Group invite link has been revoked and reset.');
     } catch (err) {
       await m.reply.error(`Failed to revoke invite link: ${err.message}`);
     }

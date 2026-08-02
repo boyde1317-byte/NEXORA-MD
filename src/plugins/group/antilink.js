@@ -52,11 +52,11 @@ export default {
         text:   `🛡️ *ANTI-LINK STATUS*\n\nAnti-link protection is currently *${status}* in this group.`,
         footer: enabled ? 'Non-admin links are being blocked.' : 'All members can share links freely.',
       }, [
-        { label: enabled ? '❌ Disable Now' : '✅ Enable Now', cmd: `${p}antilink ${enabled ? 'off' : 'on'}` },
-        { label: '📋 Group Info',                              cmd: `${p}groupinfo` },
-        { label: '📢 Announce to Group',                       cmd: `${p}tagall Anti-link protection is ${enabled ? 'ON' : 'OFF'}` },
+        { label: enabled ? 'Disable Now' : 'Enable Now', cmd: `${p}antilink ${enabled ? 'off' : 'on'}` },
+        { label: 'Group Info',                                   cmd: `${p}groupinfo` },
+        { label: 'Announce to Group',                            cmd: `${p}tagall Anti-link protection is ${enabled ? 'ON' : 'OFF'}` },
       ], {
-        title: '🛡️ ANTI-LINK',
+        title: 'ANTI-LINK',
         body:  status,
         thumbnail,
       }, { quoted: m });
@@ -75,11 +75,11 @@ export default {
       text:   resultText,
       footer: `Setting saved for this group`,
     }, [
-      { label: enable ? '❌ Disable Again'  : '✅ Re-enable',  cmd: `${p}antilink ${enable ? 'off' : 'on'}` },
-      { label: '📢 Announce to Group',                          cmd: `${p}tagall Anti-link is now ${enable ? 'ON 🔒' : 'OFF 🔓'}` },
-      { label: '📋 Group Info',                                 cmd: `${p}groupinfo` },
+      { label: enable ? 'Disable Again'   : 'Re-enable',    cmd: `${p}antilink ${enable ? 'off' : 'on'}` },
+      { label: 'Announce to Group',                              cmd: `${p}tagall Anti-link is now ${enable ? 'ON' : 'OFF'}` },
+      { label: 'Group Info',                                    cmd: `${p}groupinfo` },
     ], {
-      title: '🛡️ ANTI-LINK',
+      title: 'ANTI-LINK',
       body:  'Setting saved',
       thumbnail,
     }, { quoted: m });

@@ -46,9 +46,9 @@ export default {
           text:   `⬇️ *@${targetNumber}* has been demoted to regular member.`,
           footer: 'NEXORA Guard • Group Management',
         }, [
-          { label: '⬆️  Promote Again',    cmd: `${p}promote @${targetNumber}` },
-          { label: '🚫 Remove Member',     cmd: `${p}kick` },
-          { label: '📋 Group Info',        cmd: `${p}groupinfo` },
+          { label: 'Promote Again',        cmd: `${p}promote @${targetNumber}` },
+          { label: 'Remove Member',        cmd: `${p}kick` },
+          { label: 'Group Info',           cmd: `${p}groupinfo` },
         ], { quoted: m, mentions: [target] });
       } catch (_) {
         await m.reply(`✅ *@${targetNumber}* has been successfully demoted.`, {

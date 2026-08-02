@@ -18,6 +18,6 @@ export default {
 
     const enabled = opt === 'on';
     greetingConfig.setGoodbyeEnabled(enabled);
-    await m.reply.success(`Global goodbye notification is now *${enabled ? 'ENABLED' : 'DISABLED'}*!`);
+    await m.reply.success(`👋 Global goodbye notification is now *${enabled ? 'ENABLED' : 'DISABLED'}*!`);
   }
 };

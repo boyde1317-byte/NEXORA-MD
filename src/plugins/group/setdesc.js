@@ -6,11 +6,11 @@ export default {
   cooldown: 5000,
   execute: async ({ m, sock, args }) => {
     const desc = args.join(' ');
-    if (!desc) return await m.reply.info('Usage: `!setdesc <new description>`', 'GROUP MANAGEMENT');
+    if (!desc) return await m.reply.info('Usage: `!setdesc <new description>`', '📝 GROUP DESCRIPTION')
     
     try {
       await sock.groupUpdateDescription(m.from, desc);
-      await m.reply.success('Group description updated successfully.');
+      await m.reply.success('📝 Group description updated successfully.');
     } catch (err) {
       await m.reply.error(`Failed to update description: ${err.message}`);
     }
