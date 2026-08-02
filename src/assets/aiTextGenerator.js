@@ -1,6 +1,43 @@
 import { getAiClient, hasApiKey } from './aiClient.js';
 import { NEXORA_SYSTEM_PROMPT } from '../nexora-ai-prompt.js';
 
+// ── Conversation memory ──────────────────────────────────────────────────────
+// Per-user conversation history for multi-turn AI chat. Each user gets up to
+// MAX_HISTORY message pairs (user + assistant) in a rolling window. Older
+// turns are evicted to keep context length manageable for the Gemini API.
+const MAX_HISTORY_PAIRS = 6; // 6 pairs = 12 messages max context
+const conversationHistory = new Map(); // key: senderJid → [{ role, parts }]
+
+function getHistory(senderJid) {
+  return conversationHistory.get(senderJid) || [];
+}
+
+function pushHistory(senderJid, role, text) {
+  let hist = conversationHistory.get(senderJid);
+  if (!hist) {
+    hist = [];
+    conversationHistory.set(senderJid, hist);
+  }
+  hist.push({ role, parts: [{ text }] });
+  // Trim: keep the last MAX_HISTORY_PAIRS * 2 messages (pairs of user+model)
+  const maxMsgs = MAX_HISTORY_PAIRS * 2;
+  if (hist.length > maxMsgs) {
+    hist.splice(0, hist.length - maxMsgs);
+  }
+}
+
+export function clearConversation(senderJid) {
+  conversationHistory.delete(senderJid);
+}
+
+export function getConversationInfo(senderJid) {
+  const hist = conversationHistory.get(senderJid) || [];
+  return {
+    turns: Math.floor(hist.length / 2),
+    hasContext: hist.length > 0,
+  };
+}
+
 const CHAT_MODEL = 'gemini-3.1-flash-lite';
 const CODE_MODEL = 'gemini-3.1-flash-lite';
 
@@ -16,17 +53,34 @@ export const aiTextGenerator = {
     return hasApiKey();
   },
 
-  async generateText(prompt) {
+  async generateText(prompt, { senderJid } = {}) {
     const ai = getAiClient();
     console.log(`[AI TEXT GENERATOR] Generating chat response for prompt: "${prompt.slice(0, 80)}..."`);
+
+    // Build conversation context — if the caller passes a senderJid, we
+    // include prior turns so the AI can reference earlier questions/answers.
+    const history = senderJid ? getHistory(senderJid) : [];
+    const contents = [
+      ...history,
+      { role: 'user', parts: [{ text: prompt }] },
+    ];
+
     const response = await ai.models.generateContent({
       model: CHAT_MODEL,
-      contents: { parts: [{ text: prompt }] },
+      contents,
       config: {
         systemInstruction: NEXORA_SYSTEM_PROMPT,
       },
     });
-    return extractText(response);
+    const reply = extractText(response);
+
+    // Store this turn in conversation history for multi-turn context
+    if (senderJid) {
+      pushHistory(senderJid, 'user', prompt);
+      pushHistory(senderJid, 'model', reply);
+    }
+
+    return reply;
   },
 
   async generateCode(prompt) {

@@ -7,7 +7,7 @@ export default {
   category: 'web',
   description: 'Search the web using DuckDuckGo.',
   cooldown: 5000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
     const query = args.join(' ');
     if (!query) return await m.reply.info('Usage: `!search <query>`', 'WEB SEARCH');
     

@@ -9,7 +9,7 @@ export default {
   category: 'utility',
   description: 'Fetch song lyrics. Usage: .lyrics <artist> - <title>',
   cooldown: 6000,
-  execute: async ({ m, args, prefix }) => {
+  execute: async ({ m, sock, args, prefix }) => {
     const query = args.join(' ').trim();
     if (!query || !query.includes('-')) {
       return await m.reply.info(

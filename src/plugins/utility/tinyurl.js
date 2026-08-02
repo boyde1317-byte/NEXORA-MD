@@ -9,7 +9,7 @@ export default {
   category: 'utility',
   description: 'Shortens a long URL using TinyURL. No API key required.',
   cooldown: 4000,
-  execute: async ({ m, args }) => {
+  execute: async ({ m, sock, args }) => {
     const url = args[0]?.trim();
     if (!url || !URL_RE.test(url)) {
       return await m.reply.info(

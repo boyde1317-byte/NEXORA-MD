@@ -7,7 +7,7 @@ export default {
   description: 'Mutes the group so only admins can send messages.',
   permissions: { groupOnly: true, admin: true, botAdmin: true },
   cooldown: 5000,
-  execute: async ({ m, sock }) => {
+  execute: async ({ m, sock, args }) => {
     try {
       await sock.groupSettingUpdate(m.from, 'announcement');
       const p = (args && args[0]) ? '' : '.';

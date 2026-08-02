@@ -4,7 +4,7 @@
  * Upgraded: adds mixedCard with follow-up action buttons after the AI reply
  * so users can immediately pivot to brainstorm, code review, vision, etc.
  */
-import { aiTextGenerator } from '../../assets/aiTextGenerator.js';
+import { aiTextGenerator, clearConversation, getConversationInfo } from '../../assets/aiTextGenerator.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
 
@@ -43,12 +43,17 @@ export default {
         // Truncate prompt for use as a pre-filled command arg (WA button ID limit)
         const shortPrompt = prompt.length > 80 ? prompt.slice(0, 77) + '…' : prompt;
 
+        const info = getConversationInfo(m.sender);
+        const ctxNote = info.hasContext
+          ? `\n💬 Context: ${info.turns} turn${info.turns !== 1 ? 's' : ''} active`
+          : '';
         await mixedCard(sock, m.from, {
-          text:   '🤖 *What would you like to do next?*',
+          text:   `🤖 *What would you like to do next?*${ctxNote}`,
           footer: 'NEXORA Intelligence • Powered by Gemini',
         }, [
           { kind: 'action', label: '🔁 Ask Again',      cmd: `${p}ai ${shortPrompt}` },
           { kind: 'copy',   label: '📋 Copy My Prompt',  value: prompt },
+          { kind: 'action', label: '🧹 Clear Context',  cmd: `${p}ai reset` },
         ], { quoted: m });
       } catch (_) { /* follow-up is non-critical */ }
     });

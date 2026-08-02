@@ -4,9 +4,12 @@
  *
  * Design choice: rather than pulling in a third-party npm scraper package
  * (several on npm ship obfuscated code or dead endpoints), we call the same
- * backend those packages wrap (`https://backend1.tioo.eu.org`) directly with
- * native `fetch`, matching the rest of the codebase's HTTP convention (see
- * ssweb.js). Every endpoint below has been live-verified.
+ * backend those packages wrap directly with native `fetch`, matching the
+ * rest of the codebase's HTTP convention (see ssweb.js).
+ *
+ * Resilience: the downloader tries multiple backend hosts in order — if the
+ * primary is down, it automatically falls through to the fallback before
+ * surfacing the error to the caller.
  *
  * All functions:
  *  - throw a plain Error with a human-readable message on failure (never
@@ -16,18 +19,33 @@
  *    particular response envelope
  */
 
-const BASE = 'https://backend1.tioo.eu.org';
+// ── Backend endpoints ─────────────────────────────────────────────────────────
+// Primary + fallback backends for download commands. If the primary goes down,
+// we automatically retry on the fallback before surfacing the error.
+const BACKENDS = [
+  'https://backend1.tioo.eu.org',
+  'https://api.tioo.eu.org',
+];
 const DEFAULT_TIMEOUT = 20000;
 
 /** True if the given text looks like an http(s) URL. */
 export const isUrl = (s) => /^https?:\/\/.{3,}/i.test((s || '').trim());
 
 async function getJson(path, { timeout = DEFAULT_TIMEOUT } = {}) {
-  const res = await fetch(`${BASE}${path}`, { signal: AbortSignal.timeout(timeout) });
-  if (!res.ok) throw new Error(`Downloader backend returned HTTP ${res.status}.`);
-  const ct = res.headers.get('content-type') ?? '';
-  if (!ct.includes('json')) throw new Error('Downloader backend returned an unexpected (non-JSON) response — the link may be invalid or unsupported.');
-  return res.json();
+  let lastError;
+  for (const base of BACKENDS) {
+    try {
+      const res = await fetch(`${base}${path}`, { signal: AbortSignal.timeout(timeout) });
+      if (!res.ok) throw new Error(`Downloader backend returned HTTP ${res.status}.`);
+      const ct = res.headers.get('content-type') ?? '';
+      if (!ct.includes('json')) throw new Error('Downloader backend returned an unexpected (non-JSON) response — the link may be invalid or unsupported.');
+      return await res.json();
+    } catch (err) {
+      lastError = err;
+      // Try next backend
+    }
+  }
+  throw lastError || new Error('All downloader backends are unavailable.');
 }
 
 /** YouTube search (used by .play / .ytmp4 without a direct URL). */
