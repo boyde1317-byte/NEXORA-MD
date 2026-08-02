@@ -75,7 +75,7 @@ export default {
           updates.customTheme = true;
           db.setUser(m.sender, updates);
           return await m.reply.success(
-            `✅ Purchased *${item.name}* for ${item.price} 🪙!\n\nUse \`${p}settheme\` to pick your menu accent color.\n🪙 Coins remaining: ${newCoins.toLocaleString()}`
+            `✅ Purchased *${item.name}* for ${item.price} 🪙!\n\nContact an admin to set your menu accent color with \`${p}settheme\`.\n🪙 Coins remaining: ${newCoins.toLocaleString()}`
           );
         case 'stickers':
           updates.stickerSlots = (userData.stickerSlots ?? 10) + 5;

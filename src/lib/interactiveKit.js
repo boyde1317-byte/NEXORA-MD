@@ -441,14 +441,16 @@ export async function richCodeCard(sock, jid, { code, language = 'javascript', c
  */
 export async function richCarouselCard(sock, jid, items, sendOptions = {}) {
   if (capabilities.richResponse) {
-    // items must be passed as a flat field to trigger prepareRichResponseMessage's
-    // CONTENT_ITEMS handler — but the fork expects itemsMetadata shape, not
-    // { title, text }. Map to the fork's expected format.
+    // FORK DISPATCH: { items: [...] } alone does NOT trigger the fork's rich
+    // response branch (only code/links/table/richResponse do). Must wrap in
+    // richResponse array so prepareRichResponseMessage processes each submessage.
     const mappedItems = items.map(i => ({
       title: i.title,
       text: i.text,
     }));
-    return await baileysBridge.sendRichResponse(sock, jid, { items: mappedItems }, sendOptions);
+    return await baileysBridge.sendRichResponse(sock, jid, {
+      richResponse: [{ items: mappedItems }],
+    }, sendOptions);
   }
   const text = items.map(i => `*├ ${i.title}*\n│ ${i.text}`).join('\n\n');
   return sock.sendMessage(jid, { text }, sendOptions);
@@ -465,12 +467,18 @@ export async function richMediaCard(sock, jid, { type = 'image', url, caption, a
       // instead of a video. Fall through to the plain media fallback.
       console.warn('[interactiveKit.richMediaCard] inlineVideo is not supported by the fork — using plain video fallback');
     } else {
+      // FORK DISPATCH: The fork's generateWAMessageContent only dispatches rich
+      // response when code/links/table/richResponse is present as a top-level key.
+      // Passing { inlineImage: url } alone does NOT match — it falls through to
+      // the text branch and produces an empty message. Must wrap in richResponse.
       const payload = {
-        inlineImage: url,
-        imageText: caption,
+        richResponse: [{
+          inlineImage: url,
+          imageText: caption,
+          ...(alignment ? { alignment } : {}),
+          ...(tapLinkUrl ? { tapLinkUrl } : {}),
+        }],
       };
-      if (alignment) payload.alignment = alignment;
-      if (tapLinkUrl) payload.tapLinkUrl = tapLinkUrl;
       return await baileysBridge.sendRichResponse(sock, jid, payload, sendOptions);
     }
   }

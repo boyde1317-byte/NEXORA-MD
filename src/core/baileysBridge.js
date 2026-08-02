@@ -308,23 +308,26 @@ export const baileysBridge = {
    * skips this wrapper and WhatsApp clients silently drop the card.
    */
   async sendEvent(sock, jid, { name, description, startTime, minutesAhead, joinLink }, options = {}) {
-    const calculatedStartTime = startTime
+    // FORK DISPATCH: The fork's generateWAMessageContent dispatches events via
+    // `hasNonNullishProperty(message, 'event')` — NOT 'eventMessage'. Passing
+    // { eventMessage: {...} } silently falls through to the text branch.
+    // The fork also calls `message.event.startDate.getTime()` so startDate
+    // must be a Date object, not a unix timestamp number/string.
+    const startSeconds = startTime
       ? (typeof startTime === 'string' ? parseInt(startTime, 10) : startTime)
       : Math.floor(Date.now() / 1000) + ((minutesAhead || 30) * 60);
 
-    // FIX: Route through sock.sendMessage so the fork's handleEvent applies the
-    // required viewOnceMessage + supportPayload wrapper. Relaying a flat eventMessage
-    // directly via generateWAMessageFromContent skips this wrapper, causing WA clients
-    // to silently drop or misrender the event card.
     return await sock.sendMessage(jid, {
-      eventMessage: {
-        isCanceled: false,
+      event: {
         name,
         description: description || 'Bot Dynamic Event',
+        startDate: new Date(startSeconds * 1000),
         location: { degreesLatitude: 0, degreesLongitude: 0, name: 'Location' },
-        joinLink: joinLink || '',
-        startTime: calculatedStartTime,
+        // joinLink is set by the fork when event.call + getCallLink are provided;
+        // for manual join links we pass it directly in the location field.
+        ...(joinLink ? { joinLink } : {}),
         extraGuestsAllowed: true,
+        isCancelled: false,
       }
     }, options);
   },
@@ -332,17 +335,24 @@ export const baileysBridge = {
   /**
    * Sends an interactive Poll or a pre-populated Poll Result card
    */
-  async sendPoll(sock, jid, { question, options, isResult, pollVotes }, optionsExtra = {}) {
+  async sendPoll(sock, jid, { question, options, isResult, pollVotes, pollType }, optionsExtra = {}) {
     if (isResult) {
-      // Send custom pollResultMessage supported by the fork
+      // FORK DISPATCH: fork expects { pollResult: { name, votes, pollType } }
+      // NOT { pollResultMessage: { name, pollVotes } }. The fork maps
+      // pollResult.votes → [{ optionName: vote.name, optionVoteCount: vote.voteCount }]
+      // and pollResult.pollType (1=quiz, 0=poll) to the correct snapshot version.
       return await sock.sendMessage(jid, {
-        pollResultMessage: {
+        pollResult: {
           name: question,
-          pollVotes: pollVotes || []
+          votes: (pollVotes || []).map(v => ({
+            name: v.name || v.optionName || '',
+            voteCount: v.voteCount || v.optionVoteCount || 0,
+          })),
+          pollType: pollType || 0,
         }
       }, optionsExtra);
     } else {
-      // Send standard interactive poll message
+      // Send standard interactive poll message — fork matches on 'poll' key
       return await sock.sendMessage(jid, {
         poll: {
           name: question,
@@ -383,6 +393,25 @@ export const baileysBridge = {
       if (content.contentText) fallbackText += content.contentText + "\n\n";
       if (content.code) fallbackText += "```" + (content.language || '') + "\n" + content.code + "\n```\n\n";
       
+      // Handle richResponse array (wrapped submessages)
+      if (Array.isArray(content.richResponse)) {
+        for (const sub of content.richResponse) {
+          if (sub.text) fallbackText += sub.text + "\n\n";
+          else if (sub.code) fallbackText += "```" + (sub.language || '') + "\n" + (Array.isArray(sub.code) ? sub.code.map(b => b.codeContent).join('') : sub.code) + "\n```\n\n";
+          else if (sub.table && Array.isArray(sub.table)) {
+            fallbackText += (sub.title ? `*${sub.title}*\n` : '');
+            fallbackText += sub.table.map(r => (r.items || r).join(' │ ')).join('\n') + '\n\n';
+          }
+          else if (sub.items && Array.isArray(sub.items)) {
+            fallbackText += sub.items.map(i => "• " + (i.title || '') + (i.text ? "\n  " + i.text : '')).join('\n\n') + '\n\n';
+          }
+          else if (sub.inlineImage) {
+            fallbackText += `[🖼️ ${sub.imageText || 'Image'}: ${sub.inlineImage}]\n\n`;
+          }
+        }
+      }
+      
+      // Handle flat (non-array) content
       if (content.table && Array.isArray(content.table)) {
         fallbackText += content.table.map(r => r.join(' │ ')).join('\n') + '\n\n';
       }
@@ -419,12 +448,14 @@ export const baileysBridge = {
     }, options);
   },
 
-  async sendProduct(sock, jid, { title, description, productId, currency, price, footer, thumbnail, buttons } = {}, options = {}) {
-    // correct viewOnceMessage > interactiveMessage structure. The old raw productMessage
-    // proto (with nested .product) is the legacy business-catalog format — WA clients
-    // render it only on verified business accounts and silently drop it on regular bots.
+  async sendProduct(sock, jid, { title, description, productId, currency, price, footer, thumbnail, businessOwnerJid } = {}, options = {}) {
+    // FORK DISPATCH: fork dispatches via `hasNonNullishProperty(message, 'product')`
+    // NOT 'productMessage'. prepareProductMessage requires businessOwnerJid and
+    // wraps the product data inside message.product. Passing productMessage directly
+    // silently falls through to the text branch.
     return await sock.sendMessage(jid, {
-      productMessage: {
+      businessOwnerJid: businessOwnerJid || (sock.user?.id || '0@s.whatsapp.net'),
+      product: {
         title: title || 'Premium Command Product',
         description: description || 'WhatsApp Bot Interactive Product Showcase',
         productId: productId || 'product-1',
@@ -432,9 +463,8 @@ export const baileysBridge = {
         currencyCode: currency || 'USD',
         priceAmount1000: (price || 1) * 1000,
         footer: footer || '',
-        thumbnail: thumbnail || undefined,
-        buttons: buttons || [],
-      }
+        ...(thumbnail ? { productImage: thumbnail } : {}),
+      },
     }, options);
   },
 

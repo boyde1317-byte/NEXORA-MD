@@ -42,16 +42,14 @@ export default {
     const startTimeUnix = Math.floor(Date.now() / 1000) + (minutesAhead * 60);
 
     try {
-      // Send the native event card
-      await sock.sendMessage(m.from, {
-        eventMessage: {
-          name,
-          description,
-          startTime:          String(startTimeUnix),
-          joinLink,
-          extraGuestsAllowed: true,
-          isCanceled:         false,
-        },
+      // Send the native event card via baileysBridge — fork expects { event: {...} }
+      // not { eventMessage: {...} } for dispatch.
+      const { baileysBridge } = await import('../../core/baileysBridge.js');
+      await baileysBridge.sendEvent(sock, m.from, {
+        name,
+        description,
+        startTime:          startTimeUnix,
+        joinLink,
       }, { quoted: m });
 
       // Follow-up interactive card

@@ -75,6 +75,7 @@ export default {
           headers: ['Field', 'Value'],
           rows: [
             ['Number',     `+${number}`],
+            ...(d.title ? [['Title', d.title]] : []),
             ['Rank',       badge],
             ['Level',      String(level)],
             ['XP',         xp.toLocaleString()],
@@ -106,6 +107,7 @@ export default {
       // ── Tier 2: plain image + asciiBuilder fallback ──────────────────────
       const lines = [
         `📱 Number   : +${number}`,
+        ...(d.title ? [`🏷️  Title    : ${d.title}`] : []),
         `🏅 Rank     : ${badge}`,
         ``,
         `📊 Level    : ${level}`,
