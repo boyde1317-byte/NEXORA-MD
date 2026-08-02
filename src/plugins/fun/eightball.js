@@ -55,9 +55,9 @@ export default {
         text:   `🎱 *MAGIC 8-BALL*\n\nQ: ${question}\nA: ${answer}`,
         footer: 'Ask another question anytime',
       }, [
-        { label: '🔁 Ask Again',  cmd: `${p}8ball ${question}` },
-        { label: '🤔 Truth',      cmd: `${p}truth` },
-        { label: '🔥 Dare',       cmd: `${p}dare` },
+        { label: 'Ask Again',     cmd: `${p}8ball ${question}` },
+        { label: 'Truth',        cmd: `${p}truth` },
+        { label: 'Dare',          cmd: `${p}dare` },
       ], { quoted: m });
     } catch (err) {
       console.warn('[eightball] actionCardWithAd failed, using styled fallback:', err.message);

@@ -1,5 +1,4 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
-import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { copyResultCard } from '../../lib/interactiveKit.js';
 
 const URL_RE = /^https?:\/\/.{3,}/i;
@@ -28,14 +27,16 @@ export default {
       const short = (await res.text()).trim();
       if (!short.startsWith('http')) throw new Error('Invalid response from TinyURL.');
 
-      const text = asciiBuilder.box('URL SHORTENER', [
-        `🔗 Original : ${url.length > 55 ? url.slice(0, 52) + '...' : url}`,
-        `✂️  Short    : *${short}*`,
-      ]);
+      const text = `🔗 *URL SHORTENER*
+
+` +
+        `Original: ${url.length > 55 ? url.slice(0, 52) + '...' : url}
+` +
+        `Short: *${short}*`;
       try {
         await copyResultCard(sock, m.from, {
           text:       text,
-          copyLabel:  '📋 Copy Short URL',
+          copyLabel:  'Copy Short URL',
           copyValue:  short,
         }, { quoted: m });
       } catch (_) {

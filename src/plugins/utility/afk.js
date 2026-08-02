@@ -40,14 +40,14 @@ export default {
     try {
       const thumbnail = await getBrandThumbnail();
       return await actionCardWithAd(sock, m.from, {
-        text: asciiBuilder.box('💤 AFK MODE ON', [
-          `Reason: ${reason}`,
-          '',
-          'Anyone who mentions or replies to you will be notified.',
-        ]),
+        text: `💤 *AFK MODE ON*
+
+Reason: ${reason}
+
+Anyone who mentions or replies to you will be notified.`,
         footer: 'Send any message, or tap below, to come back',
       }, [
-        { label: '✅ Clear AFK Now', cmd: `${p}afk` },
+        { label: 'Clear AFK Now',    cmd: `${p}afk` },
       ], {
         title: '💤 AFK MODE',
         body:  reason,

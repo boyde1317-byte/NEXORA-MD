@@ -1,5 +1,4 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
-import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { actionCard, actionCardWithAd } from '../../lib/interactiveKit.js';
 import { getBrandThumbnail } from '../../lib/cosmetics.js';
 import { getLyrics } from '../../lib/downloader.js';
@@ -24,7 +23,7 @@ export default {
       const title = rest.join('-').trim();
       const lyrics = await getLyrics(artist.trim(), title);
       const trimmed = lyrics.length > 3500 ? `${lyrics.slice(0, 3500)}\n\n… (truncated)` : lyrics;
-      const lyricsText = asciiBuilder.box(`LYRICS — ${title.toUpperCase()}`, [trimmed]);
+      const lyricsText = trimmed;
       const thumbnail = await getBrandThumbnail();
       const searchUrl = `https://genius.com/search?q=${encodeURIComponent(`${artist.trim()} ${title}`)}`;
       try {
