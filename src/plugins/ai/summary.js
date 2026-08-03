@@ -111,7 +111,7 @@ export default {
           { kind: 'action', label: '🌐 Translate',       cmd: `${p}translate ${reply.slice(0, 80)}` },
         ], { quoted: m });
       } catch (err) {
-        await progress.fail(`❌ Summary failed: ${err.message}`);
+        await progress.fail(`Summary failed: ${err.message}`);
       }
     });
   }

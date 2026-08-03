@@ -39,7 +39,7 @@ export default {
           { kind: 'action', label: '✏️ Generate Code',    cmd: `${p}code` },
         ], { quoted: m });
       } catch (err) {
-        await progress.fail(`❌ Failed to debug code: ${err.message}`);
+        await progress.fail(`Failed to debug code: ${err.message}`);
       }
     });
   }

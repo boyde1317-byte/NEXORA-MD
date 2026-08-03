@@ -51,7 +51,7 @@ export default {
           ], { quoted: m });
         } catch (_) {}
       } catch (err) {
-        await progress.fail(`❌ Twitter download failed: ${err.message}`);
+        await progress.fail(`Twitter download failed: ${err.message}`);
       }
     });
   }

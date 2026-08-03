@@ -30,7 +30,7 @@ export default {
           await client.loadPlugins();
           await m.reply(`✅ *All plugins reloaded successfully!* Bot is updated without connection loss.\n\n_Tip: Run \`${p}restart hard\` to completely reboot the bot container._`);
         } catch (err) {
-          await m.reply(`❌ *Hot-reload failed:* ${err.message}`);
+          await m.reply.error(`*Hot-reload failed:* ${err.message}`);
           throw err;
         }
       });

@@ -19,7 +19,7 @@ export default {
 
     const input = args[0].toLowerCase();
     if (!['clean', 'minimal', 'professional'].includes(input)) {
-      return await m.reply(`❌ Invalid style: *"${args[0]}"*.\nAvailable options: \`clean\`, \`minimal\`, \`professional\`.`);
+      return await m.reply.error(`Invalid style: *"${args[0]}"*.\nAvailable options: \`clean\`, \`minimal\`, \`professional\`.`);
     }
 
     footerManager.setStyle(input);

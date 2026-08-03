@@ -65,7 +65,7 @@ export default {
           }, buttons, { quoted: m });
         } catch (_) {}
       } catch (err) {
-        await progress.fail(`❌ Spotify download failed: ${err.message}`);
+        await progress.fail(`Spotify download failed: ${err.message}`);
       }
     });
   }

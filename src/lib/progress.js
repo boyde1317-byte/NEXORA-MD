@@ -88,7 +88,7 @@ export class DownloadProgress {
    */
   async fail(message) {
     this._stop();
-    await this._edit(message || '❌ Operation failed.');
+    await this._edit(message || '⨯ Operation failed.');
   }
 
   _stop() {

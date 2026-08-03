@@ -37,7 +37,7 @@ export default {
     const jid     = cleaned.startsWith('+') ? cleaned : `+${cleaned}`;
 
     if (jid.length < 6) {
-      return await m.reply('❌ Could not parse that as a valid phone number. Include the country code, e.g. `6281234567890`.');
+      return await m.reply.error('Could not parse that as a valid phone number. Include the country code, e.g. `6281234567890`.');
     }
 
     await withReactionStatus(m, async () => {
@@ -46,7 +46,7 @@ export default {
         result = await sock.checkWhatsApp(jid);
       } catch (err) {
         console.error('[checkwa]', err);
-        await m.reply(`❌ *Check failed:* ${err.message || err}`);
+        await m.reply.error(`*Check failed:* ${err.message || err}`);
         throw err;
       }
 

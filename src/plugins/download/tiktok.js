@@ -58,7 +58,7 @@ export default {
           } catch (_) {}
         }
       } catch (err) {
-        await progress.fail(`❌ TikTok download failed: ${err.message}`);
+        await progress.fail(`TikTok download failed: ${err.message}`);
       }
     });
   }

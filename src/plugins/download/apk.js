@@ -57,7 +57,7 @@ export default {
           }, { quoted: m });
         }
       } catch (err) {
-        await progress.fail(`❌ APK search failed: ${err.message}`);
+        await progress.fail(`APK search failed: ${err.message}`);
       }
     });
   }

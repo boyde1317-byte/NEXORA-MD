@@ -43,7 +43,7 @@ export default {
       const resolvedPath = path.isAbsolute(localPath) ? localPath : path.resolve(process.cwd(), localPath);
       
       if (!fs.existsSync(resolvedPath)) {
-        return await m.reply(`❌ File does not exist at local path: \`${localPath}\``);
+        return await m.reply.error(`File does not exist at local path: \`${localPath}\``);
       }
 
       mediaConfig.setMenuConfig({ audio: localPath });
@@ -52,7 +52,7 @@ export default {
 
     // For all other operations, we require a replied message
     if (!m.quoted) {
-      return await m.reply(`❌ Please reply to the corresponding media (audio for "audio", image for "image" or "thumbnail") and type \`${p}setmenumedia ${type}\``);
+      return await m.reply.error(`Please reply to the corresponding media (audio for "audio", image for "image" or "thumbnail") and type \`${p}setmenumedia ${type}\``);
     }
 
     const qType = m.quoted.type;
@@ -63,12 +63,12 @@ export default {
     if (type === 'audio') {
       const isAudio = qType === 'audioMessage' || mimetype.startsWith('audio/');
       if (!isAudio) {
-        return await m.reply('❌ The replied message is not an audio file.');
+        return await m.reply.error('The replied message is not an audio file.');
       }
     } else if (type === 'image' || type === 'thumbnail') {
       const isImage = qType === 'imageMessage' || mimetype.startsWith('image/');
       if (!isImage) {
-        return await m.reply('❌ The replied message is not an image file.');
+        return await m.reply.error('The replied message is not an image file.');
       }
     }
 
@@ -78,7 +78,7 @@ export default {
       // Download replied attachment buffer
       const buffer = await m.quoted.download();
       if (!buffer) {
-        return await m.reply('❌ Failed to download attachment buffer from WhatsApp servers.');
+        return await m.reply.error('Failed to download attachment buffer from WhatsApp servers.');
       }
 
       // Save media through mediaManager
@@ -86,7 +86,7 @@ export default {
       return await m.reply(`✅ *Menu ${type} updated successfully!*\n• Saved relative path: \`${savedPath}\``);
     } catch (err) {
       console.error(`Failed to ingest menu media (${type}):`, err);
-      return await m.reply(`❌ Error writing media file: ${err.message}`);
+      return await m.reply.error(`Error writing media file: ${err.message}`);
     }
   }
 };

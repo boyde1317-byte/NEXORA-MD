@@ -62,7 +62,7 @@ export default {
           ], { quoted: m });
         } catch (_) {}
       } catch (err) {
-        await progress.fail(`❌ I couldn't generate that code: ${err.message}`);
+        await progress.fail(`I couldn't generate that code: ${err.message}`);
       }
     });
   }

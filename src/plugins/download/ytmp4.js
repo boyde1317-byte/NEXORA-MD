@@ -68,7 +68,7 @@ export default {
             { kind: 'action', label: '🎬 Download Another',cmd: `${prefix}ytmp4` },
           ], { quoted: m });
         } catch (err) {
-          await progress.fail(`❌ Download failed: ${err.message}`);
+          await progress.fail(`Download failed: ${err.message}`);
           throw err;
         }
       }
@@ -98,17 +98,27 @@ export default {
         } catch (err) {
           console.warn('[ytmp4] carousel failed, falling back to select menu:', err.message);
           const { selectMenu } = await import('../lib/interactiveKit.js');
-          await selectMenu(sock, m.from, { text: `🔎 Results for "${query}":` }, '🎬 Pick a video', [{
-            title: 'Search Results',
-            rows: results.map((v, idx) => ({
-              id: `${prefix}ytmp4 ${v.url}`,
-              title: `${idx + 1}. ${v.title}`.slice(0, 60),
-              description: `${v.author || ''} • ${v.duration || ''}`,
-            })),
-          }], [], { quoted: m });
+          await selectMenu(sock, m.from, { text: `🔎 Results for "${query}":` }, '🎬 Pick a video', [
+            {
+              title: '🎬 Download Video',
+              rows: results.map((v, idx) => ({
+                id: `${prefix}ytmp4 ${v.url}`,
+                title: `${idx + 1}. ${v.title}`.slice(0, 60),
+                description: `${v.author || ''} • ${v.duration || ''}`,
+              })),
+            },
+            {
+              title: '🎵 Download Audio',
+              rows: results.map((v, idx) => ({
+                id: `${prefix}play ${v.url}`,
+                title: `${idx + 1}. ${v.title}`.slice(0, 60),
+                description: `${v.author || ''} • ${v.duration || ''}`,
+              })),
+            },
+          ], [], { quoted: m });
         }
       } catch (err) {
-        await progress.fail(`❌ Search failed: ${err.message}`);
+        await progress.fail(`Search failed: ${err.message}`);
         throw err;
       }
     });

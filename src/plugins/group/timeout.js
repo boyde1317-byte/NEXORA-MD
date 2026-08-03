@@ -5,12 +5,17 @@
  * .timeout @user 1h    — Mute @user for 1 hour
  * .timeout @user 30s    — Mute @user for 30 seconds
  *
- * Requires admin or owner. Uses WhatsApp's group participant restrict feature.
- * A background timer automatically lifts the restriction when time is up.
+ * Requires admin or owner. Uses WhatsApp's group setting to temporarily
+ * switch the group to admin-only mode, then restores the original setting
+ * when the timeout expires.
+ *
+ * UX: Fixed broken implementation that demoted users instead of muting.
+ * Now properly saves/restores group state and tracks active timeouts.
  */
 import { mixedCard } from '../../lib/interactiveKit.js';
 
-const RESTRICT_SEND = 0x08; // allow ONLY admin messages → effectively mutes
+// Track active timeouts per group so we can restore settings properly
+const activeTimeouts = new Map(); // groupJid → { targetJid, targetNum, timer, previousSetting }
 
 function parseDuration(input) {
   const match = input?.match(/^(\d+)\s*(s|m|h|d)$/i);
@@ -97,37 +102,60 @@ export default {
       }
     } catch (_) {}
 
-    // Apply restriction
+    // ── If a timeout is already active in this group, cancel its timer first
+    if (activeTimeouts.has(m.from)) {
+      const existing = activeTimeouts.get(m.from);
+      clearTimeout(existing.timer);
+    }
+
+    // ── Apply restriction: switch group to announcement (admin-only) mode
+    // This prevents the target user from sending messages. We save the
+    // previous setting so we can restore it when the timeout expires.
+    let previousSetting = 'not_announcement'; // assume open by default
     try {
-      await sock.groupSettingUpdate(m.from, 'announcement'); // Temporarily lock group to admin-only
-      // Actually, use participant restrict instead
+      const metadata = await sock.groupMetadata(m.from);
+      previousSetting = metadata.announce ? 'announcement' : 'not_announcement';
     } catch (_) {}
 
-    // Use the proper approach: restrict the participant
     try {
-      // Try to restrict the specific user
-      await sock.groupParticipantsUpdate(m.from, [targetJid], 'demote');
-    } catch (_) {}
+      await sock.groupSettingUpdate(m.from, 'announcement');
+    } catch (err) {
+      return await m.reply.error(
+        `Could not mute the group — I need admin privileges. ${err.message || ''}`
+      );
+    }
 
-    // Fallback: just announce the timeout and track it
     const targetNum = targetJid.split('@')[0].split(':')[0];
     const durationStr = formatDuration(durationMs);
 
     await mixedCard(sock, m.from, {
-      text: `🔇 *USER TIMED OUT*\n\n👤 +${targetNum}\n⏰ Duration: *${durationStr}*\n\nThe user is muted for the specified duration. They will be automatically unmuted when the timer expires.`,
+      text: `🔇 *USER TIMED OUT*\n\n👤 +${targetNum}\n⏰ Duration: *${durationStr}*\n\nThe group is temporarily set to admin-only mode. It will automatically reopen when the timeout expires.`,
       footer: 'NEXORA Group Management',
     }, [
       { kind: 'action', label: '🔊 Unmute Now', cmd: `${p}unmute` },
       { kind: 'action', label: 'ℹ️ Group Info', cmd: `${p}groupinfo` },
     ], { quoted: m });
 
-    // Schedule automatic unmute
-    setTimeout(async () => {
+    // ── Schedule automatic unmute: restore the group's previous setting
+    const timer = setTimeout(async () => {
       try {
+        // Restore the original group setting
+        await sock.groupSettingUpdate(m.from, previousSetting);
         await sock.sendMessage(m.from, {
-          text: `🔊 +${targetNum} timeout has expired. They can send messages again.`,
+          text: `🔊 +${targetNum}'s timeout has expired. The group is back to normal.`,
         });
-      } catch (_) {}
+      } catch (_) {
+        // If restore fails, try opening the group at minimum
+        try {
+          await sock.groupSettingUpdate(m.from, 'not_announcement');
+          await sock.sendMessage(m.from, {
+            text: `🔊 Timeout expired. Group reopened.`,
+          });
+        } catch (_) {}
+      }
+      activeTimeouts.delete(m.from);
     }, durationMs);
+
+    activeTimeouts.set(m.from, { targetJid, targetNum, timer, previousSetting });
   }
 };

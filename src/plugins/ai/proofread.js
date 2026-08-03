@@ -39,7 +39,7 @@ export default {
           { kind: 'action', label: '🔄 Proofread Again',   cmd: `${p}proofread` },
         ], { quoted: m });
       } catch (err) {
-        await progress.fail(`❌ Failed to proofread: ${err.message}`);
+        await progress.fail(`Failed to proofread: ${err.message}`);
       }
     });
   }

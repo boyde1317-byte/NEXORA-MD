@@ -87,7 +87,7 @@ export default {
           { kind: 'action', label: '🔄 Translate Again',  cmd: `${p}translate` },
         ], { quoted: m });
       } catch (err) {
-        await progress.fail(`❌ Translation failed: ${err.message}`);
+        await progress.fail(`Translation failed: ${err.message}`);
       }
     });
   }

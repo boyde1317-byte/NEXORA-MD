@@ -163,7 +163,7 @@ async function runNewsletter(sock, m) {
     }, { quoted: m });
     return 'newsletter ✓';
   } catch (err) {
-    await m.reply(`❌ Newsletter dispatch failed: ${err.message}`);
+    await m.reply.error(`Newsletter dispatch failed: ${err.message}`);
     return `newsletter ✗ (${err.message})`;
   }
 }
@@ -211,7 +211,7 @@ export default {
     }
 
     if (!ALL_TYPES.includes(type)) {
-      return await m.reply(`❌ Unknown test: *"${type}"*\n\nValid: ${ALL_TYPES.join(', ')}`);
+      return await m.reply.error(`Unknown test: *"${type}"*\n\nValid: ${ALL_TYPES.join(', ')}`);
     }
 
     // ── Run specific test or all ───────────────────────────────────────────

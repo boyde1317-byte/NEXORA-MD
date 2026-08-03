@@ -89,7 +89,7 @@ export default {
           ], { quoted: m });
         } catch (_) {}
       } catch (err) {
-        await progress.fail(`❌ Pinterest search failed: ${err.message}`);
+        await progress.fail(`Pinterest search failed: ${err.message}`);
       }
     });
   }

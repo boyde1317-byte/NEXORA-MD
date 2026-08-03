@@ -21,7 +21,7 @@ export default {
     }
 
     if (!targetJid.endsWith('@newsletter')) {
-      return await m.reply(`❌ *Invalid JID format!* WhatsApp channel JIDs must end with \`@newsletter\`.`);
+      return await m.reply.error(`*Invalid JID format!* WhatsApp channel JIDs must end with \`@newsletter\`.`);
     }
 
     try {
@@ -34,7 +34,7 @@ export default {
       await m.reply(successMsg);
     } catch (err) {
       console.error('[SETCHANNEL] Error saving setting:', err);
-      await m.reply(`❌ Failed to update default channel: ${err.message || err}`);
+      await m.reply.error(`Failed to update default channel: ${err.message || err}`);
     }
   }
 };

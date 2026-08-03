@@ -20,7 +20,7 @@ export default {
     const updated = themeManager.setTheme(input);
 
     if (!updated) {
-      return await m.reply(`❌ Invalid theme: *"${args[0]}"*.\nAvailable options: \`modern\`, \`classic\`, \`minimal\`.`);
+      return await m.reply.error(`Invalid theme: *"${args[0]}"*.\nAvailable options: \`modern\`, \`classic\`, \`minimal\`.`);
     }
 
     await m.reply(`✅ *BOT DESIGN THEME UPDATED!*\n\n• *Active Theme:* _${input.toUpperCase()}_\n\n_All system messages and menus will now adapt dynamically._`);

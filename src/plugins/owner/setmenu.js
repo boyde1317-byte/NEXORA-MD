@@ -19,7 +19,7 @@ export default {
     const updated = menuManager.setActiveMenu(input, m.senderNumber);
 
     if (!updated) {
-      return await m.reply(`❌ Invalid menu style: *"${args[0]}"*.\nType \`${p}menulist\` to view all available presentation styles.`);
+      return await m.reply.error(`Invalid menu style: *"${args[0]}"*.\nType \`${p}menulist\` to view all available presentation styles.`);
     }
 
     const response = `✅ *MENU STYLE UPDATED!*\n\n` +

@@ -54,7 +54,7 @@ export const showMenu = async (sock, m, customKey = null) => {
     : menuManager.getActiveMenu();
 
   if (!menu) {
-    return await m.reply(`❌ Menu style *"${customKey}"* not found. Type \`${menuData.prefix}menulist\` to see valid options.`);
+    return await m.reply.error(`Menu style *"${customKey}"* not found. Type \`${menuData.prefix}menulist\` to see valid options.`);
   }
 
   // Delegate rendering to the fallback engine

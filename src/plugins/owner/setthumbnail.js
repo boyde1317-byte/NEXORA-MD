@@ -18,21 +18,21 @@ export default {
       const isImage = qType === 'imageMessage' || m.quoted.message?.imageMessage;
       
       if (!isImage) {
-        return await m.reply('❌ The replied message is not an image. Please reply to an image to set it as a thumbnail.');
+        return await m.reply.error('The replied message is not an image. Please reply to an image to set it as a thumbnail.');
       }
 
       await m.reply('⏳ _Downloading and updating menu thumbnail..._');
       try {
         const buffer = await m.quoted.download();
         if (!buffer) {
-          return await m.reply('❌ Failed to download replied image buffer.');
+          return await m.reply.error('Failed to download replied image buffer.');
         }
 
         const relativePath = await mediaManager.saveRepliedMedia('thumbnail', buffer, 'image/jpeg');
         return await m.reply(`✅ *Menu thumbnail updated successfully!*\nSaved to: \`${relativePath}\``);
       } catch (err) {
         console.error('Failed to set thumbnail from replied image:', err);
-        return await m.reply(`❌ Error setting thumbnail: ${err.message}`);
+        return await m.reply.error(`Error setting thumbnail: ${err.message}`);
       }
     }
 

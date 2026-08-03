@@ -54,7 +54,7 @@ export default {
           { kind: 'action', label: '🤖 Ask AI',           cmd: `${p}ai` },
         ], { quoted: m });
       } catch (err) {
-        await progress.fail(`❌ Failed to analyze image: ${(err.message || '').replace(/key=[A-Za-z0-9_-]+/gi, 'key=[REDACTED]')}`);
+        await progress.fail(`Failed to analyze image: ${(err.message || '').replace(/key=[A-Za-z0-9_-]+/gi, 'key=[REDACTED]')}`);
       }
     });
   }

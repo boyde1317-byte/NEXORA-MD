@@ -55,7 +55,7 @@ export default {
           } catch (_) {}
         }
       } catch (err) {
-        await progress.fail(`❌ Facebook download failed: ${err.message}`);
+        await progress.fail(`Facebook download failed: ${err.message}`);
       }
     });
   }
