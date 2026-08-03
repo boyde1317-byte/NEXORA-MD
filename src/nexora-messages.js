@@ -26,6 +26,10 @@ export const nexoraResponses = {
     "Handled. ❖",
     "Saved and secured. ✦",
     "That's taken care of. ☕",
+    "Locked in. 🪐",
+    "Smooth like butter. Done. ∘",
+    "Consider it handled. ✦",
+    "Mission accomplished. Back to your regularly scheduled scrolling. ☕",
   ],
 
   // ── Errors & Failures ──────────────────────────────────────────────────
@@ -35,6 +39,8 @@ export const nexoraResponses = {
     "Couldn't quite get that done. ⨯",
     "That didn't work as expected. Check your formatting. ✦",
     "System hit a snag. Care to try again? ☕",
+    "Yeah... that didn't cooperate. Give it another shot. ⚡",
+    "The bot gods are displeased. Try again. 🪐",
   ],
 
   // ── Warnings & Missing Inputs ──────────────────────────────────────────
@@ -43,6 +49,8 @@ export const nexoraResponses = {
     "You might want to double-check that. ✦",
     "I need a bit more info to run this. ☕",
     "Careful — that's not quite right. ⚡",
+    "Hold on — something's missing. ∘",
+    "Not quite. Take another look at that. ❖",
   ],
 
   // ── Loading & Processing ──────────────────────────────────────────────
@@ -52,6 +60,8 @@ export const nexoraResponses = {
     "Pulling the data now... ✦",
     "Working on it. ⚡",
     "Just a second... ∘",
+    "Crunching the numbers... 🪐",
+    "Fetching that for you... ☕",
   ],
 
   // ── Permissions & Access Control ──────────────────────────────────────
@@ -60,12 +70,14 @@ export const nexoraResponses = {
     "That's above your access level, I'm afraid. ☕",
     "I can only run this for admins. ✦",
     "Nice try — but you lack the permissions for this one. ⚡",
+    "This one's locked behind admin access. 🪐",
   ],
 
   owner_only: [
     "Owner access required for this. ✦",
     "Only my creator can authorize that. ⚡",
     "System locked to owner protocol. ❖",
+    "That's a creator-only command. No shortcuts here. 🪐",
   ],
 
   // ── Group Moderation ──────────────────────────────────────────────────
@@ -94,6 +106,8 @@ export const nexoraResponses = {
     (cmd, time) => `⏳ \`${cmd}\` is cooling down. Try again in *${time}*.`,
     (cmd, time) => `Slow down — \`${cmd}\` needs *${time}* more. ⚡`,
     (cmd, time) => `Give it *${time}* — \`${cmd}\` is on cooldown. ☕`,
+    (cmd, time) => `Patience. \`${cmd}\` will be ready in *${time}*. 🪐`,
+    (cmd, time) => `Not yet — *${time}* left on \`${cmd}\`'s cooldown. ∘`,
   ],
 
   // ── Command Not Found ─────────────────────────────────────────────────
@@ -101,12 +115,63 @@ export const nexoraResponses = {
     (cmd) => `Couldn't find \`${cmd}\`. Check the spelling? ✦`,
     (cmd) => `\`${cmd}\` isn't a command I know. ☕`,
     (cmd) => `No match for \`${cmd}\`. Try \`.help\` for the full list. ⚡`,
+    (cmd) => `\`${cmd}\`? That's not in my vocabulary. 🪐`,
+    (cmd) => `I searched high and low — \`${cmd}\` doesn't exist. ❖`,
   ],
 
   // ── Command Execution Error ───────────────────────────────────────────
   exec_error: [
     (cmd, err) => `⨯ \`${cmd}\` hit an unexpected error.\n_${err}_\n\nIf this keeps happening, contact the owner.`,
     (cmd, err) => `Something went wrong running \`${cmd}\`.\n_${err}_\n\nTry again, or reach out if it persists. ✦`,
+    (cmd, err) => `\`${cmd}\` stumbled. Here's what happened:\n_${err}_\n\nGive it another shot. ⚡`,
+  ],
+
+  // ── Welcome / Onboarding ──────────────────────────────────────────────
+  welcome: [
+    (name) => `Hey @${name} — I'm awake and ready. ☕`,
+    (name) => `Welcome aboard, @${name}. Let's get you started. ✦`,
+    (name) => `Ah, a new face. Hi @${name} — I've got you covered. ⚡`,
+    (name) => `@${name} just dropped in. Welcome — I'm all yours. 🪐`,
+  ],
+
+  // ── Daily Reward ──────────────────────────────────────────────────────
+  daily_claimed: [
+    "Reward secured. See you tomorrow. ☕",
+    "Coins in the bag. Don't break the streak! ✦",
+    "Claimed. Your wallet appreciates you. ⚡",
+    "Nice — that's another day locked in. 🪐",
+    "Sorted. Come back same time tomorrow. ∘",
+  ],
+
+  daily_streak_max: [
+    "Maximum streak! You're unstoppable. 🔥",
+    "30 days. Legendary discipline. 👑",
+    "Max streak achieved — the bot gods are impressed. 🪐",
+  ],
+
+  // ── Level Up ──────────────────────────────────────────────────────────
+  level_up: [
+    (level) => `Level ${level}! Rising through the ranks. ⚡`,
+    (level) => `You hit Level ${level}. Nicely done. ✦`,
+    (level) => `Level ${level} unlocked. Keep climbing. 🪐`,
+    (level) => `Boom — Level ${level}! The grind pays off. ☕`,
+  ],
+
+  // ── Ping ──────────────────────────────────────────────────────────────
+  ping_fast: [
+    (ms) => `⚡ ${ms}ms — faster than your reflexes.`,
+    (ms) => `${ms}ms. Basically instant. ☕`,
+    (ms) => `🪐 ${ms}ms — lightspeed.`,
+  ],
+  ping_normal: [
+    (ms) => `🏓 ${ms}ms — quick enough.`,
+    (ms) => `${ms}ms. Running smooth. ✦`,
+    (ms) => `⚡ ${ms}ms — no lag in sight.`,
+  ],
+  ping_slow: [
+    (ms) => `☕ ${ms}ms... I'm awake, I promise.`,
+    (ms) => `${ms}ms. The server's having a moment. ⚡`,
+    (ms) => `🪐 ${ms}ms — fashionably late.`,
   ],
 
   // ── Utilities ─────────────────────────────────────────────────────────

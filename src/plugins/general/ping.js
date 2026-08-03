@@ -1,5 +1,6 @@
 import { client } from '../../core/client.js';
 import { sendFakeQuote } from '../../lib/waUtils.js';
+import { getRandomResponse } from '../../nexora-messages.js';
 
 export default {
   name: 'ping',
@@ -13,9 +14,16 @@ export default {
     const sent = await sendFakeQuote(sock, m.from, '⚡ _Calculating latency..._', '📡 Ping', { quoted: m });
     const latency = Date.now() - start;
 
-    // Leverage the edit feature from the serializer helper
+    // Pick a message based on latency tier — adds personality to the number
+    let pool;
+    if (latency < 100)      pool = 'ping_fast';
+    else if (latency < 400) pool = 'ping_normal';
+    else                    pool = 'ping_slow';
+
+    const comment = getRandomResponse(pool, latency);
+
     await sock.sendMessage(m.from, {
-      text: `🏓 *Pong!* Latency: *${latency}ms*`,
+      text: comment,
       edit: sent.key
     });
   }

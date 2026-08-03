@@ -68,7 +68,7 @@ export const showMenu = async (sock, m, customKey = null) => {
     try {
       const p = menuData.prefix || '.';
       await actionCard(sock, m.from, {
-        text:   `Need more details? Tap below. ✦`,
+        text:   `That's the overview. Want to go deeper? Tap below — I've got you. ✦`,
         footer: `${menuData.botName} • ${menuData.totalCommands} commands`,
       }, [
         { label: '📖 Command Guide',   cmd: `${p}help` },
@@ -86,7 +86,7 @@ export const showMenu = async (sock, m, customKey = null) => {
       const p = menuData.prefix || '.';
       await actionCard(sock, m.from, {
         text:   `👁️ You're previewing *${menu.name}*.
-Like it? Set it as your default menu style.`,
+Like what you see? Make it permanent — one tap below.`,
         footer: `Currently active: ${activeMenu.name}`,
       }, [
         { label: `✅ Set as Default`, cmd: `${p}setmenu ${menu.id}` },

@@ -88,12 +88,12 @@ export default {
             ...(leveledUp        ? [['🎉 Level Up!', `You are now Level ${after.level}!`]]         : []),
             ...(streak===MAX_STREAK ? [['🏆 Max Streak', 'Achievement unlocked! Keep it up!']] : []),
           ],
-          footer: 'Come back tomorrow for more rewards!',
+          footer: `Same time tomorrow. Don't break the streak. 🔥`,
         }, { quoted: m });
 
         const thumbnail = await getBrandThumbnail();
         return await actionCardWithAd(sock, m.from, {
-          text:   `Keep the streak going — claim again in 24 hours!`,
+          text:   `Keep the streak alive — come back tomorrow for an even bigger haul. 🔥`,
           footer: `${brand?.name ?? 'NEXORA'} Economy`,
         }, [
           { label: 'Check Balance',     cmd: `${p}balance` },

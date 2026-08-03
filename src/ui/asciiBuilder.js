@@ -22,6 +22,8 @@ export const asciiBuilder = {
       formatted.push(`✦ *${toSmallcaps(title)}* ✦\n`);
     }
     items.forEach(item => formatted.push(`✦ ${item}`));
+    formatted.push('');
+    formatted.push('❖');
     return formatted.join('\n');
   },
 

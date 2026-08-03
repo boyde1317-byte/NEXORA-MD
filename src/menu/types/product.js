@@ -46,7 +46,7 @@ export const productMenu = {
         text:      bodyText,
         footer:    footerText,
         image:     imagePayload,
-        offerText:  '🎁 Free Premium Bot Access',
+        offerText:  '🎁 Free Premium Access — Expires Soon',
         offerUrl:   'https://wa.me/233533416608',
         offerCode:  'NEXORA-FREE',
         offerExpiry: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // expires in 7 days

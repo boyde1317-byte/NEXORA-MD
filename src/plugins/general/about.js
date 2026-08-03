@@ -47,7 +47,7 @@ export default {
       }, { quoted: m });
 
       return await mixedCard(sock, m.from, {
-        text:   `✦ *${toSmallcaps(brand.name)}* ✦\n${toSmallcaps(brand.description)}\n${toSmallcaps(brand.signature)}`,
+        text:   `✦ *${toSmallcaps(brand.name)}* ✦\n${toSmallcaps(brand.description)}\n${toSmallcaps('Not your average bot. Yours.')}\n\n${toSmallcaps(brand.signature)}`,
         footer: `${brand.name} v${brand.version} • ${totalCmds} commands`,
       }, [
         { kind: 'url',    label: '💬 Contact Developer',  url:   'https://wa.me/233533416608' },
@@ -64,6 +64,7 @@ export default {
       `✦ *${toSmallcaps(brand.name)}* ✦`,
       ``,
       `${toSmallcaps('Next Generation WhatsApp MD Framework')}`,
+      `${toSmallcaps('Not your average bot. Yours.')}`,
       ``,
       `*${toSmallcaps('Developer')}*`,
       `  ${brand.creator}`,

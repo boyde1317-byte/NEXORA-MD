@@ -7,9 +7,11 @@ import { asciiBuilder } from '../ui/asciiBuilder.js';
 
 export const getGreeting = () => {
   const hour = new Date().getHours();
+  if (hour < 5)  return 'Burning the midnight oil? 🌙';
   if (hour < 12) return 'Good Morning 🌅';
-  if (hour < 18) return 'Good Afternoon ☀️';
-  return 'Good Evening 🌃';
+  if (hour < 17) return 'Good Afternoon ☀️';
+  if (hour < 21) return 'Good Evening 🌃';
+  return "Late night, huh? I'm here. 🌙";
 };
 
 export const divider = '─────────────────────────';

@@ -43,7 +43,7 @@ export default {
 
       try {
         await actionCard(sock, m.from, {
-          text: 'What would you like to do next?',
+          text: 'What\'s next on the agenda? ✦',
           footer: 'NEXORA Economy',
         }, [
           { label: '🪙 Claim Daily',  cmd: `${p}daily` },

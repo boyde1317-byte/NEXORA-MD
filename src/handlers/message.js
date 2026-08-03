@@ -290,9 +290,10 @@ try {
         const welcomeText = [
           `✦ *${toSmallcaps('Welcome to ' + config.botName)}* ✦`,
           ``,
-          `Hey @${number} — I'm ${config.botName}. Here's the quick start:`,
+          `Hey @${number} — I'm ${config.botName}. Not just a bot — *your* bot.`,
+          `Think of me as the friend who knows everything and can actually do stuff. ☕`,
           ``,
-          `Tap a button below to get started, or type *${p}menu* for the full console. ☕`,
+          `Tap a button below to jump in, or type *${p}menu* for the full console. ✦`,
         ].join('\n');
         try {
           await actionCard(sock, jid, {
@@ -317,7 +318,7 @@ try {
               `• ${p}ping  — ${toSmallcaps('Check if I am alive')}`,
               `• ${p}daily — ${toSmallcaps('Claim daily rewards')}`,
               ``,
-              `Type *${p}menu* to see everything I can do. ☕`,
+              `Type *${p}menu* to see everything I can do. I'll be here. ✦`,
             ].join('\n'),
             mentions: [sender],
           }, { quoted: rawMessage }).catch(() => {});

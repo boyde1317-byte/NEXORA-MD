@@ -41,7 +41,7 @@ export default {
       const headerText = [
         `✦ *${toSmallcaps('Command Guide')}* ✦`,
         ``,
-        `${totalCmds} commands across ${sortedCats.length} categories.`,
+        `${totalCmds} commands across ${sortedCats.length} categories. Pick your poison. ☕`,
         ``,
         `${toSmallcaps('Tap a category below to explore its commands')}:`,
       ].join('\n');
@@ -159,7 +159,7 @@ export default {
     }
 
     lines.push('');
-    lines.push(`_Type \`${p}${command.name}\` to use this command. ✦_`);
+    lines.push(`_Type \`${p}${command.name}\` to use this command. Go on, I dare you. ✦_`);
 
     await m.reply(asciiBuilder.box(command.name, lines));
   }
