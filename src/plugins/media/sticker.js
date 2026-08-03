@@ -44,7 +44,7 @@ export default {
       await sock.sendMessage(m.from, { sticker: stickerBuffer }, { quoted: m });
     } catch (err) {
       console.error('[PLUGIN ERROR] sticker conversion failed:', err);
-      await progress.fail(`❌ Failed to create sticker: ${err.message}`);
+      await progress.fail(`Failed to create sticker: ${err.message}`);
     }
   }
 };

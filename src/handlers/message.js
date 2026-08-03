@@ -19,6 +19,7 @@ import { getDisplayName } from '../lib/displayName.js';
 import { getRandomResponse } from '../nexora-messages.js';
 import { suggestCommand } from '../lib/fuzzyMatch.js';
 import { toSmallcaps } from '../lib/smallcaps.js';
+import { actionCard } from '../lib/interactiveKit.js';
 
 // ── Hoisted regexes (compiled once, not on every message) ─────────────────────
 // Anti-link pattern: matches URLs and known social/messaging platform links.
@@ -277,7 +278,8 @@ try {
   }
 
   // ── First-time user onboarding ─────────────────────────────────────────
-  // Detect if this is the user's first interaction and send a welcome guide.
+  // Detect if this is the user's first interaction and send a welcome guide
+  // with interactive tappable buttons so new users can explore without typing.
   if (!m.fromMe) {
     try {
       const userRec = db.getUser(sender);
@@ -285,23 +287,41 @@ try {
         db.setUser(sender, { hasOnboarded: true });
         const number = sender.split('@')[0].split(':')[0];
         const p = config.prefix[0] || '.';
-        await sock.sendMessage(jid, {
-          text: [
-            `✦ *${toSmallcaps('Welcome to ' + config.botName)}* ✦`,
-            ``,
-            `Hey @${number} — I'm ${config.botName}. Here's the quick start:`,
-            ``,
-            `*${toSmallcaps('Quick Start')}*`,
-            `• ${p}menu  — ${toSmallcaps('Interactive command console')}`,
-            `• ${p}help  — ${toSmallcaps('Detailed command guide')}`,
-            `• ${p}ping  — ${toSmallcaps('Check if I am alive')}`,
-            `• ${p}ai    — ${toSmallcaps('Chat with AI')}`,
-            `• ${p}daily — ${toSmallcaps('Claim daily rewards')}`,
-            ``,
-            `Type *${p}menu* to see everything I can do. ☕`,
-          ].join('\n'),
-          mentions: [sender],
-        }, { quoted: rawMessage }).catch(() => {});
+        const welcomeText = [
+          `✦ *${toSmallcaps('Welcome to ' + config.botName)}* ✦`,
+          ``,
+          `Hey @${number} — I'm ${config.botName}. Here's the quick start:`,
+          ``,
+          `Tap a button below to get started, or type *${p}menu* for the full console. ☕`,
+        ].join('\n');
+        try {
+          await actionCard(sock, jid, {
+            text:   welcomeText,
+            footer: `${config.botName} • Quick Start`,
+          }, [
+            { label: '🎮 Open Menu',      cmd: `${p}menu` },
+            { label: '📖 Command Guide',   cmd: `${p}help` },
+            { label: '🪙 Claim Daily',     cmd: `${p}daily` },
+            { label: '🏓 Ping Bot',        cmd: `${p}ping` },
+          ], { quoted: rawMessage, mentions: [sender] });
+        } catch (_) {
+          // Fallback: plain text if interactive cards are unavailable
+          await sock.sendMessage(jid, {
+            text: [
+              `✦ *${toSmallcaps('Welcome to ' + config.botName)}* ✦`,
+              ``,
+              `Hey @${number} — I'm ${config.botName}. Here's the quick start:`,
+              ``,
+              `• ${p}menu  — ${toSmallcaps('Interactive command console')}`,
+              `• ${p}help  — ${toSmallcaps('Detailed command guide')}`,
+              `• ${p}ping  — ${toSmallcaps('Check if I am alive')}`,
+              `• ${p}daily — ${toSmallcaps('Claim daily rewards')}`,
+              ``,
+              `Type *${p}menu* to see everything I can do. ☕`,
+            ].join('\n'),
+            mentions: [sender],
+          }, { quoted: rawMessage }).catch(() => {});
+        }
       }
     } catch (err) {
       console.error('[ONBOARDING] Error:', err.message);
@@ -321,12 +341,24 @@ try {
   if (!command) {
     // ── "Did you mean?" fuzzy suggestion ──────────────────────────────
     // Instead of silently ignoring, suggest the closest command match.
+    // When a match is found, send an interactive button so the user can
+    // tap to run it directly — no retyping needed.
     const allNames = [...client.commands.keys(), ...client.aliases.keys()];
     const suggestion = suggestCommand(commandName, allNames);
     if (suggestion) {
-      await m.reply(
-        `${getRandomResponse('not_found', `${prefix}${commandName}`)}\n\nDid you mean: *${prefix}${suggestion}*?`
-      );
+      try {
+        await actionCard(sock, jid, {
+          text:   `${getRandomResponse('not_found', `${prefix}${commandName}`)}\n\nDid you mean: *${prefix}${suggestion}*?`,
+          footer: `${config.botName} • Did you mean?`,
+        }, [
+          { label: `▶️ Run ${prefix}${suggestion}`, cmd: `${prefix}${suggestion}` },
+          { label: '📖 View Help',                      cmd: `${prefix}help` },
+        ], { quoted: rawMessage });
+      } catch (_) {
+        await m.reply(
+          `${getRandomResponse('not_found', `${prefix}${commandName}`)}\n\nDid you mean: *${prefix}${suggestion}*?`
+        );
+      }
     } else {
       await m.reply(
         `${getRandomResponse('not_found', `${prefix}${commandName}`)}\n\nType *${prefix}help* to see all commands, or *${prefix}menu* for the interactive console.`
@@ -403,7 +435,25 @@ try {
     } else {
       timeStr = `${remainingSec.toFixed(1)}s`;
     }
-    await m.reply(getRandomResponse('cooldown', command.name, timeStr));
+    // ── Cooldown UX: suggest related commands the user can try while waiting.
+    // This turns a dead-end "wait" message into an actionable pivot.
+    const cooldownMsg = getRandomResponse('cooldown', command.name, timeStr);
+    const sameCategory = [...client.commands.values()]
+      .filter(c => c.category === command.category && c.name !== command.name)
+      .slice(0, 3)
+      .map(c => c.name);
+    if (sameCategory.length > 0) {
+      try {
+        await actionCard(sock, jid, {
+          text:   `${cooldownMsg}\n\nWhile you wait, try:`,
+          footer: `${config.botName} • Cooldown`,
+        }, sameCategory.map(c => ({ label: `▶️ ${prefix}${c}`, cmd: `${prefix}${c}` })), { quoted: rawMessage });
+      } catch (_) {
+        await m.reply(cooldownMsg);
+      }
+    } else {
+      await m.reply(cooldownMsg);
+    }
     return;
   }
 

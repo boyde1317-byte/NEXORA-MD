@@ -64,7 +64,7 @@ export default {
           text:   `🚫 *@${targetNumber}* has been removed from the group.`,
           footer: 'NEXORA Guard • Group Management',
         }, [
-          { label: 'Warn Next Member',       cmd: `${p}warn` },
+          { label: '⚠️ Warn a Member',        cmd: `${p}warn` },
           { label: 'Mute Group',              cmd: `${p}mute` },
           { label: 'Group Info',              cmd: `${p}groupinfo` },
         ], { quoted: m, mentions: [target] });

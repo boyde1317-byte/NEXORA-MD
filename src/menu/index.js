@@ -60,6 +60,24 @@ export const showMenu = async (sock, m, customKey = null) => {
   // Delegate rendering to the fallback engine
   await runWithFallback(menu.renderer, { sock, m, menuData });
 
+  // ── Follow-up: quick-access buttons after the menu card ──────────────
+  // Gives users a one-tap path to help, daily rewards, and ping from the
+  // menu — no need to type anything. Skipped when previewing a custom style
+  // (the style-preview buttons below are more relevant in that context).
+  if (!customKey) {
+    try {
+      const p = menuData.prefix || '.';
+      await actionCard(sock, m.from, {
+        text:   `Need more details? Tap below. ✦`,
+        footer: `${menuData.botName} • ${menuData.totalCommands} commands`,
+      }, [
+        { label: '📖 Command Guide',   cmd: `${p}help` },
+        { label: '🪙 Claim Daily',     cmd: `${p}daily` },
+        { label: '🏓 Ping Bot',        cmd: `${p}ping` },
+      ], { quoted: m });
+    } catch (_) {}
+  }
+
   // If the user is previewing a non-default style, offer a one-tap button to
   // set it as the default so they don't have to separately run .setmenu.
   const activeMenu = menuManager.getActiveMenu();
