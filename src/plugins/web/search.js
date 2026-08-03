@@ -8,8 +8,9 @@ export default {
   description: 'Search the web using DuckDuckGo.',
   cooldown: 5000,
   execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     const query = args.join(' ');
-    if (!query) return await m.reply.info('Usage: `!search <query>`', 'WEB SEARCH');
+    if (!query) return await m.reply.info('Usage: `${p}search <query>`', 'WEB SEARCH');
     
     try {
       const result = await Providers.search(query);

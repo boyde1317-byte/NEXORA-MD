@@ -6,9 +6,10 @@ export default {
   category: 'web',
   description: 'Convert currency.',
   cooldown: 5000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     if (args.length < 3) {
-      return await m.reply.info('Usage: `!currency <amount> <from> <to>`\nExample: `!currency 100 USD EUR`', 'CURRENCY CONVERTER');
+      return await m.reply.info('Usage: `${p}currency <amount> <from> <to>`\nExample: `${p}currency 100 USD EUR`', 'CURRENCY CONVERTER');
     }
     
     const amount = parseFloat(args[0]);

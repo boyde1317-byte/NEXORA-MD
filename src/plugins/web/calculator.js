@@ -7,9 +7,10 @@ export default {
   category: 'web',
   description: 'Evaluates a math expression.',
   cooldown: 5000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     const expr = args.join(' ');
-    if (!expr) return await m.reply.info('Usage: `!calc <expression>`\nExample: `!calc (12 + 8) * 3`', 'CALCULATOR');
+    if (!expr) return await m.reply.info('Usage: `${p}calc <expression>`\nExample: `${p}calc (12 + 8) * 3`', 'CALCULATOR');
     
     try {
       const result = await Providers.calculator(expr);

@@ -5,7 +5,7 @@ export default {
   name: 'ocr',
   aliases: ['readtext', 'textfromimage', 'extract'],
   category: 'utility',
-  description: 'Extracts text from an image. Reply to or send a photo with `!ocr`.',
+  description: 'Extracts text from an image. Reply to or send a photo with `.ocr`.',
   cooldown: 6000,
   execute: async ({ m, sock }) => {
     const isImage = m.type === 'imageMessage' || m.quoted?.type === 'imageMessage';

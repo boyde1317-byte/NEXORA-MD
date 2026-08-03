@@ -10,7 +10,7 @@ export default {
   name: 'base64',
   aliases: ['b64', 'encode', 'decode'],
   category: 'utility',
-  description: 'Encodes or decodes base64. !base64 encode <text> | !base64 decode <b64>',
+  description: 'Encodes or decodes base64. .base64 encode <text> | .base64 decode <b64>',
   cooldown: 1500,
   execute: async ({ m, sock, args, body, prefix }) => {
     const p = prefix || '.';
@@ -39,7 +39,7 @@ export default {
         ], [], { quoted: m });
       } catch (_) {}
       return await m.reply.info(
-        'Usage:\n• `!base64 encode <text>` — convert text to base64\n• `!base64 decode <base64>` — decode base64 to text',
+        'Usage:\n• `${p}base64 encode <text>` — convert text to base64\n• `${p}base64 decode <base64>` — decode base64 to text',
         'BASE64'
       );
     }

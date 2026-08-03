@@ -17,9 +17,10 @@ export default {
   name: 'remind',
   aliases: ['reminder', 'remindme', 'timer'],
   category: 'utility',
-  description: 'Sets a personal reminder. Usage: !remind <time> <message>\nTime: 10m, 1h, 30s etc. Max 24h.',
+  description: 'Sets a personal reminder. Usage: .remind <time> <message>\nTime: 10m, 1h, 30s etc. Max 24h.',
   cooldown: 2000,
-  execute: async ({ m, sock, args, sender }) => {
+  execute: async ({ m, sock, args, sender, prefix }) => {
+    const p = prefix || '.';
     if (args[0]?.toLowerCase() === 'list') {
       const userReminders = [...activeReminders.entries()]
         .filter(([, r]) => r.sender === sender)
@@ -50,7 +51,7 @@ export default {
 
     if (!timeStr || !message) {
       return await m.reply.info(
-        'Usage: `!remind <time> <message>`\n\nExamples:\n• `!remind 10m Take a break`\n• `!remind 1h Check the oven`\n• `!remind 30s Drink water`\n\nCommands:\n• `!remind list` — see active reminders\n• `!remind cancel <id>` — cancel a reminder',
+        'Usage: `${p}remind <time> <message>`\n\nExamples:\n• `${p}remind 10m Take a break`\n• `${p}remind 1h Check the oven`\n• `${p}remind 30s Drink water`\n\nCommands:\n• `${p}remind list` — see active reminders\n• `${p}remind cancel <id>` — cancel a reminder',
         'REMINDER'
       );
     }

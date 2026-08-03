@@ -7,7 +7,8 @@ export default {
   description: 'Unmutes the group so all participants can send messages.',
   permissions: { groupOnly: true, admin: true, botAdmin: true },
   cooldown: 5000,
-  execute: async ({ m, sock }) => {
+  execute: async ({ m, sock, prefix }) => {
+    const p = prefix || '.';
     try {
       await sock.groupSettingUpdate(m.from, 'not_announcement');
       try {
@@ -15,7 +16,7 @@ export default {
           text:   '🔔 Group unmuted. All participants can send messages now.',
           footer: 'Tap below to re-mute',
         }, [
-          { label: '🔇 Mute Group', cmd: `${m.body?.split(' ')[0]?.replace(/[^.a-z]/gi, '') || '.'}mute` },
+          { label: '🔇 Mute Group', cmd: `${p}mute` },
         ], { quoted: m });
       } catch (_) {
         await m.reply.success('Group unmuted. All participants can send messages now.');

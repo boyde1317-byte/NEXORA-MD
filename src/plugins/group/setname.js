@@ -4,9 +4,10 @@ export default {
   description: 'Changes the group subject/name.',
   permissions: { groupOnly: true, admin: true, botAdmin: true },
   cooldown: 5000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     const name = args.join(' ');
-    if (!name) return await m.reply.info('Usage: `!setname <new name>`', '✏️ GROUP NAME')
+    if (!name) return await m.reply.info('Usage: `${p}setname <new name>`', '✏️ GROUP NAME')
     
     try {
       await sock.groupUpdateSubject(m.from, name);

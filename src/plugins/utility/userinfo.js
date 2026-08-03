@@ -6,7 +6,8 @@ export default {
   category: 'utility',
   description: 'Looks up a WhatsApp user\'s info — reply to their message, @ mention, or provide a number.',
   cooldown: 5000,
-  execute: async ({ m, sock, args, db }) => {
+  execute: async ({ m, sock, args, db, prefix }) => {
+    const p = prefix || '.';
     let targetJid = null;
     if (m.quoted) {
       targetJid = m.quoted.sender;
@@ -21,7 +22,7 @@ export default {
 
     if (!targetJid) {
       return await m.reply.info(
-        'Usage: Reply to a message, mention someone with @, or provide a phone number.\n\n`!userinfo @user`\n`!userinfo 2335970000000`',
+        'Usage: Reply to a message, mention someone with @, or provide a phone number.\n\n`${p}userinfo @user`\n`${p}userinfo 2335970000000`',
         'USER INFO'
       );
     }

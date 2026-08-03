@@ -6,9 +6,10 @@ export default {
   category: 'web',
   description: 'Lookup WHOIS information for a domain.',
   cooldown: 5000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     const domain = args[0];
-    if (!domain) return await m.reply.info('Usage: `!whois <domain>`', 'WHOIS LOOKUP');
+    if (!domain) return await m.reply.info('Usage: `${p}whois <domain>`', 'WHOIS LOOKUP');
     
     try {
       const data = await Providers.whois(domain);

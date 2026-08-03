@@ -7,16 +7,16 @@ export default {
   description: 'Mutes the group so only admins can send messages.',
   permissions: { groupOnly: true, admin: true, botAdmin: true },
   cooldown: 5000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, prefix }) => {
     try {
       await sock.groupSettingUpdate(m.from, 'announcement');
-      const p = (args && args[0]) ? '' : '.';
+    const p = prefix || '.';
       try {
         await actionCard(sock, m.from, {
           text:   '🔇 Group muted. Only admins can send messages now.',
           footer: 'Tap below to undo',
         }, [
-          { label: '🔔 Unmute Group', cmd: `${m.body?.split(' ')[0]?.replace(/[^.a-z]/gi, '') || '.'}unmute` },
+          { label: '🔔 Unmute Group', cmd: `${p}unmute` },
         ], { quoted: m });
       } catch (_) {
         await m.reply.success('Group muted. Only admins can send messages now.');

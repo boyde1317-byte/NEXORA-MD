@@ -2,17 +2,18 @@ import { withReactionStatus, replyTable, getBrandThumbnail } from '../../lib/cos
 import { mixedCard, actionCardWithAd } from '../../lib/interactiveKit.js';
 
 const IP_RE   = /^(\d{1,3}\.){3}\d{1,3}$/;
-const HOST_RE = /^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$/;
+const HOST_RE = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$/;
 
 export default {
   name: 'ip',
   aliases: ['ipinfo', 'iplookup', 'geoip', 'myip'],
   category: 'utility',
-  description: 'Looks up info for an IP address or domain. Use `!ip` alone to check your own public IP.',
+  description: 'Looks up info for an IP address or domain. Use `.ip` alone to check your own public IP.',
   cooldown: 5000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
     const input = args[0]?.trim().replace(/^https?:\/\//i, '').split('/')[0];
     const target = (input && (IP_RE.test(input) || HOST_RE.test(input))) ? input : '';
+    const p = prefix || '.';
 
     await withReactionStatus(m, async () => {
       const endpoint = target ? `https://ipwho.is/${target}` : 'https://ipwho.is/';
@@ -50,7 +51,7 @@ export default {
 ${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}`,
           footer: '📍 Tap thumbnail for Maps',
         }, [
-          { label: '🔍 Lookup Another', cmd: `${m.body?.split(' ')[0]?.replace(/[^.a-z]/gi, '') || '.'}ip` },
+          { label: '🔍 Lookup Another', cmd: `${p}ip` },
         ], {
           title:    `🌐 ${d.ip}`,
           body:     `${d.flag?.emoji ?? ''} ${d.country ?? ''} • ${d.city ?? ''}`,

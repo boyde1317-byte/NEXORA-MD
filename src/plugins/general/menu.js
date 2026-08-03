@@ -2,7 +2,7 @@ import { showMenu } from '../../menu/index.js';
 
 export default {
   name: 'menu',
-  aliases: ['help', '?'],
+  aliases: ['?'],
   category: 'general',
   description: 'Shows the premium interactive command console in your active presentation style.',
   cooldown: 3000,

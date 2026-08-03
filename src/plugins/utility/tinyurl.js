@@ -9,11 +9,12 @@ export default {
   category: 'utility',
   description: 'Shortens a long URL using TinyURL. No API key required.',
   cooldown: 4000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     const url = args[0]?.trim();
     if (!url || !URL_RE.test(url)) {
       return await m.reply.info(
-        'Usage: `!tinyurl <url>`\n\nExample: `!tinyurl https://example.com/very/long/path?query=value`',
+        'Usage: `${p}tinyurl <url>`\n\nExample: `${p}tinyurl https://example.com/very/long/path?query=value`',
         'URL SHORTENER'
       );
     }

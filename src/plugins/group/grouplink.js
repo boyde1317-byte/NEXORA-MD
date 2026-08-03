@@ -5,7 +5,7 @@ export default {
   name: 'grouplink',
   aliases: ['invitelink', 'invite', 'link'],
   category: 'group',
-  description: 'Gets or resets the group invite link. Use `!grouplink reset` to revoke and generate a new one.',
+  description: 'Gets or resets the group invite link. Use `.grouplink reset` to revoke and generate a new one.',
   permissions: { groupOnly: true, admin: true, botAdmin: true },
   cooldown: 5000,
   execute: async ({ m, sock, args }) => {

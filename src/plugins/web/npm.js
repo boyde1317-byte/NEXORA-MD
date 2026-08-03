@@ -6,9 +6,10 @@ export default {
   category: 'web',
   description: 'Search for an NPM package.',
   cooldown: 5000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     const pkg = args[0];
-    if (!pkg) return await m.reply.info('Usage: `!npm <package>`', 'NPM REGISTRY');
+    if (!pkg) return await m.reply.info('Usage: `${p}npm <package>`', 'NPM REGISTRY');
     
     try {
       const data = await Providers.npm(pkg);

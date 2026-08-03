@@ -15,7 +15,7 @@ export default {
   name: 'leaderboard',
   aliases: ['lb', 'top', 'topusers', 'ranking'],
   category: 'economy',
-  description: 'Shows the top 10 users by XP globally. Use `!lb coins` to rank by coins instead.',
+  description: 'Shows the top 10 users by XP globally. Use `.lb coins` to rank by coins instead.',
   cooldown: 5000,
   execute: async ({ m, sock, args, db, prefix }) => {
     const p     = prefix || '.';

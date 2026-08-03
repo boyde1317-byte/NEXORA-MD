@@ -21,7 +21,7 @@ export default {
       try {
         const { selectMenu } = await import('../lib/interactiveKit.js');
         return await selectMenu(sock, m.from, {
-          text:   '📅 *CREATE EVENT*\n\nFormat: `!event Title | Description | MinutesFromNow | Link`',
+          text:   '📅 *CREATE EVENT*\n\nFormat: `${p}event Title | Description | MinutesFromNow | Link`',
           footer: 'Example: !event Team Meeting | Sprint review | 60 | https://call.whatsapp.com/...',
         }, '📋 Quick Templates', [
           { title: 'Common Meetings', rows: [
@@ -31,7 +31,7 @@ export default {
           ]},
         ], [], { quoted: m });
       } catch (_) {}
-      return await m.reply('❌ Formatting error. Usage:\n`!event Title | Description | MinutesFromNow | MeetingLink`');
+      return await m.reply.error(`Formatting error. Usage:\n\`${p}event Title | Description | MinutesFromNow | MeetingLink\``);
     }
 
     const parts         = input.split('|').map(s => s.trim());
@@ -71,7 +71,7 @@ export default {
       }, { quoted: m });
 
     } catch (err) {
-      await m.reply(`❌ Failed to send event: ${err.message}`);
+      await m.reply.error(`Failed to send event: ${err.message}`);
     }
   },
 };

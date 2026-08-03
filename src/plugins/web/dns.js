@@ -6,9 +6,10 @@ export default {
   category: 'web',
   description: 'Look up DNS records for a domain.',
   cooldown: 5000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     const domain = args[0];
-    if (!domain) return await m.reply.info('Usage: `!dns <domain>`', 'DNS LOOKUP');
+    if (!domain) return await m.reply.info('Usage: `${p}dns <domain>`', 'DNS LOOKUP');
     
     try {
       const data = await Providers.dns(domain);

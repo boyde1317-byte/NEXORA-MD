@@ -6,11 +6,12 @@ export default {
   category: 'utility',
   description: 'Generates a QR code image from any text or URL.',
   cooldown: 4000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     const text = args.join(' ').trim();
     if (!text) {
       return await m.reply.info(
-        'Usage: `!qr <text or URL>`\n\nExamples:\n• `!qr https://github.com`\n• `!qr Hello World`\n• `!qr +233597514499`',
+        'Usage: `${p}qr <text or URL>`\n\nExamples:\n• `${p}qr https://github.com`\n• `${p}qr Hello World`\n• `${p}qr +233597514499`',
         'QR CODE GENERATOR'
       );
     }

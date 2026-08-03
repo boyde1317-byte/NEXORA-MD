@@ -7,9 +7,10 @@ export default {
   category: 'web',
   description: 'Search MDN Web Docs.',
   cooldown: 5000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     const query = args.join(' ');
-    if (!query) return await m.reply.info('Usage: `!docs <query>`\nExample: `!docs Array.map`', 'MDN DOCS');
+    if (!query) return await m.reply.info('Usage: `${p}docs <query>`\nExample: `${p}docs Array.map`', 'MDN DOCS');
     
     try {
       const data = await Providers.docs(query);

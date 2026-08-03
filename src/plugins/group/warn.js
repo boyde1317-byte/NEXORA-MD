@@ -12,7 +12,8 @@ export default {
   description: 'Warn a group member. At 3 warnings the user is kicked automatically.',
   permissions: { groupOnly: true, admin: true, botAdmin: true },
   cooldown: 3000,
-  execute: async ({ m, sock, args, db, config }) => {
+  execute: async ({ m, sock, args, db, config, prefix }) => {
+    const p = prefix || '.';
     const sub = args[0]?.toLowerCase();
 
     if (sub === 'reset' || sub === 'clear') {
@@ -41,7 +42,7 @@ export default {
 
     if (!target) {
       return await m.reply.info(
-        'Usage:\n• `!warn @user [reason]` — add a warning\n• `!warn reset @user` — clear all warnings\n\nAt *3 warnings* the user is automatically kicked from the group.',
+        'Usage:\n• `${p}warn @user [reason]` — add a warning\n• `${p}warn reset @user` — clear all warnings\n\nAt *3 warnings* the user is automatically kicked from the group.',
         'WARN SYSTEM'
       );
     }

@@ -7,9 +7,10 @@ export default {
   category: 'web',
   description: 'Get the dictionary definition of a word.',
   cooldown: 5000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     const word = args[0];
-    if (!word) return await m.reply.info('Usage: `!define <word>`', 'DICTIONARY');
+    if (!word) return await m.reply.info('Usage: `${p}define <word>`', 'DICTIONARY');
     
     try {
       const data = await Providers.define(word);

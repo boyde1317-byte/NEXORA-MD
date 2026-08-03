@@ -4,10 +4,11 @@ export default {
   category: 'general',
   description: 'Creates a custom interactive poll in the chat.',
   cooldown: 3000,
-  execute: async ({ sock, m, args }) => {
+  execute: async ({ sock, m, args, prefix }) => {
+    const p = prefix || '.';
     const text = args.join(' ');
     if (!text || !text.includes('|')) {
-      return await m.reply('❌ Invalid format. Usage: `!poll Question | Option1 | Option2 | ...`');
+      return await m.reply.error(`Invalid format. Usage: \`${p}poll Question | Option1 | Option2 | ...\``);
     }
 
     const parts = text.split('|').map(p => p.trim());
@@ -15,7 +16,7 @@ export default {
     const options = parts.slice(1);
 
     if (options.length < 2) {
-      return await m.reply('❌ You must provide at least two voting options.');
+      return await m.reply.error('You must provide at least two voting options.');
     }
 
     try {
@@ -27,7 +28,7 @@ export default {
         }
       }, { quoted: m });
     } catch (err) {
-      await m.reply(`❌ Failed to send poll: ${err.message}`);
+      await m.reply.error(`Failed to send poll: ${err.message}`);
     }
   }
 };

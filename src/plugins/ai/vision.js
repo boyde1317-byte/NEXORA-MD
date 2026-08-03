@@ -7,7 +7,7 @@ export default {
   name: 'vision',
   aliases: ['analyze', 'imageai'],
   category: 'ai',
-  description: 'Analyzes an image using AI. Reply to an image with !vision [prompt].',
+  description: 'Analyzes an image using AI. Reply to an image with .vision [prompt].',
   cooldown: 8000,
   execute: async ({ m, sock, args, prefix, rawMessage }) => {
     if (!aiTextGenerator.isEnabled()) {

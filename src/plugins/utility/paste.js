@@ -7,7 +7,8 @@ export default {
   category: 'utility',
   description: 'Uploads text to paste.rs and returns a shareable link. Reply to a text message or type directly.',
   cooldown: 5000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     let text = '';
 
     if (m.quoted && m.quoted.body) {
@@ -18,7 +19,7 @@ export default {
 
     if (!text) {
       return await m.reply.info(
-        'Usage:\n• `!paste <your text>` — paste typed text\n• Reply to any message with `!paste` — paste that message\n\nReturns a shareable link.',
+        'Usage:\n• `${p}paste <your text>` — paste typed text\n• Reply to any message with `${p}paste` — paste that message\n\nReturns a shareable link.',
         'PASTE ONLINE'
       );
     }

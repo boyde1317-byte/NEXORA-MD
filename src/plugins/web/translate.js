@@ -7,7 +7,8 @@ export default {
   category: 'web',
   description: 'Translate text to a specified language.',
   cooldown: 5000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     let targetLang = 'en';
     let text = args.join(' ');
 
@@ -22,7 +23,7 @@ export default {
     }
 
     if (!text) {
-      return await m.reply.info('Usage: `!tr <lang> <text>` or reply to a message with `!tr <lang>`', 'TRANSLATOR');
+      return await m.reply.info('Usage: `${p}tr <lang> <text>` or reply to a message with `${p}tr <lang>`', 'TRANSLATOR');
     }
     
     try {

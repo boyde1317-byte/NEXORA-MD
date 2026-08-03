@@ -7,7 +7,6 @@
  */
 import { client } from '../../core/client.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
-import { getRandomResponse } from '../../nexora-messages.js';
 
 export default {
   name: 'help',
@@ -18,7 +17,7 @@ export default {
   execute: async ({ m, args, prefix }) => {
     const p = prefix || '.';
 
-    // ── No args: show category overview ──────────────────────────────────
+    // ── No args: show category overview ──────────────────────────────
     if (!args[0]) {
       const categories = {};
       client.commands.forEach((cmd) => {
@@ -27,18 +26,33 @@ export default {
         categories[cat].push(cmd.name);
       });
 
-      const lines = [
-        `Here's what I can do. Use \`${p}help <command>\` for details on any command.\n`,
-      ];
-
-      for (const cat of Object.keys(categories).sort()) {
-        const cmds = categories[cat].sort();
-        lines.push(`*${cat.toUpperCase()}* (${cmds.length})`);
-        lines.push(`  ${cmds.join(', ')}`);
-        lines.push('');
+      // If a category is specified, show just that category
+      const catArg = args[0]?.toLowerCase();
+      if (catArg && categories[catArg]) {
+        const cmds = categories[catArg].sort();
+        const lines = [
+          `*${catArg.toUpperCase()}* — ${cmds.length} commands\n`,
+          ...cmds.map(c => `  ${p}${c}`),
+          `\n_Use \`${p}help <command>\` for detailed usage._`,
+        ];
+        return await m.reply(asciiBuilder.box(`📖 ${catArg.toUpperCase()} COMMANDS`, lines));
       }
 
-      lines.push(`_Type \`${p}menu\` for the interactive command console._`);
+      // Show compact category summary
+      const sortedCats = Object.keys(categories).sort();
+      const totalCmds = sortedCats.reduce((sum, cat) => sum + categories[cat].length, 0);
+      const lines = [
+        `${totalCmds} commands across ${sortedCats.length} categories.\n`,
+      ];
+
+      for (const cat of sortedCats) {
+        lines.push(`*${cat.toUpperCase()}* — ${categories[cat].length} cmds`);
+      }
+
+      lines.push('');
+      lines.push(`_Type \`${p}help <category>\` to list commands in that category._`);
+      lines.push(`_Type \`${p}help <command>\` for detailed usage._`);
+      lines.push(`_Type \`${p}menu\` for the interactive console._`);
 
       return await m.reply(asciiBuilder.box('📖 COMMAND GUIDE', lines));
     }

@@ -6,9 +6,10 @@ export default {
   category: 'web',
   description: 'Takes a screenshot of any website.',
   cooldown: 8000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     let url = args[0];
-    if (!url) return await m.reply.info('Usage: `!screenshot <url>`', 'WEBSITE SCREENSHOT');
+    if (!url) return await m.reply.info('Usage: `${p}screenshot <url>`', 'WEBSITE SCREENSHOT');
     if (!url.startsWith('http')) url = 'https://' + url;
     
     await m.react('⏳');

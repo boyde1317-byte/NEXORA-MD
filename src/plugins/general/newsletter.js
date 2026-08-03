@@ -6,8 +6,9 @@ export default {
   category: 'general',
   description: 'Manages or views WhatsApp newsletters and channels (Special fork capability).',
   cooldown: 4000,
-  execute: async ({ sock, m, args }) => {
+  execute: async ({ sock, m, args, prefix }) => {
     const action = args[0]?.toLowerCase();
+    const p = prefix || '.';
 
     if (!action) {
       await m.reply('⏳ _Generating and sending channel invitation card..._');
@@ -27,14 +28,14 @@ export default {
 
     // Verify if socket possesses the custom newsletter properties
     if (typeof sock.newsletterCreate !== 'function') {
-      return await m.reply('❌ The active socket layer does not support native newsletter operations.');
+      return await m.reply.error('The active socket layer does not support native newsletter operations.');
     }
 
     try {
       if (action === 'create') {
         const remainingArgs = args.slice(1).join(' ');
         if (!remainingArgs) {
-          return await m.reply('❌ Usage: `!channel create Channel Name | Description`');
+          return await m.reply.error(`Usage: \`${p}channel create Channel Name | Description\``);
         }
 
         const parts = remainingArgs.split('|').map(p => p.trim());
@@ -42,7 +43,7 @@ export default {
         const description = parts[1] || 'No description provided.';
 
         if (!name) {
-          return await m.reply('❌ Please provide a valid non-empty channel name.');
+          return await m.reply.error('Please provide a valid non-empty channel name.');
         }
 
         await m.reply('⏳ _Sending creation request to WhatsApp MEX servers..._');
@@ -58,7 +59,7 @@ export default {
       } else if (action === 'info') {
         const targetKey = args[1];
         if (!targetKey) {
-          return await m.reply('❌ Usage: `!channel info <Channel Link or JID>`');
+          return await m.reply.error(`Usage: \`${p}channel info <Channel Link or JID>\``);
         }
 
         await m.reply('⏳ _Querying channel metadata..._');
@@ -68,7 +69,7 @@ export default {
           // Resolve URL to JID first
           const resolved = await sock.newsletterId(targetKey);
           if (!resolved) {
-            return await m.reply('❌ Failed to resolve the channel URL to a valid ID.');
+            return await m.reply.error('Failed to resolve the channel URL to a valid ID.');
           }
           info = await sock.newsletterMetadata('jid', resolved.id);
         } else {
@@ -76,7 +77,7 @@ export default {
         }
 
         if (!info) {
-          return await m.reply('❌ Could not retrieve metadata for this channel.');
+          return await m.reply.error('Could not retrieve metadata for this channel.');
         }
 
         let infoMsg = `📢 *CHANNEL METADATA RESULT*\n\n`;
@@ -91,7 +92,7 @@ export default {
       } else if (action === 'follow') {
         const jid = args[1];
         if (!jid) {
-          return await m.reply('❌ Usage: `!channel follow <Channel JID>`');
+          return await m.reply.error(`Usage: \`${p}channel follow <Channel JID>\``);
         }
 
         await m.reply('⏳ _Sending follow request..._');
@@ -101,18 +102,18 @@ export default {
       } else if (action === 'unfollow') {
         const jid = args[1];
         if (!jid) {
-          return await m.reply('❌ Usage: `!channel unfollow <Channel JID>`');
+          return await m.reply.error(`Usage: \`${p}channel unfollow <Channel JID>\``);
         }
 
         await m.reply('⏳ _Sending unfollow request..._');
         await sock.newsletterUnfollow(jid);
         await m.reply('✅ Successfully unsubscribed/unfollowed channel.');
       } else {
-        await m.reply('❌ Invalid action. Choose: `create`, `info`, `follow`, or `unfollow`.');
+        await m.reply.error('Invalid action. Choose: `create`, `info`, `follow`, or `unfollow`.');
       }
     } catch (err) {
       console.error('Channel operation failed:', err);
-      await m.reply(`❌ Operation failed: ${err.message}`);
+      await m.reply.error(`Operation failed: ${err.message}`);
     }
   }
 };

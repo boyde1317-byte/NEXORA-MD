@@ -8,10 +8,11 @@ export default {
   category: 'web',
   description: 'Summarize a webpage using AI or SMMRY.',
   cooldown: 15000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     const url = args[0];
     if (!url || !url.startsWith('http')) {
-      return await m.reply.info('Usage: `!summary <url>`', 'WEBPAGE SUMMARY');
+      return await m.reply.info('Usage: `${p}summary <url>`', 'WEBPAGE SUMMARY');
     }
     
     await m.react('⏳');

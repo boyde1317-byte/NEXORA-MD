@@ -279,20 +279,17 @@ try {
         const p = config.prefix[0] || '.';
         await sock.sendMessage(jid, {
           text: [
-            `👋 *Welcome to ${config.botName}!*
-`,
-            `Hey @${number}! I'm your assistant. Here's how to get started:
-`,
-            `┌──────────────────┐`,
-            `│ *QUICK START*`,
-            `├──────────────────┤`,
-            `│ ${p}menu  — Interactive command console`,
-            `│ ${p}help  — Detailed command guide`,
-            `│ ${p}ping  — Check if I'm alive`,
-            `│ ${p}ai    — Chat with AI`,
-            `│ ${p}daily — Claim daily rewards`,
-            `└──────────────────┘
-`,
+            `👋 *Welcome to ${config.botName}!*`,
+            ``,
+            `Hey @${number}! I'm your assistant. Here's how to get started:`,
+            ``,
+            `*QUICK START*`,
+            `• ${p}menu  — Interactive command console`,
+            `• ${p}help  — Detailed command guide`,
+            `• ${p}ping  — Check if I'm alive`,
+            `• ${p}ai    — Chat with AI`,
+            `• ${p}daily — Claim daily rewards`,
+            ``,
             `Type *${p}menu* to see everything I can do!`,
           ].join('\n'),
           mentions: [sender],
@@ -323,6 +320,13 @@ try {
         `Unknown command: *${prefix}${commandName}*
 
 Did you mean: *${prefix}${suggestion}*?`,
+        'COMMAND NOT FOUND'
+      );
+    } else {
+      await m.reply.info(
+        `Unknown command: *${prefix}${commandName}*
+
+Type *${prefix}help* to see all available commands, or *${prefix}menu* for the interactive console.`,
         'COMMAND NOT FOUND'
       );
     }
@@ -387,8 +391,17 @@ Did you mean: *${prefix}${suggestion}*?`,
   const lastUsed = client.cooldowns.get(cooldownKey);
 
   if (lastUsed && now - lastUsed < cooldownMs) {
-    const remaining = ((cooldownMs - (now - lastUsed)) / 1000).toFixed(1);
-    await m.reply.warn(`⏳ *${command.name}* is on cooldown. Please wait ${remaining}s before using it again.`);
+    const remainingMs = cooldownMs - (now - lastUsed);
+    const remainingSec = remainingMs / 1000;
+    let timeStr;
+    if (remainingSec >= 60) {
+      const mins = Math.floor(remainingSec / 60);
+      const secs = Math.floor(remainingSec % 60);
+      timeStr = secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+    } else {
+      timeStr = `${remainingSec.toFixed(1)}s`;
+    }
+    await m.reply.warn(`⏳ *${command.name}* is on cooldown. Please wait *${timeStr}* before using it again.`);
     return;
   }
 
