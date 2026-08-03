@@ -117,6 +117,8 @@ export const aiDynamicMenu = {
       contextInfo.externalAdReply.thumbnail = imgData.buffer;
     } else if (imgData.source?.startsWith('http')) {
       contextInfo.externalAdReply.thumbnailUrl = imgData.source;
+
+      contextInfo.externalAdReply.originalImageUrl = imgData.source;
     }
 
     return await sock.sendMessage(m.from, {

@@ -22,7 +22,7 @@ export default {
 
     // Single message: branded externalAdReply thumbnail + quick-reply buttons
     // together, same visual as tagall.js's thumbnail but with actions attached.
-    const thumbnail = await getBrandThumbnail();
+    const thumbnailUrl = await getBrandThumbnail();
     return await actionCardWithAd(sock, m.from, {
       text:   '🌐 *Public mode enabled.*\n\nEveryone can now use commands.',
       footer: 'Setting saved',
@@ -32,7 +32,9 @@ export default {
     ], {
       title: '🌐 PUBLIC MODE',
       body:  'Setting saved',
-      thumbnail,
+      thumbnailUrl,
+        originalImageUrl: thumbnailUrl,
+        renderLargerThumbnail: true,
     }, { quoted: m });
   }
 };

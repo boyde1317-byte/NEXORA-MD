@@ -600,8 +600,10 @@ export async function replyFakeQuote(m, sock, text, fakeText = '\u200e', opts = 
  * @typedef {object} AdReplyOpts
  * @property {string}       title                    Card heading (bold)
  * @property {string}      [body]                    Card subtext / description
- * @property {Buffer}      [thumbnail]               Raw image buffer (preferred over thumbnailUrl)
- * @property {string}      [thumbnailUrl]            HTTPS URL of the thumbnail image
+ * @property {Buffer}      [thumbnail]               Raw image buffer (takes priority over thumbnailUrl)
+ * @property {string}      [thumbnailUrl]            HTTPS URL of the thumbnail image (link-preview format)
+ * @property {string}      [originalImageUrl]        HTTPS URL of the high-quality image (fork extension:
+ *                                           WhatsApp fetches this for full-quality link preview rendering)
  * @property {string}      [sourceUrl]               URL opened when the card is tapped
  * @property {string}      [sourceId]                Source JID (default: WA_JID → "WhatsApp")
  * @property {1|2}         [mediaType]               1 = IMAGE (default), 2 = VIDEO
@@ -654,9 +656,20 @@ export function buildAdReplyContext(ad = {}) {
   if (ad.mediaUrl)            card.mediaUrl            = ad.mediaUrl       // media CDN URL
   if (ad.containsAutoReply)   card.containsAutoReply   = true             // auto-reply badge
 
-  // Buffer thumbnail takes priority over a URL string
-  if (ad.thumbnail)         card.thumbnail    = ad.thumbnail
-  else if (ad.thumbnailUrl) card.thumbnailUrl = ad.thumbnailUrl
+  // URL-based thumbnail (link-preview format) — preferred over buffer
+  // The fork's externalAdReply proto supports originalImageUrl for
+  // high-quality link preview rendering alongside thumbnailUrl.
+  if (ad.thumbnail) {
+    card.thumbnail = ad.thumbnail
+  } else if (ad.thumbnailUrl) {
+    card.thumbnailUrl = ad.thumbnailUrl
+    // Pass through originalImageUrl if provided (high-quality preview)
+    if (ad.originalImageUrl) card.originalImageUrl = ad.originalImageUrl
+  } else if (ad.originalImageUrl) {
+    // If only originalImageUrl is given, use it as the thumbnail too
+    card.thumbnailUrl = ad.originalImageUrl
+    card.originalImageUrl = ad.originalImageUrl
+  }
 
   const contextInfo = { externalAdReply: card }
 

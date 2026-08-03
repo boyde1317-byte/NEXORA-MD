@@ -31,7 +31,7 @@ export default {
 
       // ── Single message: @-mention announcement + branded thumbnail +
       //    admin action buttons, all in one card ────────────────────────────
-      const thumbnail = await getBrandThumbnail();
+      const thumbnailUrl = await getBrandThumbnail();
       try {
         await actionCardWithAd(sock, m.from, {
           text:   `${tagText}\n\n✅ *${participants.length} members tagged.* That\'s a lot of notifications. 📣\n\nWhat\'s next?`,
@@ -42,7 +42,8 @@ export default {
         ], {
           title:        '📢 GROUP ANNOUNCEMENT',
           body:         metadata.subject || 'Attention everyone!',
-          thumbnail,
+          thumbnailUrl,
+          originalImageUrl: thumbnailUrl,
           mentionedJid: mentions,
         }, { mentions, quoted: m });
       } catch (_) {

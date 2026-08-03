@@ -43,7 +43,7 @@ export default {
       ].filter(([, v]) => v !== 'N/A' && v !== '');
 
       const mapsUrl = `https://maps.google.com/?q=${d.latitude},${d.longitude}`;
-      const thumbnail = await getBrandThumbnail();
+      const thumbnailUrl = await getBrandThumbnail();
       try {
         await actionCardWithAd(sock, m.from, {
           text:   `🌐 *IP INFO — ${d.ip}*
@@ -56,7 +56,8 @@ ${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}`,
           title:    `🌐 ${d.ip}`,
           body:     `${d.flag?.emoji ?? ''} ${d.country ?? ''} • ${d.city ?? ''}`,
           sourceUrl: mapsUrl,
-          thumbnail,
+          thumbnailUrl,
+          originalImageUrl: thumbnailUrl,
           renderLargerThumbnail: true,
         }, { quoted: m });
       } catch (_) {

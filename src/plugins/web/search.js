@@ -31,7 +31,7 @@ export default {
         text += `No direct abstract found for this query.`;
       }
 
-      const thumbnail = await getBrandThumbnail();
+      const thumbnailUrl = await getBrandThumbnail();
       const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
       await actionCardWithAd(sock, m.from, {
         text,
@@ -44,7 +44,8 @@ export default {
         title:    `🔍 ${query.toUpperCase()}`,
         body:     'DuckDuckGo Search Results',
         sourceUrl: searchUrl,
-        thumbnail,
+        thumbnailUrl,
+        originalImageUrl: thumbnailUrl,
         renderLargerThumbnail: false,
       }, { quoted: m });
     } catch (err) {

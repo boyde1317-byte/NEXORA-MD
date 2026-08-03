@@ -54,7 +54,7 @@ export default {
     if (sub === 'status') {
       const enabled = groupData.antitag;
       const status  = enabled ? '✅ Enabled' : '❌ Disabled';
-      const thumbnail = await getBrandThumbnail();
+      const thumbnailUrl = await getBrandThumbnail();
       return await actionCardWithAd(sock, m.from, {
         text:   `🏷️ *ANTI-TAG STATUS*\n\nAnti-tag protection is currently *${status}* in this group.`,
         footer: enabled ? `Mass-mentions of ${MASS_MENTION_THRESHOLD}+ members are being blocked.` : 'All members can mention freely.',
@@ -65,7 +65,8 @@ export default {
       ], {
         title: '🏷️ ANTI-TAG',
         body:  status,
-        thumbnail,
+        thumbnailUrl,
+        originalImageUrl: thumbnailUrl,
       }, { quoted: m });
     }
 
@@ -77,7 +78,7 @@ export default {
       ? `🏷️ *Anti-tag protection ENABLED*\n\nNon-admins mentioning ${MASS_MENTION_THRESHOLD}+ members at once will have the message deleted and be warned.`
       : '🏷️ *Anti-tag protection DISABLED*\n\nAll members may mention freely.';
 
-    const thumbnail = await getBrandThumbnail();
+    const thumbnailUrl = await getBrandThumbnail();
     return await actionCardWithAd(sock, m.from, {
       text:   resultText,
       footer: 'Setting saved for this group',
@@ -88,7 +89,8 @@ export default {
     ], {
       title: '🏷️ ANTI-TAG',
       body:  'Setting saved',
-      thumbnail,
+      thumbnailUrl,
+      originalImageUrl: thumbnailUrl,
     }, { quoted: m });
   },
 };

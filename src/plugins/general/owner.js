@@ -41,7 +41,7 @@ export default {
   execute: async ({ sock, m, prefix }) => {
     const p = prefix || '.';
     const caption = buildCaption();
-    const thumbnail = await getBrandThumbnail();
+    const thumbnailUrl = await getBrandThumbnail();
 
     const buttons = [
       { text: 'Call Owner',        call: `+${OWNER_NUMBER}` },
@@ -58,7 +58,7 @@ export default {
           caption,
           footer: brand.signature,
           nativeFlow: buttons,
-          ...(thumbnail ? { image: thumbnail } : {}),
+          ...(thumbnailUrl ? { image: { url: thumbnailUrl } } : {}),
         }],
       }, { quoted: m });
     } catch (err) {

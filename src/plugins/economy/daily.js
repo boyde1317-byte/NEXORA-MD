@@ -40,7 +40,7 @@ export default {
 
         // Cooldown — show next-claim info + actionCardWithAd with other economy options
         try {
-          const thumbnail = await getBrandThumbnail();
+          const thumbnailUrl = await getBrandThumbnail();
           return await actionCardWithAd(sock, m.from, {
             text:   messageFormatter.warn(`Already claimed today!\n\n⏰ Next claim in *${h}h ${min}m*`, 'DAILY REWARD'),
             footer: `Streak: ${userData.streak ?? 0} day${(userData.streak ?? 0) !== 1 ? 's' : ''}`,
@@ -51,7 +51,8 @@ export default {
           ], {
             title: 'DAILY REWARD',
             body:  `Streak: ${userData.streak ?? 0} day${(userData.streak ?? 0) !== 1 ? 's' : ''}`,
-            thumbnail,
+            thumbnailUrl,
+            originalImageUrl: thumbnailUrl,
           }, { quoted: m });
         } catch (_) {
           return await m.reply.warn(
@@ -91,7 +92,7 @@ export default {
           footer: `Same time tomorrow. Don't break the streak. 🔥`,
         }, { quoted: m });
 
-        const thumbnail = await getBrandThumbnail();
+        const thumbnailUrl = await getBrandThumbnail();
         return await actionCardWithAd(sock, m.from, {
           text:   `Keep the streak alive — come back tomorrow for an even bigger haul. 🔥 Don\'t break the chain. ✦`,
           footer: `${brand?.name ?? 'NEXORA'} • Daily Rewards`,
@@ -101,7 +102,8 @@ export default {
         ], {
           title: 'DAILY REWARD',
           body:  `Streak: ${streak} day${streak !== 1 ? 's' : ''}`,
-          thumbnail,
+          thumbnailUrl,
+          originalImageUrl: thumbnailUrl,
         }, { quoted: m });
       } catch (err) {
         console.warn('[daily] Tier 1 (richTable + actionCard) failed:', err.message);

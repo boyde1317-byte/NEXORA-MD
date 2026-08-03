@@ -47,7 +47,7 @@ export default {
     if (sub === 'status') {
       const enabled = groupData.antilink;
       const status  = enabled ? '✅ Enabled' : '❌ Disabled';
-      const thumbnail = await getBrandThumbnail();
+      const thumbnailUrl = await getBrandThumbnail();
       return await actionCardWithAd(sock, m.from, {
         text:   `🛡️ *ANTI-LINK STATUS*\n\nAnti-link protection is currently *${status}* in this group.`,
         footer: enabled ? 'Non-admin links are being blocked.' : 'All members can share links freely.',
@@ -58,7 +58,8 @@ export default {
       ], {
         title: 'ANTI-LINK',
         body:  status,
-        thumbnail,
+        thumbnailUrl,
+        originalImageUrl: thumbnailUrl,
       }, { quoted: m });
     }
 
@@ -70,7 +71,7 @@ export default {
       ? '🔒 *Anti-link protection ENABLED*\n\nLinks sent by non-admins will be deleted and the sender warned.'
       : '🔓 *Anti-link protection DISABLED*\n\nAll members may now share links freely.';
 
-    const thumbnail = await getBrandThumbnail();
+    const thumbnailUrl = await getBrandThumbnail();
     return await actionCardWithAd(sock, m.from, {
       text:   resultText,
       footer: `Setting saved for this group`,
@@ -81,7 +82,8 @@ export default {
     ], {
       title: 'ANTI-LINK',
       body:  'Setting saved',
-      thumbnail,
+      thumbnailUrl,
+      originalImageUrl: thumbnailUrl,
     }, { quoted: m });
   },
 

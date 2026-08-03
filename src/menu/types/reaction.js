@@ -28,6 +28,8 @@ export const reactionMenu = {
       adReply.thumbnail = imgData.buffer;
     } else if (imgData.source?.startsWith('http')) {
       adReply.thumbnailUrl = imgData.source;
+
+      adReply.originalImageUrl = imgData.source;
     }
 
     const hasImage = !!(imgData.buffer || imgData.source?.startsWith('http'));

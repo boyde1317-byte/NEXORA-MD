@@ -37,7 +37,7 @@ export default {
         footer: `${brand.name} — Up to date`,
       }, { quoted: m });
 
-      const thumbnail = await getBrandThumbnail();
+      const thumbnailUrl = await getBrandThumbnail();
       return await actionCardWithAd(sock, m.from, {
         text:   `ℹ️ *${brand.name} v${brand.version}*\nCore: ${brand.core}`,
         footer: `${brand.name} • Framework Info`,
@@ -48,7 +48,9 @@ export default {
       ], {
         title: `${brand.name} v${brand.version}`,
         body:  `Core: ${brand.core}`,
-        thumbnail,
+        thumbnailUrl,
+        originalImageUrl: thumbnailUrl,
+        renderLargerThumbnail: true,
       }, { quoted: m });
     } catch (err) {
       console.warn('[version] Tier 1 failed:', err.message);
@@ -64,11 +66,13 @@ export default {
       `╰─ ${brand.signature}`,
     ].join('\n');
 
-    const thumbnail = await getBrandThumbnail();
+    const thumbnailUrl = await getBrandThumbnail();
     await replyAdReply(m, sock, text, {
       title: `${brand.name} v${brand.version}`,
       body:  `Core: ${brand.core}`,
-      thumbnail,
+      thumbnailUrl,
+        originalImageUrl: thumbnailUrl,
+        renderLargerThumbnail: true,
     });
   },
 };

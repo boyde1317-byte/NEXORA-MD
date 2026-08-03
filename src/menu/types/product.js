@@ -80,6 +80,8 @@ export const productMenu = {
         }, { quoted: menuData.audioQuote || m });
       } else if (imgData.source?.startsWith('http')) {
         adReply.thumbnailUrl = imgData.source;
+
+        adReply.originalImageUrl = imgData.source;
         return await sock.sendMessage(m.from, {
           image:       { url: imgData.source },
           caption:     bodyText,

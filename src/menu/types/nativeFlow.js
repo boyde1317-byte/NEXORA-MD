@@ -66,6 +66,8 @@ export const nativeFlowMenu = {
         adReply.thumbnail = imgData.buffer;
       } else if (imgData.source?.startsWith('http')) {
         adReply.thumbnailUrl = imgData.source;
+
+        adReply.originalImageUrl = imgData.source;
       }
       return await sock.sendMessage(m.from, {
         text:        bodyText,

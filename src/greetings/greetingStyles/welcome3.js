@@ -23,6 +23,7 @@ export const welcome3 = {
           mediaType: 1,
           renderLargerThumbnail: true,
           thumbnailUrl: thumbnailPic,
+          originalImageUrl: imageUrl,
           sourceUrl: 'https://github.com/boyde1317-byte'
         }
       }

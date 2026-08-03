@@ -55,7 +55,7 @@ export default {
           ? `https://maps.google.com/?q=${encodeURIComponent(locName)}`
           : `https://maps.google.com/?q=${encodeURIComponent(location)}`;
 
-        const thumbnail = await getBrandThumbnail();
+        const thumbnailUrl = await getBrandThumbnail();
         return await actionCardWithAd(sock, m.from, {
           text:   `📍 *${locName}*
 
@@ -68,7 +68,8 @@ ${current.weatherDesc[0].value} • ${current.temp_C}°C`,
           title:    `🌤️ ${locName.toUpperCase()}`,
           body:     `${current.weatherDesc[0].value} • ${current.temp_C}°C`,
           sourceUrl: mapsUrl,
-          thumbnail,
+          thumbnailUrl,
+          originalImageUrl: thumbnailUrl,
           renderLargerThumbnail: true,
         }, { quoted: m });
       } catch (err) {

@@ -80,7 +80,7 @@ export default {
       `${toSmallcaps(brand.signature)}`,
     ].join('\n');
 
-    const thumbnail = await getBrandThumbnail();
-    await replyAdReply(m, sock, text, { title: brand.name, body: brand.description, thumbnail });
+    const thumbnailUrl = await getBrandThumbnail();
+    await replyAdReply(m, sock, text, { title: brand.name, body: brand.description, thumbnailUrl, originalImageUrl: thumbnailUrl, renderLargerThumbnail: true });
   },
 };

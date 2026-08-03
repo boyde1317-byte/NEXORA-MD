@@ -3,7 +3,7 @@ import path from 'node:path';
 import { imageConfig } from './imageConfig.js';
 import { assetManager } from '../assets/assetManager.js';
 
-const FALLBACK_IMAGE_PATH = './media/images/menu/menu_default.jpg';
+const FALLBACK_IMAGE_PATH = 'https://media.base44.com/images/public/6a6ffc9ec8a196324ba9ee95/ff8504867_generated_image.png';
 
 export const imageSelector = {
   /**

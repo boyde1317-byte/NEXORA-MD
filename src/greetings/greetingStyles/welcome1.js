@@ -12,6 +12,7 @@ export const welcome1 = {
     const imageUrl = isWelcome ? greetingConfig.getWelcomeImage() : greetingConfig.getGoodbyeImage();
 
     // Context Info containing externalAdReply (banner style and profile pic overlay)
+    // Uses the fork's originalImageUrl field for high-quality link preview rendering
     const contextInfo = {
       mentionedJid: [userJid],
       externalAdReply: {
@@ -19,6 +20,7 @@ export const welcome1 = {
         body: isWelcome ? `Welcome ${variables.userNumber} to ${variables.groupName}!` : `Goodbye from ${variables.groupName}`,
         mediaType: 1,
         renderLargerThumbnail: true,
+        originalImageUrl: imageUrl,
         sourceUrl: 'https://github.com/boyde1317-byte'
       }
     };

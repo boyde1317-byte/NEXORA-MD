@@ -38,7 +38,7 @@ export default {
     db.setUser(m.sender, { afk: { active: true, reason, since: Date.now() } });
 
     try {
-      const thumbnail = await getBrandThumbnail();
+      const thumbnailUrl = await getBrandThumbnail();
       return await actionCardWithAd(sock, m.from, {
         text: `💤 *AFK MODE ON*
 
@@ -51,7 +51,8 @@ Anyone who mentions or replies to you will be notified.`,
       ], {
         title: '💤 AFK MODE',
         body:  reason,
-        thumbnail,
+        thumbnailUrl,
+        originalImageUrl: thumbnailUrl,
       }, { quoted: m });
     } catch (err) {
       console.warn('[afk] actionCardWithAd failed, plain text:', err.message);

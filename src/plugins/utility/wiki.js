@@ -20,7 +20,7 @@ export default {
 
     await withReactionStatus(m, async () => {
       const result = await wikiSearch(query);
-      const thumbnail = await getBrandThumbnail();
+      const thumbnailUrl = await getBrandThumbnail();
       await richTableCard(sock, m.from, {
         title: `📖 ${result.title}`,
         rows: [['Summary', result.snippet]],
@@ -40,7 +40,8 @@ _Tap the thumbnail to read the full Wikipedia article._`,
         title:    `📖 ${result.title}`,
         body:     'Wikipedia Article',
         sourceUrl: result.url,
-        thumbnail,
+        thumbnailUrl,
+        originalImageUrl: thumbnailUrl,
         renderLargerThumbnail: true,
       }, { quoted: m });
     });

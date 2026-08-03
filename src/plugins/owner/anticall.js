@@ -52,7 +52,7 @@ export default {
     if (sub === 'status') {
       const enabled = settings.anticall;
       const status  = enabled ? '✅ Enabled' : '❌ Disabled';
-      const thumbnail = await getBrandThumbnail();
+      const thumbnailUrl = await getBrandThumbnail();
       return await actionCardWithAd(sock, m.from, {
         text:   `📵 *ANTI-CALL STATUS*\n\nAnti-call is currently *${status}*.`,
         footer: enabled ? 'Incoming calls are being rejected automatically.' : 'Calls ring through normally.',
@@ -63,7 +63,9 @@ export default {
       ], {
         title: 'ANTI-CALL',
         body:  status,
-        thumbnail,
+        thumbnailUrl,
+        originalImageUrl: thumbnailUrl,
+        renderLargerThumbnail: true,
       }, { quoted: m });
     }
 
@@ -75,7 +77,7 @@ export default {
       ? '📵 *Anti-call ENABLED*\n\nIncoming calls will be rejected automatically.'
       : '📵 *Anti-call DISABLED*\n\nCalls will ring through normally.';
 
-    const thumbnail = await getBrandThumbnail();
+    const thumbnailUrl = await getBrandThumbnail();
     return await actionCardWithAd(sock, m.from, {
       text:   resultText,
       footer: 'Setting saved',
@@ -86,7 +88,9 @@ export default {
     ], {
       title: 'ANTI-CALL',
       body:  'Setting saved',
-      thumbnail,
+      thumbnailUrl,
+        originalImageUrl: thumbnailUrl,
+        renderLargerThumbnail: true,
     }, { quoted: m });
   },
 };

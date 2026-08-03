@@ -25,6 +25,8 @@ export const welcome2 = {
           body: variables.groupName,
           mediaType: 1,
           thumbnailUrl: thumbnailPic,
+          originalImageUrl: imageUrl,
+          renderLargerThumbnail: true,
           sourceUrl: 'https://github.com/boyde1317-byte'
         }
       }

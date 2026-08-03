@@ -52,11 +52,12 @@ export default {
       }
 
       // ── Tier 2: adReply card (original fallback) ──────────────────────────
-      const thumbnail = await getBrandThumbnail();
+      const thumbnailUrl = await getBrandThumbnail();
       await sendAdReply(sock, m.from, bodyText, {
         title:     '✨ QUOTE OF THE MOMENT',
         body:      `— ${authorName}`,
-        thumbnail,
+        thumbnailUrl,
+        originalImageUrl: thumbnailUrl,
       }, { quoted: m });
     });
   },

@@ -54,7 +54,7 @@ export default {
         ? `${minutesAhead} minute${minutesAhead !== 1 ? 's' : ''}`
         : `${Math.floor(minutesAhead / 60)}h ${minutesAhead % 60}m`;
 
-      const thumbnail = await getBrandThumbnail();
+      const thumbnailUrl = await getBrandThumbnail();
       await actionCardWithAd(sock, m.from, {
         text:   `✅ *Event created!*\n\n📅 *${name}*\n⏰ Starts in ${timeLabel}\n🔗 Join: ${joinLink}`,
         footer: 'NEXORA • Events',
@@ -64,7 +64,9 @@ export default {
       ], {
         title: '📅 EVENT CREATED',
         body:  name,
-        thumbnail,
+        thumbnailUrl,
+        originalImageUrl: thumbnailUrl,
+        renderLargerThumbnail: true,
       }, { quoted: m });
 
     } catch (err) {

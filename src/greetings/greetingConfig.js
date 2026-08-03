@@ -10,8 +10,8 @@ const defaultGreetingConfig = {
   style: 1,
   welcomeText: "👋 Welcome {user} to *{group}*!\n\nWe are glad to have you here. You are our {memberCount}th member! ✨",
   goodbyeText: "😢 Goodbye {user}! We will miss you.",
-  welcomeImage: "https://cdn.nekos.life/wallpaper/fK2T-RHyCIY.jpg",
-  goodbyeImage: "https://cdn.nekos.life/wallpaper/jXOWFycvizA.jpg"
+  welcomeImage: "https://media.base44.com/images/public/6a6ffc9ec8a196324ba9ee95/6e8441439_generated_image.png",
+  goodbyeImage: "https://media.base44.com/images/public/6a6ffc9ec8a196324ba9ee95/02ebca731_generated_image.png"
 };
 
 const ensureConfigExists = () => {

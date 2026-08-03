@@ -35,7 +35,7 @@ export default {
         }
 
         const trimmed = lyrics.length > 3500 ? `${lyrics.slice(0, 3500)}\n\n… (truncated)` : lyrics;
-        const thumbnail = await getBrandThumbnail();
+        const thumbnailUrl = await getBrandThumbnail();
         const searchUrl = `https://genius.com/search?q=${encodeURIComponent(`${artist.trim()} ${title}`)}`;
         try {
           await actionCardWithAd(sock, m.from, { text: trimmed }, [
@@ -46,7 +46,8 @@ export default {
             title:    `🎵 ${title.toUpperCase()}`,
             body:     `by ${artist.trim()}`,
             sourceUrl: searchUrl,
-            thumbnail,
+            thumbnailUrl,
+            originalImageUrl: thumbnailUrl,
             renderLargerThumbnail: false,
           }, { quoted: m });
         } catch (_) {

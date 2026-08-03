@@ -198,30 +198,20 @@ export async function animateReveal(sock, jid, frames = [], options = {}, animOp
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4.  BRAND THUMBNAIL CACHE
+// 4.  BRAND THUMBNAIL URL
 //     Every ad-reply / fake-quote card looks best with a consistent brand
-//     image. Reuses the same default thumbnail path the asset system already
-//     maintains (src/assets/defaultAssets.js) instead of hardcoding a new one.
+//     image. Returns a CDN-hosted URL (link-preview format) — no local file
+//     I/O, always available even on ephemeral filesystems.
 // ─────────────────────────────────────────────────────────────────────────────
 
-let _brandThumbCache = null
-
 /**
- * Load (and cache in memory) the bot's default thumbnail buffer for use in
- * sendAdReply / buildFake*Quote thumbnail fields.
- * @returns {Promise<Buffer|null>} null if no default thumbnail exists on disk yet
+ * Returns the bot's brand thumbnail as a CDN URL for use in ad-reply
+ * `thumbnailUrl` (link-preview format). No local file I/O — the URL is
+ * always available, even on ephemeral filesystems.
+ * @returns {Promise<string>} CDN URL of the brand thumbnail image
  */
 export async function getBrandThumbnail() {
-  if (_brandThumbCache !== null) return _brandThumbCache
-  try {
-    if (fs.existsSync(DEFAULT_PATHS.thumbnail)) {
-      _brandThumbCache = fs.readFileSync(DEFAULT_PATHS.thumbnail)
-      return _brandThumbCache
-    }
-  } catch (err) {
-    console.warn('[cosmetics] getBrandThumbnail failed to read default thumbnail:', err.message)
-  }
-  return null
+  return DEFAULT_PATHS.thumbnail
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
