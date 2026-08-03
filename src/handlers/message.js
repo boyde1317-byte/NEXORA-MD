@@ -457,7 +457,9 @@ try {
   } catch (execErr) {
     console.error(`[CMD ERROR] ${command.name} threw:`, execErr.message || execErr);
     try {
-      await m.reply(getRandomResponse('exec_error', command.name, execErr.message || 'Unknown error'));
+      const errText = getRandomResponse('exec_error', command.name, execErr.message || 'Unknown error');
+      const helpHint = `\n\n_Type \`${prefix}help ${command.name}\` for usage info, or try again._`;
+      await m.reply(errText + helpHint);
     } catch (_) {}
   } finally {
     // Stop "composing" presence regardless of success/failure

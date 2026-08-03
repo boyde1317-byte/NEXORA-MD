@@ -3,6 +3,8 @@ import { runWithFallback } from './fallback.js';
 import { collectMenuData } from './collector.js';
 import { mediaManager } from '../media/mediaManager.js';
 import { buildFakeLiveLocationQuote } from '../lib/waUtils.js';
+import { actionCard } from '../lib/interactiveKit.js';
+import { db } from '../database/db.js';
 import { imageManager } from '../images/imageManager.js';
 
 // Import all 14 menu types
@@ -57,6 +59,23 @@ export const showMenu = async (sock, m, customKey = null) => {
 
   // Delegate rendering to the fallback engine
   await runWithFallback(menu.renderer, { sock, m, menuData });
+
+  // If the user is previewing a non-default style, offer a one-tap button to
+  // set it as the default so they don't have to separately run .setmenu.
+  const activeMenu = menuManager.getActiveMenu();
+  if (customKey && activeMenu && String(activeMenu.id) !== String(menu.id)) {
+    try {
+      const p = menuData.prefix || '.';
+      await actionCard(sock, m.from, {
+        text:   `👁️ You're previewing *${menu.name}*.
+Like it? Set it as your default menu style.`,
+        footer: `Currently active: ${activeMenu.name}`,
+      }, [
+        { label: `✅ Set as Default`, cmd: `${p}setmenu ${menu.id}` },
+        { label: `👁️ View Another Style`, cmd: `${p}menulist` },
+      ], { quoted: m });
+    } catch (_) {}
+  }
 
   // Send the actual audio as a real message after the menu card.
   // Quote it with a fake order card showing bot name + command count so the
