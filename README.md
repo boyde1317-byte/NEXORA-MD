@@ -47,23 +47,37 @@
 - **Bounded message cache** — max 500 messages per chat, max 2,000 tracked chats, preventing unbounded memory growth
 
 ### 🎨 Nexora Flow — Interactive Menu System
-13 fully distinct menu presentation styles, auto-selected based on what the receiving WhatsApp client supports:
+15 fully distinct menu presentation styles, auto-selected based on what the receiving WhatsApp client supports:
 
 | # | Style | Description |
 |---|-------|-------------|
-| 1 | **Document Interactive** | Interactive message with a virtual PDF document header card |
-| 2 | **Image Interactive** | Full-bleed image header with native-flow quick-reply buttons |
-| 3 | **Text Interactive** | Clean text body with button rows (broad device compatibility) |
-| 4 | **Native Flow** | Advanced URL, clipboard-copy, and quick-reply action buttons |
-| 5 | **Carousel** | Multi-card swipeable product/command showcase |
-| 6 | **Bottom Sheet** | Slide-up panel with categorised command rows |
-| 7 | **AI Dynamic** | AI-generated prompt-style menu with live system stats |
-| 8 | **Product** | WhatsApp Business product card layout |
-| 9 | **Contact** | vCard-style contact display |
-| 10 | **Location** | Map preview card with bot metadata |
-| 11 | **Newsletter** | Channel/newsletter-style broadcast card |
-| 12 | **Reaction** | Emoji reaction showcase with command list |
-| 13 | **Payment** | Payment request card layout |
+| 1 | **Document Interactive** | Interactive card with image header + subtitle + embedded adReply + action buttons |
+| 2 | **Payment** | Request Payment invoice card (business-account feature; auto-degrades on personal accounts) |
+| 3 | **Event Message** | Native WA event invitation card with dynamic start time |
+| 4 | **Native Flow** | Advanced interactive card with embedded ad-reply, URL links, clipboard copy, quick-reply |
+| 5 | **Product** | Offer overlay card — limited_time_offer banner + image header + action buttons |
+| 6 | **Carousel** | Swipeable category cards with emoji icons, command previews, and multi-button actions |
+| 7 | **Newsletter** | Channel/newsletter-style broadcast card |
+| 8 | **Location** | Interactive card with live location badge in reply bar |
+| 9 | **Contact** | Interactive card with owner vCard contact badge in reply bar |
+| 10 | **Media** | Rich media showcase with interactive card + embedded ad-reply + stat dashboard |
+| 11 | **Reaction** | Emoji reaction showcase with live-edited inline menu |
+| 12 | **AI Dynamic** | AI-generated dynamic dashboard with progress bars, command rankings, multi-section panels |
+| 13 | **Bottom Sheet** | Bottom sheet modal with optionText + rich stat rows + embedded ad-reply fallback |
+| 14 | **Order Message** | Interactive card + embedded ad-reply quoted inside a business order card |
+| 15 | **Rich Card** | Rich response table grid + interactive card with embedded ad-reply overlay |
+
+#### ✨ Rich-Messages Enhancement (v1.2.0)
+- **sendInteractive upgrades**: Menu types 1, 4, 10, 12, 13, 14 now use `sendInteractive` (full proto control) as their primary tier, enabling:
+  - Image headers with **title AND subtitle** (not available in simple nativeFlow)
+  - **Embedded externalAdReply** inside the interactive message — double visual: interactive card + ad banner in one message
+  - Full nativeFlow buttons with `display_text` formatting
+- **New menu style (15)**: Rich Card — uses the fork's `sendRichResponse` API for native WA table bubbles with aligned columns
+- **Enhanced visual system**: Upgraded `asciiBuilder` with progress bars, stat rows, multi-section panels, dividers, and badges
+- **Richer text menus**: Enhanced `menuTemplate` with per-category command counts, numbered sections, and themed footer
+- **Enhanced system/profile templates**: Visual stat rows, health bars, and status badges
+- **AI-Dynamic dashboard**: ASCII progress bars for system health/memory, multi-section box-drawing panels, 5 random themes, top-5 command rankings with visual bars
+- **`baileysBridge.sendRichCard`**: New premium card builder combining image header + subtitle + embedded adReply + business badge + AI message support in one call
 
 - Automatic **capability detection** on startup — unsupported message types fall back gracefully to a styled text menu
 - **Per-style image/audio** — custom background images and menu audio configurable per style

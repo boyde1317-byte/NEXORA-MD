@@ -224,6 +224,182 @@ export const baileysBridge = {
   },
 
   /**
+   * Sends a premium rich interactive card combining media headers, nativeFlow buttons,
+   * embedded externalAdReply banners, business forward info, and Meta AI badge support.
+   *
+   * @param {object} sock                             Baileys socket connection
+   * @param {string} jid                              Recipient JID
+   * @param {object} card                             Card configuration object
+   * @param {string} card.body                        Main card body text
+   * @param {string} [card.footer]                    Card footer text
+   * @param {string} [card.title]                     Header title
+   * @param {string} [card.subtitle]                  Header subtitle
+   * @param {*}      [card.image]                     Header image (Buffer, {url}, stream, or imageMessage proto)
+   * @param {*}      [card.video]                     Header video (Buffer, {url}, stream, or videoMessage proto)
+   * @param {Array}  [card.buttons]                   nativeFlow buttons [{name, params}, {text, id}, etc.]
+   * @param {object} [card.contextInfo]               ContextInfo placed inside interactiveMessage
+   * @param {object} [card.adReply]                   External ad reply configuration object
+   * @param {string} [card.adReply.title]             Ad reply title
+   * @param {string} [card.adReply.body]              Ad reply body
+   * @param {string} [card.adReply.sourceUrl]         Ad reply source URL
+   * @param {number} [card.adReply.mediaType]         Ad reply media type (default: 1)
+   * @param {boolean}[card.adReply.renderLargerThumbnail] Render larger thumbnail flag
+   * @param {*}      [card.adReply.thumbnail]         Ad reply thumbnail buffer
+   * @param {string} [card.adReply.thumbnailUrl]      Ad reply thumbnail URL
+   * @param {boolean}[card.adReply.showAdAttribution] Show ad attribution badge
+   * @param {string} [card.adReply.originalImageUrl] High-res original image URL
+   * @param {string} [card.businessOwnerJid]          Owner JID for businessMessageForwardInfo
+   * @param {boolean}[card.aiMessage]                 Attach Meta AI supportPayload badge
+   * @param {object} [options]                        sendMessage/relayMessage options
+   * @returns {Promise<object>}                       Relayed WAMessage object
+   */
+  async sendRichCard(
+    sock,
+    jid,
+    {
+      body,
+      footer,
+      title,
+      subtitle,
+      image,
+      video,
+      buttons,
+      contextInfo,
+      adReply,
+      businessOwnerJid,
+      aiMessage,
+    } = {},
+    options = {}
+  ) {
+    // ── Header media upload ───────────────────────────────────────────────
+    let headerImageMessage;
+    if (image) {
+      headerImageMessage = await this._uploadImageMessage(sock, jid, image, options);
+    }
+
+    let headerVideoMessage;
+    if (video) {
+      headerVideoMessage = await this._uploadVideoMessage(sock, jid, video, options);
+    }
+
+    // ── interactiveMessage.contextInfo ───────────────────────────────────
+    const effectiveBusinessOwnerJid = businessOwnerJid || options.businessOwnerJid;
+    let interactiveContextInfo;
+
+    if (contextInfo || adReply || effectiveBusinessOwnerJid) {
+      interactiveContextInfo = { ...(contextInfo || {}) };
+
+      if (adReply) {
+        const externalAdReply = {
+          title:                 adReply.title ?? '',
+          body:                  adReply.body ?? '',
+          sourceUrl:             adReply.sourceUrl ?? '',
+          mediaType:             adReply.mediaType ?? 1,
+          renderLargerThumbnail: adReply.renderLargerThumbnail ?? false,
+          showAdAttribution:     adReply.showAdAttribution ?? false,
+          ...adReply,
+        };
+        if (adReply.thumbnail !== undefined) externalAdReply.thumbnail = adReply.thumbnail;
+        if (adReply.thumbnailUrl !== undefined) externalAdReply.thumbnailUrl = adReply.thumbnailUrl;
+        if (adReply.originalImageUrl !== undefined) externalAdReply.originalImageUrl = adReply.originalImageUrl;
+
+        interactiveContextInfo.externalAdReply = externalAdReply;
+      }
+
+      if (effectiveBusinessOwnerJid && !interactiveContextInfo.businessMessageForwardInfo) {
+        interactiveContextInfo.businessMessageForwardInfo = {
+          businessOwnerJid: effectiveBusinessOwnerJid,
+        };
+      }
+    }
+
+    // ── Header construction ──────────────────────────────────────────────
+    const hasHeader =
+      title !== undefined ||
+      subtitle !== undefined ||
+      headerImageMessage !== undefined ||
+      headerVideoMessage !== undefined;
+
+    const header = hasHeader
+      ? {
+          title: title || '',
+          subtitle: subtitle || '',
+          hasMediaAttachment: !!(headerImageMessage || headerVideoMessage),
+          ...(headerImageMessage ? { imageMessage: headerImageMessage } : {}),
+          ...(headerVideoMessage ? { videoMessage: headerVideoMessage } : {}),
+        }
+      : undefined;
+
+    // ── interactiveMessage payload ───────────────────────────────────────
+    const msgContent = {
+      interactiveMessage: {
+        body: { text: body || '' },
+        footer: { text: footer || '' },
+        ...(header ? { header } : {}),
+        nativeFlowMessage:
+          buttons && buttons.length > 0
+            ? {
+                buttons: buttons.map((btn) => {
+                  let name = btn.name;
+                  if (!name) {
+                    if (btn.url) name = 'cta_url';
+                    else if (btn.copy) name = 'cta_copy';
+                    else if (btn.call) name = 'cta_call';
+                    else name = 'quick_reply';
+                  }
+
+                  let buttonParamsJson = btn.buttonParamsJson;
+                  if (!buttonParamsJson) {
+                    if (typeof btn.params === 'string') {
+                      buttonParamsJson = btn.params;
+                    } else if (btn.params && typeof btn.params === 'object') {
+                      buttonParamsJson = JSON.stringify(btn.params);
+                    } else if (btn.id !== undefined) {
+                      buttonParamsJson = JSON.stringify({
+                        display_text: btn.text || btn.label || '',
+                        id: btn.id,
+                      });
+                    } else if (btn.url !== undefined) {
+                      buttonParamsJson = JSON.stringify({
+                        display_text: btn.text || btn.label || '',
+                        url: btn.url,
+                      });
+                    } else if (btn.copy !== undefined) {
+                      buttonParamsJson = JSON.stringify({
+                        display_text: btn.text || btn.label || '',
+                        copy_code: btn.copy,
+                      });
+                    } else if (btn.call !== undefined) {
+                      buttonParamsJson = JSON.stringify({
+                        display_text: btn.text || btn.label || '',
+                        phone_number: btn.call,
+                      });
+                    } else {
+                      buttonParamsJson = JSON.stringify({});
+                    }
+                  }
+
+                  return {
+                    name,
+                    buttonParamsJson,
+                  };
+                }),
+              }
+            : undefined,
+        ...(interactiveContextInfo ? { contextInfo: interactiveContextInfo } : {}),
+      },
+    };
+
+    const effectiveAiMessage = aiMessage ?? options.aiMessage;
+    const relayOptions = {
+      ...options,
+      ...(effectiveAiMessage !== undefined ? { aiMessage: effectiveAiMessage } : {}),
+    };
+
+    return await this.relayMessage(sock, jid, msgContent, relayOptions);
+  },
+
+  /**
    * Sends an advanced Native Flow interactive message with quick replies, buttons, urls
    */
   async sendNativeFlow(sock, jid, {

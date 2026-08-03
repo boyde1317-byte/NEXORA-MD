@@ -4,79 +4,70 @@ import { imageManager } from '../../images/imageManager.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 
 // Maximum carousel cards sent in a single batch.
-// The fork relays each card individually with a 1500ms inter-card delay
-// (hardcoded in messages-send.js). Sending too many cards in quick succession
-// risks a WA rate-limit ban. Excess categories fall back to Tier 2's flat
-// nativeFlow category picker instead.
 const MAX_CAROUSEL_CARDS = 10;
 
+// Category-specific emoji mapping for richer card headers
+const CATEGORY_EMOJIS = {
+  ai: '\u{1F916}', anime: '\u{1F3A8}', download: '\u{1F4E5}', economy: '\u{1FA9}',
+  fun: '\u{1F3B6}', games: '\u{1F3AE}', general: '\u{1F4CB}', group: '\u{1F465}',
+  media: '\u{1F3AC}', owner: '\u{1F511}', utility: '\u{1F527}', web: '\u{1F310}',
+};
+
 /**
- * Carousel Menu (id: 6) — rewritten for itsliaaa 0.3.18-final fork.
+ * Carousel Menu (id: 6) \u2014 enhanced for rich-messages.
  *
- * Uses the fork's carousel API:
- *   sock.sendMessage(jid, { carousel: { cards: [...] }, text })
- *
- * Card shape (fork handles per-card upload + proto assembly):
- *   {
- *     caption:    '...',           // body text — use `caption`, NOT `text`, for image cards
- *     footer:     '...',
- *     nativeFlow: [{ text, id }],  // fork's declarative button format
- *     image:      Buffer | {url},  // fork auto-uploads this
- *   }
- *
- * NOTE on `delayMs`:
- *   The fork's album loop in messages-send.js uses a hardcoded 1500ms inter-card
- *   delay. There is no external override for this value — it is set by the fork,
- *   not by the caller. Keep MAX_CAROUSEL_CARDS ≤ 10 to stay within WA rate limits.
+ * Enhanced card content with:
+ *   - Category-specific emoji icons per card header
+ *   - Richer caption with command count and top commands preview
+ *   - Multiple action buttons per card (category browse + system stats)
+ *   - Better footer with card numbering and total commands
+ *   - Visual separators and smallcaps labels
  *
  * Tiers:
- *   1 → native carousel (swipeable category cards — capped at MAX_CAROUSEL_CARDS)
- *   2 → nativeFlow category picker (flat buttons, one per category, up to 10)
- *   3 → guaranteed plain text
+ *   1 \u2192 native carousel (swipeable category cards \u2014 capped at MAX_CAROUSEL_CARDS)
+ *   2 \u2192 nativeFlow category picker (flat buttons, one per category, up to 10)
+ *   3 \u2192 guaranteed plain text
  */
 export const carouselMenu = {
   id: 6,
   name: 'carousel',
-  description: 'Swipeable category cards — one card per command module with image header',
+  description: 'Swipeable category cards \u2014 rich per-card headers with emoji icons, command previews, and action buttons',
   supportedMessages: ['interactiveMessage', 'carouselMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData = await imageManager.getMenuImage(6);
 
     const headerText =
-      `🎠 *${toSmallcaps(menuData.botName + ' Carousel Control')}* 🎠\n\n` +
-      `Swipe sideways through the cards below to browse command modules:`;
+      `\u{1F3A0} *${toSmallcaps(menuData.botName + ' Carousel Control')}* \u{1F3A0}\n\n` +
+      `${toSmallcaps('Swipe sideways through the cards below to browse command modules:')}\n` +
+      `${toSmallcaps('Each card shows top commands \u2014 tap to explore more.')}`;
 
     const categories = Object.keys(menuData.categories).sort();
 
     // ── Tier 1: native carousel ───────────────────────────────────────────
-    // Each card: image header + category command list as caption + quick-reply button.
-    // Fork uses `caption` (not `text`) for the body on image/media carousel cards.
-    // Capped at MAX_CAROUSEL_CARDS to avoid rate-limit bans (fork relays each
-    // card individually with a fixed 1500ms inter-card delay).
     try {
       const capped = categories.slice(0, MAX_CAROUSEL_CARDS);
 
       if (categories.length > MAX_CAROUSEL_CARDS) {
         console.warn(
-          `[MENU carousel] ${categories.length} categories found — capped at ${MAX_CAROUSEL_CARDS} cards. ` +
+          `[MENU carousel] ${categories.length} categories found \u2014 capped at ${MAX_CAROUSEL_CARDS} cards. ` +
           `Remaining ${categories.length - MAX_CAROUSEL_CARDS} categories omitted to prevent rate-limit bans.`
         );
       }
 
       const cards = capped.map((cat, idx) => {
-        const cmds    = menuData.categories[cat];
-        const cmdList = cmds.map(c => `• ${menuData.prefix}${c.name}`).slice(0, 5).join('\n');
-        const overflow = cmds.length > 5 ? `\n  _+ ${cmds.length - 5} more_` : '';
+        const cmds     = menuData.categories[cat];
+        const emoji    = CATEGORY_EMOJIS[cat] || '\u{1F4C2}';
+        const cmdList  = cmds.map(c => `\u2022 \`${menuData.prefix}${c.name}\``).slice(0, 5).join('\n');
+        const overflow = cmds.length > 5 ? `\n  \u2502 +${cmds.length - 5} ${toSmallcaps('more')}` : '';
+
         return {
-          caption:   `📂 *${toSmallcaps(cat + ' Command Pack')}*\n\n${cmdList}${overflow}\n\n${toSmallcaps('Total')}: ${cmds.length} ${toSmallcaps('commands')}`,
-          footer:    `Card ${idx + 1} of ${capped.length}`,
+          caption:   `${emoji} *${toSmallcaps(cat + ' Command Pack')}*\n\n${cmdList}${overflow}\n\n${toSmallcaps('Total')}: ${cmds.length} ${toSmallcaps('commands')}`,
+          footer:    `\u2726 ${toSmallcaps('Card')} ${idx + 1}/${capped.length} \u2502 ${menuData.botName}`,
           nativeFlow: [
-            { text: `⚡ ${cat.toUpperCase()}`, id: `${menuData.prefix}menu` },
+            { text: `\u26A1 ${cat.toUpperCase()}`, id: `${menuData.prefix}menu` },
+            { text: `\u{1F916} ${toSmallcaps('Stats')}`, id: `${menuData.prefix}menu aiDynamic` },
           ],
-          // Resolve image payload: prefer the { url } form — WA fetches it
-          // directly, no local buffer download/re-upload round trip. Buffer
-          // is only a fallback for local disk images with no public URL.
           ...(imgData.source?.startsWith('http')
             ? { image: { url: imgData.source } }
             : (imgData.buffer ? { image: imgData.buffer } : {})),
@@ -93,17 +84,20 @@ export const carouselMenu = {
 
     // ── Tier 2: nativeFlow category picker ───────────────────────────────
     try {
-      const catButtons = categories.slice(0, 10).map(cat => ({
-        text: `📂 ${cat.toUpperCase()} (${menuData.categories[cat].length})`,
-        id:   `${menuData.prefix}menu`,
-      }));
+      const catButtons = categories.slice(0, 10).map(cat => {
+        const emoji = CATEGORY_EMOJIS[cat] || '\u{1F4C2}';
+        return {
+          text: `${emoji} ${cat.toUpperCase()} (${menuData.categories[cat].length})`,
+          id:   `${menuData.prefix}menu`,
+        };
+      });
       if (catButtons.length === 0) {
-        catButtons.push({ text: '📋 View Menu', id: `${menuData.prefix}menu` });
+        catButtons.push({ text: '\u{1F4CB} View Menu', id: `${menuData.prefix}menu` });
       }
       return await baileysBridge.sendNativeFlow(sock, m.from, {
         text:    `${headerText}\n\n` + buildTextMenu(menuData),
-        footer:  `${menuData.botName} • ${menuData.totalCommands} commands`,
-        title:   '🎠 COMMAND CATEGORIES',
+        footer:  `${menuData.botName} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`,
+        title:   '\u{1F3A0} ' + toSmallcaps('COMMAND CATEGORIES'),
         buttons: catButtons,
       }, { quoted: menuData.audioQuote || m });
     } catch (err) {

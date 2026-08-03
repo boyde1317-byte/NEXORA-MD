@@ -7,7 +7,7 @@ import { actionCard } from '../lib/interactiveKit.js';
 import { db } from '../database/db.js';
 import { imageManager } from '../images/imageManager.js';
 
-// Import all 14 menu types
+// Import all 15 menu types
 import documentInteractive from './types/documentInteractive.js';
 import payment from './types/payment.js';
 import eventMessage from './types/eventMessage.js';
@@ -22,6 +22,7 @@ import media from './types/media.js';
 import reaction from './types/reaction.js';
 import aiDynamic from './types/aiDynamic.js';
 import orderMessage from './types/orderMessage.js';
+import richCard from './types/richCard.js';
 
 // Register them all statically in the manager
 menuManager.register(documentInteractive);
@@ -38,6 +39,7 @@ menuManager.register(media);
 menuManager.register(reaction);
 menuManager.register(aiDynamic);
 menuManager.register(orderMessage);
+menuManager.register(richCard);
 
 /**
  * Compiles the statistics and renders the active menu (or custom specified menu style).
@@ -68,12 +70,12 @@ export const showMenu = async (sock, m, customKey = null) => {
     try {
       const p = menuData.prefix || '.';
       await actionCard(sock, m.from, {
-        text:   `That's the overview. Want to go deeper? Tap below — I've got you. ✦`,
-        footer: `${menuData.botName} • ${menuData.totalCommands} commands`,
+        text:   `That's the overview. Want to go deeper? Tap below \u2014 I've got you. \u2726`,
+        footer: `${menuData.botName} \u2502 ${menuData.totalCommands} commands`,
       }, [
-        { label: '📖 Command Guide',   cmd: `${p}help` },
-        { label: '🪙 Claim Daily',     cmd: `${p}daily` },
-        { label: '🏓 Ping Bot',        cmd: `${p}ping` },
+        { label: '\u{1F4D6} Command Guide',   cmd: `${p}help` },
+        { label: '\u{1FA9} Claim Daily',     cmd: `${p}daily` },
+        { label: '\u{1F3D1} Ping Bot',        cmd: `${p}ping` },
       ], { quoted: m });
     } catch (_) {}
   }
@@ -85,19 +87,18 @@ export const showMenu = async (sock, m, customKey = null) => {
     try {
       const p = menuData.prefix || '.';
       await actionCard(sock, m.from, {
-        text:   `👁️ You're previewing *${menu.name}*.
-Like what you see? Make it permanent — one tap below.`,
+        text:   `\u{1F441}\uFE0F You're previewing *${menu.name}*.\nLike what you see? Make it permanent \u2014 one tap below.`,
         footer: `Currently active: ${activeMenu.name}`,
       }, [
-        { label: `✅ Set as Default`, cmd: `${p}setmenu ${menu.id}` },
-        { label: `👁️ View Another Style`, cmd: `${p}menulist` },
+        { label: `\u2705 Set as Default`, cmd: `${p}setmenu ${menu.id}` },
+        { label: `\u{1F441}\uFE0F View Another Style`, cmd: `${p}menulist` },
       ], { quoted: m });
     } catch (_) {}
   }
 
   // Send the actual audio as a real message after the menu card.
   // Quote it with a fake order card showing bot name + command count so the
-  // audio message displays the product-catalog style header (🛒 X items, bot name).
+  // audio message displays the product-catalog style header (\u{1F6D2} X items, bot name).
   // Skip audio in group chats — it plays out loud for everyone and is intrusive.
   // Users in DMs still get the full audio experience.
   const isGroupChat = m.from?.endsWith('@g.us');
@@ -108,7 +109,7 @@ Like what you see? Make it permanent — one tap below.`,
         const activeId = menuManager.getActiveMenu()?.id || 1;
         const imgData  = await imageManager.getMenuImage(activeId);
         audioCtx = buildFakeLiveLocationQuote({
-          caption:       `${menuData.botName.toUpperCase()} • ${menuData.totalCommands} commands`,
+          caption:       `${menuData.botName.toUpperCase()} \u2502 ${menuData.totalCommands} commands`,
           jpegThumbnail: imgData.buffer,
         });
       } catch (qErr) {

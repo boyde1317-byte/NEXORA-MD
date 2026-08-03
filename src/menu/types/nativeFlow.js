@@ -1,80 +1,107 @@
+import capabilities from '../../core/capabilities.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 
 /**
- * Native Flow Menu (id: 4) — rewritten for itsliaaa 0.3.18-final fork.
+ * Native Flow Menu (id: 4) \u2014 enhanced for rich-messages.
  *
- * Uses the fork's simple declarative button format:
- *   { text, id }    → quick_reply
- *   { text, url }   → cta_url  (merchant_url auto-set by prepareNativeFlowButtons)
- *   { text, copy }  → cta_copy
- *
- * No manual proto construction. No buttonParamsJson. No raw name/params objects.
+ * Upgraded to use sendInteractive (full proto control) as Tier 1:
+ *   - Image header with title AND subtitle
+ *   - Embedded externalAdReply inside interactiveMessage.contextInfo
+ *     (double visual: interactive card + ad banner in one message)
+ *   - Mixed button types: quick_reply, cta_url, cta_copy
  *
  * Tiers:
- *   1 → nativeFlow interactive card with image header (URL links + quick-reply + copy)
- *   2 → text with externalAdReply banner (no button support on client)
+ *   1 \u2192 sendInteractive with image header + subtitle + embedded adReply + mixed buttons
+ *   2 \u2192 nativeFlow interactive card with image header (simple declarative buttons)
+ *   3 \u2192 text with externalAdReply banner
  */
 export const nativeFlowMenu = {
   id: 4,
   name: 'nativeFlow',
-  description: 'Advanced Native Flow — URL links, clipboard copy, quick-reply actions',
+  description: 'Advanced Native Flow \u2014 interactive card with embedded ad-reply, URL links, clipboard copy, quick-reply',
   supportedMessages: ['interactiveMessage', 'nativeFlowMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData    = await imageManager.getMenuImage(4);
-    const bodyText   = `⚡ *NEXORA MENU*\n\n` + buildTextMenu(menuData);
-    const footerText = `${menuData.botName} • Native Flow Active`;
+    const bodyText   = `\u26A1 *${toSmallcaps(menuData.botName + ' Menu')}*\n\n` + buildTextMenu(menuData);
+    const footerText = `${menuData.botName} \u2502 ${toSmallcaps('Native Flow Active')}`;
 
-    // ── Tier 1: nativeFlow buttons with image header ──────────────────────
-    // Resolve image payload: prefer the { url } form — WA fetches it directly,
-    // no local buffer download/re-upload round trip. Buffer is only a fallback
-    // for local disk images that have no public URL.
+    // Resolve image payload
     const imagePayload = imgData.source?.startsWith('http')
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
+    // Build embedded externalAdReply for the interactive card
+    const adReply = {
+      title:                 `\u2726 ${menuData.botName} \u2726`,
+      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Prefix')}: ${menuData.prefix}`,
+      sourceUrl:             'https://wa.me/233533416608',
+      mediaType:             1,
+      renderLargerThumbnail: true,
+      showAdAttribution:     false,
+    };
+    if (imgData.buffer) {
+      adReply.thumbnail = imgData.buffer;
+    } else if (imgData.source?.startsWith('http')) {
+      adReply.thumbnailUrl = imgData.source;
+      adReply.originalImageUrl = imgData.source;
+    }
+
+    // ── Tier 1: sendInteractive with image header + subtitle + embedded adReply ──
+    if (capabilities.interactive && imagePayload) {
+      try {
+        return await baileysBridge.sendInteractive(sock, m.from, {
+          body:    bodyText,
+          footer:  footerText,
+          header:  {
+            title:    `\u{1F31F} ${toSmallcaps(menuData.botName)} \u2726`,
+            subtitle: `${toSmallcaps('Native Flow')} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`,
+            image:    imagePayload,
+          },
+          buttons: [
+            { name: 'cta_url',    params: { display_text: `\u{1F4AC} ${toSmallcaps('Contact Developer')}`,  url: 'https://wa.me/233533416608' } },
+            { name: 'cta_url',    params: { display_text: `\u{1F4E1} ${toSmallcaps('Official Channel')}`,   url: 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326' } },
+            { name: 'cta_copy',   params: { display_text: `\u{1F4CE} ${toSmallcaps('Copy Prefix')}`,        copy: menuData.prefix } },
+            { name: 'quick_reply', params: { display_text: `\u{1F916} ${toSmallcaps('System Stats')}`,       id: `${menuData.prefix}menu aiDynamic` } },
+            { name: 'quick_reply', params: { display_text: `\u{1F3A8} ${toSmallcaps('Change Menu Style')}`,   id: `${menuData.prefix}menulist` } },
+          ],
+          contextInfo: { externalAdReply: adReply },
+        }, { quoted: menuData.audioQuote || m });
+      } catch (err) {
+        console.warn('[MENU nativeFlow] Tier 1 (sendInteractive + adReply) failed, trying nativeFlow:', err.message);
+      }
+    }
+
+    // ── Tier 2: nativeFlow buttons with image header (simple declarative) ──
     try {
       return await baileysBridge.sendNativeFlow(sock, m.from, {
         text:    bodyText,
         footer:  footerText,
-        title:   '🌟 NEXORA ✦',
+        title:   `\u{1F31F} ${toSmallcaps(menuData.botName)} \u2726`,
         image:   imagePayload,
         buttons: [
-          { text: '💬 Contact Developer',  url:  'https://wa.me/233533416608' },
-          { text: '📢 Official Channel',   url:  'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326' },
-          { text: '📎 Copy Prefix',        copy: menuData.prefix },
-          { text: '🤖 System Stats',        id:   `${menuData.prefix}menu aiDynamic` },
-          { text: '🎨 Change Menu Style',   id:   `${menuData.prefix}menulist` },
+          { text: '\u{1F4AC} Contact Developer',  url:  'https://wa.me/233533416608' },
+          { text: '\u{1F4E1} Official Channel',   url:  'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326' },
+          { text: '\u{1F4CE} Copy Prefix',        copy: menuData.prefix },
+          { text: '\u{1F916} System Stats',        id:   `${menuData.prefix}menu aiDynamic` },
+          { text: '\u{1F3A8} Change Menu Style',   id:   `${menuData.prefix}menulist` },
         ],
       }, { quoted: menuData.audioQuote || m });
     } catch (err) {
-      console.warn('[MENU nativeFlow] Tier 1 (native flow + image) failed, trying adReply:', err.message);
+      console.warn('[MENU nativeFlow] Tier 2 (nativeFlow + image) failed, trying adReply:', err.message);
     }
 
-    // ── Tier 2: text + externalAdReply banner ─────────────────────────────
+    // ── Tier 3: text + externalAdReply banner ─────────────────────────────
     try {
-      const adReply = {
-        title:                 `${menuData.botName} ✦`,
-        body:                  `${menuData.totalCommands} commands • Prefix: ${menuData.prefix}`,
-        sourceUrl:             'https://wa.me/233533416608',
-        mediaType:             1,
-        renderLargerThumbnail: true,
-      };
-      if (imgData.buffer) {
-        adReply.thumbnail = imgData.buffer;
-      } else if (imgData.source?.startsWith('http')) {
-        adReply.thumbnailUrl = imgData.source;
-
-        adReply.originalImageUrl = imgData.source;
-      }
       return await sock.sendMessage(m.from, {
         text:        bodyText,
         contextInfo: { externalAdReply: adReply },
       }, { quoted: menuData.audioQuote || m });
     } catch (err) {
-      console.warn('[MENU nativeFlow] Tier 2 (adReply) failed, escalating to text:', err.message);
+      console.warn('[MENU nativeFlow] Tier 3 (adReply) failed, escalating to text:', err.message);
       throw err; // runWithFallback → plain text
     }
   },

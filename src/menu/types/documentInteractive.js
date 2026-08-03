@@ -6,40 +6,83 @@ import { footerManager } from '../../core/footer.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 
 /**
- * Document Interactive Menu (id: 1) — rewritten for itsliaaa 0.3.18-final fork.
+ * Document Interactive Menu (id: 1) \u2014 enhanced for rich-messages.
  *
- * Uses the fork's high-level sendNativeFlow API:
- *   sock.sendMessage(jid, { nativeFlow: [...], text, footer, image }) via baileysBridge.
- *
- * Button format — fork's simple declarative style (no raw proto):
- *   { text, id }    → quick_reply
- *   { text, url }   → cta_url
- *   { text, copy }  → cta_copy
+ * Upgraded to use sendInteractive (full proto control) instead of sendNativeFlow
+ * (simple declarative) for richer visual output:
+ *   - Image header with title AND subtitle (not available in nativeFlow)
+ *   - Embedded externalAdReply inside interactiveMessage.contextInfo
+ *     (double visual: interactive card + ad banner in one message)
+ *   - Full nativeFlow buttons with display_text
  *
  * Tiers:
- *   1 → nativeFlow interactive card with image header + 3 action buttons
- *   2 → image with caption + externalAdReply banner
- *   3 → guaranteed plain text
+ *   1 \u2192 sendInteractive with image header + subtitle + embedded adReply
+ *   2 \u2192 nativeFlow interactive card with image header + 5 action buttons
+ *   3 \u2192 image with caption + externalAdReply banner
+ *   4 \u2192 guaranteed plain text
  */
 export const documentInteractiveMenu = {
   id: 1,
   name: 'documentInteractive',
-  description: 'Interactive card — image header + quick-reply and URL action buttons',
+  description: 'Interactive card \u2014 image header + subtitle + embedded adReply + action buttons',
   supportedMessages: ['interactiveMessage', 'nativeFlowMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData    = await imageManager.getMenuImage(1);
-    const footerText = footerManager.getFooter() || `${menuData.botName} • Uptime: ${menuData.uptime}`;
-    const bodyText   = `✦ *${toSmallcaps(menuData.botName)}* ✦\n\n` + buildTextMenu(menuData);
+    const footerText = footerManager.getFooter() || `${menuData.botName} \u2502 Uptime: ${menuData.uptime}`;
+    const bodyText   = `\u2726 *${toSmallcaps(menuData.botName)}* \u2726\n\n` + buildTextMenu(menuData);
 
-    // Resolve image payload: prefer the { url } form — WA fetches it directly,
+    // Resolve image payload: prefer the { url } form \u2014 WA fetches it directly,
     // no local buffer download/re-upload round trip. Buffer is only a fallback
     // for local disk images that have no public URL.
     const imagePayload = imgData.source?.startsWith('http')
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
-    // ── Tier 1: nativeFlow interactive card with image header ─────────────
+    // Build the embedded externalAdReply for double visual impact
+    const adReply = {
+      title:                 `\u2726 ${menuData.botName} \u2726`,
+      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Interactive Card')}`,
+      sourceUrl:             'https://wa.me/233533416608',
+      mediaType:             1,
+      renderLargerThumbnail: true,
+      showAdAttribution:     false,
+    };
+    if (imgData.buffer) {
+      adReply.thumbnail = imgData.buffer;
+    } else if (imgData.source?.startsWith('http')) {
+      adReply.thumbnailUrl = imgData.source;
+      adReply.originalImageUrl = imgData.source;
+    }
+
+    // ── Tier 1: sendInteractive with image header + subtitle + embedded adReply ──
+    // Full proto control: image header with title AND subtitle, plus an
+    // externalAdReply banner embedded inside the same interactive card.
+    if (capabilities.interactive && imagePayload) {
+      try {
+        return await baileysBridge.sendInteractive(sock, m.from, {
+          body:    bodyText,
+          footer:  footerText,
+          header:  {
+            title:    `\u2726 ${toSmallcaps(menuData.botName + ' Menu')} \u2726`,
+            subtitle: `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Uptime')}: ${menuData.uptime}`,
+            image:    imagePayload,
+          },
+          buttons: [
+            { name: 'quick_reply', params: { display_text: `\u{1F4CB} ${toSmallcaps('Switch Menu Style')}`, id: `${menuData.prefix}menulist` } },
+            { name: 'quick_reply', params: { display_text: `\u26A1 ${toSmallcaps('System Info')}`,        id: `${menuData.prefix}menu aiDynamic` } },
+            { name: 'quick_reply', params: { display_text: `\u{1F3D1} ${toSmallcaps('Ping Bot')}`,           id: `${menuData.prefix}ping` } },
+            { name: 'cta_url',    params: { display_text: `\u{1F4AC} ${toSmallcaps('Contact Developer')}`,  url: 'https://wa.me/233533416608' } },
+            { name: 'cta_copy',   params: { display_text: `\u{1F4CE} ${toSmallcaps('Copy Prefix')}`,        copy: menuData.prefix } },
+          ],
+          contextInfo: { externalAdReply: adReply },
+        }, { quoted: menuData.audioQuote || m });
+      } catch (err) {
+        console.warn('[MENU documentInteractive] Tier 1 (sendInteractive + adReply) failed, trying nativeFlow:', err.message);
+      }
+    }
+
+    // ── Tier 2: nativeFlow interactive card with image header ─────────────
     if (capabilities.nativeFlow) {
       try {
         return await baileysBridge.sendNativeFlow(sock, m.from, {
@@ -47,29 +90,21 @@ export const documentInteractiveMenu = {
           footer:  footerText,
           image:   imagePayload,
           buttons: [
-            { text: '📋 Switch Menu Style', id: `${menuData.prefix}menulist` },
-            { text: '⚡ System Info',        id: `${menuData.prefix}menu aiDynamic` },
-            { text: '🏓 Ping Bot',           id: `${menuData.prefix}ping` },
-            { text: '💬 Contact Developer',  url: 'https://wa.me/233533416608' },
-            { text: '📎 Copy Prefix',        copy: menuData.prefix },
+            { text: '\u{1F4CB} Switch Menu Style', id: `${menuData.prefix}menulist` },
+            { text: '\u26A1 System Info',        id: `${menuData.prefix}menu aiDynamic` },
+            { text: '\u{1F3D1} Ping Bot',           id: `${menuData.prefix}ping` },
+            { text: '\u{1F4AC} Contact Developer',  url: 'https://wa.me/233533416608' },
+            { text: '\u{1F4CE} Copy Prefix',        copy: menuData.prefix },
           ],
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
-        console.warn('[MENU documentInteractive] Tier 1 (nativeFlow) failed, trying image banner:', err.message);
+        console.warn('[MENU documentInteractive] Tier 2 (nativeFlow) failed, trying image banner:', err.message);
       }
     }
 
-    // ── Tier 2: image with caption + externalAdReply ──────────────────────
+    // ── Tier 3: image with caption + externalAdReply ──────────────────────
     try {
-      const adReply = {
-        title:                 `${menuData.botName} ✦`,
-        body:                  `${menuData.totalCommands} commands • Uptime: ${menuData.uptime}`,
-        sourceUrl:             'https://wa.me/233533416608',
-        mediaType:             1,
-        renderLargerThumbnail: true,
-      };
       if (imgData.buffer) {
-        adReply.thumbnail = imgData.buffer;
         return await sock.sendMessage(m.from, {
           image:       imgData.buffer,
           mimetype:    imgData.mimetype,
@@ -77,9 +112,6 @@ export const documentInteractiveMenu = {
           contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });
       } else if (imgData.source?.startsWith('http')) {
-        adReply.thumbnailUrl = imgData.source;
-
-        adReply.originalImageUrl = imgData.source;
         return await sock.sendMessage(m.from, {
           image:       { url: imgData.source },
           caption:     bodyText,
@@ -87,10 +119,10 @@ export const documentInteractiveMenu = {
         }, { quoted: menuData.audioQuote || m });
       }
     } catch (err) {
-      console.warn('[MENU documentInteractive] Tier 2 (image banner) failed, falling back to text:', err.message);
+      console.warn('[MENU documentInteractive] Tier 3 (image banner) failed, falling back to text:', err.message);
     }
 
-    // ── Tier 3: guaranteed plain text ─────────────────────────────────────
+    // ── Tier 4: guaranteed plain text ─────────────────────────────────────
     return await sock.sendMessage(m.from, { text: bodyText }, { quoted: menuData.audioQuote || m });
   },
 };
