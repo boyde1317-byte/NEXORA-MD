@@ -94,7 +94,7 @@ export default {
         const thumbnail = await getBrandThumbnail();
         return await actionCardWithAd(sock, m.from, {
           text:   `Keep the streak alive — come back tomorrow for an even bigger haul. 🔥 Don\'t break the chain. ✦`,
-          footer: `${brand?.name ?? 'NEXORA'} Economy`,
+          footer: `${brand?.name ?? 'NEXORA'} • Daily Rewards`,
         }, [
           { label: 'Check Balance',     cmd: `${p}balance` },
           { label: 'Leaderboard',       cmd: `${p}top` },

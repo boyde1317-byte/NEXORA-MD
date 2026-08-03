@@ -32,7 +32,7 @@ export default {
 
     await copyResultCard(sock, m.from, {
       text: `🔑 *SECURE PASSWORD*\n\nLength: ${length} • Strength: ${strength}\n\n*${password}*`,
-      footer: 'NEXORA',
+      footer: 'NEXORA • Password Gen',
       copyLabel: '📋 Copy Password',
       copyValue: password
     }, { quoted: m });

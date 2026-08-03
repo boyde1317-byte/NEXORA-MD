@@ -77,7 +77,7 @@ export default {
     if (!content) {
       return await m.reply.info(
         `Usage: \`${p}summary [style] <text or URL>\`\n\nStyles:\n• (none) — 3-5 sentence summary\n• \`short\` — 1-2 sentences\n• \`bullets\` — bullet points\n\nExamples:\n• \`${p}summary\` (reply to a message)\n• \`${p}summary short https://example.com/article\`\n• \`${p}summary bullets <pasted text>\``,
-        'NEXORA'
+        'NEXORA • Summary'
       );
     }
 
@@ -104,7 +104,7 @@ export default {
         const styleLabel = style === 'default' ? 'Summary' : style === 'short' ? 'TL;DR' : 'Key Points';
         await mixedCard(sock, m.from, {
           text: `📝 *${styleLabel.toUpperCase()}*\n\n${reply}`,
-          footer: 'NEXORA',
+          footer: 'NEXORA • Summarizer',
         }, [
           { kind: 'copy',   label: '📋 Copy Summary',    value: reply },
           { kind: 'action', label: '🔄 Summarize Again', cmd: `${p}summary` },

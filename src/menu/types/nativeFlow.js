@@ -39,7 +39,7 @@ export const nativeFlowMenu = {
       return await baileysBridge.sendNativeFlow(sock, m.from, {
         text:    bodyText,
         footer:  footerText,
-        title:   '🌟 NEXORA',
+        title:   '🌟 NEXORA ✦',
         image:   imagePayload,
         buttons: [
           { text: '💬 Contact Developer',  url:  'https://wa.me/233533416608' },

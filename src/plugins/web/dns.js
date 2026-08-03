@@ -31,7 +31,7 @@ export default {
 
       await copyResultCard(sock, m.from, {
         text,
-        footer: 'Google DNS API',
+        footer: 'NEXORA • DNS Lookup',
         copyLabel: '📋 Copy Data',
         copyValue: text
       }, { quoted: m });

@@ -57,7 +57,7 @@ export default {
     try {
       return await actionCard(sock, m.from, {
         text:   `🤔 *TRUTH*\n\n${prompt}`,
-        footer: 'NEXORA',
+        footer: 'NEXORA • Truth',
       }, [
         { label: '🤔 Another Truth', cmd: `${p}truth` },
         { label: '🔥 Dare Instead',  cmd: `${p}dare` },

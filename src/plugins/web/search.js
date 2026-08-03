@@ -35,7 +35,7 @@ export default {
       const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
       await actionCardWithAd(sock, m.from, {
         text,
-        footer: 'Provided by DuckDuckGo',
+        footer: 'NEXORA • DuckDuckGo',
       }, [
         { label: '🔍 Search Again', cmd: `${prefix || '.'}search` },
         { label: '📖 Wiki Lookup',     cmd: `${prefix || '.'}wiki ${query}` },

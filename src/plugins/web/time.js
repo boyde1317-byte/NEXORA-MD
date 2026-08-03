@@ -23,7 +23,7 @@ export default {
 
       await copyResultCard(sock, m.from, {
         text,
-        footer: 'WorldTimeAPI',
+        footer: 'NEXORA • World Clock',
         copyLabel: '📋 Copy Time',
         copyValue: formatted
       }, { quoted: m });

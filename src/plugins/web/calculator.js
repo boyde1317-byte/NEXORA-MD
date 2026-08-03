@@ -17,7 +17,7 @@ export default {
       
       await copyResultCard(sock, m.from, {
         text: `🧮 *CALCULATOR*\n\n*Expression:*\n${expr}\n\n*Result:*\n*${result}*`,
-        footer: 'mathjs API',
+        footer: 'NEXORA • Calculator',
         copyLabel: '📋 Copy Result',
         copyValue: String(result).trim()
       }, { quoted: m });

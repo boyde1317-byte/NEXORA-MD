@@ -26,7 +26,7 @@ export default {
 
       await copyResultCard(sock, m.from, {
         text,
-        footer: 'NPM Registry API',
+        footer: 'NEXORA • NPM',
         copyLabel: '📋 Copy Install Command',
         copyValue: `npm install ${data.name}`
       }, { quoted: m });

@@ -14,7 +14,7 @@ export default {
       try {
         await actionCard(sock, m.from, {
           text:   '🔇 Group muted. Only admins can talk now. Silence is golden. 🤫',
-          footer: 'NEXORA',
+          footer: 'NEXORA • Muted',
         }, [
           { label: '🔔 Unmute Group', cmd: `${p}unmute` },
         ], { quoted: m });

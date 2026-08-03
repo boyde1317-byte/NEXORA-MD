@@ -18,7 +18,7 @@ export default {
         
         await mixedCard(sock, m.from, {
           text: `✦ *INSPIRATION* ✦\n\n${quoteText}`,
-          footer: 'NEXORA'
+          footer: 'NEXORA • Inspiration'
         }, [
           { kind: 'copy', label: '📋 Copy Quote', value: data.quote },
           { kind: 'action', label: '🔄 Next Quote', cmd: `${prefix}quote` },

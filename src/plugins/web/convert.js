@@ -119,7 +119,7 @@ export default {
         try {
           return await copyResultCard(sock, m.from, {
             text: `🌡️ *TEMPERATURE CONVERSION*\n\n${value}${fromLabel} = *${resultStr}${toLabel}*`,
-            footer: 'NEXORA',
+            footer: 'NEXORA • Converter',
             copyValue: `${value}${fromLabel} = ${resultStr}${toLabel}`,
           }, { quoted: m });
         } catch (_) {
@@ -142,7 +142,7 @@ export default {
       try {
         return await copyResultCard(sock, m.from, {
           text: `📐 *${fromCat.toUpperCase()} CONVERSION*\n\n${value} ${from} = *${resultStr} ${to}*`,
-          footer: 'NEXORA',
+          footer: 'NEXORA • Converter',
           copyValue: `${value} ${from} = ${resultStr} ${to}`,
         }, { quoted: m });
       } catch (_) {
@@ -177,7 +177,7 @@ export default {
               ['Converted',  `${resultStr} ${toUpper}`],
               ['Rate',       `1 ${fromUpper} = ${(rates[toUpper] / rates[fromUpper]).toFixed(4)} ${toUpper}`],
             ],
-            footer: 'NEXORA • exchangerate.host',
+            footer: 'NEXORA • Currency',
           }, { quoted: m });
         } catch (_) {
           return await m.reply(

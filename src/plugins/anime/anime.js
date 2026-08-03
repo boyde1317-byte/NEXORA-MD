@@ -24,7 +24,7 @@ export default {
         await actionCard(sock, m.from, {
           text: `✦ *${title}* ✦`,
           image: { url: data.url },
-          footer: 'NEXORA'
+          footer: 'NEXORA • Anime'
         }, [
           { label: `🔄 Next ${title}`, cmd: `${prefix}anime ${type}` }
         ], { quoted: m });

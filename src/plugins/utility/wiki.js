@@ -31,7 +31,7 @@ export default {
         text:   `📖 *${result.title}*
 
 _Tap the thumbnail to read the full Wikipedia article._`,
-        footer: 'Wikipedia • NEXORA',
+        footer: 'NEXORA • Wikipedia',
       }, [
         { label: '🔍 Search Another', cmd: `${prefix}wiki` },
         { label: '🤖 Ask AI More',     cmd: `${prefix}ai Tell me more about ${result.title}` },

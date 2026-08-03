@@ -32,7 +32,7 @@ export default {
 
         await mixedCard(sock, m.from, {
           text,
-          footer: 'NEXORA'
+          footer: 'NEXORA • Comedy Club'
         }, [
           { kind: 'copy', label: '📋 Copy Joke', value: data.type === 'twopart' ? `${data.setup}\n\n${data.delivery}` : data.joke },
           { kind: 'action', label: '🔄 Next Joke', cmd: `${prefix}joke` },

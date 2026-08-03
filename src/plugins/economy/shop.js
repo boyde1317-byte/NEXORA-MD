@@ -161,7 +161,7 @@ export default {
 
         await actionCard(sock, m.from, {
           text: 'Ready to spend some coins? Treat yourself. ✦',
-          footer: 'NEXORA',
+          footer: 'NEXORA • Shop',
         }, [
           { label: '🪙 Claim Daily',   cmd: `${p}daily` },
           { label: '💰 Check Balance', cmd: `${p}balance` },

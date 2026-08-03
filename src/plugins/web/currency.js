@@ -35,7 +35,7 @@ export default {
 
       await copyResultCard(sock, m.from, {
         text,
-        footer: 'ExchangeRate-API',
+        footer: 'NEXORA • ExchangeRate',
         copyLabel: '📋 Copy Result',
         copyValue: result.toFixed(2)
       }, { quoted: m });

@@ -82,7 +82,7 @@ export default {
 
       await copyResultCard(sock, m.from, {
         text: `🧮 *CALCULATOR*\n\nExpression: \`${expr}\`\nResult: *${formatted}*${commentary}`,
-        footer: 'NEXORA',
+        footer: 'NEXORA • Calculator',
         copyLabel: '📋 Copy Result',
         copyValue: formatted,
       }, { quoted: m });

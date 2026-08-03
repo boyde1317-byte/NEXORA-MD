@@ -107,7 +107,7 @@ export default {
 
             await actionCard(sock, m.from, {
               text: `Currently: ${desc} • ${Math.round(cur.temperature_2m)}°C (feels like ${Math.round(cur.apparent_temperature)}°C)\n${getComfortIndex(Math.round(cur.apparent_temperature), cur.relative_humidity_2m).label} — ${getComfortIndex(Math.round(cur.apparent_temperature), cur.relative_humidity_2m).tip}`,
-              footer: 'NEXORA',
+              footer: 'NEXORA • Weather',
             }, [
               { label: '🔍 Check Another City', cmd: `${p}weather` },
             ], { quoted: m });

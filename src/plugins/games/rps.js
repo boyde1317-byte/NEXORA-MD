@@ -14,7 +14,7 @@ export default {
     if (!args[0] || !choices.includes(args[0].toLowerCase())) {
       return await mixedCard(sock, m.from, {
         text: `✦ *ROCK PAPER SCISSORS* ✦\n\nChoose your weapon. I promise not to cheat. ⚡`,
-        footer: 'NEXORA'
+        footer: 'NEXORA • Rock Paper Scissors'
       }, [
         { kind: 'action', label: '🪨 Rock', cmd: `${p}rps rock` },
         { kind: 'action', label: '📄 Paper', cmd: `${p}rps paper` },
@@ -39,7 +39,7 @@ export default {
     
     await mixedCard(sock, m.from, {
       text: `✦ *ROCK PAPER SCISSORS* ✦\n\nYou chose: ${emojis[userChoice]}\nI chose: ${emojis[botChoice]}\n\n*${result}*`,
-      footer: 'NEXORA'
+      footer: 'NEXORA • Rock Paper Scissors'
     }, [
       { kind: 'action', label: '🪨 Rock',     cmd: `${p}rps rock` },
       { kind: 'action', label: '📄 Paper',    cmd: `${p}rps paper` },

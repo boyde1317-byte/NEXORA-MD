@@ -16,7 +16,7 @@ export default {
         
         await mixedCard(sock, m.from, {
           text: `✦ *DID YOU KNOW?* ✦\n\n🧠 ${data.text}`,
-          footer: 'NEXORA'
+          footer: 'NEXORA • Fun Facts'
         }, [
           { kind: 'copy', label: '📋 Copy', value: data.text },
           { kind: 'action', label: '🔄 Another Fact', cmd: `${prefix}fact` },

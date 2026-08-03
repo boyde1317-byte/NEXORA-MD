@@ -27,7 +27,7 @@ export default {
 
       await copyResultCard(sock, m.from, {
         text,
-        footer: 'NEXORA',
+        footer: 'NEXORA • JWT',
         copyLabel: '📋 Copy Payload JSON',
         copyValue: JSON.stringify(payload, null, 2)
       }, { quoted: m });

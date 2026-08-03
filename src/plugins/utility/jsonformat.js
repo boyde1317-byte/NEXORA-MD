@@ -22,7 +22,7 @@ export default {
       
       await copyResultCard(sock, m.from, {
         text: `✅ *VALID JSON*\n\n\`\`\`json\n${formatted}\n\`\`\``,
-        footer: 'NEXORA',
+        footer: 'NEXORA • JSON',
         copyLabel: '📋 Copy Formatted JSON',
         copyValue: formatted
       }, { quoted: m });

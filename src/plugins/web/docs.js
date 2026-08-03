@@ -25,7 +25,7 @@ export default {
 
       await copyResultCard(sock, m.from, {
         text,
-        footer: 'MDN Web Docs',
+        footer: 'NEXORA • MDN Docs',
         copyLabel: '📋 Copy Link',
         copyValue: `https://developer.mozilla.org${top.mdn_url}`
       }, { quoted: m });

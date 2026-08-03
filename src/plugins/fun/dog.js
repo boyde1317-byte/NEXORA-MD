@@ -17,7 +17,7 @@ export default {
         await actionCard(sock, m.from, {
           text: `✦ *RANDOM DOG* ✦\n\nWho\'s a good bot? Here\'s a good dog. 🐶`,
           image: { url: data[0].url },
-          footer: 'NEXORA'
+          footer: 'NEXORA • Woof 🐶'
         }, [
           { label: '🔄 Another Dog', cmd: `${prefix}dog` },
           { label: '🐱 Get a Cat',     cmd: `${prefix}cat` }

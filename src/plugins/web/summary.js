@@ -44,7 +44,7 @@ export default {
 
       await copyResultCard(sock, m.from, {
         text: `📝 *SUMMARY*\n🔗 ${url}\n\n${resultText}`,
-        footer: 'Web Toolkit',
+        footer: 'NEXORA • Summarizer',
         copyLabel: '📋 Copy Summary',
         copyValue: resultText
       }, { quoted: m });

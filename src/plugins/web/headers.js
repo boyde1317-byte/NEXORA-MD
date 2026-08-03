@@ -22,7 +22,7 @@ export default {
 
       await copyResultCard(sock, m.from, {
         text: text.trim(),
-        footer: 'Web Toolkit',
+        footer: 'NEXORA • HTTP Headers',
         copyLabel: '📋 Copy Headers',
         copyValue: JSON.stringify(headers, null, 2)
       }, { quoted: m });

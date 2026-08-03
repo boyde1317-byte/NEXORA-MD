@@ -69,7 +69,7 @@ export default {
           title:   `₿ ${coinId.toUpperCase()} PRICE`,
           headers: ['Currency', 'Price'],
           rows,
-          footer:  'CoinGecko • Free API',
+          footer:  'NEXORA • CoinGecko',
         }, { quoted: m });
       } catch (err) {
         const text = `₿ *${coinId.toUpperCase()} PRICE*\n\n` +

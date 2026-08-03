@@ -82,7 +82,7 @@ export const bottomSheetMenu = {
           image:       imagePayload,
           buttons:     allButtons,
           optionText:  '📋 Browse All Commands',
-          optionTitle: 'NEXORA',
+          optionTitle: 'NEXORA Menu',
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
         console.warn('[MENU bottomSheet] Tier 1 (nativeFlow + optionText + image) failed, trying flat nativeFlow:', err.message);

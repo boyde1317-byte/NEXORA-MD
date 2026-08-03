@@ -52,7 +52,7 @@ export default {
       try {
         return await actionCard(sock, m.from, {
           text:   `⬆️ *@${targetNumber}* is now a Group Admin. With great power... you know the rest.`,
-          footer: 'NEXORA',
+          footer: 'NEXORA • Promoted',
         }, [
           { label: '⬇️ Demote Again',      cmd: `${p}demote @${targetNumber}` },
           { label: '🚫 Remove Member',     cmd: `${p}kick` },

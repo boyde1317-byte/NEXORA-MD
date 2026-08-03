@@ -26,7 +26,7 @@ export default {
 
       await copyResultCard(sock, m.from, {
         text,
-        footer: 'NetworkCalc WHOIS API',
+        footer: 'NEXORA • WHOIS',
         copyLabel: '📋 Copy Data',
         copyValue: text
       }, { quoted: m });

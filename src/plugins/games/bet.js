@@ -43,7 +43,7 @@ export default {
     if (!game || !['flip', 'dice', 'slots'].includes(game)) {
       return await m.reply.info(
         `Pick your poison:\n• \`${p}bet flip <amount>\` — 50/50, 2x payout\n• \`${p}bet dice <amount>\` — win on 4+, 1.5x payout\n• \`${p}bet slots <amount>\` — 3-reel slots, up to 10x jackpot 💎\n\nMin bet: ${MIN_BET} 🪙 • Max bet: ${MAX_BET} 🪙\n_The house always wins... eventually. But not today. Maybe._`,
-        'NEXORA'
+        'NEXORA • Bet'
       );
     }
 
@@ -80,7 +80,7 @@ export default {
               db.setUser(m.sender, { coins: (coins - amount) + payout });
               await mixedCard(sock, m.from, {
                 text: `🎰 *COIN FLIP*\n\n${emoji} Result: *${result}*\n\n✅ You won! The casino hates you.\n🪙 Bet: ${amount} → Payout: ${payout} (+${payout - amount} profit)`,
-                footer: 'NEXORA',
+                footer: 'NEXORA • Bet',
               }, [
                 { kind: 'action', label: '🔄 Flip Again', cmd: `${p}bet flip ${amount}` },
                 { kind: 'action', label: '🎲 Try Dice',   cmd: `${p}bet dice ${amount}` },
@@ -89,7 +89,7 @@ export default {
             } else {
               await mixedCard(sock, m.from, {
                 text: `🎰 *COIN FLIP*\n\n${emoji} Result: *${result}*\n\n❌ You lost! The house always wins... eventually.\n🪙 Bet: ${amount} → Lost ${amount} coins`,
-                footer: 'NEXORA',
+                footer: 'NEXORA • Bet',
               }, [
                 { kind: 'action', label: '🔄 Try Again',  cmd: `${p}bet flip ${amount}` },
                 { kind: 'action', label: '💰 Check Balance', cmd: `${p}balance` },
@@ -108,7 +108,7 @@ export default {
               db.setUser(m.sender, { coins: (coins - amount) + payout });
               await mixedCard(sock, m.from, {
                 text: `🎲 *DICE ROLL*\n\nResult: *${roll}* (4+ wins)\n\n✅ You won! Lucky number energy.\n🪙 Bet: ${amount} → Payout: ${payout} (+${payout - amount} profit)`,
-                footer: 'NEXORA',
+                footer: 'NEXORA • Bet',
               }, [
                 { kind: 'action', label: '🔄 Roll Again', cmd: `${p}bet dice ${amount}` },
                 { kind: 'action', label: '🪙 Flip Coin',  cmd: `${p}bet flip ${amount}` },
@@ -117,7 +117,7 @@ export default {
             } else {
               await mixedCard(sock, m.from, {
                 text: `🎲 *DICE ROLL*\n\nResult: *${roll}* (4+ wins)\n\n❌ You lost! Roll low, lose big. Try again?\n🪙 Bet: ${amount} → Lost ${amount} coins`,
-                footer: 'NEXORA',
+                footer: 'NEXORA • Bet',
               }, [
                 { kind: 'action', label: '🔄 Try Again',      cmd: `${p}bet dice ${amount}` },
                 { kind: 'action', label: '💰 Check Balance', cmd: `${p}balance` },
@@ -155,7 +155,7 @@ export default {
               db.setUser(m.sender, { coins: (coins - amount) + payout });
               await mixedCard(sock, m.from, {
                 text: `🎰 *SLOT MACHINE*\n\n${resultText}\n🪙 Bet: ${amount} → Payout: ${payout} (+${payout - amount} profit)`,
-                footer: 'NEXORA',
+                footer: 'NEXORA • Bet',
               }, [
                 { kind: 'action', label: '🔄 Spin Again', cmd: `${p}bet slots ${amount}` },
                 { kind: 'action', label: '🪙 Flip Coin',  cmd: `${p}bet flip ${amount}` },
@@ -164,7 +164,7 @@ export default {
             } else {
               await mixedCard(sock, m.from, {
                 text: `🎰 *SLOT MACHINE*\n\n${resultText}\n🪙 Bet: ${amount} → Lost ${amount} coins`,
-                footer: 'NEXORA',
+                footer: 'NEXORA • Bet',
               }, [
                 { kind: 'action', label: '🔄 Spin Again',  cmd: `${p}bet slots ${amount}` },
                 { kind: 'action', label: '🪙 Claim Daily',  cmd: `${p}daily` },

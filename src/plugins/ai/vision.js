@@ -19,7 +19,7 @@ export default {
     // Ensure there is an image to analyze
     const isImage = m.msg?.mimetype?.includes('image') || m.quoted?.mimetype?.includes('image');
     if (!isImage) {
-      return await m.reply.info(`Usage: Reply to an image with \`${p}vision <optional prompt>\``, 'NEXORA');
+      return await m.reply.info(`Usage: Reply to an image with \`${p}vision <optional prompt>\``, 'NEXORA • Vision');
     }
 
     const prompt = args.join(' ').trim() || 'Describe this image in detail.';
@@ -47,7 +47,7 @@ export default {
         
         await mixedCard(sock, m.from, {
           text: `👁️ *AI VISION ANALYSIS*\n\n*Prompt:* ${prompt}\n\n${reply}`,
-          footer: 'Nexora AI Vision',
+          footer: 'NEXORA • Vision ✦',
         }, [
           { kind: 'copy',   label: '📋 Copy Analysis',     value: reply },
           { kind: 'action', label: '👁️ Analyze Another',  cmd: `${p}vision` },

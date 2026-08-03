@@ -44,7 +44,7 @@ export default {
       try {
         await actionCard(sock, m.from, {
           text: 'What\'s next? ✦',
-          footer: 'NEXORA',
+          footer: 'NEXORA • Wallet',
         }, [
           { label: '🪙 Claim Daily',  cmd: `${p}daily` },
           { label: '🏆 Leaderboard',  cmd: `${p}top` },

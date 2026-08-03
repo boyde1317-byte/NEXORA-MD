@@ -31,7 +31,7 @@ export default {
     if (!prompt) {
       return await m.reply.info(
         `Usage: \`${p}code <what to build>\`\n\nExample: \`${p}code a python function to reverse a linked list\``,
-        'NEXORA'
+        'NEXORA • Code Gen'
       );
     }
 
@@ -54,7 +54,7 @@ export default {
         try {
           await mixedCard(sock, m.from, {
             text: '✅ *Code generated!*\n\nWhat would you like to do next?',
-            footer: 'NEXORA • Gemini',
+            footer: 'NEXORA • Gemini ✦',
           }, [
             { kind: 'copy',   label: '📋 Copy Code',        value: code },
             { kind: 'action', label: '🐛 Debug This Code',  cmd: `${p}debug ${code.slice(0, 100)}` },

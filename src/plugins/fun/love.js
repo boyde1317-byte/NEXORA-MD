@@ -63,7 +63,7 @@ export default {
 
       await mixedCard(sock, m.from, {
         text,
-        footer: 'NEXORA'
+        footer: 'NEXORA • Love Calc 💕'
       }, [
         { kind: 'action', label: '🔄 Test Another', cmd: `${prefix}love` }
       ], { quoted: m, mentions: [...mentions] });

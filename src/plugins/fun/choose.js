@@ -26,7 +26,7 @@ export default {
 
     await mixedCard(sock, m.from, {
       text: `✦ *DECISION* ✦\n\nOptions: ${options.join(', ')}\n\nI choose: *${chosen}*\n${commentary}`,
-      footer: 'NEXORA'
+      footer: 'NEXORA • Chooser'
     }, [
       { kind: 'action', label: '🔄 Decide Again', cmd: `${prefix}choose ${input}` }
     ], { quoted: m });
