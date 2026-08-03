@@ -77,7 +77,7 @@ export default {
 
       return await mixedCard(sock, m.from, {
         text: `🔗 *WORD CHAIN*\n\nGame started! Who\'s got the vocabulary for this?\n\nPlayers: 1/${MAX_PLAYERS}\n\nType \`${p}wordchain join\` to play! ✦`,
-        footer: 'NEXORA Games',
+        footer: 'NEXORA',
       }, [
         { kind: 'action', label: '🔗 Join Game',  cmd: `${p}wordchain join` },
         { kind: 'action', label: '🚀 Start Now',  cmd: `${p}wordchain go` },

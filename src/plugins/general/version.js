@@ -28,7 +28,7 @@ export default {
         rows: [
           ['Bot Name',    brand.name],
           ['Developer',   brand.creator],
-          ['Core Engine', brand.core],
+          ['Framework', brand.core],
           ['Version',     `v${brand.version}`],
           ['Node.js',     process.version],
           ['Platform',    process.platform],

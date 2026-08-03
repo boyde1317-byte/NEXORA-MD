@@ -256,7 +256,7 @@ export async function selectMenu(sock, jid, content, pickerLabel, sections, side
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 6. BOTTOM SHEET CARD — collapses rows into a native WA modal sheet
-//    Best for: large command lists, settings panels, bulk item selections.
+//    Best for: large command lists, settings menus, bulk item selections.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -269,7 +269,7 @@ export async function selectMenu(sock, jid, content, pickerLabel, sections, side
  * @param {object} [opts]
  *
  * @example
- * await bottomSheetCard(sock, m.from, { text: body }, '📋 Browse Commands', 'NEXORA COMMANDS', [
+ * await bottomSheetCard(sock, m.from, { text: body }, '📋 Browse Commands', 'NEXORA', [
  *   { text: 'Ping Bot',     id:  '.ping' },
  *   { text: 'System Stats', id:  '.menu aiDynamic' },
  *   { text: 'Dev Contact',  url: 'https://wa.me/233533416608' },
@@ -310,7 +310,7 @@ export async function bottomSheetCard(sock, jid, content, sheetButtonLabel, shee
  *   text:        '*Limited time!*
 
 Premium features at no cost.',
- *   footer:      'NEXORA Offer',
+ *   footer:      'NEXORA',
  *   offerText:   '🎁 Free Premium Access — Limited Time',
  *   offerUrl:    'https://wa.me/233533416608',
  *   offerCode:   'NEXORA-FREE-2026',
@@ -350,7 +350,7 @@ export async function offerCard(sock, jid, content, opts = {}) {
  *   title:   '🔎 BAN CHECK',
  *   headers: ['Field', 'Value'],
  *   rows:    [['Number', '+1234'], ['Status', '✅ Clean']],
- *   footer:  'Powered by NEXORA-MD',
+ *   footer:  'NEXORA',
  *   buttons: [{ kind: 'action', label: '🔁 Check Another', cmd: '.checkwa' }],
  * }, { quoted: m });
  */

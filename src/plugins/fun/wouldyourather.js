@@ -46,7 +46,7 @@ export default {
 
     await mixedCard(sock, m.from, {
       text: `🤔 *WOULD YOU RATHER*\n\n${question}`,
-      footer: 'NEXORA Fun',
+      footer: 'NEXORA',
     }, [
       { kind: 'action', label: '🔄 Another', cmd: `${p}wyr` },
       { kind: 'action', label: '🎱 8-Ball', cmd: `${p}8ball Should I pick option A?` },

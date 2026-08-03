@@ -15,7 +15,7 @@ export const footerManager = {
     const style = customStyle || this.getStyle();
     switch (style) {
       case 'minimal':
-        return `${toSmallcaps('Powered by')} ${toSmallcaps(brand.core)}`;
+        return `${toSmallcaps(brand.core)}`;
       case 'professional':
       case 'ornate':
         return `© ${toSmallcaps(brand.name + ' Framework')}`;

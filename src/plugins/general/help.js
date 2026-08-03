@@ -82,7 +82,7 @@ export default {
       lines.push('');
       lines.push(`_Type \`${p}help <category>\` to list commands in that category._`);
       lines.push(`_Type \`${p}help <command>\` for detailed usage._`);
-      lines.push(`_Type \`${p}menu\` for the interactive console._`);
+      lines.push(`_Type \`${p}menu\` for the interactive menu._`);
 
       return await m.reply(asciiBuilder.box('Command Guide', lines));
     }

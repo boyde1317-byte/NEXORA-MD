@@ -13,7 +13,7 @@ export default {
     
     try {
       await sock.groupUpdateDescription(m.from, desc);
-      await m.reply.success('📝 Group description updated successfully.');
+      await m.reply.success('📝 Group description updated. Looking sharp. ✦');
     } catch (err) {
       await m.reply.error(`Failed to update description: ${err.message}`);
     }

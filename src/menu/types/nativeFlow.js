@@ -24,7 +24,7 @@ export const nativeFlowMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData    = await imageManager.getMenuImage(4);
-    const bodyText   = `⚡ *NATIVE FLOW INTERACTIVE ENGINE*\n\n` + buildTextMenu(menuData);
+    const bodyText   = `⚡ *NEXORA MENU*\n\n` + buildTextMenu(menuData);
     const footerText = `${menuData.botName} • Native Flow Active`;
 
     // ── Tier 1: nativeFlow buttons with image header ──────────────────────
@@ -39,7 +39,7 @@ export const nativeFlowMenu = {
       return await baileysBridge.sendNativeFlow(sock, m.from, {
         text:    bodyText,
         footer:  footerText,
-        title:   '🌟 MAIN CONTROL PANEL',
+        title:   '🌟 NEXORA',
         image:   imagePayload,
         buttons: [
           { text: '💬 Contact Developer',  url:  'https://wa.me/233533416608' },

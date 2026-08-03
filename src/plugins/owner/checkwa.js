@@ -74,7 +74,7 @@ export default {
           title:   '🔎 WHATSAPP BAN CHECK',
           headers: ['Field', 'Value'],
           rows,
-          footer:  'Powered by NEXORA-MD',
+          footer:  'NEXORA',
         }, { quoted: m });
 
         return await selectMenu(sock, m.from, {
@@ -93,7 +93,7 @@ export default {
         await replyTable(m, sock, {
           caption: '🔎 WHATSAPP BAN CHECK',
           rows,
-          footer:  '_Powered by NEXORA-MD_',
+          footer:  '_NEXORA_',
         });
       }
     });

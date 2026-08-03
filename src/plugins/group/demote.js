@@ -48,15 +48,15 @@ export default {
 
       try {
         return await actionCard(sock, m.from, {
-          text:   `⬇️ *@${targetNumber}* has been demoted to regular member.`,
-          footer: 'NEXORA Guard • Group Management',
+          text:   `⬇️ *@${targetNumber}* is back to being a regular member. No more admin powers.`,
+          footer: 'NEXORA',
         }, [
           { label: '⬆️ Promote Again',     cmd: `${p}promote @${targetNumber}` },
           { label: '🚫 Remove Member',     cmd: `${p}kick` },
           { label: '📋 Group Info',         cmd: `${p}groupinfo` },
         ], { quoted: m, mentions: [target] });
       } catch (_) {
-        await m.reply(`✅ *@${targetNumber}* has been successfully demoted.`, {
+        await m.reply(`✅ *@${targetNumber}* has been demoted. Back to regular.`, {
           mentions: [target]
         });
       }

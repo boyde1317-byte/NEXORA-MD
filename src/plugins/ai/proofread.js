@@ -21,7 +21,7 @@ export default {
     }
     
     if (!text) {
-      return await m.reply.info(`Usage: \`${p}proofread <text>\` or reply to a message with \`${p}proofread\``, 'NEXORA AI');
+      return await m.reply.info(`Usage: \`${p}proofread <text>\` or reply to a message with \`${p}proofread\``, 'NEXORA');
     }
 
     await withReactionStatus(m, async () => {
@@ -33,7 +33,7 @@ export default {
 
         await mixedCard(sock, m.from, {
           text: `✅ *PROOFREAD TEXT*\n\n${reply}\n\n_Polished. Ready to send._`,
-          footer: 'NEXORA AI Proofreader',
+          footer: 'NEXORA',
         }, [
           { kind: 'copy',   label: '📋 Copy Fixed Text',  value: reply },
           { kind: 'action', label: '🔄 Proofread Again',   cmd: `${p}proofread` },

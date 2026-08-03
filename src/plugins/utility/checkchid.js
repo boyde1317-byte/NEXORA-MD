@@ -48,7 +48,7 @@ export default {
 
           return await copyResultCard(sock, m.from, {
             text:       `📡 *${meta.name || 'Channel'}*\n\nChannel JID copied below:`,
-            footer:     `NEXORA Channel Info`,
+            footer:     `NEXORA`,
             copyLabel:  '📋 Copy Channel JID',
             copyValue:  meta.id || '',
             extraButtons: [
@@ -108,7 +108,7 @@ export default {
 
         return await copyResultCard(sock, m.from, {
           text:       `🆔 *${chatType}*\n\nChat JID copied below:`,
-          footer:     'NEXORA Chat Info',
+          footer:     'NEXORA',
           copyLabel:  '📋 Copy Chat JID',
           copyValue:  jid,
           extraButtons: [

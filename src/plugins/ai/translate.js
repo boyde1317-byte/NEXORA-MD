@@ -37,7 +37,7 @@ export default {
     if (!args.length) {
       return await m.reply.info(
         `Usage: \`${p}translate [lang] <text>\`\n\nExamples:\n• \`${p}translate Hello world\` — translate to English\n• \`${p}translate fr Hello world\` — translate to French\n• Reply to a message with \`${p}translate fr\`\n\nSupported: ${Object.entries(LANG_NAMES).map(([c, n]) => `${c}(${n})`).join(', ')}`,
-        'NEXORA TRANSLATE'
+        'NEXORA'
       );
     }
 
@@ -81,7 +81,7 @@ export default {
 
         await mixedCard(sock, m.from, {
           text: `🌐 *TRANSLATION → ${LANG_NAMES[targetLang] || targetLang.toUpperCase()}*\n\n${result}`,
-          footer: 'NEXORA AI • Translation',
+          footer: 'NEXORA',
         }, [
           { kind: 'copy',   label: '📋 Copy Translation',  value: result },
           { kind: 'action', label: '🔄 Translate Again',  cmd: `${p}translate` },

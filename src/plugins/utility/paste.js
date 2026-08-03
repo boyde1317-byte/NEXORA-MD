@@ -53,7 +53,7 @@ export default {
         try {
           await copyResultCard(sock, m.from, {
             text:       bodyText,
-            footer:     'NEXORA Utility • Paste',
+            footer:     'NEXORA',
             copyLabel:  '📋 Copy Link',
             copyValue:  url,
           }, { quoted: m });

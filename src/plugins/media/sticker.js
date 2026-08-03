@@ -96,7 +96,7 @@ export default {
     if (!mediaBuffer) {
       return await mixedCard(sock, m.from, {
         text: `❌ *No media found*\n\nSend an image or video with \`${p}sticker\` as the caption, or reply to an existing image/video.\n\n*Options:*\n• \`${p}sticker\` — full sticker (default)\n• \`${p}sticker crop\` — circular crop\n• \`${p}sticker 🎉\` — add emoji category\n• \`${p}sticker My Pack --author=Me\` — custom pack + author`,
-        footer: 'NEXORA Sticker Maker',
+        footer: 'NEXORA',
       }, [
         { kind: 'action', label: '📋 List Stickers', cmd: `${p}liststicker` },
         { kind: 'action', label: '🗑️ Delete Sticker', cmd: `${p}delsticker` },
@@ -137,7 +137,7 @@ export default {
       try {
         await mixedCard(sock, m.from, {
           text: meta,
-          footer: 'NEXORA Sticker Maker',
+          footer: 'NEXORA',
         }, [
           { kind: 'action', label: '🔄 Make Another', cmd: `${p}sticker` },
           { kind: 'action', label: '⭕ Circle Crop', cmd: `${p}sticker crop` },

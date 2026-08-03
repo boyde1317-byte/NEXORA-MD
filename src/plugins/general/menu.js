@@ -4,7 +4,7 @@ export default {
   name: 'menu',
   aliases: ['?'],
   category: 'general',
-  description: 'Shows the premium interactive command console in your active presentation style.',
+  description: 'Shows the interactive command menu in your active presentation style.',
   cooldown: 3000,
   execute: async ({ sock, m, args }) => {
     // If user passed a specific style name/id, show that style as an override, e.g. .menu payment

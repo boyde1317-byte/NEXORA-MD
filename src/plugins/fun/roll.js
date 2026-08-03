@@ -33,7 +33,7 @@ export default {
     
     await mixedCard(sock, m.from, {
       text: `✦ *DICE ROLL* ✦\n\n🎲 You rolled a *${result}* (1-${sides})\n${comment}`,
-      footer: 'Powered by NEXORA'
+      footer: 'NEXORA'
     }, [
       { kind: 'action', label: '🔄 Roll Again', cmd: `${prefix}roll ${sides}` }
     ], { quoted: m });

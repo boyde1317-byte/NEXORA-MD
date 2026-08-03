@@ -57,7 +57,7 @@ export default {
 
       await copyResultCard(sock, m.from, {
         text:       text.trim(),
-        footer:     'Powered by NewsAPI • NEXORA Web',
+        footer:     'NEXORA • NewsAPI',
         copyLabel:  '📋 Copy All Links',
         copyValue:  articles.map(a => a.url).join('\n'),
       }, { quoted: m });

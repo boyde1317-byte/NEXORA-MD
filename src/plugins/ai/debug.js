@@ -21,7 +21,7 @@ export default {
     }
     
     if (!code) {
-      return await m.reply.info(`Usage: \`${p}debug <code>\` or reply to a message containing code.`, 'NEXORA AI');
+      return await m.reply.info(`Usage: \`${p}debug <code>\` or reply to a message containing code.`, 'NEXORA');
     }
 
     await withReactionStatus(m, async () => {
@@ -33,7 +33,7 @@ export default {
 
         await mixedCard(sock, m.from, {
           text: `🐛 *CODE DEBUGGER*\n\n${reply}`,
-          footer: 'NEXORA AI Developer Tools',
+          footer: 'NEXORA',
         }, [
           { kind: 'copy',   label: '📋 Copy Response',    value: reply },
           { kind: 'action', label: '✏️ Generate Code',    cmd: `${p}code` },

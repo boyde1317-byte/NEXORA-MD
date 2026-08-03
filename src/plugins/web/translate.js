@@ -31,7 +31,7 @@ export default {
       
       await copyResultCard(sock, m.from, {
         text: `🌐 *TRANSLATION (${targetLang})*\n\n${translated}`,
-        footer: 'Powered by Google Translate API',
+        footer: 'NEXORA • Google Translate',
         copyLabel: '📋 Copy Translation',
         copyValue: translated
       }, { quoted: m });

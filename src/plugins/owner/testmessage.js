@@ -86,7 +86,7 @@ async function runBottomSheet(sock, m, prefix) {
   await bottomSheetCard(sock, m.from, {
     text:   '*BOTTOM SHEET TEST*\n\nTap the button below to open the command sheet.\nAll rows collapse into a native WA modal.',
     footer: 'optionText + optionTitle → bottom_sheet overlay',
-  }, 'Browse All Commands', 'NEXORA COMMAND SHEET', [
+  }, 'Browse All Commands', 'NEXORA', [
     { text: 'Ping Bot',          id: `${p}ping` },
     { text: 'About',              id: `${p}about` },
     { text: 'Menu Styles',        id: `${p}menulist` },
@@ -159,7 +159,7 @@ async function runNewsletter(sock, m) {
   await m.reply(`🔍 *NEWSLETTER INVITE TEST*\n\n• Status: ${isSupported ? 'SUPPORTED ✓' : 'UNSUPPORTED ✗'}\n\n_Attempting dispatch..._`);
   try {
     await newsletterManager.sendNewsletterInvite(sock, m.from, {
-      name: 'NEXORA Core Channel',
+      name: 'NEXORA Channel',
       caption: 'Join the next-gen NEXORA update stream.',
       forwardingEnabled: true,
     }, { quoted: m });
@@ -192,7 +192,7 @@ export default {
     // ── No arg — show a single_select test type picker ────────────────────
     if (!type) {
       return await selectMenu(sock, m.from, {
-        text:   '🧪 *✦ NEXORA DEBUG ✦*\n\nSelect a test to run:',
+        text:   '🧪 *✦ NEXORA ✦*\n\nSelect a test to run:',
         footer: `${capabilities.nativeFlow ? '✅' : '⚠️'} nativeFlow | ${capabilities.richResponse ? '✅' : '⚠️'} richResponse`,
       }, '⚙️ Choose Test Type', [
         { title: 'Button Types', rows: [

@@ -86,13 +86,13 @@ export default {
             ['Last Claim', lastDaily],
             ...extraRows,
           ],
-          footer: `${isSelf ? 'Your stats' : `Stats for +${number}`} • NEXORA Economy`,
+          footer: `${isSelf ? 'Your stats' : `Stats for +${number}`} • NEXORA`,
         }, { quoted: ppUrl ? undefined : m });
 
         if (isSelf) {
           return await mixedCard(sock, m.from, {
             text:   `📊 What's next on the grind? ${badge} ${streak > 0 ? '🔥' : '✦'}`,
-            footer: 'NEXORA Economy',
+            footer: 'NEXORA',
           }, [
             { kind: 'action', label: '🪙 Claim Daily',      cmd: `${p}daily` },
             { kind: 'action', label: '🏆 Leaderboard',      cmd: `${p}lb` },

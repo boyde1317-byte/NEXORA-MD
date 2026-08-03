@@ -48,7 +48,7 @@ export default {
             ['Cloud Cover', `${current.cloudcover}%`],
             ['Pressure',    `${current.pressure} hPa`],
           ].filter(([, v]) => v !== 'N/A'),
-          footer: 'Powered by wttr.in • NEXORA Web',
+          footer: 'NEXORA • wttr.in',
         }, { quoted: m });
 
         const mapsUrl = reqInfo
@@ -60,7 +60,7 @@ export default {
           text:   `📍 *${locName}*
 
 ${current.weatherDesc[0].value} • ${current.temp_C}°C`,
-          footer: 'Powered by wttr.in',
+          footer: 'NEXORA • wttr.in',
         }, [
           { label: '🔄 Refresh Weather', cmd: `${p}weather ${location}` },
           { label: '🕐 Check Time',      cmd: `${p}time ${location}` },

@@ -32,7 +32,7 @@ export default {
 
       await copyResultCard(sock, m.from, {
         text: text.trim(),
-        footer: 'Powered by Free Dictionary API',
+        footer: 'NEXORA • Free Dictionary',
         copyLabel: '📋 Copy Definition',
         copyValue: text.trim()
       }, { quoted: m });

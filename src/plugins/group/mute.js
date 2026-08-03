@@ -13,13 +13,13 @@ export default {
       await sock.groupSettingUpdate(m.from, 'announcement');
       try {
         await actionCard(sock, m.from, {
-          text:   '🔇 Group muted. Only admins can send messages now.',
-          footer: 'Tap below to undo',
+          text:   '🔇 Group muted. Only admins can talk now. Silence is golden. 🤫',
+          footer: 'NEXORA',
         }, [
           { label: '🔔 Unmute Group', cmd: `${p}unmute` },
         ], { quoted: m });
       } catch (_) {
-        await m.reply.success('Group muted. Only admins can send messages now.');
+        await m.reply.success('🔇 Group muted. Only admins can send messages now.');
       }
     } catch (err) {
       await m.reply.error(`Failed to mute group: ${err.message}`);

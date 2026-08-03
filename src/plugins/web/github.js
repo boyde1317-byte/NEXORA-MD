@@ -43,7 +43,7 @@ export default {
             ['Created',     new Date(data.created_at).toLocaleDateString('en-GB')],
             ['Updated',     new Date(data.updated_at).toLocaleDateString('en-GB')],
           ],
-          footer: 'GitHub API • NEXORA Web',
+          footer: 'NEXORA • GitHub',
         }, { quoted: m });
 
         return await mixedCard(sock, m.from, {

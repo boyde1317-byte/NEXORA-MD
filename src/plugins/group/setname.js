@@ -13,7 +13,7 @@ export default {
     
     try {
       await sock.groupUpdateSubject(m.from, name);
-      await m.reply.success(`✏️ Group name updated to: *${name}*`);
+      await m.reply.success(`✏️ Group name changed to: *${name}*. Fresh identity. ✦`);
     } catch (err) {
       await m.reply.error(`Failed to update name: ${err.message}`);
     }

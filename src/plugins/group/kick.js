@@ -62,7 +62,7 @@ export default {
       try {
         return await actionCard(sock, m.from, {
           text:   `🚫 *@${targetNumber}* has been shown the door. 👋`,
-          footer: 'NEXORA Guard • Group Management',
+          footer: 'NEXORA',
         }, [
           { label: '⚠️ Warn a Member',        cmd: `${p}warn` },
           { label: 'Mute Group',              cmd: `${p}mute` },

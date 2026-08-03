@@ -30,7 +30,7 @@ export default {
     if (!action || !SETTINGS[action]) {
       return await selectMenu(sock, m.from, {
         text:   '⚙️ *GROUP SETTINGS*\n\nSelect a setting to change:',
-        footer: 'NEXORA Guard • Group Management',
+        footer: 'NEXORA',
       }, '⚙️ Group Settings', [
         { title: 'Message Settings', rows: [
           { id: `${p}open`,   title: '🌐 Open Group',   description: 'All members can send messages' },
@@ -60,7 +60,7 @@ export default {
       try {
         await actionCard(sock, m.from, {
           text:   `${setting.label} — ${setting.desc}`,
-          footer: 'NEXORA Guard • Group Settings',
+          footer: 'NEXORA',
         }, [
           { label: '⚙️ More Settings', cmd: `${p}gset` },
           { label: '📋 Group Info',    cmd: `${p}groupinfo` },

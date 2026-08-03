@@ -35,7 +35,7 @@ export default {
       try {
         await mixedCard(sock, m.from, {
           text: `✅ QR code ready. Scan away. ✦`,
-          footer: 'NEXORA Utility',
+          footer: 'NEXORA',
         }, [
           { kind: 'action', label: '🔄 Another QR',  cmd: `${p}qr` },
           { kind: 'action', label: '🔗 Shorten URL',  cmd: `${p}tinyurl` },

@@ -30,7 +30,7 @@ export default {
         db.setUser(m.sender, { coins: coins + betAmount });
         await mixedCard(sock, m.from, {
           text: `✦ *COIN FLIP — BET* ✦\n\n🪙 Result: *${outcome}*\nYour guess: ${normalizedGuess}\n\n✅ You won! Lady luck likes you.\n🪙 +${betAmount} coins (${(coins + betAmount).toLocaleString()} total)`,
-          footer: 'NEXORA Casino',
+          footer: 'NEXORA',
         }, [
           { kind: 'action', label: '🔄 Flip Again', cmd: `${p}flip ${guess} ${betAmount}` },
           { kind: 'action', label: '💰 Balance', cmd: `${p}balance` },
@@ -39,7 +39,7 @@ export default {
         db.setUser(m.sender, { coins: coins - betAmount });
         await mixedCard(sock, m.from, {
           text: `✦ *COIN FLIP — BET* ✦\n\n🪙 Result: *${outcome}*\nYour guess: ${normalizedGuess}\n\n❌ You lost! The coin giveth, the coin taketh away.\n🪙 -${betAmount} coins (${(coins - betAmount).toLocaleString()} total)`,
-          footer: 'NEXORA Casino',
+          footer: 'NEXORA',
         }, [
           { kind: 'action', label: '🔄 Try Again', cmd: `${p}flip ${guess} ${betAmount}` },
           { kind: 'action', label: '🪙 Daily', cmd: `${p}daily` },
@@ -52,7 +52,7 @@ export default {
     // ── Normal flip (no bet) ────────────────────────────────────────────
     await mixedCard(sock, m.from, {
       text: `✦ *COIN FLIP* ✦\n\n🪙 The coin landed on: *${outcome}*\n${outcome === 'Heads' ? 'Heads I win, tails you lose. Just kidding. ☕' : 'Tails never fails. ⚡'}`,
-      footer: 'Powered by NEXORA'
+      footer: 'NEXORA'
     }, [
       { kind: 'action', label: '🔄 Flip Again', cmd: `${p}flip` },
       { kind: 'action', label: '💰 Bet Coins', cmd: `${p}bet flip 50` },

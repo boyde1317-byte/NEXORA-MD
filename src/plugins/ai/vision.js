@@ -19,7 +19,7 @@ export default {
     // Ensure there is an image to analyze
     const isImage = m.msg?.mimetype?.includes('image') || m.quoted?.mimetype?.includes('image');
     if (!isImage) {
-      return await m.reply.info(`Usage: Reply to an image with \`${p}vision <optional prompt>\``, 'NEXORA AI VISION');
+      return await m.reply.info(`Usage: Reply to an image with \`${p}vision <optional prompt>\``, 'NEXORA');
     }
 
     const prompt = args.join(' ').trim() || 'Describe this image in detail.';

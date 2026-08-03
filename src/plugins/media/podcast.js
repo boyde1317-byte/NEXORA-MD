@@ -42,7 +42,7 @@ export default {
       try {
         await mixedCard(sock, m.from, {
           text: `🎙️ *${pod.collectionName}* — ${pod.trackCount} episodes available. ✦`,
-          footer: 'NEXORA Media',
+          footer: 'NEXORA',
         }, [
           { kind: 'action', label: '🔍 Search Another', cmd: `${prefix}podcast` },
           { kind: 'action', label: '🎵 Find Music',      cmd: `${prefix}play` },

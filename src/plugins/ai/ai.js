@@ -1,5 +1,5 @@
 /**
- * ai.js — Nexora AI chat powered by Google Gemini.
+ * ai.js — Nexora AI chat (Google Gemini).
  *
  * Improvements:
  *  - Handles `.ai reset` / `.ai clear` to clear conversation context
@@ -38,7 +38,7 @@ export default {
     if (!prompt) {
       return await m.reply.info(
         `Usage: \`${p}ai <message>\`\n\nExamples:\n• \`${p}ai explain quantum computing simply\`\n• \`${p}ai write a haiku about coffee\`\n• \`${p}ai debug this code\` (reply to a code block)\n\n\`${p}ai reset\` — wipe context and start fresh`,
-        'NEXORA AI'
+        'NEXORA'
       );
     }
 
@@ -63,7 +63,7 @@ export default {
           const depthBadge = info.turns >= 10 ? '🧠 Deep Thinker' : info.turns >= 5 ? '💭 In Conversation' : '✨ Fresh Start';
           await mixedCard(sock, m.from, {
             text:   `🤖 *What next?*${ctxNote}\n📊 ${depthBadge}`,
-            footer: 'NEXORA Intelligence • Powered by Gemini',
+            footer: 'NEXORA • Gemini',
           }, [
             { kind: 'action', label: '🔁 Ask Again',      cmd: `${p}ai ${shortPrompt}` },
             { kind: 'copy',   label: '📋 Copy My Prompt',  value: prompt },

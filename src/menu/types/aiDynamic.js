@@ -104,7 +104,7 @@ export const aiDynamicMenu = {
     // ── Tier 2: text + externalAdReply banner ─────────────────────────────
     const contextInfo = {
       externalAdReply: {
-        title:                 `${menuData.botName} ${toSmallcaps('AI Engine')}`,
+        title:                 `${menuData.botName} ${toSmallcaps('AI')}`,
         body:                  `${menuData.totalCommands} commands • ${menuData.uptime} uptime`,
         sourceUrl:             'https://wa.me/233533416608',
         mediaType:             1,

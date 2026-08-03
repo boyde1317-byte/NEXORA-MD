@@ -49,7 +49,7 @@ export default {
       try {
         await mixedCard(sock, m.from, {
           text: `🎬 Found *${data.Title}*. Want more?`,
-          footer: 'NEXORA Media',
+          footer: 'NEXORA',
         }, [
           { kind: 'action', label: '🎵 Find Soundtrack',  cmd: `${prefix}play ${data.Title} soundtrack` },
           { kind: 'action', label: '🎬 Another Movie',   cmd: `${prefix}movie` },

@@ -16,7 +16,7 @@ export default {
 
     await copyResultCard(sock, m.from, {
       text: display,
-      footer: 'Developer Tools',
+      footer: 'NEXORA',
       copyLabel: count === 1 ? '📋 Copy UUID' : '📋 Copy All UUIDs',
       copyValue: uuids.join('\n')
     }, { quoted: m });

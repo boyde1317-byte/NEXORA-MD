@@ -130,7 +130,7 @@ export default {
 
     await mixedCard(sock, m.from, {
       text: `🔇 *USER TIMED OUT*\n\n👤 +${targetNum}\n⏰ Duration: *${durationStr}*\n\nThe group is temporarily set to admin-only mode. It will automatically reopen when the timeout expires.`,
-      footer: 'NEXORA Group Management',
+      footer: 'NEXORA',
     }, [
       { kind: 'action', label: '🔊 Unmute Now', cmd: `${p}unmute` },
       { kind: 'action', label: 'ℹ️ Group Info', cmd: `${p}groupinfo` },

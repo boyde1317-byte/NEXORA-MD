@@ -39,7 +39,7 @@ export default {
       try {
         await mixedCard(sock, m.from, {
           text: `🎤 Found *${artist.artistName}* on Apple Music. ✦`,
-          footer: 'NEXORA Media',
+          footer: 'NEXORA',
         }, [
           { kind: 'action', label: '🎵 Play Songs',   cmd: `${prefix}play ${artist.artistName}` },
           { kind: 'action', label: '📝 Get Lyrics',   cmd: `${prefix}lyrics` },

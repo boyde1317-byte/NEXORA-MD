@@ -51,15 +51,15 @@ export default {
 
       try {
         return await actionCard(sock, m.from, {
-          text:   `⬆️ *@${targetNumber}* has been promoted to Group Admin.`,
-          footer: 'NEXORA Guard • Group Management',
+          text:   `⬆️ *@${targetNumber}* is now a Group Admin. With great power... you know the rest.`,
+          footer: 'NEXORA',
         }, [
           { label: '⬇️ Demote Again',      cmd: `${p}demote @${targetNumber}` },
           { label: '🚫 Remove Member',     cmd: `${p}kick` },
           { label: '📋 Group Info',         cmd: `${p}groupinfo` },
         ], { quoted: m, mentions: [target] });
       } catch (_) {
-        await m.reply(`✅ *@${targetNumber}* has been successfully promoted to Admin!`, {
+        await m.reply(`✅ *@${targetNumber}* is now an admin! 👑`, {
           mentions: [target]
         });
       }

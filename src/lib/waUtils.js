@@ -115,7 +115,7 @@ export function buildFakeOrderQuote({ title, thumbnail, itemCount = 1, orderId, 
  * @param {string} [opts.vcard]        Full vCard string — generated automatically if omitted
  *
  * @example
- * const fakeQuote = buildFakeContactQuote({ displayName: 'NEXORA SUPPORT', phoneNumber: '233533416608' })
+ * const fakeQuote = buildFakeContactQuote({ displayName: 'NEXORA', phoneNumber: '233533416608' })
  * await sock.sendMessage(m.from, { text: 'Hello' }, { quoted: fakeQuote })
  */
 export function buildFakeContactQuote({ displayName, phoneNumber, vcard } = {}) {
@@ -214,12 +214,12 @@ export function buildFakeAudioQuote({ audioMessage, seconds = 9999999, ptt = tru
  * @param {number}  [opts.degreesLongitude=0]
  *
  * @example
- * const fakeQuote = buildFakeLocationQuote({ name: 'NEXORA HQ', address: 'Bot Command Console' })
+ * const fakeQuote = buildFakeLocationQuote({ name: 'NEXORA', address: 'NEXORA' })
  * await sock.sendMessage(m.from, { text: menuText }, { quoted: fakeQuote })
  */
 export function buildFakeLocationQuote({
   name             = 'NEXORA-MD',
-  address          = 'Bot Command Console',
+  address          = 'NEXORA',
   degreesLatitude  = 6.6745,
   degreesLongitude = -1.5716,
   jpegThumbnail,

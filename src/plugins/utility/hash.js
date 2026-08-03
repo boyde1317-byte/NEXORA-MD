@@ -25,7 +25,7 @@ export default {
 
     await copyResultCard(sock, m.from, {
       text: resultText,
-      footer: 'Developer Tools',
+      footer: 'NEXORA',
       copyLabel: '📋 Copy SHA256',
       copyValue: sha256
     }, { quoted: m });

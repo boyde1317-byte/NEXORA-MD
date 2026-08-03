@@ -111,7 +111,7 @@ export default {
 
         return await actionCard(sock, m.from, {
           text:   `Showing ${pageEntries.length} users on page ${page} of ${totalPages}.${senderNote}`,
-          footer: 'NEXORA Economy',
+          footer: 'NEXORA',
         }, buttons, { quoted: m });
       } catch (err) {
         console.warn('[leaderboard] richTableCard failed, plain-text fallback:', err.message);

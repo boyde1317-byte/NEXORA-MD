@@ -24,7 +24,7 @@ import { footerManager } from '../../core/footer.js';
  *
  * Image strategy:
  *   imgData.buffer (or URL fallback) is passed as `image:` on the Tier 1
- *   nativeFlow card so the panel renders with a full image header. The same
+ *   nativeFlow card so the menu renders with a full image header. The same
  *   image is embedded as an externalAdReply thumbnail on Tier 2 (flat flow),
  *   and surfaced via a separate imageMessage send before Tier 3 (plain text).
  *
@@ -41,8 +41,8 @@ export const bottomSheetMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData    = await imageManager.getMenuImage(13);
-    const bodyText   = `⚡ *NEXORA MD BOTTOM SHEET PANEL*\n\n` + buildTextMenu(menuData);
-    const footerText = footerManager.getFooter() || `${menuData.botName} • Interactive Panel`;
+    const bodyText   = `⚡ *NEXORA MD MENU*\n\n` + buildTextMenu(menuData);
+    const footerText = footerManager.getFooter() || `${menuData.botName} • NEXORA`;
 
     // Resolve image payload: prefer the { url } form — WA fetches it directly,
     // no local buffer download/re-upload round trip. Buffer is only a fallback
@@ -82,7 +82,7 @@ export const bottomSheetMenu = {
           image:       imagePayload,
           buttons:     allButtons,
           optionText:  '📋 Browse All Commands',
-          optionTitle: 'NEXORA MD PANEL',
+          optionTitle: 'NEXORA',
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
         console.warn('[MENU bottomSheet] Tier 1 (nativeFlow + optionText + image) failed, trying flat nativeFlow:', err.message);

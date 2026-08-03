@@ -17,7 +17,7 @@ export default {
   name: 'about',
   aliases: ['info', 'credits'],
   category: 'general',
-  description: 'Displays branding, framework credits, and system info for NEXORA MD.',
+  description: 'Displays branding, credits, and system info for NEXORA MD.',
   cooldown: 3000,
   execute: async ({ m, sock, prefix }) => {
     const totalCmds = client.commands?.size ?? 0;
@@ -36,7 +36,7 @@ export default {
         rows: [
           ['Bot',       brand.name],
           ['Developer', brand.creator],
-          ['Engine',    brand.core],
+          ['Framework', brand.core],
           ['Version',   `v${brand.version}`],
           ['Runtime',   `Node.js ${process.version}`],
           ['Commands',  String(totalCmds)],
@@ -70,7 +70,7 @@ export default {
       `  ${brand.creator}`,
       ``,
       `*${toSmallcaps('System')}*`,
-      `  ${toSmallcaps('Engine')}: ${brand.core}`,
+      `  ${toSmallcaps('Framework')}: ${brand.core}`,
       `  ${toSmallcaps('Version')}: v${brand.version}`,
       `  ${toSmallcaps('Runtime')}: Node.js ${process.version}`,
       `  ${toSmallcaps('Commands')}: ${totalCmds} loaded`,

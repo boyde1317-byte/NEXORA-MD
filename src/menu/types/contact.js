@@ -39,7 +39,7 @@ export const contactMenu = {
   renderer: async ({ sock, m, menuData }) => {
     const imgData      = await imageManager.getMenuImage(9);
     const ownerNumber  = (config.owner[0] || '233597514499').replace(/[^0-9]/g, '');
-    const ownerName    = menuData.ownerName || brand.creator || 'NEXORA Owner';
+    const ownerName    = menuData.ownerName || brand.creator || 'Owner';
 
     const menuText   = buildTextMenu(menuData);
     const footerText = `${menuData.botName} • ${menuData.totalCommands} commands`;

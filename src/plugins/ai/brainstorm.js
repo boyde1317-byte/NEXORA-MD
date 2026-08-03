@@ -17,7 +17,7 @@ export default {
     
     const topic = args.join(' ').trim();
     if (!topic) {
-      return await m.reply.info(`Usage: \`${p}brainstorm <topic>\`\n\nExample: \`${p}brainstorm app ideas for college students\``, 'NEXORA AI');
+      return await m.reply.info(`Usage: \`${p}brainstorm <topic>\`\n\nExample: \`${p}brainstorm app ideas for college students\``, 'NEXORA');
     }
 
     await withReactionStatus(m, async () => {
@@ -29,7 +29,7 @@ export default {
 
         await mixedCard(sock, m.from, {
           text: `💡 *BRAINSTORM: ${topic.toUpperCase()}*\n\n${reply}\n\n_Need more? Hit 'More Ideas' for another round._`,
-          footer: 'NEXORA AI Ideation',
+          footer: 'NEXORA',
         }, [
           { kind: 'copy',   label: '📋 Copy Ideas',      value: reply },
           { kind: 'action', label: '💡 More Ideas',      cmd: `${p}brainstorm ${topic}` },

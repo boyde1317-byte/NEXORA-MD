@@ -57,7 +57,7 @@ export default {
       const thumbnail = await getBrandThumbnail();
       await actionCardWithAd(sock, m.from, {
         text:   `✅ *Event created!*\n\n📅 *${name}*\n⏰ Starts in ${timeLabel}\n🔗 Join: ${joinLink}`,
-        footer: 'NEXORA Event Manager',
+        footer: 'NEXORA',
       }, [
         { label: '📅 Create Another Event', cmd: `${p}event` },
         { label: '📋 Copy Join Link',       cmd: `${p}copylink` },

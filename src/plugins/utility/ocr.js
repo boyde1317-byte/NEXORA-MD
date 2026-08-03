@@ -62,7 +62,7 @@ export default {
         try {
           await copyResultCard(sock, m.from, {
             text:       `🔍 *OCR RESULT*\n\n${displayText}`,
-            footer:     'NEXORA Utility • OCR',
+            footer:     'NEXORA',
             copyLabel:  '📋 Copy Text',
             copyValue:  text,
           }, { quoted: m });

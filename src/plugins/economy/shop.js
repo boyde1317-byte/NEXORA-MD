@@ -148,7 +148,7 @@ export default {
 
       try {
         await richTableCard(sock, m.from, {
-          title:   '🛒 NEXORA COIN SHOP',
+          title:   '🛒 NEXORA SHOP',
           headers: ['ID', 'Item', 'Price', 'Description'],
           rows: SHOP_ITEMS.map(i => [
             i.id,
@@ -160,8 +160,8 @@ export default {
         }, { quoted: m });
 
         await actionCard(sock, m.from, {
-          text: 'Ready to spend some coins?',
-          footer: 'NEXORA Economy',
+          text: 'Ready to spend some coins? Treat yourself. ✦',
+          footer: 'NEXORA',
         }, [
           { label: '🪙 Claim Daily',   cmd: `${p}daily` },
           { label: '💰 Check Balance', cmd: `${p}balance` },

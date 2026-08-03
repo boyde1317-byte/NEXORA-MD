@@ -44,12 +44,12 @@ export const newsletterMenu = {
 
     const textContent = buildTextMenu(menuData);
     const caption =
-      `✦ *${toSmallcaps(menuData.botName + ' Broadcast Engine')}* ✦\n\n` +
+      `✦ *${toSmallcaps(menuData.botName + ' Menu')}* ✦\n\n` +
       `_Verified Partner • Official Channel_\n` +
       `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
       `📋 *${toSmallcaps('System Brief')}*\n` +
       `• *${toSmallcaps('Status')}:* Optimal\n` +
-      `• *${toSmallcaps('Core Engine')}:* Baileys Multi-Device Fork\n` +
+      `• *${toSmallcaps('Framework')}:* Baileys\n` +
       `• *${toSmallcaps('Total Commands')}:* ${menuData.totalCommands}\n` +
       `• *${toSmallcaps('System Uptime')}:* ${menuData.uptime}\n\n` +
       textContent;
