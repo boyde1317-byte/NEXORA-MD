@@ -10,10 +10,11 @@ export default {
   },
   cooldown: 2000,
   execute: async ({ m, args, prefix }) => {
+    const p = prefix || '.';
     const opt = args[0] ? args[0].toLowerCase() : null;
     if (!opt || (opt !== 'on' && opt !== 'off')) {
       const current = greetingConfig.getGoodbyeEnabled() ? 'ON' : 'OFF';
-      return await m.reply.info(`_Current status:_ *${current}*\n\nEnable goodbye alerts with \`${prefix}goodbye on\`.`, 'GOODBYE CONTROLS');
+      return await m.reply.info(`_Current status:_ *${current}*\n\nEnable goodbye alerts with \`${p}goodbye on\`.`, 'GOODBYE CONTROLS');
     }
 
     const enabled = opt === 'on';

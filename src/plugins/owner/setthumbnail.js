@@ -11,6 +11,7 @@ export default {
   },
   cooldown: 2000,
   execute: async ({ m, args, prefix }) => {
+    const p = prefix || '.';
     // If user is replying to an image, update the thumbnail file
     if (m.quoted) {
       const qType = m.quoted.type;
@@ -40,7 +41,7 @@ export default {
 
     if (!input || (input !== 'on' && input !== 'off')) {
       const current = mediaConfig.get('menuThumbnail') ? 'ON' : 'OFF';
-      return await m.reply(`⚠️ *Usage:* \`${prefix}setthumbnail on/off\` or reply to an image to set it as the menu thumbnail.\n\n_Current setting:_ *${current}*`);
+      return await m.reply(`⚠️ *Usage:* \`${p}setthumbnail on/off\` or reply to an image to set it as the menu thumbnail.\n\n_Current setting:_ *${current}*`);
     }
 
     const value = input === 'on';

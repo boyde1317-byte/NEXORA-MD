@@ -10,10 +10,11 @@ export default {
   },
   cooldown: 2000,
   execute: async ({ m, args, prefix }) => {
+    const p = prefix || '.';
     const active = footerManager.getStyle();
 
     if (!args[0]) {
-      return await m.reply(`⚠️ *Usage:* \`${prefix}setfooter <clean|minimal|professional>\`\n\n_Current footer style:_ *${active.toUpperCase()}*\n\n*Examples:*\n• *clean:* NEXORA MD • By Aizen\n• *minimal:* Powered by Nexora Core\n• *professional:* © Nexora MD Framework`);
+      return await m.reply(`⚠️ *Usage:* \`${p}setfooter <clean|minimal|professional>\`\n\n_Current footer style:_ *${active.toUpperCase()}*\n\n*Examples:*\n• *clean:* NEXORA MD • By Aizen\n• *minimal:* Powered by Nexora Core\n• *professional:* © Nexora MD Framework`);
     }
 
     const input = args[0].toLowerCase();

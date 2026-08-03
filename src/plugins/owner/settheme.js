@@ -10,9 +10,10 @@ export default {
   },
   cooldown: 2000,
   execute: async ({ m, args, prefix }) => {
+    const p = prefix || '.';
     if (!args[0]) {
       const active = themeManager.getTheme();
-      return await m.reply(`⚠️ *Usage:* \`${prefix}settheme <modern|classic|minimal>\`\n\n_Current active theme:_ *${active.toUpperCase()}*`);
+      return await m.reply(`⚠️ *Usage:* \`${p}settheme <modern|classic|minimal>\`\n\n_Current active theme:_ *${active.toUpperCase()}*`);
     }
 
     const input = args[0].toLowerCase();

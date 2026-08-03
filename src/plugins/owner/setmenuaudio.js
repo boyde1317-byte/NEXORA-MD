@@ -10,11 +10,12 @@ export default {
   },
   cooldown: 2000,
   execute: async ({ m, args, prefix }) => {
+    const p = prefix || '.';
     const input = args[0] ? args[0].toLowerCase() : null;
 
     if (!input || (input !== 'on' && input !== 'off')) {
       const current = mediaConfig.get('menuAudio') ? 'ON' : 'OFF';
-      return await m.reply(`⚠️ *Usage:* \`${prefix}setmenuaudio on/off\`\n\n_Current setting:_ *${current}*`);
+      return await m.reply(`⚠️ *Usage:* \`${p}setmenuaudio on/off\`\n\n_Current setting:_ *${current}*`);
     }
 
     const value = input === 'on';

@@ -10,7 +10,8 @@ export default {
   permissions: {
     owner: true
   },
-  execute: async ({ m, args }) => {
+  execute: async ({ m, args, prefix }) => {
+    const p = prefix || '.';
     const isHardRestart = args.includes('hard');
 
     if (isHardRestart) {
@@ -20,14 +21,14 @@ export default {
         setTimeout(() => {
           process.exit(0);
         }, 1000);
-      }, { clearOnSuccess: true }); // process is exiting — leave no stale ✅ reaction behind
+      }, { clearOnSuccess: true });
     } else {
       await withReactionStatus(m, async () => {
         await m.reply('🔄 *Hot-Reload: Clearing and re-importing all command files...*');
         try {
           db.save();
           await client.loadPlugins();
-          await m.reply('✅ *All plugins reloaded successfully!* Bot is updated without connection loss.\n\n_Tip: Run "!restart hard" to completely reboot the bot container._');
+          await m.reply(`✅ *All plugins reloaded successfully!* Bot is updated without connection loss.\n\n_Tip: Run \`${p}restart hard\` to completely reboot the bot container._`);
         } catch (err) {
           await m.reply(`❌ *Hot-reload failed:* ${err.message}`);
           throw err;

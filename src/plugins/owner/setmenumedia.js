@@ -13,6 +13,7 @@ export default {
   },
   cooldown: 2000,
   execute: async ({ m, args, prefix }) => {
+    const p = prefix || '.';
     const type = args[0] ? args[0].toLowerCase() : null;
 
     if (!type || !['audio', 'image', 'thumbnail'].includes(type)) {
@@ -21,12 +22,12 @@ export default {
       msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
       msg += `Configure specific background menu media assets:\n\n`;
       msg += `• *Set Audio:*\n`;
-      msg += `  ↳ Reply to an audio with: \`${prefix}setmenumedia audio\`\n`;
-      msg += `  ↳ Or pass a local path: \`${prefix}setmenumedia audio <file_path>\`\n\n`;
+      msg += `  ↳ Reply to an audio with: \`${p}setmenumedia audio\`\n`;
+      msg += `  ↳ Or pass a local path: \`${p}setmenumedia audio <file_path>\`\n\n`;
       msg += `• *Set Image:*\n`;
-      msg += `  ↳ Reply to an image with: \`${prefix}setmenumedia image\`\n\n`;
+      msg += `  ↳ Reply to an image with: \`${p}setmenumedia image\`\n\n`;
       msg += `• *Set Thumbnail:*\n`;
-      msg += `  ↳ Reply to an image with: \`${prefix}setmenumedia thumbnail\`\n\n`;
+      msg += `  ↳ Reply to an image with: \`${p}setmenumedia thumbnail\`\n\n`;
       msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
       msg += `📝 *Current Loaded Files:*\n`;
       msg += `🔊 _Audio:_ \`${currentConfig.audio || 'Not Set'}\`\n`;
@@ -51,7 +52,7 @@ export default {
 
     // For all other operations, we require a replied message
     if (!m.quoted) {
-      return await m.reply(`❌ Please reply to the corresponding media (audio for "audio", image for "image" or "thumbnail") and type \`${prefix}setmenumedia ${type}\``);
+      return await m.reply(`❌ Please reply to the corresponding media (audio for "audio", image for "image" or "thumbnail") and type \`${p}setmenumedia ${type}\``);
     }
 
     const qType = m.quoted.type;

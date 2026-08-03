@@ -12,6 +12,7 @@ export default {
   },
   cooldown: 2000,
   execute: async ({ m, args, prefix }) => {
+    const p = prefix || '.';
     if (m.quoted) {
       const qType = m.quoted.type;
       const msgObj = m.quoted.msg || {};
@@ -48,6 +49,6 @@ export default {
       return await m.reply.success(`Successfully configured custom welcome image URL!`);
     }
 
-    return await m.reply.warn(`Please reply to an image or supply a valid image URL with \`${prefix}setwelcomeimage\`.`);
+    return await m.reply.warn(`Please reply to an image or supply a valid image URL with \`${p}setwelcomeimage\`.`);
   }
 };

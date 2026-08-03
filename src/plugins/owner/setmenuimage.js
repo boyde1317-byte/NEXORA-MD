@@ -11,6 +11,7 @@ export default {
   },
   cooldown: 2000,
   execute: async ({ m, prefix }) => {
+    const p = prefix || '.';
     if (!m.quoted) {
       const activeStyle = menuManager.getActiveMenu();
       return await m.reply.error(`Please reply to an image to save it for the active style (*${activeStyle.name}*).`);

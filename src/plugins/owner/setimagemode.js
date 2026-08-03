@@ -10,12 +10,13 @@ export default {
   },
   cooldown: 2000,
   execute: async ({ m, args, prefix }) => {
+    const p = prefix || '.';
     const input = args[0] ? args[0].toLowerCase() : null;
     const allowed = ['static', 'random', 'rotate'];
 
     if (!input || !allowed.includes(input)) {
       const current = imageConfig.getMenuMode();
-      let msg = `⚠️ *Usage:* \`${prefix}setimagemode <static|random|rotate>\`\n\n`;
+      let msg = `⚠️ *Usage:* \`${p}setimagemode <static|random|rotate>\`\n\n`;
       msg += `• *static:* Always use the first uploaded image.\n`;
       msg += `• *random:* Dynamically rotate a random image per request.\n`;
       msg += `• *rotate:* Stably cycle through each image sequentially.\n\n`;

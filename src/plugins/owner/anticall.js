@@ -25,7 +25,7 @@ export default {
   permissions: { owner: true },
   cooldown: 2000,
   execute: async ({ m, sock, args, db, prefix }) => {
-    const p        = prefix || '.';
+    const p = prefix || '.';
     const settings = db.getSettings();
     const sub      = args[0]?.toLowerCase();
 

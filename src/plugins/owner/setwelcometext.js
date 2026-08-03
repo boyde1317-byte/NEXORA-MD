@@ -10,6 +10,7 @@ export default {
   },
   cooldown: 2000,
   execute: async ({ m, args, prefix }) => {
+    const p = prefix || '.';
     const text = args.join(' ');
     if (!text) {
       const current = greetingConfig.getWelcomeText();

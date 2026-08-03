@@ -10,6 +10,7 @@ export default {
   },
   cooldown: 2000,
   execute: async ({ m, args, prefix }) => {
+    const p = prefix || '.';
     const num = parseInt(args[0], 10);
     if (isNaN(num) || ![1, 2, 3].includes(num)) {
       const current = greetingConfig.getStyle();

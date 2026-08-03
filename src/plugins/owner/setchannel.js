@@ -10,12 +10,13 @@ export default {
   },
   cooldown: 2000,
   execute: async ({ sock, m, args, prefix }) => {
+    const p = prefix || '.';
     const targetJid = args[0];
     
     if (!targetJid) {
       return await m.reply(
-        `⚠️ *Usage:* \`${prefix}setchannel <newsletter-jid>\`\n\n` +
-        `_Example:_ \`${prefix}setchannel 120363200000000000@newsletter\``
+        `⚠️ *Usage:* \`${p}setchannel <newsletter-jid>\`\n\n` +
+        `_Example:_ \`${p}setchannel 120363200000000000@newsletter\``
       );
     }
 

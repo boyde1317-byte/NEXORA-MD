@@ -1,8 +1,8 @@
 /**
- * checkwa.js — check WhatsApp ban status for a phone number.
+ * checkwa.js — Check WhatsApp ban status for a phone number.
  *
- * Results are shown in a richResponse table (native WA table bubble) with
- * a single_select picker for follow-up lookup actions.
+ * Fixed: removed dead 'ban' button (no ban command exists).
+ * Fixed: removed nonsensical 'checkwa reply' option (reply isn't a subcommand).
  */
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { richTableCard, selectMenu } from '../../lib/interactiveKit.js';
@@ -18,21 +18,17 @@ export default {
     const p = prefix || '.';
     let raw = args[0];
 
+    // If no explicit arg, try quoted sender
     if (!raw && m.quoted?.sender) raw = m.quoted.sender;
 
     if (!raw) {
-      // No number — show a selectMenu for how to provide one
       return await selectMenu(sock, m.from, {
-        text:   '🔎 *WHATSAPP BAN CHECK*\n\nHow would you like to look up a number?',
+        text:   '🔎 *WHATSAPP BAN CHECK*\n\nProvide a number to check, or reply to a message and run this command.',
         footer: 'Owner-only command',
       }, '⚙️ Lookup Options', [
-        { title: 'Provide a Number', rows: [
-          { id: `${p}checkwa `,        title: '📞 Enter a Number',   description: 'Type a number after the command' },
-          { id: `${p}checkwa reply`,   title: '💬 Reply to Message', description: 'Reply to any message to check that sender' },
-        ]},
         { title: 'Related Commands', rows: [
-          { id: `${p}checkchid`,       title: '🆔 Get Chat ID',      description: 'Get JID for current chat' },
-          { id: `${p}about`,           title: '📋 About Bot',        description: 'System information' },
+          { id: `${p}checkchid`,  title: '🆔 Get Chat ID',  description: 'Get JID for current chat' },
+          { id: `${p}userinfo`,    title: '👤 User Info',     description: 'Look up user details' },
         ]},
       ], [], { quoted: m });
     }
@@ -73,7 +69,6 @@ export default {
         rows.push(['Status', statusLabel]);
       }
 
-      // ── Tier 1: richResponse table + single_select follow-up ─────────────
       try {
         await richTableCard(sock, m.from, {
           title:   '🔎 WHATSAPP BAN CHECK',
@@ -88,16 +83,13 @@ export default {
         }, '⚙️ More Actions', [
           { title: 'Lookup Actions', rows: [
             { id: `${p}checkwa `,     title: '🔁 Check Another Number', description: 'Run a new ban check' },
-            { id: `${p}checkchid`,    title: '🆔 Get Chat ID',          description: 'Get current chat JID' },
+            { id: `${p}checkchid`,   title: '🆔 Get Chat ID',          description: 'Get current chat JID' },
+            { id: `${p}userinfo`,    title: '👤 User Info',              description: 'Look up user details' },
           ]},
-          ...(result.isBanned ? [{ title: 'Ban Details', rows: [
-            { id: `${p}ban ${cleaned}`, title: '🚫 Mark as Banned', description: 'Flag in local database' },
-          ]}] : []),
         ], [], { quoted: m });
       } catch (err) {
         console.warn('[checkwa] Tier 1 failed:', err.message);
-        // Fallback: replyTable (cosmetics.js)
-        const { replyTable } = await import('../lib/cosmetics.js');
+        const { replyTable } = await import('../../lib/cosmetics.js');
         await replyTable(m, sock, {
           caption: '🔎 WHATSAPP BAN CHECK',
           rows,
@@ -105,5 +97,5 @@ export default {
         });
       }
     });
-  },
+  }
 };

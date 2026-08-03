@@ -9,8 +9,9 @@ export default {
   },
   cooldown: 2000,
   execute: async ({ m, args, prefix }) => {
+    const p = prefix || '.';
     if (args.length < 5) {
-      return await m.reply.warn(`Usage: \`${prefix}createtheme <theme_name> <topLeft> <line> <bottomLeft> <divider>\`\n\nExample: \`${prefix}createtheme neon ╔ ║ ╚ ╠\``);
+      return await m.reply.warn(`Usage: \`${p}createtheme <theme_name> <topLeft> <line> <bottomLeft> <divider>\`\n\nExample: \`${p}createtheme neon ╔ ║ ╚ ╠\``);
     }
 
     const name = args[0].toLowerCase();
@@ -32,7 +33,7 @@ export default {
     themeManager.registerTheme(name, customTheme);
 
     await m.reply.info(
-      `Name: \`${name}\`\nTop Left: \`${topLeft}\`\nLine: \`${line}\`\nBottom Left: \`${bottomLeft}\`\nDivider: \`${divider}\`\n\n_Type \`${prefix}settheme ${name}\` to apply it immediately!_`,
+      `Name: \`${name}\`\nTop Left: \`${topLeft}\`\nLine: \`${line}\`\nBottom Left: \`${bottomLeft}\`\nDivider: \`${divider}\`\n\n_Type \`${p}settheme ${name}\` to apply it immediately!_`,
       'THEME CREATED'
     );
   }
