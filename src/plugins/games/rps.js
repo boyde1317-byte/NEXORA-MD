@@ -7,6 +7,7 @@ export default {
   description: 'Play Rock Paper Scissors. Usage: .rps [rock/paper/scissors]',
   cooldown: 3000,
   execute: async ({ sock, m, args, prefix }) => {
+    const p = prefix || '.';
     const choices = ['rock', 'paper', 'scissors'];
     const emojis = { rock: '🪨', paper: '📄', scissors: '✂️' };
     
@@ -15,9 +16,9 @@ export default {
         text: `✦ *ROCK PAPER SCISSORS* ✦\n\nChoose your weapon:`,
         footer: 'Powered by NEXORA'
       }, [
-        { kind: 'action', label: '🪨 Rock', cmd: `${prefix}rps rock` },
-        { kind: 'action', label: '📄 Paper', cmd: `${prefix}rps paper` },
-        { kind: 'action', label: '✂️ Scissors', cmd: `${prefix}rps scissors` }
+        { kind: 'action', label: '🪨 Rock', cmd: `${p}rps rock` },
+        { kind: 'action', label: '📄 Paper', cmd: `${p}rps paper` },
+        { kind: 'action', label: '✂️ Scissors', cmd: `${p}rps scissors` }
       ], { quoted: m });
     }
     
@@ -25,7 +26,7 @@ export default {
     const botChoice = choices[Math.floor(Math.random() * choices.length)];
     
     let result = '';
-    if (userChoice === botChoice) result = 'It\'s a tie!';
+    if (userChoice === botChoice) result = 'It\'s a tie! 🤝';
     else if (
       (userChoice === 'rock' && botChoice === 'scissors') ||
       (userChoice === 'paper' && botChoice === 'rock') ||
@@ -40,7 +41,7 @@ export default {
       text: `✦ *ROCK PAPER SCISSORS* ✦\n\nYou chose: ${emojis[userChoice]}\nI chose: ${emojis[botChoice]}\n\n*${result}*`,
       footer: 'Powered by NEXORA'
     }, [
-      { kind: 'action', label: '🔄 Play Again', cmd: `${prefix}rps` }
+      { kind: 'action', label: '🔄 Play Again', cmd: `${p}rps` }
     ], { quoted: m });
   }
 };

@@ -1,8 +1,14 @@
+/**
+ * userinfo.js — WhatsApp user info lookup.
+ *
+ * Fixed: broken template literals in usage message.
+ * Fixed: removed 'profile' alias that conflicts with economy/profile.js.
+ */
 import { withReactionStatus, replyTable } from '../../lib/cosmetics.js';
 
 export default {
   name: 'userinfo',
-  aliases: ['info', 'profile'],
+  aliases: ['whois', 'user', 'lookup'],
   category: 'utility',
   description: 'Looks up a WhatsApp user\'s info — reply to their message, @ mention, or provide a number.',
   cooldown: 5000,
@@ -22,45 +28,49 @@ export default {
 
     if (!targetJid) {
       return await m.reply.info(
-        'Usage: Reply to a message, mention someone with @, or provide a phone number.\n\n`${p}userinfo @user`\n`${p}userinfo 2335970000000`',
+        `Usage: Reply to a message, mention someone with @, or provide a phone number.\n\n\`${p}userinfo @user\`\n\`${p}userinfo 2335970000000\``,
         'USER INFO'
       );
     }
 
     const number = targetJid.split('@')[0].split(':')[0];
     await withReactionStatus(m, async () => {
-      const [onWA] = await sock.onWhatsApp(number).catch(() => [null]);
-      if (!onWA?.exists) {
-        throw new Error(`Number *+${number}* is not registered on WhatsApp.`);
+      try {
+        const [onWA] = await sock.onWhatsApp(number).catch(() => [null]);
+        if (!onWA?.exists) {
+          throw new Error(`Number *+${number}* is not registered on WhatsApp.`);
+        }
+
+        let ppUrl = 'No profile picture';
+        try {
+          ppUrl = await sock.profilePictureUrl(targetJid, 'image');
+        } catch (_) {}
+
+        let statusText = 'N/A';
+        try {
+          const status = await sock.fetchStatus(targetJid);
+          if (status?.status) statusText = status.status;
+        } catch (_) {}
+
+        const userData = db.getUser(targetJid);
+        
+        const rows = [
+          ['Number',    `+${number}`],
+          ['JID',       targetJid],
+          ['Status',    statusText.length > 50 ? statusText.slice(0, 47) + '...' : statusText],
+          ['Banned',    userData.banned ? '🚫 Yes' : '✅ No'],
+          ['Premium',   userData.premium ? '💎 Yes' : '❌ No'],
+          ['Warnings',  String(userData.warnings ?? 0)],
+        ];
+
+        await replyTable(m, sock, {
+          caption: `👤 USER INFO — +${number}`,
+          rows,
+          footer: ppUrl !== 'No profile picture' ? `🖼️ Profile pic: ${ppUrl}` : undefined,
+        });
+      } catch (err) {
+        await m.reply.error(err.message);
       }
-
-      let ppUrl = 'No profile picture';
-      try {
-        ppUrl = await sock.profilePictureUrl(targetJid, 'image');
-      } catch (_) {}
-
-      let statusText = 'N/A';
-      try {
-        const status = await sock.fetchStatus(targetJid);
-        if (status?.status) statusText = status.status;
-      } catch (_) {}
-
-      const userData = db.getUser(targetJid);
-      
-      const rows = [
-        ['Number',    `+${number}`],
-        ['JID',       targetJid],
-        ['Status',    statusText.length > 50 ? statusText.slice(0, 47) + '...' : statusText],
-        ['Banned',    userData.banned ? '🚫 Yes' : '✅ No'],
-        ['Premium',   userData.premium ? '💎 Yes' : '❌ No'],
-        ['Warnings',  String(userData.warnings ?? 0)],
-      ];
-
-      await replyTable(m, sock, {
-        caption: `👤 USER INFO — +${number}`,
-        rows,
-        footer: ppUrl !== 'No profile picture' ? `🖼️ Profile pic: ${ppUrl}` : undefined,
-      });
     });
   }
 };

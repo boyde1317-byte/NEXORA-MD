@@ -1,5 +1,11 @@
+/**
+ * paste.js — Upload text to paste.rs and return a shareable link.
+ *
+ * Fixed: broken template literal in usage message.
+ * Improved: copy button for the URL, progress feedback.
+ */
 import { withReactionStatus } from '../../lib/cosmetics.js';
-import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { copyResultCard } from '../../lib/interactiveKit.js';
 
 export default {
   name: 'paste',
@@ -19,34 +25,44 @@ export default {
 
     if (!text) {
       return await m.reply.info(
-        'Usage:\n• `${p}paste <your text>` — paste typed text\n• Reply to any message with `${p}paste` — paste that message\n\nReturns a shareable link.',
+        `Usage:\n• \`${p}paste <your text>\` — paste typed text\n• Reply to any message with \`${p}paste\` — paste that message\n\nReturns a shareable link.`,
         'PASTE ONLINE'
       );
     }
 
     if (text.length > 50000) {
-      return await m.reply.error('Text too long. Maximum 50 000 characters.');
+      return await m.reply.error('Text too long. Maximum 50,000 characters.');
     }
 
     await withReactionStatus(m, async () => {
-      const res = await fetch('https://paste.rs/', {
-        method:  'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body:    text,
-        signal:  AbortSignal.timeout(10000),
-      });
+      try {
+        const res = await fetch('https://paste.rs/', {
+          method:  'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body:    text,
+          signal:  AbortSignal.timeout(10000),
+        });
 
-      if (!res.ok) throw new Error(`Paste service returned ${res.status}.`);
-      const url = (await res.text()).trim();
-      if (!url.startsWith('http')) throw new Error('Unexpected response from paste service.');
+        if (!res.ok) throw new Error(`Paste service returned ${res.status}.`);
+        const url = (await res.text()).trim();
+        if (!url.startsWith('http')) throw new Error('Unexpected response from paste service.');
 
-      const preview = text.slice(0, 80).replace(/\n/g, ' ');
-      const output  = asciiBuilder.box('📋 PASTED ONLINE', [
-        `🔗 Link    : ${url}`,
-        `📝 Preview : ${preview}${text.length > 80 ? '...' : ''}`,
-        `📏 Length  : ${text.length} characters`,
-      ]);
-      await m.reply(output);
+        const preview = text.slice(0, 80).replace(/\n/g, ' ');
+        const bodyText = `📋 *PASTED ONLINE*\n\n🔗 Link: ${url}\n📝 Preview: ${preview}${text.length > 80 ? '...' : ''}\n📏 Length: ${text.length} characters`;
+
+        try {
+          await copyResultCard(sock, m.from, {
+            text:       bodyText,
+            footer:     'NEXORA Utility • Paste',
+            copyLabel:  '📋 Copy Link',
+            copyValue:  url,
+          }, { quoted: m });
+        } catch (_) {
+          await m.reply(bodyText);
+        }
+      } catch (err) {
+        await m.reply.error(`Failed to paste: ${err.message}`);
+      }
     });
   }
 };

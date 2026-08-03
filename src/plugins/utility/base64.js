@@ -1,10 +1,9 @@
 /**
  * base64.js — encode / decode base64 strings.
  *
- * Result is delivered via a copyResultCard so users can copy the output in
- * one tap. A switch-mode quick_reply lets them flip encode↔decode instantly.
+ * Fixed: broken template literals in fallback usage message.
  */
-import { copyResultCard, mixedCard } from '../../lib/interactiveKit.js';
+import { copyResultCard, mixedCard, selectMenu } from '../../lib/interactiveKit.js';
 
 export default {
   name: 'base64',
@@ -23,9 +22,7 @@ export default {
     if (rawCmd === 'decode') op = 'decode';
 
     if (!op || !['encode', 'decode'].includes(op)) {
-      // Usage help — single_select to pick operation mode
       try {
-        const { selectMenu } = await import('../lib/interactiveKit.js');
         return await selectMenu(sock, m.from, {
           text:   '🔐 *BASE64 UTILITY*\n\nChoose an operation:',
           footer: 'Supports plain text and any UTF-8 input',
@@ -39,7 +36,7 @@ export default {
         ], [], { quoted: m });
       } catch (_) {}
       return await m.reply.info(
-        'Usage:\n• `${p}base64 encode <text>` — convert text to base64\n• `${p}base64 decode <base64>` — decode base64 to text',
+        `Usage:\n• \`${p}base64 encode <text>\` — convert text to base64\n• \`${p}base64 decode <base64>\` — decode base64 to text`,
         'BASE64'
       );
     }
@@ -69,7 +66,6 @@ export default {
       const flipOp    = op === 'encode' ? 'decode' : 'encode';
       const flipLabel = op === 'encode' ? '📥 Decode It Back' : '📤 Encode Again';
 
-      // ── Tier 1: copyResultCard + switch-mode button ────────────────────────
       try {
         return await copyResultCard(sock, m.from, {
           text:       bodyText,
@@ -85,8 +81,7 @@ export default {
         console.warn('[base64] Tier 1 (copyResultCard) failed:', err.message);
       }
 
-      // ── Tier 2: plain text ─────────────────────────────────────────────────
-      const { asciiBuilder } = await import('../ui/asciiBuilder.js');
+      const { asciiBuilder } = await import('../../ui/asciiBuilder.js');
       await m.reply(asciiBuilder.box(`BASE64 ${op.toUpperCase()}`, [
         `📥 Input  : ${subject.length > 60 ? subject.slice(0, 57) + '...' : subject}`,
         ``,
