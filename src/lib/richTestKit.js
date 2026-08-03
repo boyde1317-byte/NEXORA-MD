@@ -35,6 +35,8 @@ import {
   generateCodeBlockContentV2,
   generateLinkContent,
   generateLinkContentV2,
+  generateReelContent,
+  generateReelWithStats,
 } from 'baileys';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -430,6 +432,71 @@ export async function testCaptureRelay(sock, jid, quoted) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reel / Content Items generators (video + thumbnail carousel)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Reel content — video carousel using contentItemsMetadata + ReelItem proto.
+ * Each item has a thumbnail, video URL, profile icon, and title.
+ */
+export async function testReelContent(sock, jid, quoted) {
+  const reels = [
+    {
+      title:          'NEXORA-MD Demo Video',
+      profileIconUrl: 'https://github.com/boyde1317-byte.png',
+      thumbnailUrl:   'https://cdn.jsdelivr.net/gh/whatsapp/docs@main/static/img/logo.png',
+      videoUrl:       'https://example.com/demo.mp4',
+    },
+    {
+      title:          'Interactive Menu Showcase',
+      profileIconUrl: 'https://github.com/boyde1317-byte.png',
+      thumbnailUrl:   'https://cdn.jsdelivr.net/gh/whatsapp/docs@main/static/img/logo.png',
+      videoUrl:       'https://example.com/menu.mp4',
+    },
+  ];
+  const generated = generateReelContent(reels, quoted, {
+    headerText: '🧪 Reel Content Test — Video Carousel',
+    footer: 'NEXORA-MD • contentItemsMetadata (type 9)',
+  });
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'reel content ✓';
+}
+
+/**
+ * Reel + Stats — the TikTok download pattern: video carousel + stats table
+ * combined in a single botForwardedMessage.
+ */
+export async function testReelWithStats(sock, jid, quoted) {
+  const params = {
+    reels: [
+      {
+        title:          'TikTok @user/video/123456',
+        profileIconUrl: 'https://github.com/boyde1317-byte.png',
+        thumbnailUrl:   'https://cdn.jsdelivr.net/gh/whatsapp/docs@main/static/img/logo.png',
+        videoUrl:       'https://v16-webapp.tiktok.com/example.mp4',
+      },
+    ],
+    tableTitle: 'Download Stats',
+    tableHeaders: ['Metric', 'Value'],
+    tableRows: [
+      ['Views',     '1,234,567'],
+      ['Likes',     '45,678'],
+      ['Comments',  '1,234'],
+      ['Shares',    '3,210'],
+      ['Downloads', '890'],
+      ['Duration',  '00:58'],
+      ['Quality',   'HD (720p)'],
+    ],
+  };
+  const generated = generateReelWithStats(params, quoted, {
+    headerText: '🧪 Reel + Stats Table — TikTok Download Pattern',
+    footer: 'NEXORA-MD • contentItems (type 9) + table (type 4) combined',
+  });
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'reel + stats ✓';
+}
 // Master test registry
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -452,7 +519,9 @@ export const RICH_TESTS = [
   { id: 'tokenizer',  label: '🔬 Tokenizer V2',       fn: testTokenizerV2,    group: 'Unit' },
   { id: 'tablemeta',  label: '🔬 Table Metadata V2',   fn: testTableMetadataV2, group: 'Unit' },
   // Capture & relay
-  { id: 'capture',    label: '🔄 Capture & Relay',    fn: testCaptureRelay,    group: 'Capture' },
+  { id: "reel",       label: "🎬 Reel Content",       fn: testReelContent,     group: "Reels" },
+  { id: "reelstats",  label: "🎬 Reel + Stats Table", fn: testReelWithStats,   group: "Reels" },
+  { id: "capture",    label: "🔄 Capture & Relay",   fn: testCaptureRelay,    group: "Capture" },
 ];
 
 export async function runRichTest(sock, jid, testId, quoted) {
