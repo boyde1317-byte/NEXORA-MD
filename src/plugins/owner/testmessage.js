@@ -101,10 +101,12 @@ async function runBottomSheet(sock, m, prefix) {
 async function runOffer(sock, m, prefix) {
   const p = prefix || '.';
   await offerCard(sock, m.from, {
-    text:      '*OFFER BANNER TEST*\n\nThis card has a limited_time_offer banner at the top.',
-    footer:    'offerText + offerUrl → limited_time_offer in messageParamsJson',
-    offerText: '🎁 Free Premium Access — Limited Time',
-    offerUrl:  'https://wa.me/233533416608',
+    text:        '*OFFER BANNER TEST*\n\nThis card has a limited_time_offer banner at the top with an expiration countdown.',
+    footer:      'offerText + offerUrl + offerCode + offerExpiry → limited_time_offer',
+    offerText:   '🎁 Free Premium Access — Limited Time',
+    offerUrl:    'https://wa.me/233533416608',
+    offerCode:   'NEXORA-FREE-2026',
+    offerExpiry: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // expires in 24h
     buttons: [
       { text: '💬 Contact Dev',   url:  'https://wa.me/233533416608' },
       { text: 'Copy Code',     copy: 'NEXORA-FREE-2026' },
@@ -124,7 +126,7 @@ async function runRichTable(sock, m) {
       ['cta_copy',        '✅ Active', 'cta_copy'],
       ['single_select',   '✅ Active', 'single_select'],
       ['bottom_sheet',    '✅ Active', 'optionText/Title'],
-      ['limited_offer',   '✅ Active', 'offerText/Url'],
+      ['limited_offer',   '✅ Active', 'offerText/Url/Code/Expiry'],
       ['richResponse',    capabilities.richResponse ? '✅ Yes' : '⚠️ No', 'botForwarded'],
       ['nativeFlow',      capabilities.nativeFlow   ? '✅ Yes' : '⚠️ No', 'interactiveMsg'],
     ],

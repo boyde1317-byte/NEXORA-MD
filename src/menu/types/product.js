@@ -12,6 +12,8 @@ import { imageManager } from '../../images/imageManager.js';
  *
  * offerText    → text shown on the offer banner
  * offerUrl     → tappable URL on the banner
+ * offerCode    → copyable promo code on the banner
+ * offerExpiry  → Unix timestamp (seconds) for the offer's expiration countdown
  *
  * Tiers:
  *   1 → nativeFlow + offerText overlay (image header + offer banner + buttons)
@@ -44,8 +46,10 @@ export const productMenu = {
         text:      bodyText,
         footer:    footerText,
         image:     imagePayload,
-        offerText: '🎁 Free Premium Bot Access',
-        offerUrl:  'https://wa.me/233533416608',
+        offerText:  '🎁 Free Premium Bot Access',
+        offerUrl:   'https://wa.me/233533416608',
+        offerCode:  'NEXORA-FREE',
+        offerExpiry: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // expires in 7 days
         buttons: [
           { text: '💬 Contact Developer', url:  'https://wa.me/233533416608' },
           { text: '📎 Copy Prefix',       copy: menuData.prefix },

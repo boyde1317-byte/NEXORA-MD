@@ -294,14 +294,33 @@ export async function bottomSheetCard(sock, jid, content, sheetButtonLabel, shee
  * @param {object} sock
  * @param {string} jid
  * @param {{
- *   text:      string,
- *   footer?:   string,
- *   image?:    Buffer,
- *   offerText: string,
- *   offerUrl?: string,
- *   buttons:   Array
+ *   text:        string,
+ *   footer?:     string,
+ *   image?:      Buffer,
+ *   offerText:   string,
+ *   offerUrl?:   string,
+ *   offerCode?:  string,
+ *   offerExpiry?: number,   // Unix timestamp (seconds) when the offer expires
+ *   buttons:     Array
  * }} content
  * @param {object} [opts]
+ *
+ * @example
+ * await offerCard(sock, m.from, {
+ *   text:        '*Limited time!*
+
+Premium features at no cost.',
+ *   footer:      'NEXORA Offer',
+ *   offerText:   '🎁 Free Premium Access — Limited Time',
+ *   offerUrl:    'https://wa.me/233533416608',
+ *   offerCode:   'NEXORA-FREE-2026',
+ *   offerExpiry: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // 7 days
+ *   buttons: [
+ *     { text: '💬 Contact Dev',  url:  'https://wa.me/233533416608' },
+ *     { text: 'Copy Code',       copy: 'NEXORA-FREE-2026' },
+ *     { text: '⚡ Claim Reward',  id:   `${prefix}daily` },
+ *   ],
+ * }, { quoted: m });
  */
 export async function offerCard(sock, jid, content, opts = {}) {
   const buttons = cap(content.buttons || []);
