@@ -48,7 +48,7 @@ export const productMenu = {
         offerUrl:  'https://wa.me/233533416608',
         buttons: [
           { text: '💬 Contact Developer', url:  'https://wa.me/233533416608' },
-          { text: '📋 Copy Prefix',       copy: menuData.prefix },
+          { text: '📎 Copy Prefix',       copy: menuData.prefix },
           { text: '🤖 System Stats',       id:   `${menuData.prefix}menu aiDynamic` },
           { text: '🎨 Browse Menu Styles', id:   `${menuData.prefix}menulist` },
         ],

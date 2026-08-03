@@ -67,7 +67,7 @@ export const contactMenu = {
         buttons: [
           { text: `💬 Message ${ownerName}`, url:  `https://wa.me/${ownerNumber}` },
           { text: '📋 Command List',          id:   `${menuData.prefix}menulist` },
-          { text: '📋 Copy Prefix',           copy: menuData.prefix },
+          { text: '📎 Copy Prefix',           copy: menuData.prefix },
           { text: '🤖 System Stats',           id:   `${menuData.prefix}menu aiDynamic` },
         ],
       }, { quoted: contactQuote });

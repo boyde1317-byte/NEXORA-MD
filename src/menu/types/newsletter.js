@@ -44,14 +44,14 @@ export const newsletterMenu = {
 
     const textContent = buildTextMenu(menuData);
     const caption =
-      `⚡ *NEXORA BROADCAST ENGINE*\n\n` +
-      `🟢 _Verified Partner • Official Channel_\n` +
+      `✦ *${toSmallcaps(menuData.botName + ' Broadcast Engine')}* ✦\n\n` +
+      `_Verified Partner • Official Channel_\n` +
       `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🕮️ *TODAY'S SYSTEM BRIEF*\n` +
-      `• *Status:* 🟢 Optimal Performance\n` +
-      `• *Core Engine:* Baileys Multi-Device Native Fork\n` +
-      `• *Total Commands:* ${menuData.totalCommands}\n` +
-      `• *System Uptime:* ${menuData.uptime}\n\n` +
+      `📋 *${toSmallcaps('System Brief')}*\n` +
+      `• *${toSmallcaps('Status')}:* Optimal\n` +
+      `• *${toSmallcaps('Core Engine')}:* Baileys Multi-Device Fork\n` +
+      `• *${toSmallcaps('Total Commands')}:* ${menuData.totalCommands}\n` +
+      `• *${toSmallcaps('System Uptime')}:* ${menuData.uptime}\n\n` +
       textContent;
 
     // ── Tier 1: image banner + newsletter admin invite card ───────────────
@@ -69,7 +69,7 @@ export const newsletterMenu = {
         } else if (imgData.source?.startsWith('http')) {
           await sock.sendMessage(m.from, {
             image:   { url: imgData.source },
-            caption: `📡 *${menuData.botName.toUpperCase()}* — Broadcasting now`,
+            caption: `📡 *${toSmallcaps(menuData.botName)}* — ${toSmallcaps('Broadcasting now')}`,
           }, { quoted: menuData.audioQuote || m });
         }
 

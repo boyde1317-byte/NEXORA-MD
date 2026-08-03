@@ -71,7 +71,7 @@ export const orderMessageMenu = {
     const buttons = [
       { text: '💬 Contact Developer',  url:  'https://wa.me/233533416608' },
       { text: '📢 Official Channel',   url:  'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326' },
-      { text: '📋 Copy Prefix',        copy: menuData.prefix },
+      { text: '📎 Copy Prefix',        copy: menuData.prefix },
       { text: '🎨 Browse Menu Styles', id:   `${menuData.prefix}menulist` },
       { text: '🤖 System Stats',        id:   `${menuData.prefix}menu aiDynamic` },
     ];

@@ -55,13 +55,11 @@ export const bottomSheetMenu = {
     // Keep this list ≤ 10 — the fork's bottom_sheet config uses divider_indices
     // to match the number of nativeFlow buttons; too many can overflow the sheet.
     const commandButtons = [
-      { text: 'Measure Ping Speed',        id: `${menuData.prefix}ping` },
-      { text: 'About Nexora MD',           id: `${menuData.prefix}about` },
-      { text: 'Version Check',             id: `${menuData.prefix}version` },
-      { text: 'Switch Menu Style',         id: `${menuData.prefix}menulist` },
-      { text: 'Set Footer Style',          id: `${menuData.prefix}setfooter` },
-      { text: 'Debug Bottom Sheet',        id: `${menuData.prefix}testmessage bottomsheet` },
-      { text: 'Debug Native Flow',         id: `${menuData.prefix}testmessage nativeflow` },
+      { text: 'Ping Speed',          id: `${menuData.prefix}ping` },
+      { text: 'About Bot',           id: `${menuData.prefix}about` },
+      { text: 'Version Check',       id: `${menuData.prefix}version` },
+      { text: 'Switch Menu Style',   id: `${menuData.prefix}menulist` },
+      { text: 'Set Footer Style',    id: `${menuData.prefix}setfooter` },
     ];
 
     // Inline CTA buttons (URL) placed first — they appear in the message body

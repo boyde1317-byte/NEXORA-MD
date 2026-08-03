@@ -2,6 +2,7 @@ import { capabilities } from '../../core/capabilities.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 
 /**
  * Payment Menu (id: 2)
@@ -33,7 +34,7 @@ export const paymentMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData     = await imageManager.getMenuImage(2);
-    const noteContent = `✦ *${menuData.botName.toUpperCase()}* ✦\n\n` + buildTextMenu(menuData);
+    const noteContent = `✦ *${toSmallcaps(menuData.botName)}* ✦\n\n` + buildTextMenu(menuData);
 
     // ── Tier 1: Native payment card ───────────────────────────────────────
     // Gate: capabilities.requestPayment is true (proto-level support confirmed).

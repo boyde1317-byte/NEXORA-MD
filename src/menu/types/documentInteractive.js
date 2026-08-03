@@ -51,7 +51,7 @@ export const documentInteractiveMenu = {
             { text: '⚡ System Info',        id: `${menuData.prefix}menu aiDynamic` },
             { text: '🏓 Ping Bot',           id: `${menuData.prefix}ping` },
             { text: '💬 Contact Developer',  url: 'https://wa.me/233533416608' },
-            { text: '📋 Copy Prefix',        copy: menuData.prefix },
+            { text: '📎 Copy Prefix',        copy: menuData.prefix },
           ],
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {

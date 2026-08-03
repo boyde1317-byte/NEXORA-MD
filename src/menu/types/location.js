@@ -63,7 +63,7 @@ export const locationMenu = {
         image:   imagePayload,
         buttons: [
           { text: '📋 Command List',   id:   `${menuData.prefix}menulist` },
-          { text: '📋 Copy Prefix',    copy: menuData.prefix },
+          { text: '📎 Copy Prefix',    copy: menuData.prefix },
           { text: '🤖 System Stats',    id:   `${menuData.prefix}menu aiDynamic` },
           { text: '💬 Contact',        url:  'https://wa.me/233533416608' },
         ],
