@@ -1,10 +1,12 @@
 /**
- * event.js — create a WhatsApp native event card.
+ * event.js — Create a WhatsApp native event card.
  *
- * After sending the eventMessage, sends a nativeFlow follow-up card with
- * quick_reply buttons so the user can create another event or share the invite.
+ * Fixed: broken template literal in selectMenu text (backticks inside
+ *   single quotes — ${p} was never interpolated).
+ * Fixed: hardcoded '!event' in footer example → uses ${p}.
+ * Fixed: wrong relative import path ('../lib' → '../../lib').
  */
-import { actionCardWithAd, copyResultCard } from '../../lib/interactiveKit.js';
+import { actionCardWithAd, selectMenu } from '../../lib/interactiveKit.js';
 import { getBrandThumbnail } from '../../lib/cosmetics.js';
 
 export default {
@@ -17,12 +19,10 @@ export default {
     const p = prefix || '.';
     const input = args.join(' ');
     if (!input || !input.includes('|')) {
-      // Usage — selectMenu with event templates
       try {
-        const { selectMenu } = await import('../lib/interactiveKit.js');
         return await selectMenu(sock, m.from, {
-          text:   '📅 *CREATE EVENT*\n\nFormat: `${p}event Title | Description | MinutesFromNow | Link`',
-          footer: 'Example: !event Team Meeting | Sprint review | 60 | https://call.whatsapp.com/...',
+          text:   `📅 *CREATE EVENT*\n\nFormat: \`${p}event Title | Description | MinutesFromNow | Link\``,
+          footer: `Example: ${p}event Team Meeting | Sprint review | 60 | https://call.whatsapp.com/...`,
         }, '📋 Quick Templates', [
           { title: 'Common Meetings', rows: [
             { id: `${p}event Team Standup | Daily standup | 30 | https://call.whatsapp.com/video/ai-studio`,   title: '☀️ 30-min Standup',   description: 'Daily team standup in 30 min' },
@@ -42,8 +42,6 @@ export default {
     const startTimeUnix = Math.floor(Date.now() / 1000) + (minutesAhead * 60);
 
     try {
-      // Send the native event card via baileysBridge — fork expects { event: {...} }
-      // not { eventMessage: {...} } for dispatch.
       const { baileysBridge } = await import('../../core/baileysBridge.js');
       await baileysBridge.sendEvent(sock, m.from, {
         name,
@@ -52,7 +50,6 @@ export default {
         joinLink,
       }, { quoted: m });
 
-      // Follow-up interactive card
       const timeLabel = minutesAhead < 60
         ? `${minutesAhead} minute${minutesAhead !== 1 ? 's' : ''}`
         : `${Math.floor(minutesAhead / 60)}h ${minutesAhead % 60}m`;
@@ -73,5 +70,5 @@ export default {
     } catch (err) {
       await m.reply.error(`Failed to send event: ${err.message}`);
     }
-  },
+  }
 };

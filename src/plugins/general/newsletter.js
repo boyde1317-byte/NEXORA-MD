@@ -1,3 +1,8 @@
+/**
+ * newsletter.js — Manages or views WhatsApp newsletters and channels.
+ *
+ * Fixed: hardcoded '!channel' in help text → uses ${p} prefix variable.
+ */
 import newsletterManager from '../../newsletter/newsletterManager.js';
 
 export default {
@@ -16,17 +21,23 @@ export default {
         await newsletterManager.sendNewsletterInvite(sock, m.from, { forwardingEnabled: true }, { quoted: m });
       } catch (err) {
         console.error('Failed to send newsletter invite:', err);
-        let helpText = `📢 *WHATSAPP CHANNEL MANAGER*\n\n`;
-        helpText += `• *Create a Channel:*\n  \`!channel create MyChannelName | Description\`\n`;
-        helpText += `• *Get Channel Info:*\n  \`!channel info https://whatsapp.com/channel/... or JID\`\n`;
-        helpText += `• *Subscribe/Follow:*\n  \`!channel follow ChannelJID\`\n`;
-        helpText += `• *Unsubscribe/Unfollow:*\n  \`!channel unfollow ChannelJID\`\n`;
-        await m.reply(helpText.trim());
+        const helpText = [
+          `📢 *WHATSAPP CHANNEL MANAGER*`,
+          ``,
+          `• *Create a Channel:*`,
+          `  \`${p}channel create MyChannelName | Description\``,
+          `• *Get Channel Info:*`,
+          `  \`${p}channel info https://whatsapp.com/channel/... or JID\``,
+          `• *Subscribe/Follow:*`,
+          `  \`${p}channel follow ChannelJID\``,
+          `• *Unsubscribe/Unfollow:*`,
+          `  \`${p}channel unfollow ChannelJID\``,
+        ].join('\n');
+        await m.reply(helpText);
       }
       return;
     }
 
-    // Verify if socket possesses the custom newsletter properties
     if (typeof sock.newsletterCreate !== 'function') {
       return await m.reply.error('The active socket layer does not support native newsletter operations.');
     }
@@ -38,7 +49,7 @@ export default {
           return await m.reply.error(`Usage: \`${p}channel create Channel Name | Description\``);
         }
 
-        const parts = remainingArgs.split('|').map(p => p.trim());
+        const parts = remainingArgs.split('|').map(s => s.trim());
         const name = parts[0];
         const description = parts[1] || 'No description provided.';
 
@@ -48,7 +59,7 @@ export default {
 
         await m.reply('⏳ _Sending creation request to WhatsApp MEX servers..._');
         const metadata = await sock.newsletterCreate(name, description);
-        
+
         let successMsg = `✅ *Channel Created Successfully!*\n\n`;
         successMsg += `• *Name:* ${metadata.name}\n`;
         successMsg += `• *JID:* \`${metadata.id}\`\n`;
@@ -66,7 +77,6 @@ export default {
         let info = null;
 
         if (targetKey.includes('whatsapp.com/channel/')) {
-          // Resolve URL to JID first
           const resolved = await sock.newsletterId(targetKey);
           if (!resolved) {
             return await m.reply.error('Failed to resolve the channel URL to a valid ID.');
@@ -109,7 +119,7 @@ export default {
         await sock.newsletterUnfollow(jid);
         await m.reply('✅ Successfully unsubscribed/unfollowed channel.');
       } else {
-        await m.reply.error('Invalid action. Choose: `create`, `info`, `follow`, or `unfollow`.');
+        await m.reply.error(`Invalid action. Choose: \`${p}channel create\`, \`${p}channel info\`, \`${p}channel follow\`, or \`${p}channel unfollow\`.`);
       }
     } catch (err) {
       console.error('Channel operation failed:', err);

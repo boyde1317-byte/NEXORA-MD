@@ -11,7 +11,7 @@ export default {
       return await m.reply.error(`Invalid format. Usage: \`${p}poll Question | Option1 | Option2 | ...\``);
     }
 
-    const parts = text.split('|').map(p => p.trim());
+    const parts = text.split('|').map(s => s.trim());
     const question = parts[0];
     const options = parts.slice(1);
 
@@ -19,12 +19,16 @@ export default {
       return await m.reply.error('You must provide at least two voting options.');
     }
 
+    if (options.length > 12) {
+      return await m.reply.error('Maximum 12 voting options allowed.');
+    }
+
     try {
       await sock.sendMessage(m.from, {
         poll: {
           name: question,
           values: options,
-          selectableCount: 1 // Single-choice poll
+          selectableCount: 1,
         }
       }, { quoted: m });
     } catch (err) {
