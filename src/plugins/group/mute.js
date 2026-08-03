@@ -8,9 +8,9 @@ export default {
   permissions: { groupOnly: true, admin: true, botAdmin: true },
   cooldown: 5000,
   execute: async ({ m, sock, prefix }) => {
+    const p = prefix || '.';
     try {
       await sock.groupSettingUpdate(m.from, 'announcement');
-    const p = prefix || '.';
       try {
         await actionCard(sock, m.from, {
           text:   '🔇 Group muted. Only admins can send messages now.',

@@ -7,7 +7,9 @@ export default {
   execute: async ({ m, sock, args, prefix }) => {
     const p = prefix || '.';
     const desc = args.join(' ');
-    if (!desc) return await m.reply.info('Usage: `${p}setdesc <new description>`', '📝 GROUP DESCRIPTION')
+    if (!desc) {
+      return await m.reply.info(`Usage: \`${p}setdesc <new description>\``, '📝 GROUP DESCRIPTION');
+    }
     
     try {
       await sock.groupUpdateDescription(m.from, desc);

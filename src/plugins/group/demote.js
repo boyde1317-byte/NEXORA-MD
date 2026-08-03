@@ -1,7 +1,8 @@
 /**
  * demote.js — Demote a group admin back to participant.
  *
- * Upgraded: uses actionCard confirmation after demotion.
+ * Fixed: duplicate `const targetNumber` declaration was crashing the command.
+ * Improved: better target resolution order.
  */
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { actionCard } from '../../lib/interactiveKit.js';
@@ -30,11 +31,6 @@ export default {
       if (cleanNum) target = `${cleanNum}@s.whatsapp.net`;
     }
 
-    const targetNumber = target.split('@')[0];
-    if (config.owner.includes(targetNumber)) {
-      return await m.reply.error('Cannot modify the bot owner\'s admin status.');
-    }
-
     if (!target) {
       return await m.reply.error(
         'Please reply to a message, @mention a user, or supply their number to demote.'
@@ -43,18 +39,21 @@ export default {
 
     const targetNumber = target.split('@')[0];
 
+    if (config.owner.includes(targetNumber)) {
+      return await m.reply.error('Cannot modify the bot owner\'s admin status.');
+    }
+
     await withReactionStatus(m, async () => {
       await sock.groupParticipantsUpdate(m.from, [target], 'demote');
 
-      // ── Tier 1: actionCard confirmation ─────────────────────────────────
       try {
         return await actionCard(sock, m.from, {
           text:   `⬇️ *@${targetNumber}* has been demoted to regular member.`,
           footer: 'NEXORA Guard • Group Management',
         }, [
-          { label: 'Promote Again',        cmd: `${p}promote @${targetNumber}` },
-          { label: 'Remove Member',        cmd: `${p}kick` },
-          { label: 'Group Info',           cmd: `${p}groupinfo` },
+          { label: '⬆️ Promote Again',     cmd: `${p}promote @${targetNumber}` },
+          { label: '🚫 Remove Member',     cmd: `${p}kick` },
+          { label: '📋 Group Info',         cmd: `${p}groupinfo` },
         ], { quoted: m, mentions: [target] });
       } catch (_) {
         await m.reply(`✅ *@${targetNumber}* has been successfully demoted.`, {

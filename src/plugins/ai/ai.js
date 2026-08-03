@@ -1,18 +1,21 @@
 /**
  * ai.js — Nexora AI chat powered by Google Gemini.
  *
- * Upgraded: adds mixedCard with follow-up action buttons after the AI reply
- * so users can immediately pivot to brainstorm, code review, vision, etc.
+ * Improvements:
+ *  - Handles `.ai reset` / `.ai clear` to clear conversation context
+ *  - DownloadProgress feedback during Gemini API call
+ *  - Follow-up card with context info and action buttons
  */
 import { aiTextGenerator, clearConversation, getConversationInfo } from '../../assets/aiTextGenerator.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
+import { DownloadProgress } from '../../lib/progress.js';
 
 export default {
   name: 'ai',
   aliases: ['gpt', 'ask', 'chat'],
   category: 'ai',
-  description: 'Chat with Nexora AI. Usage: .ai <message>',
+  description: 'Chat with Nexora AI. Usage: .ai <message> | .ai reset',
   cooldown: 5000,
   execute: async ({ m, sock, args, prefix }) => {
     const p = prefix || '.';
@@ -24,38 +27,52 @@ export default {
     }
 
     const prompt = args.join(' ').trim();
+
+    // ── Handle reset/clear subcommand ──────────────────────────────────
+    const sub = args[0]?.toLowerCase();
+    if (sub === 'reset' || sub === 'clear') {
+      clearConversation(m.sender);
+      return await m.reply.success('🧹 Conversation context cleared. Starting fresh!');
+    }
+
     if (!prompt) {
       return await m.reply.info(
-        `Usage: \`${p}ai <message>\`\n\nExample: \`${p}ai explain how photosynthesis works\``,
+        `Usage: \`${p}ai <message>\`\n\nExample: \`${p}ai explain how photosynthesis works\`\n\n\`${p}ai reset\` — clear conversation context`,
         'NEXORA AI'
       );
     }
 
     await withReactionStatus(m, async () => {
-      const reply = await aiTextGenerator.generateText(prompt, { senderJid: m.sender });
-
-      // Send the AI response as a plain reply (preserves the full text without truncation)
-      await m.reply(reply);
-
-      // ── Follow-up interactive card ──────────────────────────────────────
-      // Non-critical: never let a failed card surface as an error.
+      const progress = new DownloadProgress(sock, m.from, m);
+      await progress.start('Thinking');
       try {
-        // Truncate prompt for use as a pre-filled command arg (WA button ID limit)
-        const shortPrompt = prompt.length > 80 ? prompt.slice(0, 77) + '…' : prompt;
+        const reply = await aiTextGenerator.generateText(prompt, { senderJid: m.sender });
+        await progress.done();
 
-        const info = getConversationInfo(m.sender);
-        const ctxNote = info.hasContext
-          ? `\n💬 Context: ${info.turns} turn${info.turns !== 1 ? 's' : ''} active`
-          : '';
-        await mixedCard(sock, m.from, {
-          text:   `🤖 *What would you like to do next?*${ctxNote}`,
-          footer: 'NEXORA Intelligence • Powered by Gemini',
-        }, [
-          { kind: 'action', label: '🔁 Ask Again',      cmd: `${p}ai ${shortPrompt}` },
-          { kind: 'copy',   label: '📋 Copy My Prompt',  value: prompt },
-          { kind: 'action', label: '🧹 Clear Context',  cmd: `${p}ai reset` },
-        ], { quoted: m });
-      } catch (_) { /* follow-up is non-critical */ }
+        // Send the AI response as a plain reply (preserves full text without truncation)
+        await m.reply(reply);
+
+        // ── Follow-up interactive card ──────────────────────────────────
+        try {
+          const shortPrompt = prompt.length > 80 ? prompt.slice(0, 77) + '…' : prompt;
+
+          const info = getConversationInfo(m.sender);
+          const ctxNote = info.hasContext
+            ? `\n💬 Context: ${info.turns} turn${info.turns !== 1 ? 's' : ''} active`
+            : '';
+          await mixedCard(sock, m.from, {
+            text:   `🤖 *What would you like to do next?*${ctxNote}`,
+            footer: 'NEXORA Intelligence • Powered by Gemini',
+          }, [
+            { kind: 'action', label: '🔁 Ask Again',      cmd: `${p}ai ${shortPrompt}` },
+            { kind: 'copy',   label: '📋 Copy My Prompt',  value: prompt },
+            { kind: 'action', label: '💡 Brainstorm',      cmd: `${p}brainstorm ${shortPrompt}` },
+            { kind: 'action', label: '🧹 Clear Context',  cmd: `${p}ai reset` },
+          ], { quoted: m });
+        } catch (_) {}
+      } catch (err) {
+        await progress.fail(`❌ AI error: ${err.message}`);
+      }
     });
   }
 };

@@ -7,11 +7,13 @@ export default {
   execute: async ({ m, sock, args, prefix }) => {
     const p = prefix || '.';
     const name = args.join(' ');
-    if (!name) return await m.reply.info('Usage: `${p}setname <new name>`', '✏️ GROUP NAME')
+    if (!name) {
+      return await m.reply.info(`Usage: \`${p}setname <new name>\``, '✏️ GROUP NAME');
+    }
     
     try {
       await sock.groupUpdateSubject(m.from, name);
-      await m.reply.success('✏️ Group name updated successfully.');
+      await m.reply.success(`✏️ Group name updated to: *${name}*`);
     } catch (err) {
       await m.reply.error(`Failed to update name: ${err.message}`);
     }

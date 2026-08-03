@@ -1,14 +1,13 @@
 /**
  * copylink.js — Fetch and copy the current group's invite link.
  *
- * Simple utility: gets the group invite link and presents it with a
- * cta_copy button so users can instantly copy it to clipboard.
+ * Fixed: removed 'grouplink' alias that conflicted with grouplink.js.
  */
 import { copyResultCard } from '../../lib/interactiveKit.js';
 
 export default {
   name: 'copylink',
-  aliases: ['gcl', 'grouplink'],
+  aliases: ['gcl'],
   category: 'group',
   description: 'Get the current group\'s invite link with a copy button.',
   cooldown: 5000,

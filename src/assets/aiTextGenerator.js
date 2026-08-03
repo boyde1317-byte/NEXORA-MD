@@ -134,7 +134,7 @@ export const aiTextGenerator = {
   },
 
 
-  async analyzeImage(imageBuffer, prompt = 'Describe this image in detail.') {
+  async analyzeImage(imageBuffer, prompt = 'Describe this image in detail.', mimeType = 'image/jpeg') {
     const ai = getAiClient();
     console.log('[AI TEXT GENERATOR] Analyzing image...');
     const response = await ai.models.generateContent({
@@ -143,7 +143,7 @@ export const aiTextGenerator = {
         {
           inlineData: {
             data: imageBuffer.toString('base64'),
-            mimeType: 'image/jpeg'
+            mimeType: mimeType
           }
         },
         prompt

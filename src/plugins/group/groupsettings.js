@@ -1,4 +1,11 @@
+/**
+ * groupsettings.js — Change group settings with an interactive menu.
+ *
+ * Improved: selectMenu picker instead of plain text list.
+ * Aliases: .open, .close, .lock, .unlock, .gset
+ */
 import { withReactionStatus } from '../../lib/cosmetics.js';
+import { selectMenu, actionCard } from '../../lib/interactiveKit.js';
 
 const SETTINGS = {
   open:    { announcement: false, label: '🌐 Open',   desc: 'All members can send messages.' },
@@ -15,14 +22,29 @@ export default {
   permissions: { groupOnly: true, admin: true, botAdmin: true },
   cooldown: 4000,
   execute: async ({ m, sock, args, body, prefix }) => {
+    const p = prefix || '.';
     const rawCmd = body.slice(prefix.length).trim().split(/\s+/)[0].toLowerCase();
     const action = SETTINGS[rawCmd] ? rawCmd : args[0]?.toLowerCase();
 
+    // No action — show interactive menu
     if (!action || !SETTINGS[action]) {
-      return await m.reply.info(
-        'Available settings:\n\n• `!open` — Allow all members to send messages\n• `!close` — Restrict to admins only\n• `!lock` — Only admins can edit group info\n• `!unlock` — Allow all members to edit group info',
-        'GROUP SETTINGS'
-      );
+      return await selectMenu(sock, m.from, {
+        text:   '⚙️ *GROUP SETTINGS*\n\nSelect a setting to change:',
+        footer: 'NEXORA Guard • Group Management',
+      }, '⚙️ Group Settings', [
+        { title: 'Message Settings', rows: [
+          { id: `${p}open`,   title: '🌐 Open Group',   description: 'All members can send messages' },
+          { id: `${p}close`,  title: '🔒 Close Group',  description: 'Only admins can send messages' },
+        ]},
+        { title: 'Info Editing', rows: [
+          { id: `${p}lock`,   title: '🔐 Lock Info',    description: 'Only admins can edit group info' },
+          { id: `${p}unlock`, title: '🔓 Unlock Info',  description: 'All members can edit group info' },
+        ]},
+        { title: 'Quick Actions', rows: [
+          { id: `${p}groupinfo`,  title: '📋 Group Info',  description: 'View current settings' },
+          { id: `${p}grouplink`,  title: '🔗 Invite Link',  description: 'Get group invite link' },
+        ]},
+      ], [], { quoted: m });
     }
 
     const setting = SETTINGS[action];
@@ -34,7 +56,18 @@ export default {
       if ('restrict' in setting) {
         await sock.groupSettingUpdate(m.from, setting.restrict ? 'locked' : 'unlocked');
       }
-      await m.reply.success(`${setting.label} — ${setting.desc}`);
+
+      try {
+        await actionCard(sock, m.from, {
+          text:   `${setting.label} — ${setting.desc}`,
+          footer: 'NEXORA Guard • Group Settings',
+        }, [
+          { label: '⚙️ More Settings', cmd: `${p}gset` },
+          { label: '📋 Group Info',    cmd: `${p}groupinfo` },
+        ], { quoted: m });
+      } catch (_) {
+        await m.reply.success(`${setting.label} — ${setting.desc}`);
+      }
     });
   }
 };

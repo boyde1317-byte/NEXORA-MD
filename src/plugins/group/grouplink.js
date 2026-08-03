@@ -3,12 +3,13 @@ import { mixedCard } from '../../lib/interactiveKit.js';
 
 export default {
   name: 'grouplink',
-  aliases: ['invitelink', 'invite', 'link'],
+  aliases: ['invitelink', 'invite'],
   category: 'group',
   description: 'Gets or resets the group invite link. Use `.grouplink reset` to revoke and generate a new one.',
   permissions: { groupOnly: true, admin: true, botAdmin: true },
   cooldown: 5000,
-  execute: async ({ m, sock, args }) => {
+  execute: async ({ m, sock, args, prefix }) => {
+    const p = prefix || '.';
     const doReset = args[0]?.toLowerCase() === 'reset' || args[0]?.toLowerCase() === 'revoke';
 
     await withReactionStatus(m, async () => {
@@ -25,7 +26,7 @@ export default {
       try {
         await mixedCard(sock, m.from, { text }, [
           { kind: 'copy',   label: '📋 Copy Link',     value: link },
-          { kind: 'action', label: '♻️ Reset Link',    cmd: `${args[0] ? '.' : '.'}grouplink reset` },
+          { kind: 'action', label: '♻️ Reset Link',    cmd: `${p}grouplink reset` },
         ], { quoted: m });
       } catch (_) {
         await m.reply(text);

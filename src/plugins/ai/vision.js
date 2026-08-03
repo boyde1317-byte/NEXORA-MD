@@ -1,6 +1,7 @@
 import { aiTextGenerator } from '../../assets/aiTextGenerator.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
-import { copyResultCard } from '../../lib/interactiveKit.js';
+import { mixedCard } from '../../lib/interactiveKit.js';
+import { DownloadProgress } from '../../lib/progress.js';
 import { downloadMediaMessage } from 'baileys';
 
 export default {
@@ -10,6 +11,7 @@ export default {
   description: 'Analyzes an image using AI. Reply to an image with .vision [prompt].',
   cooldown: 8000,
   execute: async ({ m, sock, args, prefix, rawMessage }) => {
+    const p = prefix || '.';
     if (!aiTextGenerator.isEnabled()) {
       return await m.reply.error('AI is not configured. Set GEMINI_API_KEY in .env.');
     }
@@ -17,17 +19,18 @@ export default {
     // Ensure there is an image to analyze
     const isImage = m.msg?.mimetype?.includes('image') || m.quoted?.mimetype?.includes('image');
     if (!isImage) {
-      return await m.reply.info(`Usage: Reply to an image with \`${prefix}vision <optional prompt>\``, 'NEXORA AI VISION');
+      return await m.reply.info(`Usage: Reply to an image with \`${p}vision <optional prompt>\``, 'NEXORA AI VISION');
     }
 
     const prompt = args.join(' ').trim() || 'Describe this image in detail.';
 
     await withReactionStatus(m, async () => {
+      const progress = new DownloadProgress(sock, m.from, m);
+      await progress.start('Analyzing image');
       try {
         const targetMessage = m.quoted ? rawMessage.message.extendedTextMessage.contextInfo.quotedMessage : rawMessage.message;
         const targetType = Object.keys(targetMessage)[0];
         
-        // Ensure it's not a view once, sticker etc. unless baileys supports it
         const buffer = await downloadMediaMessage(
           { key: m.quoted ? m.msg.contextInfo.stanzaId : m.key, message: targetMessage },
           'buffer',
@@ -37,17 +40,21 @@ export default {
 
         if (!buffer) throw new Error('Failed to download image.');
 
+        // Use actual detected mime type instead of hardcoding jpeg
         const detectedMime = m.quoted?.mimetype || m.msg?.mimetype || 'image/jpeg';
         const reply = await aiTextGenerator.analyzeImage(buffer, prompt, detectedMime);
+        await progress.done();
         
-        await copyResultCard(sock, m.from, {
+        await mixedCard(sock, m.from, {
           text: `👁️ *AI VISION ANALYSIS*\n\n*Prompt:* ${prompt}\n\n${reply}`,
           footer: 'Nexora AI Vision',
-          copyLabel: '📋 Copy Analysis',
-          copyValue: reply
-        }, { quoted: m });
+        }, [
+          { kind: 'copy',   label: '📋 Copy Analysis',     value: reply },
+          { kind: 'action', label: '👁️ Analyze Another',  cmd: `${p}vision` },
+          { kind: 'action', label: '🤖 Ask AI',           cmd: `${p}ai` },
+        ], { quoted: m });
       } catch (err) {
-        await m.reply.error(`Failed to analyze image: ${(err.message || '').replace(/key=[A-Za-z0-9_-]+/gi, 'key=[REDACTED]')}`);
+        await progress.fail(`❌ Failed to analyze image: ${(err.message || '').replace(/key=[A-Za-z0-9_-]+/gi, 'key=[REDACTED]')}`);
       }
     });
   }
