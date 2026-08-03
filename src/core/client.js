@@ -30,8 +30,10 @@ export const client = {
       const file = path.relative(pluginsDir, filePath);
       try {
         const fileUrl  = new URL(`file://${filePath}`);
-        // Cache-bust with timestamp for hot-reload support
-        const mod    = await import(`${fileUrl.href}?t=${Date.now()}`);
+        // Cache-bust only in development to avoid retaining old module versions in memory
+        const isDev = process.env.NODE_ENV === 'development';
+        const importUrl = isDev ? `${fileUrl.href}?t=${Date.now()}` : fileUrl.href;
+        const mod    = await import(importUrl);
         const plugin = mod.default;
 
         if (!plugin || typeof plugin !== 'object') {

@@ -15,6 +15,11 @@ COPY . .
 # Ensure session directory exists
 RUN mkdir -p session
 
+# Create a non-root user and switch to it for security
+RUN groupadd -r botuser && useradd -r -g botuser -d /app botuser && \
+    chown -R botuser:botuser /app
+USER botuser
+
 # Expose the web server port
 EXPOSE 3000
 

@@ -1,6 +1,42 @@
 import crypto from 'crypto';
 
+import { URL } from 'url';
+
 const cache = new Map();
+const MAX_CACHE_ENTRIES = 500;
+
+// ── SSRF Protection ──────────────────────────────────────────────────────
+// Block requests to private, loopback, and cloud metadata endpoints.
+function isSafeUrl(urlString) {
+  try {
+    const parsed = new URL(urlString);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === 'localhost' ||
+      hostname.endsWith('.local') ||
+      hostname === '169.254.169.254' ||
+      /^127\.\d+\.\d+\.\d+$/.test(hostname) ||
+      /^10\.\d+\.\d+\.\d+$/.test(hostname) ||
+      /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/.test(hostname) ||
+      /^192\.168\.\d+\.\d+$/.test(hostname) ||
+      hostname === '0.0.0.0' || hostname === '::1'
+    ) {
+      return false;
+    }
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function setBoundedCache(key, value) {
+  if (cache.size >= MAX_CACHE_ENTRIES) {
+    const oldestKey = cache.keys().next().value;
+    cache.delete(oldestKey);
+  }
+  cache.set(key, value);
+}
 
 // Max response body size — 10MB. Prevents OOM from large/malicious responses.
 const MAX_RESPONSE_BYTES = 10 * 1024 * 1024;
@@ -66,7 +102,7 @@ export class WebClient {
         }
 
         if (useCache && cacheKey) {
-          cache.set(cacheKey, { timestamp: Date.now(), data });
+          setBoundedCache(cacheKey, { timestamp: Date.now(), data });
         }
         return { data, headers: response.headers, status: response.status };
       } catch (error) {
@@ -199,6 +235,9 @@ export const Providers = {
 
   // ── HTTP Headers (direct fetch — no API needed) ─────────────────────────
   headers: async (url) => {
+    if (!isSafeUrl(url)) {
+      throw new Error('Restricted URL: Requesting local or private infrastructure addresses is prohibited.');
+    }
     const { headers } = await webClient.fetch(url, { method: 'HEAD' });
     const result = {};
     for (const [key, value] of headers.entries()) {

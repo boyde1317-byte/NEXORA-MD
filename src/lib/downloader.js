@@ -28,8 +28,25 @@ const BACKENDS = [
 ];
 const DEFAULT_TIMEOUT = 20000;
 
-/** True if the given text looks like an http(s) URL. */
-export const isUrl = (s) => /^https?:\/\/.{3,}/i.test((s || '').trim());
+/** True if the given text looks like a public http(s) URL. */
+export const isUrl = (s) => {
+  const trimmed = (s || '').trim();
+  if (!/^https?:\/\/.{3,}/i.test(trimmed)) return false;
+  // Block private/internal IPs to prevent SSRF
+  try {
+    const parsed = new URL(trimmed);
+    const host = parsed.hostname.toLowerCase();
+    if (
+      host === 'localhost' || host.endsWith('.local') ||
+      host === '169.254.169.254' || host === '0.0.0.0' ||
+      /^127\./.test(host) || /^10\./.test(host) ||
+      /^192\.168\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+    ) {
+      return false;
+    }
+  } catch (_) { return false; }
+  return true;
+};
 
 async function getJson(path, { timeout = DEFAULT_TIMEOUT } = {}) {
   let lastError;

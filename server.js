@@ -37,8 +37,8 @@ const healthLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use('/api/', apiLimiter);
 app.use('/api/health', healthLimiter);
+app.use('/api/', apiLimiter);
 
 // ─── Graceful Shutdown ────────────────────────────────────────────────────────
 let httpServer = null;
@@ -155,7 +155,8 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     uptime: process.uptime(),
     botActive: !!client.socket,
-    botUser: client.socket?.user ? client.socket.user.id.split(':')[0] : null
+    // Don't expose the bot's raw phone number to unauthenticated callers
+    botConnected: client.socket?.user ? true : false
   });
 });
 

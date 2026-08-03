@@ -24,7 +24,17 @@ function loadDb() {
     const content = fs.readFileSync(DB_PATH, 'utf-8');
     return JSON.parse(content);
   } catch (err) {
-    console.error('[DB] Failed to load database, returning empty:', err.message);
+    console.error('[DB CRITICAL] Failed to load database:', err.message);
+    // Try backup before returning empty to prevent data loss
+    const backupPath = `${DB_PATH}.bak`;
+    if (fs.existsSync(backupPath)) {
+      console.warn('[DB] Attempting restoration from backup file...');
+      try {
+        return JSON.parse(fs.readFileSync(backupPath, 'utf-8'));
+      } catch (_) {}
+    }
+    // No backup available — return empty but log loudly
+    console.error('[DB CRITICAL] No valid backup found. Starting with empty database.');
     return { users: {}, groups: {}, settings: {} };
   }
 }
@@ -32,7 +42,17 @@ function loadDb() {
 function saveDb(data) {
   try {
     ensureDir(DB_PATH);
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
+    const tempPath = `${DB_PATH}.tmp`;
+    const backupPath = `${DB_PATH}.bak`;
+    const serialized = JSON.stringify(data, null, 2);
+    // Write to temp file first
+    fs.writeFileSync(tempPath, serialized, 'utf-8');
+    // Backup current valid file before replacing
+    if (fs.existsSync(DB_PATH)) {
+      fs.copyFileSync(DB_PATH, backupPath);
+    }
+    // Atomic rename — no partial writes possible
+    fs.renameSync(tempPath, DB_PATH);
     return true;
   } catch (err) {
     console.error('[DB] Failed to save database:', err.message);

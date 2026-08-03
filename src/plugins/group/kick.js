@@ -6,6 +6,7 @@
  */
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { actionCard } from '../../lib/interactiveKit.js';
+import { config } from '../../config/index.js';
 
 export default {
   name: 'kick',
@@ -41,6 +42,18 @@ export default {
     if (target === sock.user.id.split(':')[0] + '@s.whatsapp.net') {
       return await m.reply.error('Nice try, but I won\'t kick myself.');
     }
+
+    // Prevent kicking the bot owner or other group admins
+    if (config.owner.includes(targetNumber)) {
+      return await m.reply.error('Cannot kick the bot owner.');
+    }
+    try {
+      const meta = await sock.groupMetadata(m.from);
+      const targetParticipant = meta.participants.find(p => p.id.includes(targetNumber));
+      if (targetParticipant?.admin && !m.isOwner) {
+        return await m.reply.error('Cannot kick another group admin.');
+      }
+    } catch (_) {}
 
     await withReactionStatus(m, async () => {
       await sock.groupParticipantsUpdate(m.from, [target], 'remove');

@@ -23,7 +23,7 @@ export default {
       const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf-8'));
       const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf-8'));
       
-      const text = `🔓 *JWT DECODER*\n\n*HEADER:*\n\`\`\`json\n${JSON.stringify(header, null, 2)}\n\`\`\`\n\n*PAYLOAD:*\n\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\``;
+      const text = `⚠️ *Note: Signature is NOT verified. Do not trust untrusted tokens.*\n\n🔓 *JWT DECODER*\n\n*HEADER:*\n\`\`\`json\n${JSON.stringify(header, null, 2)}\n\`\`\`\n\n*PAYLOAD:*\n\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\``;
 
       await copyResultCard(sock, m.from, {
         text,

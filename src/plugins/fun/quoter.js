@@ -21,8 +21,8 @@ export default {
 
     await withReactionStatus(m, async () => {
       const url = tag
-        ? `https://api.quotable.io/random?tags=${tag}`
-        : 'https://api.quotable.io/random';
+        ? `https://dummyjson.com/quotes/random?tags=${tag}`
+        : 'https://dummyjson.com/quotes/random';
 
       const res  = await fetch(url, { signal: AbortSignal.timeout(8000) });
       if (!res.ok) throw new Error('Quote service unavailable, try again.');

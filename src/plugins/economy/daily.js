@@ -5,10 +5,11 @@
  * + an actionCard with economy follow-up buttons (balance, leaderboard, shop).
  */
 import { withReactionStatus, getBrandThumbnail } from '../../lib/cosmetics.js';
-import { grantXp, getLevelProgress, progressBar } from '../../economy/leveling.js';
+import { grantXp, getLevelProgress, progressBar, withUserLock } from '../../economy/leveling.js';
 import { richTableCard, actionCardWithAd } from '../../lib/interactiveKit.js';
 import { messageFormatter } from '../../ui/messageFormatter.js';
 import brand from '../../../config/brand.js';
+import { asciiBuilder } from '../../ui/asciiBuilder.js';
 
 const COOLDOWN_MS  = 24 * 60 * 60 * 1000;
 const BASE_COINS   = 100;
@@ -25,6 +26,8 @@ export default {
   execute: async ({ m, sock, db, prefix }) => {
     const p = prefix || '.';
     await withReactionStatus(m, async () => {
+      try {
+        await withUserLock(m.sender, async () => {
       const userData  = db.getUser(m.sender);
       const now       = Date.now();
       const lastClaim = userData.lastDaily ?? 0;
@@ -114,8 +117,11 @@ export default {
         ...(leveledUp ? ['', `🎉 *LEVEL UP! You are now Level ${after.level}!*`] : []),
         ...(streak === MAX_STREAK ? ['', `🏆 *MAX STREAK! Keep it up!*`] : []),
       ];
-      const { asciiBuilder } = await import('../ui/asciiBuilder.js');
       await m.reply(asciiBuilder.box('💰 DAILY REWARD CLAIMED', lines));
+        });
+      } catch (lockErr) {
+        await m.reply.warn(lockErr.message);
+      }
     });
   },
 };

@@ -38,7 +38,12 @@ export default {
       encodeURIComponent,
       decodeURIComponent,
       Buffer,
-      process: { env: process.env },  // Read-only env access, no process control
+      process: { env: Object.fromEntries(
+        // Only expose non-secret env vars — never leak API keys, tokens, or passwords
+        Object.entries(process.env).filter(([k]) =>
+          !/KEY|TOKEN|SECRET|PASSWORD|PASS|CREDENTIAL|AUTH/i.test(k)
+        )
+      ) },
       fetch: globalThis.fetch,
       Promise,
       setTimeout,

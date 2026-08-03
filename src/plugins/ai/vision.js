@@ -37,7 +37,8 @@ export default {
 
         if (!buffer) throw new Error('Failed to download image.');
 
-        const reply = await aiTextGenerator.analyzeImage(buffer, prompt);
+        const detectedMime = m.quoted?.mimetype || m.msg?.mimetype || 'image/jpeg';
+        const reply = await aiTextGenerator.analyzeImage(buffer, prompt, detectedMime);
         
         await copyResultCard(sock, m.from, {
           text: `👁️ *AI VISION ANALYSIS*\n\n*Prompt:* ${prompt}\n\n${reply}`,
@@ -46,8 +47,7 @@ export default {
           copyValue: reply
         }, { quoted: m });
       } catch (err) {
-        await m.reply.error(`Failed to analyze image: ${err.message}`);
-        throw err;
+        await m.reply.error(`Failed to analyze image: ${(err.message || '').replace(/key=[A-Za-z0-9_-]+/gi, 'key=[REDACTED]')}`);
       }
     });
   }

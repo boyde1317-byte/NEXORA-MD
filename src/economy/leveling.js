@@ -130,6 +130,17 @@ export function canGainMessageXp(client, sender, chatJid) {
   const last = client.xpCooldowns.get(key) ?? 0;
   if (now - last < config.xp.messageCooldownMs) return false;
   client.xpCooldowns.set(key, now);
+
+  // Periodic cleanup: every ~5 minutes, evict expired entries to prevent
+  // unbounded growth in long-running processes with many users.
+  if (!client._xpCleanupAt || now > client._xpCleanupAt) {
+    client._xpCleanupAt = now + 300000; // 5 min
+    const expiry = now - config.xp.messageCooldownMs;
+    for (const [k, ts] of client.xpCooldowns) {
+      if (ts < expiry) client.xpCooldowns.delete(k);
+    }
+  }
+
   return true;
 }
 
@@ -138,8 +149,28 @@ export function randomMessageXp() {
   return Math.floor(Math.random() * (perMessageMax - perMessageMin + 1)) + perMessageMin;
 }
 
+
+
+// ── Per-user lock for economy transactions ──────────────────────────────
+// Prevents race conditions in daily claims and shop purchases where two
+// rapid commands could read the same balance before either writes.
+const _userLocks = new Set();
+
+export async function withUserLock(jid, fn) {
+  if (_userLocks.has(jid)) {
+    throw new Error('Another transaction is in progress. Please wait a moment.');
+  }
+  _userLocks.add(jid);
+  try {
+    return await fn();
+  } finally {
+    _userLocks.delete(jid);
+  }
+}
+
 export default {
   xpToLevel,
+  withUserLock,
   xpForLevel,
   getLevelProgress,
   progressBar,

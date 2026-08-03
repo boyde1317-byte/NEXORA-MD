@@ -14,7 +14,7 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { richTableCard, actionCard } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
-import { grantXp } from '../../economy/leveling.js';
+import { grantXp, withUserLock } from '../../economy/leveling.js';
 
 const SHOP_ITEMS = [
   { id: 'title',    name: 'Custom Title',       price: 500,  desc: 'Set a custom title on your profile' },
@@ -44,6 +44,8 @@ export default {
         );
       }
 
+      try {
+        await withUserLock(m.sender, async () => {
       const userData = db.getUser(m.sender);
       const coins = userData.coins ?? 0;
       if (coins < item.price) {
@@ -83,6 +85,10 @@ export default {
           return await m.reply.success(
             `✅ Purchased *${item.name}* for ${item.price} 🪙!\n\nSticker capacity: ${userData.stickerSlots ?? 10} → ${updates.stickerSlots}.\n🪙 Coins remaining: ${newCoins.toLocaleString()}`
           );
+      }
+        });
+      } catch (lockErr) {
+        return await m.reply.warn(lockErr.message);
       }
       return;
     }

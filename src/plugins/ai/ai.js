@@ -32,7 +32,7 @@ export default {
     }
 
     await withReactionStatus(m, async () => {
-      const reply = await aiTextGenerator.generateText(prompt);
+      const reply = await aiTextGenerator.generateText(prompt, { senderJid: m.sender });
 
       // Send the AI response as a plain reply (preserves the full text without truncation)
       await m.reply(reply);

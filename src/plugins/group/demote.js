@@ -5,6 +5,7 @@
  */
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { actionCard } from '../../lib/interactiveKit.js';
+import { config } from '../../config/index.js';
 
 export default {
   name: 'demote',
@@ -27,6 +28,11 @@ export default {
     } else if (args[0]) {
       const cleanNum = args[0].replace(/[^0-9]/g, '');
       if (cleanNum) target = `${cleanNum}@s.whatsapp.net`;
+    }
+
+    const targetNumber = target.split('@')[0];
+    if (config.owner.includes(targetNumber)) {
+      return await m.reply.error('Cannot modify the bot owner\'s admin status.');
     }
 
     if (!target) {
