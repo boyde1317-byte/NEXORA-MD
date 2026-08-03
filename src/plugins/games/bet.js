@@ -42,7 +42,7 @@ export default {
 
     if (!game || !['flip', 'dice', 'slots'].includes(game)) {
       return await m.reply.info(
-        `Usage:\n• \`${p}bet flip <amount>\` — 50/50, 2x payout\n• \`${p}bet dice <amount>\` — win on 4+, 1.5x payout\n• \`${p}bet slots <amount>\` — 3-reel slots, up to 10x jackpot\n\nMin bet: ${MIN_BET} 🪙 • Max bet: ${MAX_BET} 🪙`,
+        `Pick your poison:\n• \`${p}bet flip <amount>\` — 50/50, 2x payout\n• \`${p}bet dice <amount>\` — win on 4+, 1.5x payout\n• \`${p}bet slots <amount>\` — 3-reel slots, up to 10x jackpot 💎\n\nMin bet: ${MIN_BET} 🪙 • Max bet: ${MAX_BET} 🪙\n_The house always wins... eventually. But not today. Maybe._`,
         'CASINO'
       );
     }
@@ -79,7 +79,7 @@ export default {
               const payout = amount * 2;
               db.setUser(m.sender, { coins: (coins - amount) + payout });
               await mixedCard(sock, m.from, {
-                text: `🎰 *COIN FLIP*\n\n${emoji} Result: *${result}*\n\n✅ You won!\n🪙 Bet: ${amount} → Payout: ${payout} (+${payout - amount} profit)`,
+                text: `🎰 *COIN FLIP*\n\n${emoji} Result: *${result}*\n\n✅ You won! The casino hates you.\n🪙 Bet: ${amount} → Payout: ${payout} (+${payout - amount} profit)`,
                 footer: 'NEXORA Casino',
               }, [
                 { kind: 'action', label: '🔄 Flip Again', cmd: `${p}bet flip ${amount}` },
@@ -88,7 +88,7 @@ export default {
               ], { quoted: m });
             } else {
               await mixedCard(sock, m.from, {
-                text: `🎰 *COIN FLIP*\n\n${emoji} Result: *${result}*\n\n❌ You lost!\n🪙 Bet: ${amount} → Lost ${amount} coins`,
+                text: `🎰 *COIN FLIP*\n\n${emoji} Result: *${result}*\n\n❌ You lost! The house always wins... eventually.\n🪙 Bet: ${amount} → Lost ${amount} coins`,
                 footer: 'NEXORA Casino',
               }, [
                 { kind: 'action', label: '🔄 Try Again',  cmd: `${p}bet flip ${amount}` },
@@ -107,7 +107,7 @@ export default {
               const payout = Math.floor(amount * 1.5);
               db.setUser(m.sender, { coins: (coins - amount) + payout });
               await mixedCard(sock, m.from, {
-                text: `🎲 *DICE ROLL*\n\nResult: *${roll}* (4+ wins)\n\n✅ You won!\n🪙 Bet: ${amount} → Payout: ${payout} (+${payout - amount} profit)`,
+                text: `🎲 *DICE ROLL*\n\nResult: *${roll}* (4+ wins)\n\n✅ You won! Lucky number energy.\n🪙 Bet: ${amount} → Payout: ${payout} (+${payout - amount} profit)`,
                 footer: 'NEXORA Casino',
               }, [
                 { kind: 'action', label: '🔄 Roll Again', cmd: `${p}bet dice ${amount}` },
@@ -116,7 +116,7 @@ export default {
               ], { quoted: m });
             } else {
               await mixedCard(sock, m.from, {
-                text: `🎲 *DICE ROLL*\n\nResult: *${roll}* (4+ wins)\n\n❌ You lost!\n🪙 Bet: ${amount} → Lost ${amount} coins`,
+                text: `🎲 *DICE ROLL*\n\nResult: *${roll}* (4+ wins)\n\n❌ You lost! Roll low, lose big. Try again?\n🪙 Bet: ${amount} → Lost ${amount} coins`,
                 footer: 'NEXORA Casino',
               }, [
                 { kind: 'action', label: '🔄 Try Again',      cmd: `${p}bet dice ${amount}` },
@@ -143,12 +143,12 @@ export default {
             if (allMatch) {
               const multiplier = SLOT_PAYOUTS[spin[0]] || 3;
               payout = amount * multiplier;
-              resultText = `🎉 *JACKPOT!* All three match!\n${spin.join(' | ')}\n\n✅ You won ${multiplier}x!`;
+              resultText = `🎉 *JACKPOT!* All three match!\n${spin.join(' | ')}\n\n✅ You won ${multiplier}x! The slots gods favor you today.`;
             } else if (twoMatch) {
               payout = Math.floor(amount * 1.2);
               resultText = `🎰 Two match — small win!\n${spin.join(' | ')}\n\n✅ You won 1.2x!`;
             } else {
-              resultText = `🎰 No match.\n${spin.join(' | ')}\n\n❌ You lost!`;
+              resultText = `🎰 No match. So close yet so far.\n${spin.join(' | ')}\n\n❌ You lost!`;
             }
 
             if (payout > 0) {

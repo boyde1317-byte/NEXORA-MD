@@ -41,7 +41,7 @@ export default {
 
         try {
           await mixedCard(sock, m.from, {
-            text:   '✅ *X / Twitter video downloaded!*\n\nWant to do more?',
+            text:   '✅ *X / Twitter video downloaded!*\n\nWhat\'s next? ✦',
             footer: 'NEXORA-MD • X Downloader',
           }, [
             { kind: 'copy',   label: '📋 Copy Post URL',   value: url },

@@ -22,12 +22,22 @@ export default {
       const restrict = meta.restrict ? '🔒 Admins only' : '🌐 All members';
       const announce = meta.announce ? '🔒 Admins only' : '🌐 All members';
 
+      const regularMembers = total - adminCount;
+      const groupAge = meta.creation
+        ? (() => {
+            const days = Math.floor((Date.now() - meta.creation * 1000) / 86400000);
+            if (days < 30) return `${days} day${days !== 1 ? 's' : ''}`;
+            if (days < 365) return `${Math.floor(days / 30)} month${Math.floor(days / 30) !== 1 ? 's' : ''}`;
+            return `${Math.floor(days / 365)} year${Math.floor(days / 365) !== 1 ? 's' : ''}`;
+          })()
+        : 'Unknown';
+
       const rows = [
         ['Group Name',   meta.subject],
         ['Group ID',     m.from],
-        ['Created',      createdAt],
+        ['Created',      `${createdAt} (${groupAge} old)`],
         ['Description',  (meta.desc || 'None').slice(0, 60)],
-        ['Members',      String(total)],
+        ['Members',      `${total} (${regularMembers} regular, ${adminCount} admin${adminCount !== 1 ? 's' : ''})`],
         ['Admins',       `${adminCount} (${admins.slice(0, 3).join(', ')}${adminCount > 3 ? '...' : ''})`],
         ['Send Messages', announce],
         ['Edit Info',    restrict],

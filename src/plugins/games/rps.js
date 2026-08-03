@@ -13,8 +13,8 @@ export default {
     
     if (!args[0] || !choices.includes(args[0].toLowerCase())) {
       return await mixedCard(sock, m.from, {
-        text: `✦ *ROCK PAPER SCISSORS* ✦\n\nChoose your weapon:`,
-        footer: 'Powered by NEXORA'
+        text: `✦ *ROCK PAPER SCISSORS* ✦\n\nChoose your weapon. I promise not to cheat. ⚡`,
+        footer: 'NEXORA Games'
       }, [
         { kind: 'action', label: '🪨 Rock', cmd: `${p}rps rock` },
         { kind: 'action', label: '📄 Paper', cmd: `${p}rps paper` },
@@ -32,16 +32,18 @@ export default {
       (userChoice === 'paper' && botChoice === 'rock') ||
       (userChoice === 'scissors' && botChoice === 'paper')
     ) {
-      result = 'You win! 🎉';
+      result = 'You win! Got me there. 🎉';
     } else {
-      result = 'I win! 😈';
+      result = 'I win! Better luck next round. 😈';
     }
     
     await mixedCard(sock, m.from, {
       text: `✦ *ROCK PAPER SCISSORS* ✦\n\nYou chose: ${emojis[userChoice]}\nI chose: ${emojis[botChoice]}\n\n*${result}*`,
-      footer: 'Powered by NEXORA'
+      footer: 'NEXORA Games'
     }, [
-      { kind: 'action', label: '🔄 Play Again', cmd: `${p}rps` }
+      { kind: 'action', label: '🪨 Rock',     cmd: `${p}rps rock` },
+      { kind: 'action', label: '📄 Paper',    cmd: `${p}rps paper` },
+      { kind: 'action', label: '✂️ Scissors',  cmd: `${p}rps scissors` }
     ], { quoted: m });
   }
 };

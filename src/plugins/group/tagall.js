@@ -34,7 +34,7 @@ export default {
       const thumbnail = await getBrandThumbnail();
       try {
         await actionCardWithAd(sock, m.from, {
-          text:   `${tagText}\n\n✅ *${participants.length} members tagged.*\n\nWhat would you like to do next?`,
+          text:   `${tagText}\n\n✅ *${participants.length} members tagged.* That\'s a lot of notifications. 📣\n\nWhat\'s next?`,
           footer: `${metadata.subject || 'Group'} Admin Panel`,
         }, [
           { label: '📢 Tag Again',  cmd: `${p}tagall ${customMessage}` },

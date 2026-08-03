@@ -61,7 +61,7 @@ export default {
         // Follow-up interactive card after all items
         try {
           await mixedCard(sock, m.from, {
-            text:   `✅ *Downloaded ${batch.length} item${batch.length !== 1 ? 's' : ''} from Instagram!*`,
+            text:   `✅ *Downloaded ${batch.length} item${batch.length !== 1 ? 's' : ''} from Instagram!* ${batch.length > 1 ? 'That\'s a whole carousel.' : ''} ✦`,
             footer: 'NEXORA-MD • Instagram Downloader',
           }, [
             { kind: 'copy',   label: '📋 Copy Post URL',   value: url },

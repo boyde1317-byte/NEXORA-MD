@@ -47,7 +47,7 @@ export default {
 
       if (entries.length === 0) {
         return await m.reply.info(
-          `No one has earned ${label} yet — be the first with \`${p}daily\`!`,
+          `No one has earned ${label} yet. The leaderboard is wide open — claim your spot with \`${p}daily\`! ✦`,
           'LEADERBOARD'
         );
       }
@@ -107,8 +107,10 @@ export default {
         const flipLabel = mode === 'coins' ? '✨ Switch to XP' : '🪙 Switch to Coins';
         buttons.push({ label: flipLabel, cmd: `${p}lb ${flipMode} ${page}` });
 
+        const senderNote = senderRank === 0 ? ' You\'re at the top. 👑' : senderRank > 0 && senderRank < 10 ? ' You\'re in the top 10. 🔥' : '';
+
         return await actionCard(sock, m.from, {
-          text:   `Showing ${pageEntries.length} users on page ${page} of ${totalPages}.`,
+          text:   `Showing ${pageEntries.length} users on page ${page} of ${totalPages}.${senderNote}`,
           footer: 'NEXORA Economy',
         }, buttons, { quoted: m });
       } catch (err) {

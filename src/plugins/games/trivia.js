@@ -84,10 +84,12 @@ export default {
 
       const labels = ['🅰️', '🅱️', '🅲', '🅳'];
 
+      const difficulty = q.difficulty ? q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1) : 'Mixed';
+
       try {
         return await actionCard(sock, m.from, {
           text: `🧠 *TRIVIA* — ${category}\n\n${question}\n\n${allAnswers.map((a, i) => `${labels[i]} ${a}`).join('\n')}`,
-          footer: 'Tap your answer below!',
+          footer: `Difficulty: ${difficulty} • Tap to answer!`,
         }, allAnswers.map((a, i) => ({
           label: `${labels[i]} ${a.slice(0, 20)}${a.length > 20 ? '…' : ''}`,
           cmd: i === correctIdx
@@ -97,7 +99,7 @@ export default {
       } catch (err) {
         console.warn('[trivia] actionCard failed, text fallback:', err.message);
         return await m.reply(asciiBuilder.box('🧠 TRIVIA', [
-          `Category: ${category}`,
+          `Category: ${category} • ${difficulty}`,
           '',
           question,
           '',

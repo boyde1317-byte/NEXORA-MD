@@ -61,7 +61,7 @@ export default {
       // ── Tier 1: actionCard confirmation ────────────────────────────────
       try {
         return await actionCard(sock, m.from, {
-          text:   `🚫 *@${targetNumber}* has been removed from the group.`,
+          text:   `🚫 *@${targetNumber}* has been shown the door. 👋`,
           footer: 'NEXORA Guard • Group Management',
         }, [
           { label: '⚠️ Warn a Member',        cmd: `${p}warn` },
@@ -70,7 +70,7 @@ export default {
         ], { quoted: m, mentions: [target] });
       } catch (_) {
         // Tier 2: plain reply
-        await m.reply(`✅ Successfully removed *@${targetNumber}* from the group.`, {
+        await m.reply(`✅ *@${targetNumber}* is gone. Clean sweep. 👋`, {
           mentions: [target]
         });
       }

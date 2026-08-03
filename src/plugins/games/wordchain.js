@@ -76,7 +76,7 @@ export default {
       });
 
       return await mixedCard(sock, m.from, {
-        text: `🔗 *WORD CHAIN*\n\nGame started! Waiting for players...\n\nPlayers: 1/${MAX_PLAYERS}\n\nType \`${p}wordchain join\` to play!`,
+        text: `🔗 *WORD CHAIN*\n\nGame started! Who\'s got the vocabulary for this?\n\nPlayers: 1/${MAX_PLAYERS}\n\nType \`${p}wordchain join\` to play! ✦`,
         footer: 'NEXORA Games',
       }, [
         { kind: 'action', label: '🔗 Join Game',  cmd: `${p}wordchain join` },
@@ -133,8 +133,8 @@ export default {
       setTurnTimeout(m.from, sock, db, p);
 
       return await mixedCard(sock, m.from, {
-        text: `🔗 *WORD CHAIN — GO!*\n\nStarting letter: *${startLetter.toUpperCase()}*\n\n👤 Current turn: +${playerNum}\n\nType a word starting with *${startLetter.toUpperCase()}* — use \`${p}wordchain <word>\``,
-        footer: `${game.players.length} players • 30s per turn`,
+        text: `🔗 *WORD CHAIN — GO!*\n\nStarting letter: *${startLetter.toUpperCase()}*\n\n👤 Current turn: +${playerNum}\n\nType a word starting with *${startLetter.toUpperCase()}* — use \`${p}wordchain <word>\`\n⏱️ 30s per turn. Don\'t blank out. ✦`,
+        footer: `${game.players.length} players • Last one standing wins ${WIN_COINS} 🪙`,
       }, [
         { kind: 'action', label: '🛑 Stop Game', cmd: `${p}wordchain stop` },
       ], { quoted: m });
@@ -147,7 +147,7 @@ export default {
         return await m.reply.info('No active game to stop.');
       }
       deleteGame(m.from);
-      return await m.reply.success('🛑 Word chain game stopped.');
+      return await m.reply.success('🛑 Word chain stopped. All that brainpower, wasted. 😏');
     }
 
     // ── Submit a word ───────────────────────────────────────────────────
@@ -192,7 +192,9 @@ export default {
 
       const nextPlayer = game.players[game.currentTurn];
       const nextLetter = getLastLetter(word);
-      await m.reply(`✅ *${word}* accepted!\n\n👤 Next: +${nextPlayer.split('@')[0].split(':')[0]} — word must start with *${nextLetter?.toUpperCase()}*`);
+      const wordCount = game.words.length;
+      const streakNote = wordCount >= 10 ? ' 🔥 This chain is getting long!' : wordCount >= 5 ? ' ✦ Nice chain!' : '';
+      await m.reply(`✅ *${word}* accepted!${streakNote}\n\n👤 Next: +${nextPlayer.split('@')[0].split(':')[0]} — word starts with *${nextLetter?.toUpperCase()}*`);
     }
   }
 };
@@ -229,7 +231,7 @@ function eliminatePlayer(jid, sock, db, prefix, game, playerJid, reason) {
       grantXp(db, winner, { xp: WIN_XP, coins: WIN_COINS });
 
       sock.sendMessage(jid, {
-        text: `🏆 *WORD CHAIN — GAME OVER!*\n\n👤 +${playerNum} is out: ${reason}\n\n🎉 Winner: +${winnerNum}!\n🪙 +${WIN_COINS} coins\n✨ +${WIN_XP} XP\n\nType \`${prefix}wordchain start\` to play again!`,
+        text: `🏆 *WORD CHAIN — GAME OVER!*\n\n👤 +${playerNum} is out: ${reason}\n\n🎉 *Winner: +${winnerNum}!* 🧠\nWordsmith extraordinaire.\n🪙 +${WIN_COINS} coins\n✨ +${WIN_XP} XP\n\nType \`${prefix}wordchain start\` to play again!`,
       });
     }
     return;

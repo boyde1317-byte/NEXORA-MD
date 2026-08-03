@@ -48,7 +48,7 @@ export default {
         if (data.audio) {
           try {
             await mixedCard(sock, m.from, {
-              text: 'Want just the audio track from this video?',
+              text: '🎵 Want just the audio? I can pull that too. ✦',
               footer: 'NEXORA-MD • TikTok Downloader',
             }, [
               { kind: 'url',    label: '🎵 Download Audio',    url: data.audio },

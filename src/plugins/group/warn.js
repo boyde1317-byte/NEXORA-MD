@@ -84,7 +84,7 @@ export default {
               `⚠️  Warnings: ${newCount}/${MAX_WARNINGS}`,
               `📝 Reason  : ${reason}`,
               ``,
-              `User was automatically removed for reaching the warning limit.`,
+              `User was automatically removed for hitting the limit. Bye. 👋`,
             ]) , { mentions: [target] }
           );
           setGroupWarnings(db, m.from, target, 0);
@@ -98,8 +98,8 @@ export default {
             `📝 Reason  : ${reason}`,
             ``,
             newCount === MAX_WARNINGS - 1
-              ? `⚡ *Final warning!* One more and they will be kicked.`
-              : `${MAX_WARNINGS - newCount} more warning(s) before automatic kick.`,
+              ? `⚡ *Final warning!* One more strike and they\'re out.`
+              : `${MAX_WARNINGS - newCount} more strike(s) before I show them the door. 👋`,
           ]);
         try {
           await actionCard(sock, m.from, {
