@@ -1,108 +1,149 @@
 /**
- * Nexora MD - Global Response Style Guide
- * Drop this configuration file into your bot framework to standardize Nexora's conversational identity.
- * 
+ * Nexora MD — Global Response Style Guide
+ *
+ * Defines the bot's conversational identity. Every system message the bot sends
+ * (errors, cooldowns, permission denials, success confirmations) draws from
+ * these pools so the persona stays consistent across all 14 menu types and
+ * every plugin.
+ *
+ * Design principles:
+ *   • One accent symbol per message (✦ ⚡ ☕ ❖ 🪐 ∘) — never emoji soup
+ *   • Confident, calm, slightly witty — not robotic, not over-friendly
+ *   • Short. One line. The user already knows what happened.
+ *   • Smallcaps reserved for menu headers, not inline responses
+ *
  * Usage:
- * import { responses, getRandomResponse } from './nexora-messages';
- * 
- * reply(getRandomResponse('success'));
+ *   import { getRandomResponse } from '../nexora-messages.js';
+ *   reply(getRandomResponse('success'));
  */
 
 export const nexoraResponses = {
-    // 🟢 Success & Confirmations
-    success: [
-        "Done. Everything's in place. ✦",
-        "Finished. You're good to go. ☕",
-        "Wrapped that up for you. ⚡",
-        "All set. ❖",
-        "Saved and secured. 🪐",
-        "Handled it. ✦"
-    ],
+  // ── Success & Confirmations ────────────────────────────────────────────
+  success: [
+    "Done. ✦",
+    "Finished. You're good to go. ☕",
+    "All set. ⚡",
+    "Handled. ❖",
+    "Saved and secured. ✦",
+    "That's taken care of. ☕",
+  ],
 
-    // 🔴 Errors & Failures
-    error: [
-        "I ran into a slight issue here. Let's try again. 🍂",
-        "Something interrupted the process... ⚆",
-        "I couldn't quite get that done. ⨯",
-        "That didn't work out as expected. Check your command formatting. ✦",
-        "System hit a snag. Care to try again? 🍷"
-    ],
+  // ── Errors & Failures ──────────────────────────────────────────────────
+  error: [
+    "Ran into an issue there. Let's try again. ✦",
+    "Something interrupted the process. ⚡",
+    "Couldn't quite get that done. ⨯",
+    "That didn't work as expected. Check your formatting. ✦",
+    "System hit a snag. Care to try again? ☕",
+  ],
 
-    // 🟡 Warnings & Missing Inputs
-    warning: [
-        "Just a heads up, something isn't right here... ⚆",
-        "You might want to double-check this. ✦",
-        "Careful there. ⚡",
-        "I need a bit more info to run this command. ☕"
-    ],
+  // ── Warnings & Missing Inputs ──────────────────────────────────────────
+  warning: [
+    "Something isn't quite right here. ⚆",
+    "You might want to double-check that. ✦",
+    "I need a bit more info to run this. ☕",
+    "Careful — that's not quite right. ⚡",
+  ],
 
-    // ⏳ Loading & Processing
-    loading: [
-        "Give me a moment... ∘",
-        "Processing that for you. ☕",
-        "Pulling the data now... ✧",
-        "Working on it. ⚡",
-        "Just a second... ✦"
-    ],
+  // ── Loading & Processing ──────────────────────────────────────────────
+  loading: [
+    "Give me a moment... ∘",
+    "Processing that. ☕",
+    "Pulling the data now... ✦",
+    "Working on it. ⚡",
+    "Just a second... ∘",
+  ],
 
-    // 🚫 Permissions & Access Control
-    permission_denied: [
-        "You don't have the clearance for this. 🪐",
-        "That's above your paygrade, I'm afraid. 🍷",
-        "I can only run this for admins. ❖",
-        "Nice try, but you lack the permissions. 🍂"
-    ],
-    owner_only: [
-        "Owner access required for this one. ✦",
-        "Only my creator can authorize that. ⚡",
-        "System locked to owner protocol. ❖"
-    ],
+  // ── Permissions & Access Control ──────────────────────────────────────
+  permission_denied: [
+    "You don't have the clearance for this. ❖",
+    "That's above your access level, I'm afraid. ☕",
+    "I can only run this for admins. ✦",
+    "Nice try — but you lack the permissions for this one. ⚡",
+  ],
 
-    // 👥 Group Moderation
-    group_only: "This command is designed for group chats only. 🪐",
-    private_only: "Let's keep this between us. Use this in private chat. ☕",
-    bot_not_admin: "I need Admin privileges to do that. Promote me first. ⚡",
+  owner_only: [
+    "Owner access required for this. ✦",
+    "Only my creator can authorize that. ⚡",
+    "System locked to owner protocol. ❖",
+  ],
 
-    moderation: {
-        kick: "Peace restored. ☕",
-        promote: "Welcome to the top. ✦",
-        demote: "Back to the ranks. 🍂",
-        mute: "Group is locked. Quiet time. 🌙",
-        unmute: "Group is open. Play nice, everyone. ✦",
-        antilink: "Caught an unauthorized link. Handled it. ⚡"
-    },
+  // ── Group Moderation ──────────────────────────────────────────────────
+  group_only: "This command works in group chats only. ✦",
+  private_only: "Let's keep this between us. Use it in private chat. ☕",
+  bot_not_admin: "I need admin privileges to do that. Promote me first. ⚡",
 
-    // 👑 Owner specific
-    owner: {
-        wake: "Welcome back. What's on the agenda? ☕",
-        shutdown: "Going dark. See you soon. 🌙",
-        update: "Applying the latest updates. System is yours. ⚡"
-    },
+  moderation: {
+    kick: "Peace restored. ☕",
+    promote: "Welcome to the top. ✦",
+    demote: "Back to the ranks. ⚡",
+    mute: "Group is locked. Quiet time. ❖",
+    unmute: "Group is open. Play nice, everyone. ✦",
+    antilink: "Caught an unauthorized link. Handled. ⚡",
+  },
 
-    // 🛠️ Utilities
-    utility: {
-        ping: (ms) => `Running smooth. Speed: ${ms}ms. ⚡`,
-        download: "File retrieved. 📥"
-    }
+  // ── Owner Specific ────────────────────────────────────────────────────
+  owner: {
+    wake: "Welcome back. What's on the agenda? ☕",
+    shutdown: "Going dark. See you soon. ✦",
+    update: "Applying updates. System is yours. ⚡",
+  },
+
+  // ── Cooldown ──────────────────────────────────────────────────────────
+  cooldown: [
+    (cmd, time) => `⏳ \`${cmd}\` is cooling down. Try again in *${time}*.`,
+    (cmd, time) => `Slow down — \`${cmd}\` needs *${time}* more. ⚡`,
+    (cmd, time) => `Give it *${time}* — \`${cmd}\` is on cooldown. ☕`,
+  ],
+
+  // ── Command Not Found ─────────────────────────────────────────────────
+  not_found: [
+    (cmd) => `Couldn't find \`${cmd}\`. Check the spelling? ✦`,
+    (cmd) => `\`${cmd}\` isn't a command I know. ☕`,
+    (cmd) => `No match for \`${cmd}\`. Try \`.help\` for the full list. ⚡`,
+  ],
+
+  // ── Command Execution Error ───────────────────────────────────────────
+  exec_error: [
+    (cmd, err) => `⨯ \`${cmd}\` hit an unexpected error.\n_${err}_\n\nIf this keeps happening, contact the owner.`,
+    (cmd, err) => `Something went wrong running \`${cmd}\`.\n_${err}_\n\nTry again, or reach out if it persists. ✦`,
+  ],
+
+  // ── Utilities ─────────────────────────────────────────────────────────
+  utility: {
+    ping: (ms) => `Running smooth. Speed: ${ms}ms. ⚡`,
+    download: "File retrieved. 📥",
+  },
 };
 
 /**
- * Helper function to pull a varied, non-repetitive response.
- * @param category The category of the response (e.g., 'success', 'error', 'loading')
- * @returns A randomized response string fitting the Nexora personality
+ * Pull a varied, non-repetitive response.
+ * Supports both string arrays and function arrays (for dynamic messages).
+ *
+ * @param {string} category — response category key
+ * @param {...any} args — arguments to pass if the response is a function
+ * @returns {string}
  */
-export function getRandomResponse(category){
-    const responses = nexoraResponses[category];
-    
-    if (Array.isArray(responses)) {
-        const randomIndex = Math.floor(Math.random() * responses.length);
-        return responses[randomIndex];
-    }
-    
-    // Fallback if not an array
-    if (typeof responses === 'string') {
-        return responses;
-    }
-    
-    return "Handled. ✦"; // Ultimate fallback
+export function getRandomResponse(category, ...args) {
+  const responses = nexoraResponses[category];
+
+  if (!responses) return 'Handled. ✦';
+
+  // Single string
+  if (typeof responses === 'string') return responses;
+
+  // Array of strings or functions
+  if (Array.isArray(responses)) {
+    const idx = Math.floor(Math.random() * responses.length);
+    const picked = responses[idx];
+    if (typeof picked === 'function') return picked(...args);
+    return picked;
+  }
+
+  // Object (e.g., moderation, owner, utility)
+  if (typeof responses === 'object') return JSON.stringify(responses);
+
+  return 'Handled. ✦';
 }
+
+export default { nexoraResponses, getRandomResponse };

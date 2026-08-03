@@ -1,44 +1,38 @@
+import { toSmallcaps } from '../lib/smallcaps.js';
+
+/**
+ * ASCII box builder for structured text output.
+ *
+ * Uses smallcaps for titles to match the menu system's visual identity.
+ * Accent symbol ✦ wraps every title for brand consistency.
+ */
 export const asciiBuilder = {
   box(title, lines = []) {
-    const formattedLines = [];
+    const formatted = [];
     if (title) {
-      formattedLines.push(`✦ *${title.toUpperCase()}* ✦\n`);
+      formatted.push(`✦ *${toSmallcaps(title)}* ✦\n`);
     }
-    
-    lines.forEach(line => {
-      formattedLines.push(`${line}`);
-    });
-
-    return formattedLines.join('\n');
+    lines.forEach(line => formatted.push(line));
+    return formatted.join('\n');
   },
 
   list(title, items = []) {
-    const formattedLines = [];
-    const bulletIcon = '✦';
-
+    const formatted = [];
     if (title) {
-      formattedLines.push(`✦ *${title.toUpperCase()}* ✦\n`);
+      formatted.push(`✦ *${toSmallcaps(title)}* ✦\n`);
     }
-
-    items.forEach(item => {
-      formattedLines.push(`${bulletIcon} ${item}`);
-    });
-
-    return formattedLines.join('\n');
+    items.forEach(item => formatted.push(`✦ ${item}`));
+    return formatted.join('\n');
   },
 
   card(title, entries = []) {
-    const formattedLines = [];
+    const formatted = [];
     if (title) {
-      formattedLines.push(`✦ *${title.toUpperCase()}* ✦\n`);
+      formatted.push(`✦ *${toSmallcaps(title)}* ✦\n`);
     }
-
-    entries.forEach(entry => {
-      formattedLines.push(`☕ ${entry}`);
-    });
-
-    return formattedLines.join('\n');
-  }
+    entries.forEach(entry => formatted.push(`• ${entry}`));
+    return formatted.join('\n');
+  },
 };
 
 export default asciiBuilder;

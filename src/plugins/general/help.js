@@ -7,6 +7,7 @@
  */
 import { client } from '../../core/client.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 
 export default {
   name: 'help',
@@ -31,11 +32,11 @@ export default {
       if (catArg && categories[catArg]) {
         const cmds = categories[catArg].sort();
         const lines = [
-          `*${catArg.toUpperCase()}* — ${cmds.length} commands\n`,
+          `*${toSmallcaps(catArg)}* — ${cmds.length} commands\n`,
           ...cmds.map(c => `  ${p}${c}`),
           `\n_Use \`${p}help <command>\` for detailed usage._`,
         ];
-        return await m.reply(asciiBuilder.box(`📖 ${catArg.toUpperCase()} COMMANDS`, lines));
+        return await m.reply(asciiBuilder.box(`${catArg} Commands`, lines));
       }
 
       // Show compact category summary
@@ -46,7 +47,7 @@ export default {
       ];
 
       for (const cat of sortedCats) {
-        lines.push(`*${cat.toUpperCase()}* — ${categories[cat].length} cmds`);
+        lines.push(`• *${toSmallcaps(cat)}* — ${categories[cat].length} cmds`);
       }
 
       lines.push('');
@@ -54,7 +55,7 @@ export default {
       lines.push(`_Type \`${p}help <command>\` for detailed usage._`);
       lines.push(`_Type \`${p}menu\` for the interactive console._`);
 
-      return await m.reply(asciiBuilder.box('📖 COMMAND GUIDE', lines));
+      return await m.reply(asciiBuilder.box('Command Guide', lines));
     }
 
     // ── Specific command help ─────────────────────────────────────────────
@@ -73,36 +74,36 @@ export default {
 
     const perms = command.permissions || {};
     const lines = [
-      `*Command:* ${p}${command.name}`,
+      `*${toSmallcaps('Command')}:* ${p}${command.name}`,
     ];
 
     if (command.aliases?.length) {
-      lines.push(`*Aliases:* ${command.aliases.map(a => `${p}${a}`).join(', ')}`);
+      lines.push(`*${toSmallcaps('Aliases')}:* ${command.aliases.map(a => `${p}${a}`).join(', ')}`);
     }
 
-    lines.push(`*Category:* ${command.category || 'general'}`);
+    lines.push(`*${toSmallcaps('Category')}:* ${toSmallcaps(command.category || 'general')}`);
 
     if (command.description) {
-      lines.push(`*Description:* ${command.description}`);
+      lines.push(`*${toSmallcaps('Description')}:* ${command.description}`);
     }
 
     if (command.cooldown) {
-      lines.push(`*Cooldown:* ${(command.cooldown / 1000).toFixed(1)}s`);
+      lines.push(`*${toSmallcaps('Cooldown')}:* ${(command.cooldown / 1000).toFixed(1)}s`);
     }
 
     // Permission flags
     const permFlags = [];
-    if (perms.owner ?? command.ownerOnly) permFlags.push('Owner Only');
-    if (perms.groupOnly ?? command.groupOnly) permFlags.push('Group Only');
-    if (perms.admin ?? command.adminOnly) permFlags.push('Admin Only');
-    if (perms.botAdmin ?? command.botAdmin) permFlags.push('Bot Admin Required');
+    if (perms.owner ?? command.ownerOnly) permFlags.push(toSmallcaps('Owner Only'));
+    if (perms.groupOnly ?? command.groupOnly) permFlags.push(toSmallcaps('Group Only'));
+    if (perms.admin ?? command.adminOnly) permFlags.push(toSmallcaps('Admin Only'));
+    if (perms.botAdmin ?? command.botAdmin) permFlags.push(toSmallcaps('Bot Admin Required'));
     if (permFlags.length) {
-      lines.push(`*Permissions:* ${permFlags.join(', ')}`);
+      lines.push(`*${toSmallcaps('Permissions')}:* ${permFlags.join(', ')}`);
     }
 
     lines.push('');
-    lines.push(`_Type \`${p}${command.name}\` to use this command._`);
+    lines.push(`_Type \`${p}${command.name}\` to use this command. ✦_`);
 
-    await m.reply(asciiBuilder.box(`📖 ${command.name.toUpperCase()}`, lines));
+    await m.reply(asciiBuilder.box(command.name, lines));
   },
 };

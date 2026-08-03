@@ -11,6 +11,7 @@ import os from 'os';
 import { replyAdReply } from '../../lib/waUtils.js';
 import { getBrandThumbnail } from '../../lib/cosmetics.js';
 import { richTableCard, mixedCard } from '../../lib/interactiveKit.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 
 export default {
   name: 'about',
@@ -46,15 +47,13 @@ export default {
       }, { quoted: m });
 
       return await mixedCard(sock, m.from, {
-        text:   `╭─「 ${brand.name} 」\n│ ${brand.description}\n╰─ ${brand.signature}`,
+        text:   `✦ *${toSmallcaps(brand.name)}* ✦\n${toSmallcaps(brand.description)}\n${toSmallcaps(brand.signature)}`,
         footer: `${brand.name} v${brand.version} • ${totalCmds} commands`,
       }, [
         { kind: 'url',    label: '💬 Contact Developer',  url:   'https://wa.me/233533416608' },
         { kind: 'url',    label: '📢 Official Channel',   url:   'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326' },
-        { kind: 'copy',   label: '📋 Copy Prefix',        value: p },
         { kind: 'action', label: '🤖 System Stats',       cmd:   `${p}menu aiDynamic` },
         { kind: 'action', label: '🏓 Ping Bot',           cmd:   `${p}ping` },
-        { kind: 'action', label: '📋 Version Details',    cmd:   `${p}version` },
       ], { quoted: m });
     } catch (err) {
       console.warn('[about] Tier 1 (richTable + mixedCard) failed:', err.message);
@@ -62,24 +61,22 @@ export default {
 
     // ── Tier 2: adReply card (original fallback) ───────────────────────────
     const text = [
-      `╭─「 ${brand.name} 」`,
-      `│`,
-      `│ Next Generation`,
-      `│ WhatsApp MD Framework`,
-      `│`,
-      `├─ Developer`,
-      `│  ${brand.creator}`,
-      `│`,
-      `├─ System`,
-      `│  Engine:`,
-      `│  ${brand.core}`,
-      `│  Version: ${brand.version}`,
-      `│  Runtime: Node.js ${process.version}`,
-      `│  Commands: ${totalCmds} loaded`,
-      `│  RAM: ${ram} MB`,
-      `│  Uptime: ${hrs}h ${mins}m ${secs}s`,
-      `│`,
-      `╰─ ${brand.signature}`,
+      `✦ *${toSmallcaps(brand.name)}* ✦`,
+      ``,
+      `${toSmallcaps('Next Generation WhatsApp MD Framework')}`,
+      ``,
+      `*${toSmallcaps('Developer')}*`,
+      `  ${brand.creator}`,
+      ``,
+      `*${toSmallcaps('System')}*`,
+      `  ${toSmallcaps('Engine')}: ${brand.core}`,
+      `  ${toSmallcaps('Version')}: v${brand.version}`,
+      `  ${toSmallcaps('Runtime')}: Node.js ${process.version}`,
+      `  ${toSmallcaps('Commands')}: ${totalCmds} loaded`,
+      `  ${toSmallcaps('RAM')}: ${ram} MB`,
+      `  ${toSmallcaps('Uptime')}: ${hrs}h ${mins}m ${secs}s`,
+      ``,
+      `${toSmallcaps(brand.signature)}`,
     ].join('\n');
 
     const thumbnail = await getBrandThumbnail();

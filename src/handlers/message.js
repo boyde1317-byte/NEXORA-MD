@@ -18,6 +18,7 @@ import {
 import { getDisplayName } from '../lib/displayName.js';
 import { getRandomResponse } from '../nexora-messages.js';
 import { suggestCommand } from '../lib/fuzzyMatch.js';
+import { toSmallcaps } from '../lib/smallcaps.js';
 
 // ── Hoisted regexes (compiled once, not on every message) ─────────────────────
 // Anti-link pattern: matches URLs and known social/messaging platform links.
@@ -279,18 +280,18 @@ try {
         const p = config.prefix[0] || '.';
         await sock.sendMessage(jid, {
           text: [
-            `👋 *Welcome to ${config.botName}!*`,
+            `✦ *${toSmallcaps('Welcome to ' + config.botName)}* ✦`,
             ``,
-            `Hey @${number}! I'm your assistant. Here's how to get started:`,
+            `Hey @${number} — I'm ${config.botName}. Here's the quick start:`,
             ``,
-            `*QUICK START*`,
-            `• ${p}menu  — Interactive command console`,
-            `• ${p}help  — Detailed command guide`,
-            `• ${p}ping  — Check if I'm alive`,
-            `• ${p}ai    — Chat with AI`,
-            `• ${p}daily — Claim daily rewards`,
+            `*${toSmallcaps('Quick Start')}*`,
+            `• ${p}menu  — ${toSmallcaps('Interactive command console')}`,
+            `• ${p}help  — ${toSmallcaps('Detailed command guide')}`,
+            `• ${p}ping  — ${toSmallcaps('Check if I am alive')}`,
+            `• ${p}ai    — ${toSmallcaps('Chat with AI')}`,
+            `• ${p}daily — ${toSmallcaps('Claim daily rewards')}`,
             ``,
-            `Type *${p}menu* to see everything I can do!`,
+            `Type *${p}menu* to see everything I can do. ☕`,
           ].join('\n'),
           mentions: [sender],
         }, { quoted: rawMessage }).catch(() => {});
@@ -316,18 +317,12 @@ try {
     const allNames = [...client.commands.keys(), ...client.aliases.keys()];
     const suggestion = suggestCommand(commandName, allNames);
     if (suggestion) {
-      await m.reply.info(
-        `Unknown command: *${prefix}${commandName}*
-
-Did you mean: *${prefix}${suggestion}*?`,
-        'COMMAND NOT FOUND'
+      await m.reply(
+        `${getRandomResponse('not_found', `${prefix}${commandName}`)}\n\nDid you mean: *${prefix}${suggestion}*?`
       );
     } else {
-      await m.reply.info(
-        `Unknown command: *${prefix}${commandName}*
-
-Type *${prefix}help* to see all available commands, or *${prefix}menu* for the interactive console.`,
-        'COMMAND NOT FOUND'
+      await m.reply(
+        `${getRandomResponse('not_found', `${prefix}${commandName}`)}\n\nType *${prefix}help* to see all commands, or *${prefix}menu* for the interactive console.`
       );
     }
     return;
@@ -401,7 +396,7 @@ Type *${prefix}help* to see all available commands, or *${prefix}menu* for the i
     } else {
       timeStr = `${remainingSec.toFixed(1)}s`;
     }
-    await m.reply.warn(`⏳ *${command.name}* is on cooldown. Please wait *${timeStr}* before using it again.`);
+    await m.reply(getRandomResponse('cooldown', command.name, timeStr));
     return;
   }
 
@@ -455,7 +450,7 @@ Type *${prefix}help* to see all available commands, or *${prefix}menu* for the i
   } catch (execErr) {
     console.error(`[CMD ERROR] ${command.name} threw:`, execErr.message || execErr);
     try {
-      await m.reply(`❌ *Command Error*\n\n\`${command.name}\` encountered an unexpected error.\n_${execErr.message || 'Unknown error'}_\n\n_If this keeps happening, contact the bot owner._`);
+      await m.reply(getRandomResponse('exec_error', command.name, execErr.message || 'Unknown error'));
     } catch (_) {}
   } finally {
     // Stop "composing" presence regardless of success/failure

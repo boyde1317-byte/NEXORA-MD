@@ -1,5 +1,6 @@
 import brand from '../../config/brand.js';
 import layoutConfig from '../../config/layout.js';
+import { toSmallcaps } from '../lib/smallcaps.js';
 
 export const footerManager = {
   getStyle() {
@@ -14,14 +15,14 @@ export const footerManager = {
     const style = customStyle || this.getStyle();
     switch (style) {
       case 'minimal':
-        return `Powered by ${brand.core}`;
+        return `${toSmallcaps('Powered by')} ${toSmallcaps(brand.core)}`;
       case 'professional':
       case 'ornate':
-        return `© ${brand.name} Framework`;
+        return `© ${toSmallcaps(brand.name + ' Framework')}`;
       case 'clean':
       case 'default':
       default:
-        return `${brand.name} • ${brand.signature}`;
+        return `${toSmallcaps(brand.name)} • ${toSmallcaps(brand.signature)}`;
     }
   }
 };
