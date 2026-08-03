@@ -4,9 +4,14 @@ import { fileURLToPath } from 'url';
 import { config } from '../../config/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname  = path.dirname(__filename);
 
 const DB_PATH = path.resolve(process.cwd(), config.dbPath);
+
+// ── Auto-save interval: flush to disk every 60s even if no explicit save
+//    is triggered. Prevents data loss if the process is SIGKILL'd (e.g.
+//    Docker OOM) without hitting the graceful-shutdown handler.
+const AUTO_SAVE_INTERVAL_MS = 60_000;
 
 function ensureDir(filePath) {
   const dir = path.dirname(filePath);
@@ -64,6 +69,8 @@ let _data = loadDb();
 
 export const db = {
   data: _data,
+  _saveTimeout: null,
+  _autoSaveInterval: null,
 
   get(key) {
     return _data[key];
@@ -127,12 +134,42 @@ export const db = {
     this.save();
   },
 
-  saveSync() { saveDb(_data); },
-  save() {
-    
-    if (this._saveTimeout) clearTimeout(this._saveTimeout);
-    this._saveTimeout = setTimeout(() => saveDb(_data), 2000);
+  saveSync() {
+    // Cancel any pending debounced save before flushing synchronously
+    if (this._saveTimeout) {
+      clearTimeout(this._saveTimeout);
+      this._saveTimeout = null;
+    }
+    saveDb(_data);
+  },
 
+  save() {
+    // Debounced write — coalesces rapid successive mutations into a single
+    // disk write. The auto-save interval acts as a safety net so even if
+    // the debounce is never triggered, data still hits disk every 60s.
+    if (this._saveTimeout) clearTimeout(this._saveTimeout);
+    this._saveTimeout = setTimeout(() => {
+      this._saveTimeout = null;
+      saveDb(_data);
+    }, 2000);
+  },
+
+  /** Start the periodic auto-save safety net. Call once on startup. */
+  startAutoSave() {
+    if (this._autoSaveInterval) return;
+    this._autoSaveInterval = setInterval(() => {
+      saveDb(_data);
+    }, AUTO_SAVE_INTERVAL_MS);
+    // Don't keep the process alive just for auto-save
+    this._autoSaveInterval.unref();
+  },
+
+  /** Stop the periodic auto-save (called during graceful shutdown). */
+  stopAutoSave() {
+    if (this._autoSaveInterval) {
+      clearInterval(this._autoSaveInterval);
+      this._autoSaveInterval = null;
+    }
   },
 
   reload() {
@@ -140,5 +177,8 @@ export const db = {
     this.data = _data;
   }
 };
+
+// Start the auto-save safety net on module load
+db.startAutoSave();
 
 export default db;

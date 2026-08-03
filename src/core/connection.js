@@ -27,6 +27,14 @@ let reconnectAttempts = 0;
 const BASE_DELAY_MS   = 5000;
 const MAX_DELAY_MS    = 60000;
 
+// ── Memory bounds for the in-memory message store ──────────────────────────
+// Each chat gets up to MAX_MSGS_PER_CHAT cached messages. The total number of
+// distinct chats is capped at MAX_TRACKED_CHATS — when exceeded, the oldest
+// (least recently created) chat is evicted. This prevents unbounded memory
+// growth in long-running bots that handle thousands of groups.
+const MAX_MSGS_PER_CHAT = 500;
+const MAX_TRACKED_CHATS = 2000;
+
 /**
  * Exponential backoff delay: 5s, 10s, 20s, 40s … capped at 60s
  */
@@ -73,8 +81,9 @@ export async function connectToWhatsApp() {
     // In-memory message store for retries and quoted message decryption.
     // The previous empty-conversation fallback caused decryption failures
     // when WhatsApp retried a message or needed the original content for a
-    // quoted reply. We cache the last 500 messages per chat to keep memory
-    // bounded while covering the vast majority of retry scenarios.
+    // quoted reply. We cache the last MAX_MSGS_PER_CHAT messages per chat,
+    // and cap the total number of tracked chats to prevent unbounded memory
+    // growth in long-running bots with many groups.
     messageStore: new Map(),
     getMessage: async (key) => {
       const chat = key?.remoteJid;
@@ -93,7 +102,7 @@ export async function connectToWhatsApp() {
   // ── Pairing code request ──────────────────────────────────────────────────
   if (config.pairing.enabled && !sock.authState.creds.me) {
     if (!config.pairing.phoneNumber) {
-      console.error('[CONNECTION] Pairing mode enabled but no phoneNumber set in config/index.js');
+      console.error('[CONNECTION] Pairing mode enabled but no phoneNumber set in .env (PAIRING_PHONE)');
     } else {
       setTimeout(async () => {
         try {
@@ -205,13 +214,23 @@ export async function connectToWhatsApp() {
       try {
         const chat = rawMessage?.key?.remoteJid;
         if (chat && rawMessage?.key?.id) {
-          if (!sock.opts.messageStore.has(chat)) {
-            sock.opts.messageStore.set(chat, new Map());
+          const store = sock.opts.messageStore;
+
+          // Evict oldest chat if we've hit the max tracked chats limit
+          if (!store.has(chat) && store.size >= MAX_TRACKED_CHATS) {
+            const oldestChat = store.keys().next().value;
+            store.delete(oldestChat);
           }
-          sock.opts.messageStore.get(chat).set(rawMessage.key.id, rawMessage);
-          // Bound memory: keep last 500 messages per chat
-          const chatMsgs = sock.opts.messageStore.get(chat);
-          if (chatMsgs.size > 500) {
+
+          if (!store.has(chat)) {
+            store.set(chat, new Map());
+          }
+
+          const chatMsgs = store.get(chat);
+          chatMsgs.set(rawMessage.key.id, rawMessage);
+
+          // Bound memory: keep last MAX_MSGS_PER_CHAT messages per chat
+          if (chatMsgs.size > MAX_MSGS_PER_CHAT) {
             const firstKey = chatMsgs.keys().next().value;
             chatMsgs.delete(firstKey);
           }
@@ -263,6 +282,7 @@ export async function connectToWhatsApp() {
     shuttingDown = true;
     console.log(`\n[SHUTDOWN] Received ${signal}, saving database...`);
     try {
+      db.stopAutoSave();
       db.saveSync();
       console.log('[SHUTDOWN] Database saved. Goodbye.');
     } catch (err) {

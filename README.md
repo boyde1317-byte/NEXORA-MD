@@ -6,21 +6,21 @@
 │          ███╗   ██╗███████╗██╗  ██╗ ██████╗ ██████╗ █████╗         │
 │          ████╗  ██║██╔════╝╚██╗██╔╝██╔═══██╗██╔══██╗██╔══██╗        │
 │          ██╔██╗ ██║█████╗   ╚███╔╝ ██║   ██║██████╔╝███████║        │
-│          ██║╚██╗██║██╔══╝   ██╔██╗ ██║   ██║██╔══██╗██╔══██║        │
+│          ██║╚██╗██║██╔══╝   ██╔██╗ ██║   ██║██╔══██║██╔══██║        │
 │          ██║ ╚████║███████╗██╔╝ ██╗╚██████╔╝██║  ██║██║  ██║        │
 │          ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝        │
 │                                                     │
 │          Next Generation WhatsApp Multi-Device Framework            │
-│                       By Aizen • v1.0.0                             │
+│                       By Aizen • v1.1.0                             │
 │                                                     │
 ╰─────────────────────────────────────────────────────╯
 ```
 
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
+[![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![WhatsApp](https://img.shields.io/badge/WhatsApp-Multi--Device-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://www.whatsapp.com)
 [![Baileys](https://img.shields.io/badge/Baileys-Fork-FF6B35?style=for-the-badge)](https://github.com/boyde1317-byte/baileys)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.0-purple?style=for-the-badge)](package.json)
+[![Version](https://img.shields.io/badge/Version-1.1.0-purple?style=for-the-badge)](package.json)
 
 </div>
 
@@ -42,7 +42,9 @@
 - **Plugin hot-reload** — reload all commands at runtime without restarting the process
 - **Exponential reconnect backoff** — 5s → 10s → 20s → 40s → 60s cap, with smart detection of fatal vs. recoverable disconnects
 - **Graceful shutdown** — SIGTERM/SIGINT save the database, drain the HTTP server, and close the WA socket cleanly before exit
+- **Auto-save safety net** — database flushes every 60s even without explicit saves, preventing data loss on hard kills
 - **Pairing code & QR code** — configurable per deployment; no phone scan required in headless environments
+- **Bounded message cache** — max 500 messages per chat, max 2,000 tracked chats, preventing unbounded memory growth
 
 ### 🎨 Nexora Flow — Interactive Menu System
 13 fully distinct menu presentation styles, auto-selected based on what the receiving WhatsApp client supports:
@@ -88,6 +90,9 @@
 
 ### 🗃️ Nexora Guard — Data & Permissions
 - **Flat-file JSON database** — zero external dependencies; persists users, groups, and settings
+- **Atomic writes** — temp-file + rename ensures no partial writes corrupt the database
+- **Automatic backup** — `.bak` file maintained alongside the primary database
+- **Auto-save safety net** — flushes to disk every 60s even without explicit triggers
 - **Ban system** — banned users are silently blocked from all commands
 - **Owner-only mode / public mode** — toggle with a single config flag
 - **Per-command permission levels**: `owner`, `groupOnly`, `admin` (sender), `botAdmin` (bot itself)
@@ -167,7 +172,7 @@ Commands work with any of the configured prefixes: `!`, `.`, `/`
 ## 🛠️ Installation
 
 ### Prerequisites
-- **Node.js 18+** (check: `node --version`)
+- **Node.js 20+** (check: `node --version`)
 - **npm 8+** (check: `npm --version`)
 - A **WhatsApp account** to link as the bot number
 
@@ -183,30 +188,38 @@ npm install
 
 ### Configure
 
-Open `config/index.js` and update:
+All sensitive configuration is done via environment variables. Copy the example file and fill in your values:
 
-```js
-export const config = {
-  owner: ["YOUR_PHONE_NUMBER"],      // e.g. "447911123456" (no +, no spaces)
-  prefix: ["!", ".", "/"],           // command trigger characters
-  pairing: {
-    enabled: true,                   // true = pairing code, false = QR terminal
-    phoneNumber: "YOUR_PHONE_NUMBER" // must match owner number
-  },
-  publicMode: true,                  // false = owner-only bot
-};
+```bash
+cp .env.example .env
 ```
 
-And update `config/brand.js` with your bot identity:
+Then edit `.env`:
+
+```env
+# Your phone number(s) — comma-separated, country code, no + or spaces
+OWNER_NUMBERS="447911123456"
+PAIRING_PHONE="447911123456"
+
+# Bot owner display name
+OWNER_NAME="YourName"
+
+# AI (optional — enables image generation)
+GEMINI_API_KEY="your_gemini_api_key"
+```
+
+Configure your bot identity in `config/brand.js`:
 
 ```js
 export default {
   name: "NEXORA MD",
   creator: "YourName",
-  version: "1.0.0",
+  version: "1.1.0",
   description: "Your bot description",
 };
 ```
+
+Adjust command settings in `config/index.js` (prefix, mode, etc.).
 
 ### Start
 
@@ -231,7 +244,7 @@ Once linked, the session is saved to `./session/` and the bot reconnects automat
 ### Replit
 
 1. Fork or import this repo into your Replit workspace.
-2. Add `GEMINI_API_KEY` to **Secrets** if you want AI asset generation.
+2. Add `GEMINI_API_KEY`, `OWNER_NUMBERS`, and `PAIRING_PHONE` to **Secrets**.
 3. The configured workflow (`node server.js`) starts automatically.
 4. The web preview serves a status page at `/`; health endpoint at `/api/health`.
 
@@ -239,8 +252,28 @@ Once linked, the session is saved to `./session/` and the bot reconnects automat
 
 1. Connect your GitHub repo.
 2. Set the start command to `npm start`.
-3. Add environment variables: `GEMINI_API_KEY` (optional), `GENERATE_ASSETS=false`.
-4. **Session note:** Railway/Render use ephemeral filesystems — the `session/` directory is wiped on every redeploy. Re-pair after each deploy, or mount a persistent disk and point `sessionPath` in `config/index.js` to it.
+3. Add environment variables: `OWNER_NUMBERS`, `PAIRING_PHONE`, `GEMINI_API_KEY` (optional), `GENERATE_ASSETS=false`.
+4. Set `NODE_ENV=production` for optimized caching.
+5. **Session note:** Railway/Render use ephemeral filesystems — the `session/` directory is wiped on every redeploy. Re-pair after each deploy, or mount a persistent disk and point `sessionPath` in `config/index.js` to it.
+
+### Docker
+
+```bash
+# Copy and configure environment
+cp .env.example .env
+# Edit .env with your OWNER_NUMBERS, PAIRING_PHONE, etc.
+
+# Build and run
+docker compose up -d
+
+# Check health
+curl http://localhost:3000/api/health
+
+# View logs
+docker compose logs -f nexora-md
+```
+
+The Dockerfile runs as a non-root user with a built-in health check. Session data and database are persisted via Docker volumes.
 
 ### Pterodactyl
 
@@ -289,9 +322,14 @@ Create a `.env` file in the root directory (see `.env.example`):
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
+| `OWNER_NUMBERS` | **Yes** | — | Comma-separated owner phone numbers (country code, no +) |
+| `PAIRING_PHONE` | **Yes** | — | Phone number for WhatsApp pairing code |
+| `OWNER_NAME` | Optional | `Bot Owner` | Owner display name |
 | `GEMINI_API_KEY` | Optional | — | Enables AI image generation and asset creation |
 | `GENERATE_ASSETS` | Optional | `false` | Set to `true` to generate AI assets on startup |
+| `CHANNEL_JID` | Optional | — | WhatsApp channel JID for newsletter menu type |
 | `PORT` | Optional | `3000` | Web server port (auto-set on Railway/Render/Replit) |
+| `NODE_ENV` | Optional | — | Set to `production` for optimized caching |
 
 ---
 
@@ -319,7 +357,7 @@ NEXORA-MD/
 │   │   ├── message.js         # Full command dispatch pipeline
 │   │   └── group.js           # Welcome/goodbye event handler
 │   │
-│   ├── plugins/               # 35 command modules (one file per command)
+│   ├── plugins/               # 35+ command modules (one file per command)
 │   │
 │   ├── menu/
 │   │   ├── index.js           # Registers all 13 menu renderers
@@ -461,15 +499,20 @@ The bot exposes two HTTP endpoints:
 | Endpoint | Description |
 |----------|-------------|
 | `GET /` | HTML status page with bot branding |
-| `GET /api/health` | JSON: `{ status, uptime, botActive, botUser }` |
+| `GET /api/health` | JSON: `{ status, uptime, botActive, botConnected, memory, pluginsLoaded }` |
+
+The health endpoint includes memory usage (RSS, heap used, heap total) and plugin count for monitoring — useful for spotting memory leaks and misconfigured deployments.
 
 ---
 
 ## 🛡️ Security Notes
 
-- The `!eval` command executes arbitrary JavaScript. It is hard-restricted to the owner number(s) in `config.owner`. Do not add untrusted numbers to the owner list.
-- Session files in `session/` contain your WhatsApp credentials. Keep them private and add `session/` to your `.gitignore` (already configured).
-- API keys (`GEMINI_API_KEY`) should always be set as environment variables or Replit Secrets — never hardcoded in config files.
+- **Owner numbers are env-only** — `OWNER_NUMBERS` must be set in `.env`. No hardcoded phone numbers in source code.
+- **Sandboxed eval** — the `!eval` command runs in a `vm.Context` with a 10s timeout and only non-secret env vars exposed. It is hard-restricted to the owner number(s).
+- **Session files** in `session/` contain your WhatsApp credentials. Keep them private — `session/` is in `.gitignore`.
+- **API keys** (`GEMINI_API_KEY`) should always be set as environment variables — never hardcoded in config files.
+- **SSRF protection** — all outbound HTTP requests (downloader, web plugins) block private/loopback/metadata IPs.
+- **Rate limiting** — the Express server applies rate limits to all API routes and a stricter limit to the health endpoint.
 
 ---
 
@@ -479,11 +522,14 @@ The bot exposes two HTTP endpoints:
 |---------|---------|
 | `baileys` (fork) | WhatsApp Multi-Device protocol |
 | `express` | Web server / health endpoint |
+| `helmet` | HTTP security headers |
+| `express-rate-limit` | API rate limiting |
 | `dotenv` | Environment variable loading |
 | `wa-sticker-formatter` | Sticker creation from image/video |
 | `qrcode-terminal` | QR code display in headless terminals |
 | `pino` | Silent structured logger for Baileys |
-| `@google/generative-ai` | Gemini AI image generation |
+| `sharp` | Image processing |
+| `@google/genai` | Gemini AI image generation |
 
 ---
 
@@ -501,7 +547,7 @@ The bot exposes two HTTP endpoints:
 │  Security   : Nexora Guard      │
 │  AI Layer   : Nexora Intelligence│
 │                                 │
-│  Version    : 1.0.0             │
+│  Version    : 1.1.0             │
 │  Signature  : By Aizen          │
 ╰─────────────────────────────────╯
 ```

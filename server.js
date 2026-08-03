@@ -46,7 +46,12 @@ let httpServer = null;
 function gracefulShutdown(signal) {
   console.log(`\n[SHUTDOWN] ${signal} received. Closing connections and saving state...`);
 
-  // 1. Persist the database immediately
+  // 1. Stop the auto-save interval
+  try {
+    db.stopAutoSave();
+  } catch (_) {}
+
+  // 2. Persist the database immediately
   try {
     db.saveSync();
     console.log('[SHUTDOWN] Database saved.');
@@ -54,7 +59,7 @@ function gracefulShutdown(signal) {
     console.error('[SHUTDOWN] Failed to save database:', err.message);
   }
 
-  // 2. Tear down the Baileys socket if open
+  // 3. Tear down the Baileys socket if open
   try {
     if (client.socket) {
       client.socket.end(undefined);
@@ -62,7 +67,7 @@ function gracefulShutdown(signal) {
     }
   } catch (_) {}
 
-  // 3. Stop the HTTP server
+  // 4. Stop the HTTP server
   if (httpServer) {
     httpServer.close(() => {
       console.log('[SHUTDOWN] HTTP server closed. Goodbye.');
@@ -151,12 +156,22 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
+  const memUsage = process.memoryUsage();
   res.json({
     status: 'healthy',
     uptime: process.uptime(),
     botActive: !!client.socket,
     // Don't expose the bot's raw phone number to unauthenticated callers
-    botConnected: client.socket?.user ? true : false
+    botConnected: client.socket?.user ? true : false,
+    // Memory snapshot for monitoring — useful for spotting leaks in
+    // long-running deployments without needing an external APM.
+    memory: {
+      rssMb: Math.round(memUsage.rss / 1024 / 1024),
+      heapUsedMb: Math.round(memUsage.heapUsed / 1024 / 1024),
+      heapTotalMb: Math.round(memUsage.heapTotal / 1024 / 1024),
+    },
+    // Plugin load status — surfaces misconfigured deployments early
+    pluginsLoaded: client.commands.size,
   });
 });
 
