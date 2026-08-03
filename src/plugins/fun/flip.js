@@ -29,7 +29,7 @@ export default {
       if (win) {
         db.setUser(m.sender, { coins: coins + betAmount });
         await mixedCard(sock, m.from, {
-          text: `✦ *COIN FLIP — BET* ✦\n\n🪙 Result: *${outcome}*\nYour guess: ${normalizedGuess}\n\n✅ You won!\n🪙 +${betAmount} coins (${(coins + betAmount).toLocaleString()} total)`,
+          text: `✦ *COIN FLIP — BET* ✦\n\n🪙 Result: *${outcome}*\nYour guess: ${normalizedGuess}\n\n✅ You won! Lady luck likes you.\n🪙 +${betAmount} coins (${(coins + betAmount).toLocaleString()} total)`,
           footer: 'NEXORA Casino',
         }, [
           { kind: 'action', label: '🔄 Flip Again', cmd: `${p}flip ${guess} ${betAmount}` },
@@ -38,7 +38,7 @@ export default {
       } else {
         db.setUser(m.sender, { coins: coins - betAmount });
         await mixedCard(sock, m.from, {
-          text: `✦ *COIN FLIP — BET* ✦\n\n🪙 Result: *${outcome}*\nYour guess: ${normalizedGuess}\n\n❌ You lost!\n🪙 -${betAmount} coins (${(coins - betAmount).toLocaleString()} total)`,
+          text: `✦ *COIN FLIP — BET* ✦\n\n🪙 Result: *${outcome}*\nYour guess: ${normalizedGuess}\n\n❌ You lost! The coin giveth, the coin taketh away.\n🪙 -${betAmount} coins (${(coins - betAmount).toLocaleString()} total)`,
           footer: 'NEXORA Casino',
         }, [
           { kind: 'action', label: '🔄 Try Again', cmd: `${p}flip ${guess} ${betAmount}` },
@@ -51,7 +51,7 @@ export default {
 
     // ── Normal flip (no bet) ────────────────────────────────────────────
     await mixedCard(sock, m.from, {
-      text: `✦ *COIN FLIP* ✦\n\n🪙 The coin landed on: *${outcome}*`,
+      text: `✦ *COIN FLIP* ✦\n\n🪙 The coin landed on: *${outcome}*\n${outcome === 'Heads' ? 'Heads I win, tails you lose. Just kidding. ☕' : 'Tails never fails. ⚡'}`,
       footer: 'Powered by NEXORA'
     }, [
       { kind: 'action', label: '🔄 Flip Again', cmd: `${p}flip` },

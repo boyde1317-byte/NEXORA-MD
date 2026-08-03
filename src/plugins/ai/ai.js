@@ -32,12 +32,12 @@ export default {
     const sub = args[0]?.toLowerCase();
     if (sub === 'reset' || sub === 'clear') {
       clearConversation(m.sender);
-      return await m.reply.success('🧹 Conversation context cleared. Starting fresh!');
+      return await m.reply.success('🧹 Context wiped. Fresh start — ask me anything. ✦');
     }
 
     if (!prompt) {
       return await m.reply.info(
-        `Usage: \`${p}ai <message>\`\n\nExample: \`${p}ai explain how photosynthesis works\`\n\n\`${p}ai reset\` — clear conversation context`,
+        `Usage: \`${p}ai <message>\`\n\nExamples:\n• \`${p}ai explain quantum computing simply\`\n• \`${p}ai write a haiku about coffee\`\n• \`${p}ai debug this code\` (reply to a code block)\n\n\`${p}ai reset\` — wipe context and start fresh`,
         'NEXORA AI'
       );
     }
@@ -58,10 +58,11 @@ export default {
 
           const info = getConversationInfo(m.sender);
           const ctxNote = info.hasContext
-            ? `\n💬 Context: ${info.turns} turn${info.turns !== 1 ? 's' : ''} active`
-            : '';
+            ? `\n💬 Context: ${info.turns} turn${info.turns !== 1 ? 's' : ''} active • I remember our conversation`
+            : `\n💡 No context yet — I'll remember what we discuss`;
+          const depthBadge = info.turns >= 10 ? '🧠 Deep Thinker' : info.turns >= 5 ? '💭 In Conversation' : '✨ Fresh Start';
           await mixedCard(sock, m.from, {
-            text:   `🤖 *What would you like to do next?*${ctxNote}`,
+            text:   `🤖 *What next?*${ctxNote}\n📊 ${depthBadge}`,
             footer: 'NEXORA Intelligence • Powered by Gemini',
           }, [
             { kind: 'action', label: '🔁 Ask Again',      cmd: `${p}ai ${shortPrompt}` },

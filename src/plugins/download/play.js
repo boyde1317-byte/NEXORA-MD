@@ -31,9 +31,11 @@ export default {
           if (!data.mp3) throw new Error('No audio stream available for that video.');
           await progress.done(`✅ ${data.title || 'Audio downloaded'}!`);
 
-          const meta = [
+          const metaParts = [
             `🎵 *${data.title || 'YouTube Audio'}*`,
             data.author ? `👤 ${data.author}` : null,
+            data.duration ? `⏱️ ${data.duration}` : null,
+            data.views ? `👁️ ${data.views}` : null,
           ].filter(Boolean).join('\n');
 
           await sock.sendMessage(m.from, {
@@ -41,11 +43,12 @@ export default {
             mimetype: 'audio/mpeg',
           }, { quoted: m });
           return await mixedCard(sock, m.from, {
-            text: meta,
+            text: metaParts,
             footer: 'NEXORA-MD • YouTube Audio',
           }, [
             { kind: 'url',    label: '▶️ Watch on YouTube', url: query },
             { kind: 'action', label: '🎬 Get Video',        cmd: `${prefix}ytmp4 ${query}` },
+            { kind: 'action', label: '📝 Get Lyrics',       cmd: `${prefix}lyrics ${data.title || query}` },
             { kind: 'action', label: '🎵 Play Another',     cmd: `${prefix}play` },
           ], { quoted: m });
         } catch (err) {
@@ -73,7 +76,7 @@ export default {
 
         try {
           await baileysBridge.sendCarousel(sock, m.from, {
-            text: `🔎 *Top results for:* "${query}"\nTap a card's button to download.`,
+            text: `🔎 *Top results for:* "${query}"\nFound ${results.length} tracks — tap a card to download. ✦`,
             cards,
           }, { quoted: m });
         } catch (err) {

@@ -18,9 +18,15 @@ export default {
     
     const chosen = options[Math.floor(Math.random() * options.length)];
     
+    const commentary = options.length === 2
+      ? `Coin flip energy, but more thoughtful. ☕`
+      : options.length <= 4
+      ? `Narrowed it down. You're welcome. ✦`
+      : `So many choices. I've made the call. ⚡`;
+
     await mixedCard(sock, m.from, {
-      text: `✦ *DECISION* ✦\n\nOptions: ${options.join(', ')}\n\nI choose: *${chosen}*`,
-      footer: 'Powered by NEXORA'
+      text: `✦ *DECISION* ✦\n\nOptions: ${options.join(', ')}\n\nI choose: *${chosen}*\n${commentary}`,
+      footer: 'NEXORA Decision Engine'
     }, [
       { kind: 'action', label: '🔄 Decide Again', cmd: `${prefix}choose ${input}` }
     ], { quoted: m });

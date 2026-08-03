@@ -91,7 +91,7 @@ export default {
 
         if (isSelf) {
           return await mixedCard(sock, m.from, {
-            text:   '📊 What would you like to do next?',
+            text:   `📊 What's next on the grind? ${badge} ${streak > 0 ? '🔥' : '✦'}`,
             footer: 'NEXORA Economy',
           }, [
             { kind: 'action', label: '🪙 Claim Daily',      cmd: `${p}daily` },

@@ -40,6 +40,22 @@ async function getWeather(lat, lon) {
   return await res.json();
 }
 
+
+/**
+ * Comfort index — based on temperature + humidity.
+ * Returns a short human-readable comfort label + clothing suggestion.
+ */
+function getComfortIndex(tempC, humidity) {
+  const feels = tempC;
+  if (feels < 0)       return { label: '🥶 Freezing',     tip: 'Heavy coat, gloves, scarf, layers.' };
+  if (feels < 10)      return { label: '🧥 Very Cold',    tip: 'Warm jacket, layers, don\'t forget the scarf.' };
+  if (feels < 18)      return { label: 'Cool',           tip: 'Light jacket or sweater.' };
+  if (feels < 25)      return { label: '😊 Comfortable',   tip: 'T-shirt weather — maybe a light layer.' };
+  if (feels < 30)      return { label: '☀️ Warm',          tip: 'Shorts and tees. Stay hydrated.' };
+  if (feels < 35)      return { label: '🥵 Hot',           tip: 'Loose clothing, shade, lots of water.' };
+  return { label: '🔥 Extreme Heat', tip: 'Stay indoors. AC, cold water, avoid exertion.' };
+}
+
 export default {
   name: 'weather',
   aliases: ['wx', 'forecast'],
@@ -90,7 +106,7 @@ export default {
             }, { quoted: m });
 
             await actionCard(sock, m.from, {
-              text: `Currently: ${desc} • ${Math.round(cur.temperature_2m)}°C (feels like ${Math.round(cur.apparent_temperature)}°C)`,
+              text: `Currently: ${desc} • ${Math.round(cur.temperature_2m)}°C (feels like ${Math.round(cur.apparent_temperature)}°C)\n${getComfortIndex(Math.round(cur.apparent_temperature), cur.relative_humidity_2m).label} — ${getComfortIndex(Math.round(cur.apparent_temperature), cur.relative_humidity_2m).tip}`,
               footer: 'NEXORA Weather',
             }, [
               { label: '🔍 Check Another City', cmd: `${p}weather` },
@@ -101,7 +117,8 @@ export default {
           }
         } else {
           // ── Current weather ──────────────────────────────────────────────
-          const text = `🌤️ *WEATHER — ${geo.name}, ${geo.country || ''}*\n\n${desc}\n🌡️ Temperature: ${Math.round(cur.temperature_2m)}°C (feels like ${Math.round(cur.apparent_temperature)}°C)\n💧 Humidity: ${cur.relative_humidity_2m}%\n💨 Wind: ${Math.round(cur.wind_speed_10m)} km/h\n📍 ${geo.latitude.toFixed(2)}, ${geo.longitude.toFixed(2)}`;
+          const comfort = getComfortIndex(Math.round(cur.apparent_temperature), cur.relative_humidity_2m);
+          const text = `🌤️ *WEATHER — ${geo.name}, ${geo.country || ''}*\n\n${desc}\n🌡️ Temperature: ${Math.round(cur.temperature_2m)}°C (feels like ${Math.round(cur.apparent_temperature)}°C)\n💧 Humidity: ${cur.relative_humidity_2m}%\n💨 Wind: ${Math.round(cur.wind_speed_10m)} km/h\n\n${comfort.label} — ${comfort.tip}\n📍 ${geo.latitude.toFixed(2)}, ${geo.longitude.toFixed(2)}`;
 
           try {
             await mixedCard(sock, m.from, {

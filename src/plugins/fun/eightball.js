@@ -12,6 +12,7 @@ import { actionCard } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 
 const ANSWERS = [
+  // Definitive yes
   'It is certain.',
   'Without a doubt.',
   'Yes, definitely.',
@@ -21,17 +22,24 @@ const ANSWERS = [
   'Outlook good.',
   'Signs point to yes.',
   'Yes.',
+  'Absolutely. No question.',
+  // Uncertain
   'Reply hazy, try again.',
   'Ask again later.',
   'Better not tell you now.',
   'Cannot predict now.',
   'Concentrate and ask again.',
+  'Hmm... the vibes are mixed on this one.',
+  'I genuinely cannot decide. Ask me differently.',
+  // Definitive no
   "Don't count on it.",
   'My reply is no.',
   'My sources say no.',
   'Outlook not so good.',
   'Very doubtful.',
   'Absolutely not.',
+  'Hard no on that one.',
+  'Not in a million years.',
 ];
 
 export default {
