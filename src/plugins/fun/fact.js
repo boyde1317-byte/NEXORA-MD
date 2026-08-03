@@ -15,11 +15,13 @@ export default {
         const data = await res.json();
         
         await mixedCard(sock, m.from, {
-          text: `✦ *RANDOM FACT* ✦\n\n☕ ${data.text}`,
-          footer: 'Powered by NEXORA'
+          text: `✦ *DID YOU KNOW?* ✦\n\n🧠 ${data.text}`,
+          footer: 'NEXORA Facts'
         }, [
           { kind: 'copy', label: '📋 Copy', value: data.text },
-          { kind: 'action', label: '🔄 Another Fact', cmd: `${prefix}fact` }
+          { kind: 'action', label: '🔄 Another Fact', cmd: `${prefix}fact` },
+          { kind: 'action', label: '🧠 Trivia Game',   cmd: `${prefix}trivia` },
+          { kind: 'action', label: '💭 Get Advice',    cmd: `${prefix}advice` }
         ], { quoted: m });
       } catch (err) {
         await m.reply.error(`Could not fetch fact: ${err.message}`);

@@ -18,10 +18,12 @@ export default {
         
         await mixedCard(sock, m.from, {
           text: `✦ *INSPIRATION* ✦\n\n${quoteText}`,
-          footer: 'Powered by NEXORA'
+          footer: 'NEXORA Inspiration'
         }, [
           { kind: 'copy', label: '📋 Copy Quote', value: data.quote },
-          { kind: 'action', label: '🔄 Next Quote', cmd: `${prefix}quote` }
+          { kind: 'action', label: '🔄 Next Quote', cmd: `${prefix}quote` },
+          { kind: 'action', label: '💭 Get Advice',  cmd: `${prefix}advice` },
+          { kind: 'action', label: '🧠 Random Fact',  cmd: `${prefix}fact` }
         ], { quoted: m });
       } catch (err) {
         await m.reply.error(`Could not fetch quote: ${err.message}`);

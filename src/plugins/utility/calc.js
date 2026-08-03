@@ -75,8 +75,13 @@ export default {
       const result = safeEval(expr);
       const formatted = Number.isInteger(result) ? result.toString() : result.toFixed(4).replace(/\.?0+$/, '');
 
+      const isInteger = Number.isInteger(result);
+      const commentary = isInteger
+        ? ''
+        : '\n💡 Rounded to 4 decimal places.';
+
       await copyResultCard(sock, m.from, {
-        text: `🧮 *CALCULATOR*\n\nExpression: \`${expr}\`\nResult: *${formatted}*`,
+        text: `🧮 *CALCULATOR*\n\nExpression: \`${expr}\`\nResult: *${formatted}*${commentary}`,
         footer: 'NEXORA Utility',
         copyLabel: '📋 Copy Result',
         copyValue: formatted,

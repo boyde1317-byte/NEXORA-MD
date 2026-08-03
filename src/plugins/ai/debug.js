@@ -33,10 +33,11 @@ export default {
 
         await mixedCard(sock, m.from, {
           text: `🐛 *CODE DEBUGGER*\n\n${reply}`,
-          footer: 'Nexora AI Developer Tools',
+          footer: 'NEXORA AI Developer Tools',
         }, [
           { kind: 'copy',   label: '📋 Copy Response',    value: reply },
           { kind: 'action', label: '✏️ Generate Code',    cmd: `${p}code` },
+          { kind: 'action', label: '📝 Proofread Text',   cmd: `${p}proofread` },
         ], { quoted: m });
       } catch (err) {
         await progress.fail(`Failed to debug code: ${err.message}`);

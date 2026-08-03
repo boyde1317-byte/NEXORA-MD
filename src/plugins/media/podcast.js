@@ -1,5 +1,5 @@
 import { webClient } from '../../lib/webClient.js';
-import { copyResultCard } from '../../lib/interactiveKit.js';
+import { copyResultCard, mixedCard } from '../../lib/interactiveKit.js';
 
 export default {
   name: 'podcast',
@@ -38,6 +38,16 @@ export default {
       }
 
       await sock.sendMessage(m.from, msgOptions, { quoted: m });
+
+      try {
+        await mixedCard(sock, m.from, {
+          text: `🎙️ *${pod.collectionName}* — ${pod.trackCount} episodes available. ✦`,
+          footer: 'NEXORA Media',
+        }, [
+          { kind: 'action', label: '🔍 Search Another', cmd: `${prefix}podcast` },
+          { kind: 'action', label: '🎵 Find Music',      cmd: `${prefix}play` },
+        ], { quoted: m });
+      } catch (_) {}
     } catch (err) {
       await m.reply.error(`Failed to find podcast: ${err.message}`);
     }

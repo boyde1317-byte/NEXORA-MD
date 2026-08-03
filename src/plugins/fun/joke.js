@@ -32,10 +32,12 @@ export default {
 
         await mixedCard(sock, m.from, {
           text,
-          footer: 'Powered by NEXORA'
+          footer: 'NEXORA Jokes'
         }, [
           { kind: 'copy', label: '📋 Copy Joke', value: data.type === 'twopart' ? `${data.setup}\n\n${data.delivery}` : data.joke },
-          { kind: 'action', label: '🔄 Next Joke', cmd: `${prefix}joke` }
+          { kind: 'action', label: '🔄 Next Joke', cmd: `${prefix}joke` },
+          { kind: 'action', label: '🎲 Programming', cmd: `${prefix}joke programming` },
+          { kind: 'action', label: '👻 Spooky',       cmd: `${prefix}joke spooky` }
         ], { quoted: m });
       } catch (err) {
         await m.reply.error(err.message);

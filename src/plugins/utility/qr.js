@@ -1,4 +1,5 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
+import { mixedCard } from '../../lib/interactiveKit.js';
 
 export default {
   name: 'qr',
@@ -30,6 +31,16 @@ export default {
         image: buffer,
         caption: `✅ *QR Code Generated*\n\n📄 Content: ${text.length > 80 ? text.slice(0, 77) + '...' : text}`,
       }, { quoted: m });
+
+      try {
+        await mixedCard(sock, m.from, {
+          text: `✅ QR code ready. Scan away. ✦`,
+          footer: 'NEXORA Utility',
+        }, [
+          { kind: 'action', label: '🔄 Another QR',  cmd: `${p}qr` },
+          { kind: 'action', label: '🔗 Shorten URL',  cmd: `${p}tinyurl` },
+        ], { quoted: m });
+      } catch (_) {}
     });
   }
 };

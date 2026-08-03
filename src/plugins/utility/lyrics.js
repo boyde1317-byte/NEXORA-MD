@@ -39,7 +39,9 @@ export default {
         const searchUrl = `https://genius.com/search?q=${encodeURIComponent(`${artist.trim()} ${title}`)}`;
         try {
           await actionCardWithAd(sock, m.from, { text: trimmed }, [
-            { label: '🎵 Search Another', cmd: `${p}lyrics` },
+            { label: '🎵 Play This Song', cmd: `${p}play ${artist.trim()} ${title}` },
+          { label: '🎵 Search Another', cmd: `${p}lyrics` },
+          { label: '🎤 Artist Info',     cmd: `${p}artist ${artist.trim()}` },
           ], {
             title:    `🎵 ${title.toUpperCase()}`,
             body:     `by ${artist.trim()}`,

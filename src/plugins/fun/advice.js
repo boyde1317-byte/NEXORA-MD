@@ -16,11 +16,13 @@ export default {
         const adviceText = data.slip.advice;
         
         await mixedCard(sock, m.from, {
-          text: `✦ *ADVICE* ✦\n\n☕ ${adviceText}`,
+          text: `✦ *ADVICE* ✦\n\n💭 ${adviceText}`,
           footer: `Advice #${data.slip.id}`
         }, [
           { kind: 'copy', label: '📋 Copy', value: adviceText },
-          { kind: 'action', label: '🔄 Another Tip', cmd: `${prefix}advice` }
+          { kind: 'action', label: '🔄 Another Tip', cmd: `${prefix}advice` },
+          { kind: 'action', label: '🎲 Random Fact', cmd: `${prefix}fact` },
+          { kind: 'action', label: '💬 Inspiration',  cmd: `${prefix}quote` }
         ], { quoted: m });
       } catch (err) {
         await m.reply.error(`Could not fetch advice: ${err.message}`);

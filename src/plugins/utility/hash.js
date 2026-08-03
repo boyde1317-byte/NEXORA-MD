@@ -21,7 +21,7 @@ export default {
     const sha1 = crypto.createHash('sha1').update(text).digest('hex');
     const sha256 = crypto.createHash('sha256').update(text).digest('hex');
 
-    const resultText = `🔐 *HASH GENERATOR*\n\n*MD5:*\n${md5}\n\n*SHA1:*\n${sha1}\n\n*SHA256:*\n${sha256}`;
+    const resultText = `🔐 *HASH GENERATOR*\n\nInput: \`${text.length > 60 ? text.slice(0, 57) + '...' : text}\`\n\n*MD5:*\n${md5}\n\n*SHA1:*\n${sha1}\n\n*SHA256:*\n${sha256}`;
 
     await copyResultCard(sock, m.from, {
       text: resultText,

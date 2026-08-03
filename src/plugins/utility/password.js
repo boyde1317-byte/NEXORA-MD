@@ -20,9 +20,19 @@ export default {
       password += chars[randomBytes[i] % chars.length];
     }
     
+    // Simple strength meter
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    const hasSpecial = /[^A-Za-z0-9]/.test(password);
+    const variety = [hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length;
+    const strength = length >= 16 && variety === 4 ? '💪 Strong'
+      : length >= 12 && variety >= 3 ? '✅ Good'
+      : '⚠️ Fair — consider a longer password';
+
     await copyResultCard(sock, m.from, {
-      text: `🔑 *SECURE PASSWORD*\n\nLength: ${length}\n\n*${password}*`,
-      footer: 'Utility Tools',
+      text: `🔑 *SECURE PASSWORD*\n\nLength: ${length} • Strength: ${strength}\n\n*${password}*`,
+      footer: 'NEXORA Utility',
       copyLabel: '📋 Copy Password',
       copyValue: password
     }, { quoted: m });

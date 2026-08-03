@@ -1,5 +1,5 @@
 import { Providers, webClient } from '../../lib/webClient.js';
-import { copyResultCard } from '../../lib/interactiveKit.js';
+import { copyResultCard, mixedCard } from '../../lib/interactiveKit.js';
 
 export default {
   name: 'movie',
@@ -24,12 +24,17 @@ export default {
         throw new Error(data.Error);
       }
 
+      const ratings = data.Ratings
+        ? data.Ratings.map(r => `${r.Source === 'Internet Movie Database' ? 'IMDb' : r.Source}: ${r.Value}`).join(' | ')
+        : `IMDb: ${data.imdbRating}/10`;
+
       const text = `🎬 *${data.Title} (${data.Year})*\n\n` +
-        `*Rating:* ⭐ ${data.imdbRating} | ⏱️ ${data.Runtime}\n` +
-        `*Genre:* ${data.Genre}\n` +
-        `*Director:* ${data.Director}\n` +
-        `*Actors:* ${data.Actors}\n\n` +
-        `*Plot:* ${data.Plot}`;
+        `⭐ ${data.imdbRating}/10 | ⏱️ ${data.Runtime} | 📅 ${data.Released}\n` +
+        `🎭 ${data.Genre}\n` +
+        `🎬 Dir: ${data.Director}\n` +
+        `🌟 Cast: ${data.Actors}\n` +
+        `🏆 ${data.Awards !== 'N/A' ? data.Awards : 'No awards listed'}\n\n` +
+        `${data.Plot}`;
 
       let msgOptions = { text };
       if (data.Poster && data.Poster !== 'N/A') {
@@ -40,6 +45,17 @@ export default {
       }
 
       await sock.sendMessage(m.from, msgOptions, { quoted: m });
+
+      try {
+        await mixedCard(sock, m.from, {
+          text: `🎬 Found *${data.Title}*. Want more?`,
+          footer: 'NEXORA Media',
+        }, [
+          { kind: 'action', label: '🎵 Find Soundtrack',  cmd: `${prefix}play ${data.Title} soundtrack` },
+          { kind: 'action', label: '🎬 Another Movie',   cmd: `${prefix}movie` },
+          { kind: 'action', label: '📺 Search TV',       cmd: `${prefix}movie` },
+        ], { quoted: m });
+      } catch (_) {}
     } catch (err) {
       await m.reply.error(`Failed to find movie: ${err.message}`);
     }

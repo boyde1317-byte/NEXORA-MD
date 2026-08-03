@@ -34,6 +34,8 @@ _Tap the thumbnail to read the full Wikipedia article._`,
         footer: 'Wikipedia • NEXORA',
       }, [
         { label: '🔍 Search Another', cmd: `${prefix}wiki` },
+        { label: '🤖 Ask AI More',     cmd: `${prefix}ai Tell me more about ${result.title}` },
+        { label: '🌐 Translate',       cmd: `${prefix}translate` },
       ], {
         title:    `📖 ${result.title}`,
         body:     'Wikipedia Article',

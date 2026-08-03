@@ -32,11 +32,12 @@ export default {
         await progress.done();
 
         await mixedCard(sock, m.from, {
-          text: `✅ *PROOFREAD TEXT*\n\n${reply}`,
-          footer: 'Nexora AI Proofreader',
+          text: `✅ *PROOFREAD TEXT*\n\n${reply}\n\n_Polished. Ready to send._`,
+          footer: 'NEXORA AI Proofreader',
         }, [
           { kind: 'copy',   label: '📋 Copy Fixed Text',  value: reply },
           { kind: 'action', label: '🔄 Proofread Again',   cmd: `${p}proofread` },
+          { kind: 'action', label: '🌐 Translate It',      cmd: `${p}translate` },
         ], { quoted: m });
       } catch (err) {
         await progress.fail(`Failed to proofread: ${err.message}`);

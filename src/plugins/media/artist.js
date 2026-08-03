@@ -1,5 +1,5 @@
 import { webClient } from '../../lib/webClient.js';
-import { copyResultCard } from '../../lib/interactiveKit.js';
+import { copyResultCard, mixedCard } from '../../lib/interactiveKit.js';
 
 export default {
   name: 'artist',
@@ -27,12 +27,25 @@ export default {
         `*Genre:* ${artist.primaryGenreName}\n` +
         `*Apple Music:* ${artist.artistLinkUrl}`;
 
-      await copyResultCard(sock, m.from, {
-        text,
-        footer: 'iTunes API',
-        copyLabel: '📋 Copy Link',
-        copyValue: artist.artistLinkUrl
-      }, { quoted: m });
+      let msgOptions = { text };
+      if (artist.artworkUrl100) {
+        msgOptions = {
+          image: { url: artist.artworkUrl100.replace('100x100', '600x600') },
+          caption: text
+        };
+      }
+      await sock.sendMessage(m.from, msgOptions, { quoted: m });
+
+      try {
+        await mixedCard(sock, m.from, {
+          text: `🎤 Found *${artist.artistName}* on Apple Music. ✦`,
+          footer: 'NEXORA Media',
+        }, [
+          { kind: 'action', label: '🎵 Play Songs',   cmd: `${prefix}play ${artist.artistName}` },
+          { kind: 'action', label: '📝 Get Lyrics',   cmd: `${prefix}lyrics` },
+          { kind: 'action', label: '🎤 Another Artist', cmd: `${prefix}artist` },
+        ], { quoted: m });
+      } catch (_) {}
     } catch (err) {
       await m.reply.error(`Failed to find artist: ${err.message}`);
     }

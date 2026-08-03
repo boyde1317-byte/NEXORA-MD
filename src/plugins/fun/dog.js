@@ -15,11 +15,12 @@ export default {
         const data = await res.json();
         
         await actionCard(sock, m.from, {
-          text: `✦ *RANDOM DOG* ✦`,
+          text: `✦ *RANDOM DOG* ✦\n\nWho\'s a good bot? Here\'s a good dog. 🐶`,
           image: { url: data[0].url },
           footer: 'NEXORA DOGS'
         }, [
-          { label: '🔄 Another Dog', cmd: `${prefix}dog` }
+          { label: '🔄 Another Dog', cmd: `${prefix}dog` },
+          { label: '🐱 Get a Cat',     cmd: `${prefix}cat` }
         ], { quoted: m });
       } catch (err) {
         await m.reply.error(`Could not fetch image: ${err.message}`);

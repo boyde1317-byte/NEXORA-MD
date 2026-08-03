@@ -28,8 +28,8 @@ export default {
         await progress.done();
 
         await mixedCard(sock, m.from, {
-          text: `💡 *BRAINSTORM: ${topic.toUpperCase()}*\n\n${reply}`,
-          footer: 'Nexora AI Ideation',
+          text: `💡 *BRAINSTORM: ${topic.toUpperCase()}*\n\n${reply}\n\n_Need more? Hit 'More Ideas' for another round._`,
+          footer: 'NEXORA AI Ideation',
         }, [
           { kind: 'copy',   label: '📋 Copy Ideas',      value: reply },
           { kind: 'action', label: '💡 More Ideas',      cmd: `${p}brainstorm ${topic}` },

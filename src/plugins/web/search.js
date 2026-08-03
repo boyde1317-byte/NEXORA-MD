@@ -38,6 +38,8 @@ export default {
         footer: 'Provided by DuckDuckGo',
       }, [
         { label: '🔍 Search Again', cmd: `${prefix || '.'}search` },
+        { label: '📖 Wiki Lookup',     cmd: `${prefix || '.'}wiki ${query}` },
+        { label: '🤖 Ask AI',           cmd: `${prefix || '.'}ai ${query}` },
       ], {
         title:    `🔍 ${query.toUpperCase()}`,
         body:     'DuckDuckGo Search Results',
