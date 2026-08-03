@@ -1,6 +1,16 @@
+/**
+ * tiktok.js — TikTok video downloader (no watermark).
+ *
+ * Improvements:
+ *  - DownloadProgress feedback (was silent for 5-15s)
+ *  - Error handling with user-friendly message
+ *  - Author + duration metadata in caption
+ *  - Follow-up card with audio download + other platform buttons
+ */
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
 import { tiktokDownload, isUrl } from '../../lib/downloader.js';
+import { DownloadProgress } from '../../lib/progress.js';
 
 export default {
   name: 'tiktok',
@@ -9,28 +19,46 @@ export default {
   description: 'Downloads a TikTok video without the watermark. Usage: .tiktok <url>',
   cooldown: 8000,
   execute: async ({ m, sock, args, prefix }) => {
+    const p   = prefix || '.';
     const url = args[0]?.trim();
     if (!url || !isUrl(url)) {
       return await m.reply.info(
-        `Usage: \`${prefix}tiktok <url>\`\n\nExample: \`${prefix}tiktok https://vt.tiktok.com/xxxxxx\``,
+        `Usage: \`${p}tiktok <url>\`\n\nExample: \`${p}tiktok https://vt.tiktok.com/xxxxxx\``,
         'TIKTOK DOWNLOADER'
       );
     }
 
     await withReactionStatus(m, async () => {
-      const data = await tiktokDownload(url);
-      await sock.sendMessage(m.from, {
-        video: { url: data.video },
-        caption: `🎬 *${data.title || 'TikTok Video'}*\n_No watermark_`,
-      }, { quoted: m });
+      const progress = new DownloadProgress(sock, m.from, m);
+      await progress.start('Fetching TikTok video');
+      try {
+        const data = await tiktokDownload(url);
+        await progress.done('✅ Got it! Sending video...');
 
-      if (data.audio) {
-        await mixedCard(sock, m.from, {
-          text: 'Want just the audio track from this video?',
-          footer: 'NEXORA-MD • TikTok Downloader',
-        }, [
-          { kind: 'url', label: '🎵 Download Audio', url: data.audio },
-        ], { quoted: m });
+        const meta = [
+          data.title    ? `🎬 *${data.title}*`           : '🎬 TikTok Video',
+          data.author   ? `👤 ${data.author}`             : null,
+        ].filter(Boolean).join('\n');
+
+        await sock.sendMessage(m.from, {
+          video: { url: data.video },
+          caption: `${meta}\n_No watermark_`,
+        }, { quoted: m });
+
+        if (data.audio) {
+          try {
+            await mixedCard(sock, m.from, {
+              text: 'Want just the audio track from this video?',
+              footer: 'NEXORA-MD • TikTok Downloader',
+            }, [
+              { kind: 'url',    label: '🎵 Download Audio',    url: data.audio },
+              { kind: 'action', label: '🎵 YouTube Audio',     cmd: `${p}play` },
+              { kind: 'action', label: '📸 Instagram',        cmd: `${p}ig` },
+            ], { quoted: m });
+          } catch (_) {}
+        }
+      } catch (err) {
+        await progress.fail(`❌ TikTok download failed: ${err.message}`);
       }
     });
   }

@@ -1,11 +1,15 @@
 /**
  * twitter.js — X / Twitter video downloader.
  *
- * Upgraded: adds mixedCard after download with share/audio follow-up buttons.
+ * Improvements:
+ *  - DownloadProgress feedback (was silent for 5-15s)
+ *  - Error handling with user-friendly message
+ *  - Copy + open + cross-platform follow-up card
  */
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
 import { twitterDownload, isUrl } from '../../lib/downloader.js';
+import { DownloadProgress } from '../../lib/progress.js';
 
 export default {
   name: 'twitter',
@@ -24,24 +28,31 @@ export default {
     }
 
     await withReactionStatus(m, async () => {
-      const data = await twitterDownload(url);
-      await sock.sendMessage(m.from, {
-        video:   { url: data.url },
-        caption: data.title ? `🎬 *${data.title}*` : '🎬 X / Twitter Video',
-      }, { quoted: m });
-
-      // Follow-up interactive card
+      const progress = new DownloadProgress(sock, m.from, m);
+      await progress.start('Fetching X/Twitter video');
       try {
-        await mixedCard(sock, m.from, {
-          text:   '✅ *X / Twitter video downloaded!*\n\nWant to do more?',
-          footer: 'NEXORA-MD • X Downloader',
-        }, [
-          { kind: 'copy',   label: '📋 Copy Post URL',   value: url },
-          { kind: 'url',    label: '🔗 Open on X',        url:   url },
-          { kind: 'action', label: '📸 Try Instagram',    cmd:   `${p}ig` },
-          { kind: 'action', label: '🎵 TikTok Download',  cmd:   `${p}tiktok` },
-        ], { quoted: m });
-      } catch (_) { /* follow-up card is non-critical */ }
+        const data = await twitterDownload(url);
+        await progress.done('✅ Got it! Sending video...');
+
+        await sock.sendMessage(m.from, {
+          video:   { url: data.url },
+          caption: data.title ? `🎬 *${data.title}*` : '🎬 X / Twitter Video',
+        }, { quoted: m });
+
+        try {
+          await mixedCard(sock, m.from, {
+            text:   '✅ *X / Twitter video downloaded!*\n\nWant to do more?',
+            footer: 'NEXORA-MD • X Downloader',
+          }, [
+            { kind: 'copy',   label: '📋 Copy Post URL',   value: url },
+            { kind: 'url',    label: '🔗 Open on X',        url:   url },
+            { kind: 'action', label: '📸 Try Instagram',    cmd:   `${p}ig` },
+            { kind: 'action', label: '🎵 TikTok Download',  cmd:   `${p}tiktok` },
+          ], { quoted: m });
+        } catch (_) {}
+      } catch (err) {
+        await progress.fail(`❌ Twitter download failed: ${err.message}`);
+      }
     });
   }
 };

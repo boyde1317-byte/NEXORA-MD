@@ -29,18 +29,24 @@ export default {
         try {
           const data = await youtubeDownload(query);
           if (!data.mp3) throw new Error('No audio stream available for that video.');
-          await progress.done(`🎵 *${data.title}*\n👤 ${data.author || 'Unknown'}`);
+          await progress.done(`✅ ${data.title || 'Audio downloaded'}!`);
+
+          const meta = [
+            `🎵 *${data.title || 'YouTube Audio'}*`,
+            data.author ? `👤 ${data.author}` : null,
+          ].filter(Boolean).join('\n');
 
           await sock.sendMessage(m.from, {
             audio: { url: data.mp3 },
             mimetype: 'audio/mpeg',
           }, { quoted: m });
           return await mixedCard(sock, m.from, {
-            text: `🎵 *${data.title}*\n👤 ${data.author || 'Unknown'}`,
+            text: meta,
             footer: 'NEXORA-MD • YouTube Audio',
           }, [
-            { kind: 'url', label: '▶️ Watch on YouTube', url: query },
-            { kind: 'action', label: '🎬 Get Video', cmd: `${prefix}ytmp4 ${query}` },
+            { kind: 'url',    label: '▶️ Watch on YouTube', url: query },
+            { kind: 'action', label: '🎬 Get Video',        cmd: `${prefix}ytmp4 ${query}` },
+            { kind: 'action', label: '🎵 Play Another',     cmd: `${prefix}play` },
           ], { quoted: m });
         } catch (err) {
           await progress.fail(`❌ Download failed: ${err.message}`);
@@ -49,30 +55,42 @@ export default {
       }
 
       // Query — search and let the user pick.
-      const results = (await youtubeSearch(query)).slice(0, MAX_RESULTS);
-      const cards = results.map((v, idx) => ({
-        caption: `🎵 *${v.title}*\n👤 ${v.author || 'Unknown'}\n⏱️ ${v.duration || '—'}`,
-        footer: `Result ${idx + 1} of ${results.length}`,
-        nativeFlow: [{ text: '🎵 Download Audio', id: `${prefix}play ${v.url}` }],
-        ...(v.thumbnail ? { image: { url: v.thumbnail } } : {}),
-      }));
-
+      const progress = new DownloadProgress(sock, m.from, m);
+      await progress.start(`Searching YouTube for "${query}"`);
       try {
-        await baileysBridge.sendCarousel(sock, m.from, {
-          text: `🔎 *Top results for:* "${query}"\nTap a card's button to download.`,
-          cards,
-        }, { quoted: m });
+        const results = (await youtubeSearch(query)).slice(0, MAX_RESULTS);
+        await progress.done(`✅ Found ${results.length} results.`);
+
+        const cards = results.map((v, idx) => ({
+          caption: `🎵 *${v.title}*\n👤 ${v.author || 'Unknown'}\n⏱️ ${v.duration || '—'}${v.views ? `\n👁️ ${v.views}` : ''}`,
+          footer: `Result ${idx + 1} of ${results.length}`,
+          nativeFlow: [
+            { text: '🎵 Download Audio', id: `${prefix}play ${v.url}` },
+            { text: '🎬 Download Video', id: `${prefix}ytmp4 ${v.url}` },
+          ],
+          ...(v.thumbnail ? { image: { url: v.thumbnail } } : {}),
+        }));
+
+        try {
+          await baileysBridge.sendCarousel(sock, m.from, {
+            text: `🔎 *Top results for:* "${query}"\nTap a card's button to download.`,
+            cards,
+          }, { quoted: m });
+        } catch (err) {
+          console.warn('[play] carousel failed, falling back to select menu:', err.message);
+          const { selectMenu } = await import('../lib/interactiveKit.js');
+          await selectMenu(sock, m.from, { text: `🔎 Results for "${query}":` }, '🎵 Pick a track', [{
+            title: 'Search Results',
+            rows: results.map((v, idx) => ({
+              id: `${prefix}play ${v.url}`,
+              title: `${idx + 1}. ${v.title}`.slice(0, 60),
+              description: `${v.author || ''} • ${v.duration || ''}`,
+            })),
+          }], [], { quoted: m });
+        }
       } catch (err) {
-        console.warn('[play] carousel failed, falling back to select menu:', err.message);
-        const { selectMenu } = await import('../lib/interactiveKit.js');
-        await selectMenu(sock, m.from, { text: `🔎 Results for "${query}":` }, '🎵 Pick a track', [{
-          title: 'Search Results',
-          rows: results.map((v, idx) => ({
-            id: `${prefix}play ${v.url}`,
-            title: `${idx + 1}. ${v.title}`.slice(0, 60),
-            description: v.author || '',
-          })),
-        }], [], { quoted: m });
+        await progress.fail(`❌ Search failed: ${err.message}`);
+        throw err;
       }
     });
   }

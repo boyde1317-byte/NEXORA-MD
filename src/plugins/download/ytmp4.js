@@ -29,10 +29,7 @@ export default {
           const data = await youtubeDownload(query);
           if (!data.mp4) throw new Error('No video stream available for that link.');
 
-          // The backend's mp4 link is a short-lived signed CDN URL — it can already
-          // be expired/dead by the time we hand it to sock.sendMessage, which then
-          // surfaces an opaque "Failed to fetch stream from <url>" error. Probe it
-          // first so we can retry once against a fresh link instead of failing.
+          // Probe the stream URL to catch expired CDN links before sending
           const streamIsLive = async (url) => {
             try {
               const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(8000) });
@@ -52,17 +49,23 @@ export default {
             }
           }
 
-          await progress.done(`🎬 *${data.title}*\n👤 ${data.author || 'Unknown'}`);
+          await progress.done(`✅ ${data.title || 'Video downloaded'}!`);
+
+          const meta = [
+            `🎬 *${data.title || 'YouTube Video'}*`,
+            data.author ? `👤 ${data.author}` : null,
+          ].filter(Boolean).join('\n');
 
           await sock.sendMessage(m.from, {
             video: { url: videoUrl },
-            caption: `🎬 *${data.title}*\n👤 ${data.author || 'Unknown'}`,
+            caption: meta,
           }, { quoted: m });
           return await mixedCard(sock, m.from, {
             text: 'Need it as audio instead?',
             footer: 'NEXORA-MD • YouTube Video',
           }, [
-            { kind: 'action', label: '🎵 Get Audio', cmd: `${prefix}play ${query}` },
+            { kind: 'action', label: '🎵 Get Audio',     cmd: `${prefix}play ${query}` },
+            { kind: 'action', label: '🎬 Download Another',cmd: `${prefix}ytmp4` },
           ], { quoted: m });
         } catch (err) {
           await progress.fail(`❌ Download failed: ${err.message}`);
@@ -70,30 +73,43 @@ export default {
         }
       }
 
-      const results = (await youtubeSearch(query)).slice(0, MAX_RESULTS);
-      const cards = results.map((v, idx) => ({
-        caption: `🎬 *${v.title}*\n👤 ${v.author || 'Unknown'}\n⏱️ ${v.duration || '—'}`,
-        footer: `Result ${idx + 1} of ${results.length}`,
-        nativeFlow: [{ text: '🎬 Download Video', id: `${prefix}ytmp4 ${v.url}` }],
-        ...(v.thumbnail ? { image: { url: v.thumbnail } } : {}),
-      }));
-
+      // Search mode
+      const progress = new DownloadProgress(sock, m.from, m);
+      await progress.start(`Searching YouTube for "${query}"`);
       try {
-        await baileysBridge.sendCarousel(sock, m.from, {
-          text: `🔎 *Top results for:* "${query}"\nTap a card's button to download.`,
-          cards,
-        }, { quoted: m });
+        const results = (await youtubeSearch(query)).slice(0, MAX_RESULTS);
+        await progress.done(`✅ Found ${results.length} results.`);
+
+        const cards = results.map((v, idx) => ({
+          caption: `🎬 *${v.title}*\n👤 ${v.author || 'Unknown'}\n⏱️ ${v.duration || '—'}${v.views ? `\n👁️ ${v.views}` : ''}`,
+          footer: `Result ${idx + 1} of ${results.length}`,
+          nativeFlow: [
+            { text: '🎬 Download Video', id: `${prefix}ytmp4 ${v.url}` },
+            { text: '🎵 Download Audio', id: `${prefix}play ${v.url}` },
+          ],
+          ...(v.thumbnail ? { image: { url: v.thumbnail } } : {}),
+        }));
+
+        try {
+          await baileysBridge.sendCarousel(sock, m.from, {
+            text: `🔎 *Top results for:* "${query}"\nTap a card's button to download.`,
+            cards,
+          }, { quoted: m });
+        } catch (err) {
+          console.warn('[ytmp4] carousel failed, falling back to select menu:', err.message);
+          const { selectMenu } = await import('../lib/interactiveKit.js');
+          await selectMenu(sock, m.from, { text: `🔎 Results for "${query}":` }, '🎬 Pick a video', [{
+            title: 'Search Results',
+            rows: results.map((v, idx) => ({
+              id: `${prefix}ytmp4 ${v.url}`,
+              title: `${idx + 1}. ${v.title}`.slice(0, 60),
+              description: `${v.author || ''} • ${v.duration || ''}`,
+            })),
+          }], [], { quoted: m });
+        }
       } catch (err) {
-        console.warn('[ytmp4] carousel failed, falling back to select menu:', err.message);
-        const { selectMenu } = await import('../lib/interactiveKit.js');
-        await selectMenu(sock, m.from, { text: `🔎 Results for "${query}":` }, '🎬 Pick a video', [{
-          title: 'Search Results',
-          rows: results.map((v, idx) => ({
-            id: `${prefix}ytmp4 ${v.url}`,
-            title: `${idx + 1}. ${v.title}`.slice(0, 60),
-            description: v.author || '',
-          })),
-        }], [], { quoted: m });
+        await progress.fail(`❌ Search failed: ${err.message}`);
+        throw err;
       }
     });
   }
