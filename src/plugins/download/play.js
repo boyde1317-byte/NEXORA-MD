@@ -2,6 +2,7 @@ import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { youtubeSearch, youtubeDownload, isUrl } from '../../lib/downloader.js';
+import { DownloadProgress } from '../../lib/progress.js';
 
 const MAX_RESULTS = 5;
 
@@ -23,19 +24,28 @@ export default {
     await withReactionStatus(m, async () => {
       // Direct URL — resolve straight to audio.
       if (isUrl(query)) {
-        const data = await youtubeDownload(query);
-        if (!data.mp3) throw new Error('No audio stream available for that video.');
-        await sock.sendMessage(m.from, {
-          audio: { url: data.mp3 },
-          mimetype: 'audio/mpeg',
-        }, { quoted: m });
-        return await mixedCard(sock, m.from, {
-          text: `🎵 *${data.title}*\n👤 ${data.author || 'Unknown'}`,
-          footer: 'NEXORA-MD • YouTube Audio',
-        }, [
-          { kind: 'url', label: '▶️ Watch on YouTube', url: query },
-          { kind: 'action', label: '🎬 Get Video', cmd: `${prefix}ytmp4 ${query}` },
-        ], { quoted: m });
+        const progress = new DownloadProgress(sock, m.from, m);
+        await progress.start('Downloading audio');
+        try {
+          const data = await youtubeDownload(query);
+          if (!data.mp3) throw new Error('No audio stream available for that video.');
+          await progress.done(`🎵 *${data.title}*\n👤 ${data.author || 'Unknown'}`);
+
+          await sock.sendMessage(m.from, {
+            audio: { url: data.mp3 },
+            mimetype: 'audio/mpeg',
+          }, { quoted: m });
+          return await mixedCard(sock, m.from, {
+            text: `🎵 *${data.title}*\n👤 ${data.author || 'Unknown'}`,
+            footer: 'NEXORA-MD • YouTube Audio',
+          }, [
+            { kind: 'url', label: '▶️ Watch on YouTube', url: query },
+            { kind: 'action', label: '🎬 Get Video', cmd: `${prefix}ytmp4 ${query}` },
+          ], { quoted: m });
+        } catch (err) {
+          await progress.fail(`❌ Download failed: ${err.message}`);
+          throw err;
+        }
       }
 
       // Query — search and let the user pick.

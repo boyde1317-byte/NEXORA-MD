@@ -2,6 +2,7 @@ import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { youtubeSearch, youtubeDownload, isUrl } from '../../lib/downloader.js';
+import { DownloadProgress } from '../../lib/progress.js';
 
 const MAX_RESULTS = 5;
 
@@ -22,42 +23,51 @@ export default {
 
     await withReactionStatus(m, async () => {
       if (isUrl(query)) {
-        const data = await youtubeDownload(query);
-        if (!data.mp4) throw new Error('No video stream available for that link.');
+        const progress = new DownloadProgress(sock, m.from, m);
+        await progress.start('Downloading video');
+        try {
+          const data = await youtubeDownload(query);
+          if (!data.mp4) throw new Error('No video stream available for that link.');
 
-        // The backend's mp4 link is a short-lived signed CDN URL — it can already
-        // be expired/dead by the time we hand it to sock.sendMessage, which then
-        // surfaces an opaque "Failed to fetch stream from <url>" error. Probe it
-        // first so we can retry once against a fresh link instead of failing.
-        const streamIsLive = async (url) => {
-          try {
-            const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(8000) });
-            return res.ok;
-          } catch (_) {
-            return false;
-          }
-        };
+          // The backend's mp4 link is a short-lived signed CDN URL — it can already
+          // be expired/dead by the time we hand it to sock.sendMessage, which then
+          // surfaces an opaque "Failed to fetch stream from <url>" error. Probe it
+          // first so we can retry once against a fresh link instead of failing.
+          const streamIsLive = async (url) => {
+            try {
+              const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(8000) });
+              return res.ok;
+            } catch (_) {
+              return false;
+            }
+          };
 
-        let videoUrl = data.mp4;
-        if (!(await streamIsLive(videoUrl))) {
-          const retry = await youtubeDownload(query).catch(() => null);
-          if (retry?.mp4 && (await streamIsLive(retry.mp4))) {
-            videoUrl = retry.mp4;
-          } else {
-            throw new Error('The video stream link expired before it could be sent. Please try again.');
+          let videoUrl = data.mp4;
+          if (!(await streamIsLive(videoUrl))) {
+            const retry = await youtubeDownload(query).catch(() => null);
+            if (retry?.mp4 && (await streamIsLive(retry.mp4))) {
+              videoUrl = retry.mp4;
+            } else {
+              throw new Error('The video stream link expired before it could be sent. Please try again.');
+            }
           }
+
+          await progress.done(`🎬 *${data.title}*\n👤 ${data.author || 'Unknown'}`);
+
+          await sock.sendMessage(m.from, {
+            video: { url: videoUrl },
+            caption: `🎬 *${data.title}*\n👤 ${data.author || 'Unknown'}`,
+          }, { quoted: m });
+          return await mixedCard(sock, m.from, {
+            text: 'Need it as audio instead?',
+            footer: 'NEXORA-MD • YouTube Video',
+          }, [
+            { kind: 'action', label: '🎵 Get Audio', cmd: `${prefix}play ${query}` },
+          ], { quoted: m });
+        } catch (err) {
+          await progress.fail(`❌ Download failed: ${err.message}`);
+          throw err;
         }
-
-        await sock.sendMessage(m.from, {
-          video: { url: videoUrl },
-          caption: `🎬 *${data.title}*\n👤 ${data.author || 'Unknown'}`,
-        }, { quoted: m });
-        return await mixedCard(sock, m.from, {
-          text: 'Need it as audio instead?',
-          footer: 'NEXORA-MD • YouTube Video',
-        }, [
-          { kind: 'action', label: '🎵 Get Audio', cmd: `${prefix}play ${query}` },
-        ], { quoted: m });
       }
 
       const results = (await youtubeSearch(query)).slice(0, MAX_RESULTS);

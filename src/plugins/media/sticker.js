@@ -1,6 +1,7 @@
 import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 import { config } from '../../../config/index.js';
 import brand from '../../../config/brand.js';
+import { DownloadProgress } from '../../lib/progress.js';
 
 export default {
   name: 'sticker',
@@ -12,10 +13,8 @@ export default {
     let mediaBuffer = null;
 
     if (m.type === 'imageMessage' || m.type === 'videoMessage') {
-      await m.reply('⏳ _Downloading and converting media..._');
       mediaBuffer = await m.download();
     } else if (m.quoted && (m.quoted.type === 'imageMessage' || m.quoted.type === 'videoMessage')) {
-      await m.reply('⏳ _Downloading and converting quoted media..._');
       mediaBuffer = await m.quoted.download();
     }
 
@@ -24,6 +23,9 @@ export default {
         `❌ Please send an image/video with \`${config.prefix[0]}sticker\` as the caption, or reply to an existing image/video.`
       );
     }
+
+    const progress = new DownloadProgress(sock, m.from, m, { intervalMs: 3000 });
+    await progress.start('Converting sticker');
 
     try {
       const packName   = args.join(' ') || brand.name;
@@ -37,11 +39,12 @@ export default {
       });
 
       const stickerBuffer = await sticker.toBuffer();
+      await progress.done('');
 
       await sock.sendMessage(m.from, { sticker: stickerBuffer }, { quoted: m });
     } catch (err) {
       console.error('[PLUGIN ERROR] sticker conversion failed:', err);
-      await m.reply(`❌ Failed to create sticker: ${err.message}`);
+      await progress.fail(`❌ Failed to create sticker: ${err.message}`);
     }
   }
 };

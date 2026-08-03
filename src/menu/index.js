@@ -61,21 +61,26 @@ export const showMenu = async (sock, m, customKey = null) => {
   // Send the actual audio as a real message after the menu card.
   // Quote it with a fake order card showing bot name + command count so the
   // audio message displays the product-catalog style header (🛒 X items, bot name).
-  try {
-    let audioCtx = m;
+  // Skip audio in group chats — it plays out loud for everyone and is intrusive.
+  // Users in DMs still get the full audio experience.
+  const isGroupChat = m.from?.endsWith('@g.us');
+  if (!isGroupChat) {
     try {
-      const activeId = menuManager.getActiveMenu()?.id || 1;
-      const imgData  = await imageManager.getMenuImage(activeId);
-      audioCtx = buildFakeLiveLocationQuote({
-        caption:       `${menuData.botName.toUpperCase()} • ${menuData.totalCommands} commands`,
-        jpegThumbnail: imgData.buffer,
-      });
-    } catch (qErr) {
-      console.warn('[MENU ENGINE] Could not build order quote for audio, using m:', qErr.message);
+      let audioCtx = m;
+      try {
+        const activeId = menuManager.getActiveMenu()?.id || 1;
+        const imgData  = await imageManager.getMenuImage(activeId);
+        audioCtx = buildFakeLiveLocationQuote({
+          caption:       `${menuData.botName.toUpperCase()} • ${menuData.totalCommands} commands`,
+          jpegThumbnail: imgData.buffer,
+        });
+      } catch (qErr) {
+        console.warn('[MENU ENGINE] Could not build order quote for audio, using m:', qErr.message);
+      }
+      await mediaManager.sendMenuAudio(sock, m.from, audioCtx);
+    } catch (err) {
+      console.error('[MENU ENGINE] Failed to send menu audio:', err);
     }
-    await mediaManager.sendMenuAudio(sock, m.from, audioCtx);
-  } catch (err) {
-    console.error('[MENU ENGINE] Failed to send menu audio:', err);
   }
 };
 
