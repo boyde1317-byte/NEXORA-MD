@@ -22,10 +22,11 @@ import { toSmallcaps } from '../lib/smallcaps.js';
 
 // ── Hoisted regexes (compiled once, not on every message) ─────────────────────
 // Anti-link pattern: matches URLs and known social/messaging platform links.
-// The broad domain pattern requires a dot followed by 2+ letter TLD AND at least
-// one path segment OR a known protocol — this prevents false positives on normal
-// text like "hello.world" or "version 1.2" while still catching real links.
-const LINK_RE = /https?:\/\/\S+|www\.\S+|\b[a-z0-9-]+\.(?:com|net|org|io|gg|me|be|ly|app|dev|co|xyz|info|biz|tv|fm|sh)\b(?:\/\S*)?/i;
+// Requires either a protocol (http/https), a www. prefix, OR a domain with a
+// path segment after the TLD. This prevents false positives on normal text
+// like "hello.world" or "version 1.2" or "awesome.io" while still catching
+// real links like "example.com/page", "t.me/groupname", "bit.ly/abc".
+const LINK_RE = /https?:\/\/\S+|www\.\S+|\b[a-z0-9-]+\.(?:com|net|org|io|gg|me|be|ly|app|dev|co|xyz|info|biz|tv|fm|sh)\/\S+/i;
 
 
 /**
@@ -131,9 +132,11 @@ try {
           const senderIsAdmin = await m.isAdmin();
           if (!senderIsAdmin && !m.isOwner) {
             await sock.sendMessage(jid, { delete: m.key });
-            const userData2 = db.getUser(sender);
-            const warns = (userData2.warnings ?? 0) + 1;
-            db.setUser(sender, { warnings: warns });
+            const groupData2 = db.getGroup(jid);
+            const groupWarns = groupData2.warnings || {};
+            const warns = (groupWarns[sender] ?? 0) + 1;
+            groupWarns[sender] = warns;
+            db.setGroup(jid, { warnings: groupWarns });
             const senderNum = sender.split('@')[0].split(':')[0];
             await sock.sendMessage(jid, {
               text: `🚫 @${senderNum} Links are not allowed in this group!\n⚠️ Warning ${warns}/3${warns >= 3 ? ' — You have been removed.' : ''}`,
@@ -142,7 +145,8 @@ try {
             if (warns >= 3) {
               try {
                 await sock.groupParticipantsUpdate(jid, [sender], 'remove');
-                db.setUser(sender, { warnings: 0 });
+                groupWarns[sender] = 0;
+                db.setGroup(jid, { warnings: groupWarns });
               } catch (_) {
                 // Bot lacks admin privileges — keep warnings so spammer is caught next time
                 await sock.sendMessage(jid, {
@@ -174,9 +178,11 @@ try {
           const senderIsAdmin = await m.isAdmin();
           if (!senderIsAdmin && !m.isOwner) {
             await sock.sendMessage(jid, { delete: m.key });
-            const userData3 = db.getUser(sender);
-            const warns = (userData3.warnings ?? 0) + 1;
-            db.setUser(sender, { warnings: warns });
+            const groupData3 = db.getGroup(jid);
+            const groupWarns = groupData3.warnings || {};
+            const warns = (groupWarns[sender] ?? 0) + 1;
+            groupWarns[sender] = warns;
+            db.setGroup(jid, { warnings: groupWarns });
             const senderNum = sender.split('@')[0].split(':')[0];
             await sock.sendMessage(jid, {
               text: `🚫 @${senderNum} Mass-mentioning ${mentioned.length} members at once is not allowed!\n⚠️ Warning ${warns}/3${warns >= 3 ? ' — You have been removed.' : ''}`,
@@ -185,7 +191,8 @@ try {
             if (warns >= 3) {
               try {
                 await sock.groupParticipantsUpdate(jid, [sender], 'remove');
-                db.setUser(sender, { warnings: 0 });
+                groupWarns[sender] = 0;
+                db.setGroup(jid, { warnings: groupWarns });
               } catch (_) {
                 // Bot lacks admin privileges — keep warnings
                 await sock.sendMessage(jid, {

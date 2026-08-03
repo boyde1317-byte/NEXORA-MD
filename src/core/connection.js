@@ -14,6 +14,7 @@ import { config } from '../../config/index.js';
 import brand from '../../config/brand.js';
 import { db } from '../database/db.js';
 import { handleMessage } from '../handlers/message.js';
+import { restoreReminders } from '../plugins/utility/remind.js';
 import { handleGroupParticipantsUpdate } from '../handlers/group.js';
 import { client } from './client.js';
 
@@ -136,6 +137,9 @@ export async function connectToWhatsApp() {
       console.log(`│ Successfully Online │`);
       console.log(`╰─────────────────────╯\n`);
       console.log(`🤖 Logged in as: ${sock.user?.name || 'Bot'} (${sock.user?.id?.split(':')[0]})\n`);
+
+      // Restore any pending reminders from the database after reconnect
+      restoreReminders(sock);
 
     } else if (connection === 'close') {
       const statusCode   = lastDisconnect?.error?.output?.statusCode;

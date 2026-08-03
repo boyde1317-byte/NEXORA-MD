@@ -2,6 +2,7 @@
  * help.js — Per-command detailed help.
  *
  * `.help` shows a brief overview of all categories.
+ * `.help <category>` shows all commands in that category.
  * `.help <command>` shows detailed usage for a specific command, including
  * aliases, description, category, cooldown, and permissions.
  */
@@ -18,27 +19,16 @@ export default {
   execute: async ({ m, args, prefix }) => {
     const p = prefix || '.';
 
+    // Build category map once
+    const categories = {};
+    client.commands.forEach((cmd) => {
+      const cat = (cmd.category || 'general');
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push(cmd.name);
+    });
+
     // ── No args: show category overview ──────────────────────────────
     if (!args[0]) {
-      const categories = {};
-      client.commands.forEach((cmd) => {
-        const cat = (cmd.category || 'general');
-        if (!categories[cat]) categories[cat] = [];
-        categories[cat].push(cmd.name);
-      });
-
-      // If a category is specified, show just that category
-      const catArg = args[0]?.toLowerCase();
-      if (catArg && categories[catArg]) {
-        const cmds = categories[catArg].sort();
-        const lines = [
-          `*${toSmallcaps(catArg)}* — ${cmds.length} commands\n`,
-          ...cmds.map(c => `  ${p}${c}`),
-          `\n_Use \`${p}help <command>\` for detailed usage._`,
-        ];
-        return await m.reply(asciiBuilder.box(`${catArg} Commands`, lines));
-      }
-
       // Show compact category summary
       const sortedCats = Object.keys(categories).sort();
       const totalCmds = sortedCats.reduce((sum, cat) => sum + categories[cat].length, 0);
@@ -58,8 +48,19 @@ export default {
       return await m.reply(asciiBuilder.box('Command Guide', lines));
     }
 
-    // ── Specific command help ─────────────────────────────────────────────
+    // ── Category listing: .help <category> ──────────────────────────────
     const query = args[0].toLowerCase();
+    if (categories[query]) {
+      const cmds = categories[query].sort();
+      const lines = [
+        `*${toSmallcaps(query)}* — ${cmds.length} command${cmds.length !== 1 ? 's' : ''}\n`,
+        ...cmds.map(c => `  ${p}${c}`),
+        `\n_Use \`${p}help <command>\` for detailed usage._`,
+      ];
+      return await m.reply(asciiBuilder.box(`${query} Commands`, lines));
+    }
+
+    // ── Specific command help: .help <command> ──────────────────────────
     const resolvedName = client.aliases.get(query) || query;
     const command = client.commands.get(resolvedName);
 
@@ -105,5 +106,5 @@ export default {
     lines.push(`_Type \`${p}${command.name}\` to use this command. ✦_`);
 
     await m.reply(asciiBuilder.box(command.name, lines));
-  },
+  }
 };

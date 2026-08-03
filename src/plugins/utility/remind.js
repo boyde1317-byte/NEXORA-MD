@@ -1,4 +1,5 @@
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { db } from '../../database/db.js';
 
 const MAX_MINUTES = 1440;
 const activeReminders = new Map();
@@ -11,6 +12,63 @@ function parseTime(str) {
   if (unit.startsWith('h')) return val * 60;
   if (unit.startsWith('s')) return val / 60;
   return val;
+}
+
+/**
+ * Persist active reminders to the database so they survive restarts.
+ * Called after every add/cancel/fire operation.
+ */
+function syncRemindersToDb() {
+  try {
+    const serializable = {};
+    for (const [id, r] of activeReminders) {
+      serializable[id] = {
+        sender: r.sender,
+        message: r.message,
+        fireAt: r.fireAt,
+        jid: r.jid,
+      };
+    }
+    db.setSettings({ activeReminders: serializable });
+  } catch (err) {
+    console.error('[REMIND] Failed to persist reminders:', err.message);
+  }
+}
+
+/**
+ * Restore reminders from the database on startup / after reconnect.
+ * Only re-arms reminders that haven't fired yet (fireAt > now).
+ */
+export function restoreReminders(sock) {
+  try {
+    const stored = db.getSettings().activeReminders;
+    if (!stored || typeof stored !== 'object') return;
+
+    const now = Date.now();
+    for (const [id, r] of Object.entries(stored)) {
+      const delay = r.fireAt - now;
+      if (delay <= 0) continue; // already expired — skip
+
+      const timeout = setTimeout(async () => {
+        activeReminders.delete(id);
+        syncRemindersToDb();
+        try {
+          await sock.sendMessage(r.jid, {
+            text: `⏰ *REMINDER* [${id}]\n\n${r.message}\n\n_Set by @${r.sender.split('@')[0]}_`,
+            mentions: [r.sender],
+          });
+        } catch (_) {}
+      }, delay);
+
+      activeReminders.set(id, { ...r, timeout });
+    }
+
+    if (activeReminders.size > 0) {
+      console.log(`[REMIND] Restored ${activeReminders.size} active reminder(s) from database.`);
+    }
+  } catch (err) {
+    console.error('[REMIND] Failed to restore reminders:', err.message);
+  }
 }
 
 export default {
@@ -43,6 +101,7 @@ export default {
       }
       clearTimeout(r.timeout);
       activeReminders.delete(id);
+      syncRemindersToDb();
       return await m.reply.success(`Reminder *${id}* cancelled.`);
     }
 
@@ -51,7 +110,7 @@ export default {
 
     if (!timeStr || !message) {
       return await m.reply.info(
-        'Usage: `${p}remind <time> <message>`\n\nExamples:\n• `${p}remind 10m Take a break`\n• `${p}remind 1h Check the oven`\n• `${p}remind 30s Drink water`\n\nCommands:\n• `${p}remind list` — see active reminders\n• `${p}remind cancel <id>` — cancel a reminder',
+        `Usage: \`${p}remind <time> <message>\`\n\nExamples:\n• \`${p}remind 10m Take a break\`\n• \`${p}remind 1h Check the oven\`\n• \`${p}remind 30s Drink water\`\n\nCommands:\n• \`${p}remind list\` — see active reminders\n• \`${p}remind cancel <id>\` — cancel a reminder`,
         'REMINDER'
       );
     }
@@ -72,6 +131,7 @@ export default {
 
     const timeout = setTimeout(async () => {
       activeReminders.delete(id);
+      syncRemindersToDb();
       try {
         await sock.sendMessage(m.from, {
           text: `⏰ *REMINDER* [${id}]\n\n${message}\n\n_Set by @${sender.split('@')[0]}_`,
@@ -80,14 +140,15 @@ export default {
       } catch (_) {}
     }, minutes * 60000);
 
-    activeReminders.set(id, { sender, message, fireAt, timeout });
+    activeReminders.set(id, { sender, message, fireAt, timeout, jid: m.from });
+    syncRemindersToDb();
 
     await m.reply(asciiBuilder.box('⏰ REMINDER SET', [
       `🆔 ID      : ${id}`,
       `⏱️  Time    : ${displayTime} from now`,
       `📝 Message : ${message.length > 50 ? message.slice(0, 47) + '...' : message}`,
       ``,
-      `Use \`!remind cancel ${id}\` to cancel.`,
+      `Use \`${p}remind cancel ${id}\` to cancel.`,
     ]));
   }
 };

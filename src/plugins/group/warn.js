@@ -5,6 +5,24 @@ import { actionCard } from '../../lib/interactiveKit.js';
 
 const MAX_WARNINGS = 3;
 
+/**
+ * Get per-group warnings for a user.
+ * Warnings are stored under the group's data object, keyed by user JID,
+ * so they don't carry across groups.
+ */
+function getGroupWarnings(db, groupJid, userJid) {
+  const groupData = db.getGroup(groupJid);
+  const groupWarns = groupData.warnings || {};
+  return groupWarns[userJid] ?? 0;
+}
+
+function setGroupWarnings(db, groupJid, userJid, count) {
+  const groupData = db.getGroup(groupJid);
+  const groupWarns = groupData.warnings || {};
+  groupWarns[userJid] = count;
+  db.setGroup(groupJid, { warnings: groupWarns });
+}
+
 export default {
   name: 'warn',
   aliases: ['warning', 'strike'],
@@ -25,7 +43,7 @@ export default {
         if (n) target = `${n}@s.whatsapp.net`;
       }
       if (!target) return await m.reply.error('Reply to or mention the user to reset warnings for.');
-      db.setUser(target, { warnings: 0 });
+      setGroupWarnings(db, m.from, target, 0);
       // NOTE: { mentions: [target] } is intentionally passed as second arg to messageFormatter.success()
       // (where it is silently ignored) to preserve existing behavior — the mention is embedded in
       // the text only, not sent as a WhatsApp mention. Do not migrate to m.reply.success() here.
@@ -42,7 +60,7 @@ export default {
 
     if (!target) {
       return await m.reply.info(
-        'Usage:\n• `${p}warn @user [reason]` — add a warning\n• `${p}warn reset @user` — clear all warnings\n\nAt *3 warnings* the user is automatically kicked from the group.',
+        `Usage:\n• \`${p}warn @user [reason]\` — add a warning\n• \`${p}warn reset @user\` — clear all warnings\n\nAt *3 warnings* the user is automatically kicked from the group.`,
         'WARN SYSTEM'
       );
     }
@@ -53,9 +71,8 @@ export default {
     if (config.owner.includes(targetNum)) return await m.reply.error('Cannot warn the bot owner.');
 
     const reason = (sub && sub !== 'reset' ? args.join(' ') : args.slice(1).join(' ')).trim() || 'No reason provided';
-    const userData = db.getUser(target);
-    const newCount = (userData.warnings ?? 0) + 1;
-    db.setUser(target, { warnings: newCount });
+    const newCount = getGroupWarnings(db, m.from, target) + 1;
+    setGroupWarnings(db, m.from, target, newCount);
 
     await withReactionStatus(m, async () => {
       if (newCount >= MAX_WARNINGS) {
@@ -70,7 +87,7 @@ export default {
               `User was automatically removed for reaching the warning limit.`,
             ]) , { mentions: [target] }
           );
-          db.setUser(target, { warnings: 0 });
+          setGroupWarnings(db, m.from, target, 0);
         } catch (err) {
           await m.reply.error(`Could not kick user after ${MAX_WARNINGS} warnings: ${err.message}`);
         }
@@ -89,7 +106,7 @@ export default {
             text:   warningText,
             footer: `Strike ${newCount}/${MAX_WARNINGS}`,
           }, [
-            { label: '♻️ Reset Warnings', cmd: `.warn reset @${targetNum}` },
+            { label: '♻️ Reset Warnings', cmd: `${p}warn reset @${targetNum}` },
           ], { mentions: [target], quoted: m });
         } catch (_) {
           await m.reply(warningText, { mentions: [target] });

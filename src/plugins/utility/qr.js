@@ -11,7 +11,7 @@ export default {
     const text = args.join(' ').trim();
     if (!text) {
       return await m.reply.info(
-        'Usage: `${p}qr <text or URL>`\n\nExamples:\n• `${p}qr https://github.com`\n• `${p}qr Hello World`\n• `${p}qr +233597514499`',
+        `Usage: \`${p}qr <text or URL>\`\n\nExamples:\n• \`${p}qr https://github.com\`\n• \`${p}qr Hello World\`\n• \`${p}qr +233597514499\``,
         'QR CODE GENERATOR'
       );
     }
