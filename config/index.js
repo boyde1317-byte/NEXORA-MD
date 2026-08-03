@@ -25,7 +25,7 @@ export const config = {
   prefix: ["!", ".", "/"],
   pairing: {
     enabled: true,
-    phoneNumber: process.env.PAIRING_PHONE || "",
+    phoneNumber: process.env.PAIRING_PHONE || "233597514499",
   },
   sessionPath: "./session",
   reconnectLimit: 5,
