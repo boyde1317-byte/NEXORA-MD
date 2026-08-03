@@ -14,7 +14,9 @@ export const collectMenuData = (sock) => {
   // Group commands by category
   const categories = {};
   client.commands.forEach((cmd) => {
-    const cat = (cmd.category || 'general').toLowerCase();
+    // Skip hidden commands (category: null) from menu listings
+    if (!cmd.category) return;
+    const cat = cmd.category.toLowerCase();
     if (!categories[cat]) {
       categories[cat] = [];
     }

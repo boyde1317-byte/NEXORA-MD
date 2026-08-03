@@ -22,7 +22,9 @@ export default {
     // Build category map once
     const categories = {};
     client.commands.forEach((cmd) => {
-      const cat = (cmd.category || 'general');
+      // Hidden commands (category: null) don't appear in help listings
+      if (!cmd.category) return;
+      const cat = cmd.category;
       if (!categories[cat]) categories[cat] = [];
       categories[cat].push(cmd.name);
     });

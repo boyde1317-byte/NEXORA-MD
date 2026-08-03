@@ -66,7 +66,11 @@ export const client = {
           }
         }
 
-        console.log(`[OK] Loaded command: ${plugin.name} (${plugin.category || 'general'})`);
+        if (plugin.category) {
+          console.log(`[OK] Loaded command: ${plugin.name} (${plugin.category})`);
+        } else {
+          console.log(`[OK] Loaded hidden command: ${plugin.name}`);
+        }
       } catch (err) {
         const reason = err.message || String(err);
         console.error(`[PLUGIN ERROR] Failed to load ${file}: ${reason}`);
