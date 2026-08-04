@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
-    "baileys": "git+https://github.com/boyde1317-byte/baileys.git#3e98c770a5f7e399d6a467a4e7303b49cd6cf462",
+    "baileys": "git+https://github.com/boyde1317-byte/baileys.git#67970e82a06986e6b2dbb6b9ecb2b88d0e0fb128",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.1",
