@@ -37,6 +37,7 @@ import {
   generateLinkContentV2,
   generateReelContent,
   generateReelWithStats,
+  generateMapContent,
 } from 'baileys';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -497,6 +498,34 @@ export async function testReelWithStats(sock, jid, quoted) {
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'reel + stats ✓';
 }
+/**
+ * Location Card — AIRichResponseMapMetadata (messageType 7). Renders a
+ * map preview with one or more pins, matching Meta AI's "Location Card"
+ * component (e.g. "coffee shops near me in Accra").
+ */
+export async function testMapContent(sock, jid, quoted) {
+  const generated = generateMapContent(
+    {
+      centerLatitude: 5.6037,
+      centerLongitude: -0.1870,
+      latitudeDelta: 0.02,
+      longitudeDelta: 0.02,
+      annotations: [
+        { latitude: 5.6050, longitude: -0.1880, title: 'Cafe One', body: 'Independence Ave' },
+        { latitude: 5.6020, longitude: -0.1860, title: 'Cafe Two', body: 'Ring Road Central' },
+      ],
+      showInfoList: true,
+    },
+    quoted,
+    {
+      headerText: '🧪 Location Card Test — Coffee shops near Accra',
+      footer: 'NEXORA-MD • mapMetadata (type 7)',
+    }
+  );
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'map content ✓';
+}
+
 // Master test registry
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -521,6 +550,7 @@ export const RICH_TESTS = [
   // Capture & relay
   { id: "reel",       label: "🎬 Reel Content",       fn: testReelContent,     group: "Reels" },
   { id: "reelstats",  label: "🎬 Reel + Stats Table", fn: testReelWithStats,   group: "Reels" },
+  { id: "map",        label: "📍 Location Card",     fn: testMapContent,      group: "Location" },
   { id: "capture",    label: "🔄 Capture & Relay",   fn: testCaptureRelay,    group: "Capture" },
 ];
 
