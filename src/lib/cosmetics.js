@@ -109,10 +109,11 @@ export async function sendTable(sock, jid, { caption, rows = [], footer } = {}, 
     // required botForwardedMessage + botMetadata proof chain so WA clients
     // actually render the table bubble (plain relayMessage({richResponseMessage}) fails).
     //
-    // FORK QUIRK: prepareRichResponseMessage only processes flat `table` in
-    // the else branch (when richResponse is NOT an array). When richResponse
-    // IS an array, flat `table` is silently dropped. Include table as a
-    // submessage inside the richResponse array instead.
+    // NOTE: prepareRichResponseMessage now handles `table` both in the
+    // richResponse array (as submessage.table -> TABLE type) and in the
+    // flat content path. This was fixed in fork commit ae26d2e.
+    // Including table as a submessage inside the richResponse array is
+    // still the recommended approach for multi-section rich messages.
     const richResponse = [];
     if (caption) richResponse.push({ text: caption });
     richResponse.push({

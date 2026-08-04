@@ -12,15 +12,11 @@
  */
 
 import {
-  generateMessageIDV2,
   generateWAMessageFromContent,
-  proto,
 } from 'baileys';
 
 // ── V1 + V2 generators (imported from the fork's rich-message-utils.js) ─────
 import {
-  buildRichContextInfo,
-  buildBotForwardedMessage,
   generateTableContent,
   generateListContent,
   generateCodeBlockContent,
@@ -428,9 +424,9 @@ export async function testCaptureRelay(sock, jid, quoted) {
   const captured = captureUnifiedResponse(fakeMsg);
   if (!captured) {
     await sock.sendMessage(jid, {
-      text: '🧪 *Capture & Relay Test*\n\n❌ captureUnifiedResponse returned null — no unifiedResponse data in V1 submessage format.\n\n_Note: V1 generators don\'t include unifiedResponse.data — only V2 generators do._',
+      text: '🧪 *Capture & Relay Test*\n\n❌ captureUnifiedResponse returned null — no unifiedResponse data found.\n\n_Note: Since fork commit ae26d2e, V1 generators also embed unifiedResponse.data (protobuf-encoded). If this fails, the message may predate that fix._',
     }, { quoted });
-    return 'capture relay — V1 has no unifiedResponse (expected)';
+    return 'capture relay — no unifiedResponse found';
   }
 
   // Regenerate
