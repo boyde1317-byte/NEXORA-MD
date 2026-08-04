@@ -1,5 +1,5 @@
 import { generateWAMessageFromContent, generateWAMessage, generateMessageID, generateMessageIDV2, proto } from 'baileys';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 
 /**
  * additionalNodes stanza that flags a relayed message as a business
@@ -652,6 +652,95 @@ export const baileysBridge = {
       
       return sock.sendMessage(jid, { text: fallbackText.trim() || 'Rich content unavailable' }, sendOptions);
     }
+  },
+
+  /**
+   * Sends a buttonsMessage card — the OLD-style WhatsApp button card format.
+   *
+   * This is the format that produces the distinctive "grey body text" card
+   * look (when the body is wrapped in monospace) with a high-quality thumbnail
+   * in the header and tappable pill buttons at the bottom. It uses
+   * headerType: 6 (locationMessage) to embed the thumbnail, which renders
+   * as a card with the image at the top.
+   *
+   * The `biz`/`native_flow` additionalNodes stanza is attached automatically
+   * by relayMessage() (hasNativeFlowContent checks for buttonsMessage).
+   *
+   * @param {object} sock
+   * @param {string} jid
+   * @param {object} card
+   * @param {string} card.body           Card body text (wrap in ``` for grey look)
+   * @param {string} [card.footer]       Card footer text
+   * @param {string} [card.title]        Header title (shows as location name)
+   * @param {string} [card.subtitle]     Header subtitle (shows as location address)
+   *                                     — pass time/status here for "time in header" look
+   * @param {*}      [card.thumbnail]    Header image — Buffer, {url}, or fetch-able URL string
+   * @param {Array}  [card.buttons]     Old-style buttons:
+   *   { displayText: 'Label', id: '.cmd', type: 1 }                        → quick reply
+   *   { displayText: 'Label', id: '.cmd', type: 1, nativeFlowInfo: {...} } → native flow (list, etc.)
+   * @param {object} [card.contextInfo]  contextInfo for quoted message, mentions, etc.
+   * @param {object} [options]           sendMessage/relayMessage options (quoted, etc.)
+   */
+  async sendButtonsCard(sock, jid, {
+    body, footer, title, subtitle, thumbnail, buttons, contextInfo,
+  }, options = {}) {
+    // ── Fetch + resize thumbnail to 300x300 (like BIGST4CK's NIXCODE builder) ──
+    let jpegThumbnail = null;
+    if (thumbnail) {
+      try {
+        let buf;
+        if (Buffer.isBuffer(thumbnail)) {
+          buf = thumbnail;
+        } else if (typeof thumbnail === 'string') {
+          const res = await fetch(thumbnail, { signal: AbortSignal.timeout(10000) });
+          if (res.ok) buf = Buffer.from(await res.arrayBuffer());
+        } else if (thumbnail?.url) {
+          const res = await fetch(thumbnail.url, { signal: AbortSignal.timeout(10000) });
+          if (res.ok) buf = Buffer.from(await res.arrayBuffer());
+        } else if (thumbnail instanceof Uint8Array) {
+          buf = Buffer.from(thumbnail);
+        }
+        if (buf) {
+          // Use sharp if available, otherwise pass raw
+          try {
+            const sharp = (await import('sharp')).default;
+            jpegThumbnail = await sharp(buf)
+              .resize(300, 300, { fit: 'cover', position: 'center' })
+              .jpeg()
+              .toBuffer();
+          } catch {
+            jpegThumbnail = buf;
+          }
+        }
+      } catch (err) {
+        console.warn('[baileysBridge.sendButtonsCard] Thumbnail fetch failed:', err.message);
+      }
+    }
+
+    const msgContent = {
+      buttonsMessage: {
+        contentText:   body || '',
+        footerText:    footer || '',
+        headerType:     6,  // location header (renders thumbnail as card image)
+        locationMessage: {
+          degreesLatitude:  0,
+          degreesLongitude: 0,
+          name:             title || '',
+          address:          subtitle || '',
+          ...(jpegThumbnail ? { jpegThumbnail } : {}),
+        },
+        viewOnce:     true,
+        ...(contextInfo ? { contextInfo } : {}),
+        buttons:      (buttons || []).map(btn => ({
+          buttonId:     btn.id || btn.buttonId || randomUUID(),
+          buttonText:  { displayText: btn.displayText || btn.text || btn.label || '' },
+          type:         btn.type || 1,
+          ...(btn.nativeFlowInfo ? { nativeFlowInfo: btn.nativeFlowInfo } : {}),
+        })),
+      },
+    };
+
+    return await this.relayMessage(sock, jid, msgContent, options);
   },
 
   async sendCarousel(sock, jid, { text, footer, cards }, options = {}) {
