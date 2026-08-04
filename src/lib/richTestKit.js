@@ -526,6 +526,43 @@ export async function testMapContent(sock, jid, quoted) {
   return 'map content ✓';
 }
 
+/**
+ * Inline Video + Table — ContentType.DEFAULT (not CAROUSEL). This is the
+ * exact layout Meta AI showed us: a single embedded video player sitting
+ * above a stats table, not a swipeable carousel. Uses the same proto
+ * contentItemsMetadata but with contentType=0 instead of 1.
+ */
+export async function testInlineVideoWithStats(sock, jid, quoted) {
+  const generated = generateInlineVideoWithStats(
+    {
+      video: {
+        title:          'TikTok @user/video/123456',
+        profileIconUrl: 'https://i.pravatar.cc/150?img=14',
+        thumbnailUrl:   'https://picsum.photos/id/239/400/600',
+        videoUrl:       'https://www.w3schools.com/html/mov_bbb.mp4',
+      },
+      tableTitle: 'Download Stats',
+      tableHeaders: ['Metric', 'Value'],
+      tableRows: [
+        ['Views',     '1,234,567'],
+        ['Likes',     '45,678'],
+        ['Comments',  '1,234'],
+        ['Shares',    '3,210'],
+        ['Downloads', '890'],
+        ['Duration',  '00:58'],
+        ['Quality',   'HD (720p)'],
+      ],
+    },
+    quoted,
+    {
+      headerText: '\ud83e\uddea Inline Video + Table \u2014 Meta AI layout (ContentType.DEFAULT)',
+      footer: 'NEXORA-MD \u2022 contentItems (type 9, DEFAULT) + table (type 4)',
+    }
+  );
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'inline video + stats \u2713';
+}
+
 // Master test registry
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -551,6 +588,7 @@ export const RICH_TESTS = [
   { id: "reel",       label: "🎬 Reel Content",       fn: testReelContent,     group: "Reels" },
   { id: "reelstats",  label: "🎬 Reel + Stats Table", fn: testReelWithStats,   group: "Reels" },
   { id: "map",        label: "📍 Location Card",     fn: testMapContent,      group: "Location" },
+  { id: "inlinevid",  label: "🎬 Inline Video+Table", fn: testInlineVideoWithStats, group: "Location" },
   { id: "capture",    label: "🔄 Capture & Relay",   fn: testCaptureRelay,    group: "Capture" },
 ];
 
