@@ -49,6 +49,11 @@ import {
   generateDynamicContent,
   generateGridImageContentV2,
   generateDynamicContentV2,
+  // LaTeX image rendering (with default mathjax-node renderer)
+  defaultRenderLatexToPng,
+  generateLatexImageContent,
+  generateLatexInlineImageContent,
+  generateLatexImageContentV2,
 } from 'baileys';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -894,6 +899,69 @@ export async function testV2Dynamic(sock, jid, quoted) {
   return 'V2 dynamic ✓';
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// LaTeX Image Rendering (Item G — mathjax-node default renderer)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * V1 LaTeX Image — renders LaTeX to PNG via defaultRenderLatexToPng, uploads,
+ * and sends. Requires mathjax-node to be installed in the bot's node_modules.
+ */
+export async function testV1LatexImage(sock, jid, quoted) {
+  // Use sock.waUploadToServer as the upload function if available
+  const uploadFn = sock.waUploadToServer || sock.uploadToServer;
+  if (!uploadFn) {
+    await sock.sendMessage(jid, { text: '🧪 *V1 LaTeX Image Test*\n\n❌ No upload function available (sock.waUploadToServer missing).' }, { quoted });
+    return 'V1 latex image — no upload fn';
+  }
+  try {
+    const generated = await generateLatexImageContent(quoted, {
+      text: '🧪 V1 LaTeX Image Test — rendered to PNG:',
+      expressions: [
+        { latexExpression: '\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}' },
+        { latexExpression: 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}' },
+      ],
+      headerText: 'LaTeX Image Rendering',
+      footer: 'NEXORA-MD • mathjax-node default renderer',
+    }, uploadFn);
+    await _relayGenerated(sock, jid, generated, { quoted });
+    return 'V1 latex image ✓';
+  } catch (err) {
+    await sock.sendMessage(jid, {
+      text: '🧪 *V1 LaTeX Image Test*\n\n❌ ' + err.message + '\n\n_Install mathjax-node: npm install mathjax-node_',
+    }, { quoted });
+    return 'V1 latex image — ' + err.message;
+  }
+}
+
+/**
+ * V2 LaTeX Image — base64-encoded unifiedResponse with rendered PNG LaTeX.
+ */
+export async function testV2LatexImage(sock, jid, quoted) {
+  const uploadFn = sock.waUploadToServer || sock.uploadToServer;
+  if (!uploadFn) {
+    await sock.sendMessage(jid, { text: '🧪 *V2 LaTeX Image Test*\n\n❌ No upload function available.' }, { quoted });
+    return 'V2 latex image — no upload fn';
+  }
+  try {
+    const generated = await generateLatexImageContentV2(quoted, {
+      text: '🧪 V2 LaTeX Image Test — Euler identity:',
+      expressions: [
+        { latexExpression: 'e^{i\\pi} + 1 = 0' },
+      ],
+      headerText: 'LaTeX V2 Image',
+      footer: 'NEXORA-MD • base64 + mathjax-node',
+    }, uploadFn);
+    await _relayGenerated(sock, jid, generated, { quoted });
+    return 'V2 latex image ✓';
+  } catch (err) {
+    await sock.sendMessage(jid, {
+      text: '🧪 *V2 LaTeX Image Test*\n\n❌ ' + err.message + '\n\n_Install mathjax-node: npm install mathjax-node_',
+    }, { quoted });
+    return 'V2 latex image — ' + err.message;
+  }
+}
+
 // Master test registry
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -935,6 +1003,9 @@ export const RICH_TESTS = [
   { id: 'v1dyn',      label: '🎞️ V1 Dynamic GIF',    fn: testV1Dynamic,       group: 'Grid/Dynamic' },
   { id: 'v2grid',     label: '🖼️ V2 Grid Image',    fn: testV2GridImage,     group: 'Grid/Dynamic' },
   { id: 'v2dyn',      label: '🎞️ V2 Dynamic Image',  fn: testV2Dynamic,       group: 'Grid/Dynamic' },
+  // LaTeX image rendering (requires mathjax-node)
+  { id: 'v1lateximg', label: '📐 V1 LaTeX Image',     fn: testV1LatexImage,   group: 'LaTeX Image' },
+  { id: 'v2lateximg', label: '📐 V2 LaTeX Image',     fn: testV2LatexImage,   group: 'LaTeX Image' },
 ];
 
 export async function runRichTest(sock, jid, testId, quoted) {
