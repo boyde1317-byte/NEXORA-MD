@@ -32,7 +32,10 @@ export const buttonsCardMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     // ── Time & status (for the header subtitle) ───────────────────────────
-    const now = new Date();
+    // Real-time, not a placeholder. Timezone configurable via BOT_TZ env,
+    // defaults to Africa/Accra (the owner's timezone).
+    const tz = process.env.BOT_TZ || 'Africa/Accra';
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
     const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' });
 

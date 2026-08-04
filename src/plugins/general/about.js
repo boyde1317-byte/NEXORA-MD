@@ -34,7 +34,8 @@ export default {
     const p    = prefix || '.';
 
     // ── Time for the header subtitle ──────────────────────────────────────
-    const now = new Date();
+    const tz = process.env.BOT_TZ || 'Africa/Accra';
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
     const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
     const memPercent = Math.min(100, Math.round((process.memoryUsage().heapUsed / process.memoryUsage().heapTotal) * 100));
