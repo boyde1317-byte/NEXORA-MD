@@ -1,4 +1,5 @@
 import { downloadMediaMessage } from 'baileys';
+import baileysBridge from './baileysBridge.js';
 import { config } from '../../config/index.js';
 import { messageFormatter } from '../ui/messageFormatter.js';
 
@@ -64,6 +65,20 @@ function extractBody(type, msgContent) {
         return extractBody(innerType, msgContent.message[innerType]);
       }
       return '';
+    case 'botForwardedMessage': {
+      // Rich message from Meta AI or NEXORA's rich generators — parse into text
+      // parseRichMessage expects { botForwardedMessage: { message: ... } }
+      // but msgContent IS the botForwardedMessage value, so wrap it.
+      const wrapped = { botForwardedMessage: msgContent };
+      const parsed = baileysBridge.parseRichMessage(wrapped);
+      if (parsed.isRich) return parsed.text || '';
+      // Fall back to inner message if no rich content
+      if (msgContent.message) {
+        const innerType = Object.keys(msgContent.message)[0] || '';
+        return extractBody(innerType, msgContent.message[innerType]);
+      }
+      return '';
+    }
     default:
       return '';
   }

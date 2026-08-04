@@ -1,4 +1,203 @@
 import { generateWAMessageFromContent, generateWAMessage, generateMessageID, generateMessageIDV2, proto } from 'baileys';
+
+// ── Rich message formatting helpers (for parseRichMessage consumption) ─────
+
+const RICH_SUBMESSAGE_TYPES = {
+  TEXT: 2, TABLE: 4, CODE: 5, LATEX: 8,
+  CONTENT_ITEMS: 9, INLINE_IMAGE: 3, GRID_IMAGE: 1, DYNAMIC: 6, MAP: 7,
+};
+
+/**
+ * Formats V1 submessages into readable text + structured sections.
+ */
+function _formatV1Submessages(submessages, sections) {
+  let text = '';
+  for (const sub of submessages) {
+    const type = sub.messageType;
+    switch (type) {
+      case RICH_SUBMESSAGE_TYPES.TEXT:
+        text += (sub.messageText || '') + '\n\n';
+        sections.push({ type: 'text', content: sub.messageText });
+        break;
+      case RICH_SUBMESSAGE_TYPES.TABLE: {
+        const meta = sub.tableMetadata || {};
+        if (meta.title) text += `*${meta.title}*\n`;
+        if (meta.rows) {
+          for (const row of meta.rows) {
+            text += (row.items || []).join(' │ ') + '\n';
+          }
+        }
+        text += '\n';
+        sections.push({ type: 'table', title: meta.title, rows: meta.rows });
+        break;
+      }
+      case RICH_SUBMESSAGE_TYPES.CODE: {
+        const meta = sub.codeBlockMetadata || {};
+        const codeText = meta.codeBlocks
+          ? meta.codeBlocks.map(b => b.codeContent || '').join('')
+          : (meta.code || '');
+        text += `\`\`\`${meta.language || ''}\n${codeText}\n\`\`\`\n\n`;
+        sections.push({ type: 'code', language: meta.language, code: codeText });
+        break;
+      }
+      case RICH_SUBMESSAGE_TYPES.INLINE_IMAGE: {
+        const meta = sub.imageMetadata || {};
+        const url = meta.imageUrl?.imageHighResUrl || meta.imageUrl?.imagePreviewUrl || '';
+        text += `[🖼️ ${meta.imageText || 'Image'}: ${url}]\n\n`;
+        sections.push({ type: 'inlineImage', url, text: meta.imageText });
+        break;
+      }
+      case RICH_SUBMESSAGE_TYPES.GRID_IMAGE: {
+        const meta = sub.gridImageMetadata || {};
+        const mainUrl = meta.gridImageUrl?.imageHighResUrl || meta.gridImageUrl?.imagePreviewUrl || '';
+        const count = meta.imageUrls?.length || 0;
+        text += `[🖼️ Grid Image: ${mainUrl}]${count ? ` (${count} thumbnails)` : ''}\n\n`;
+        sections.push({ type: 'gridImage', mainUrl, thumbnailCount: count });
+        break;
+      }
+      case RICH_SUBMESSAGE_TYPES.DYNAMIC: {
+        const meta = sub.dynamicMetadata || {};
+        const typeLabel = meta.type === 2 ? 'GIF' : meta.type === 1 ? 'IMAGE' : 'UNKNOWN';
+        text += `[🎞️ Dynamic (${typeLabel}): ${meta.url || ''}]\n\n`;
+        sections.push({ type: 'dynamic', kind: typeLabel, url: meta.url });
+        break;
+      }
+      case RICH_SUBMESSAGE_TYPES.MAP: {
+        const meta = sub.mapMetadata || {};
+        const annotations = (meta.annotations || []).map(a => a.title || '').filter(Boolean);
+        text += `[📍 Map: ${meta.centerLatitude || ''},${meta.centerLongitude || ''}]${annotations.length ? ' — ' + annotations.join(', ') : ''}\n\n`;
+        sections.push({ type: 'map', lat: meta.centerLatitude, lng: meta.centerLongitude, annotations });
+        break;
+      }
+      case RICH_SUBMESSAGE_TYPES.LATEX: {
+        const meta = sub.latexMetadata || {};
+        if (meta.text) text += meta.text + '\n';
+        if (meta.expressions) {
+          for (const expr of meta.expressions) {
+            text += `  ${expr.latexExpression || ''}\n`;
+          }
+        }
+        text += '\n';
+        sections.push({ type: 'latex', text: meta.text, expressions: meta.expressions });
+        break;
+      }
+      case RICH_SUBMESSAGE_TYPES.CONTENT_ITEMS: {
+        const meta = sub.contentItemsMetadata || {};
+        const items = meta.contentItems || [];
+        text += `[🎬 ${items.length} Reel(s)]\n`;
+        for (const item of items) {
+          const reel = item.reelItem || {};
+          text += `  • ${reel.title || 'Video'}: ${reel.videoUrl || ''}\n`;
+        }
+        text += '\n';
+        sections.push({ type: 'reel', items });
+        break;
+      }
+      default:
+        // Unknown submessage type — include raw text if available
+        if (sub.messageText) {
+          text += sub.messageText + '\n\n';
+          sections.push({ type: 'text', content: sub.messageText });
+        }
+        break;
+    }
+  }
+  return text.trim();
+}
+
+/**
+ * Formats V2 unified response sections into readable text + structured sections.
+ */
+function _formatV2Sections(sections, outSections) {
+  let text = '';
+  for (const section of sections) {
+    const vm = section.view_model || {};
+    const prim = vm.primitive || {};
+    const typename = prim.__typename || '';
+    switch (typename) {
+      case 'GenAIMarkdownTextUXPrimitive':
+        text += (prim.text || '') + '\n\n';
+        outSections.push({ type: 'text', content: prim.text });
+        break;
+      case 'GenAITableUXPrimitive':
+        if (prim.title) text += `*${prim.title}*\n`;
+        if (prim.rows) {
+          for (const row of prim.rows) {
+            text += (row.items || row.cells || []).join(' │ ') + '\n';
+          }
+        }
+        text += '\n';
+        outSections.push({ type: 'table', title: prim.title, rows: prim.rows });
+        break;
+      case 'GenAICodeBlockUXPrimitive':
+        text += `\`\`\`${prim.language || ''}\n${prim.code || ''}\n\`\`\`\n\n`;
+        outSections.push({ type: 'code', language: prim.language, code: prim.code });
+        break;
+      case 'GenAILinkCollectionUXPrimitive':
+        if (prim.text) text += prim.text + '\n';
+        if (prim.links) {
+          for (let i = 0; i < prim.links.length; i++) {
+            const l = prim.links[i];
+            text += `[${i+1}] ${l.title || l.display_text || 'Link'}: ${l.url}\n`;
+          }
+        }
+        text += '\n';
+        outSections.push({ type: 'links', text: prim.text, links: prim.links });
+        break;
+      case 'GenAIGridImageUXPrimitive':
+        text += `[🖼️ Grid Image: ${prim.grid_image_url?.image_high_res_url || prim.grid_image_url?.image_preview_url || ''}]`;
+        if (prim.image_urls?.length) text += ` (${prim.image_urls.length} thumbnails)`;
+        text += '\n\n';
+        outSections.push({ type: 'gridImage', mainUrl: prim.grid_image_url, count: prim.image_urls?.length });
+        break;
+      case 'GenAIDynamicUXPrimitive':
+        text += `[🎞️ Dynamic (${prim.type || 'UNKNOWN'}): ${prim.url || ''}]\n\n`;
+        outSections.push({ type: 'dynamic', kind: prim.type, url: prim.url });
+        break;
+      case 'GenAIAirichMapUXPrimitive':
+      case 'GenAIMapUXPrimitive':
+        text += `[📍 Map: ${prim.center_latitude || ''},${prim.center_longitude || ''}]`;
+        if (prim.annotations?.length) {
+          text += ' — ' + prim.annotations.map(a => a.title || '').join(', ');
+        }
+        text += '\n\n';
+        outSections.push({ type: 'map', lat: prim.center_latitude, lng: prim.center_longitude, annotations: prim.annotations });
+        break;
+      case 'GenAILatexUXPrimitive':
+        if (prim.text) text += prim.text + '\n';
+        if (prim.expressions) {
+          for (const expr of prim.expressions) {
+            text += `  ${expr.latex_expression || ''}\n`;
+          }
+        }
+        text += '\n';
+        outSections.push({ type: 'latex', text: prim.text, expressions: prim.expressions });
+        break;
+      case 'GenAIContentItemsUXPrimitive':
+      case 'GenAIReelItemUXPrimitive': {
+        const items = prim.content_items || (prim.title ? [prim] : []);
+        text += `[🎬 ${items.length} Reel(s)]\n`;
+        for (const item of items) {
+          text += `  • ${item.title || 'Video'}: ${item.video_url || ''}\n`;
+        }
+        text += '\n';
+        outSections.push({ type: 'reel', items });
+        break;
+      }
+      default:
+        // Unknown UX primitive — try common fields
+        if (prim.text) {
+          text += prim.text + '\n\n';
+          outSections.push({ type: 'text', content: prim.text });
+        } else if (prim.title) {
+          text += `*${prim.title}*\n\n`;
+          outSections.push({ type: 'unknown', typename, title: prim.title });
+        }
+        break;
+    }
+  }
+  return text.trim();
+}
 import { randomBytes, randomUUID } from 'node:crypto';
 
 /**
@@ -644,6 +843,100 @@ export const baileysBridge = {
             const v = sub.inlineVideo;
             fallbackText += `[🎬 ${v.title || 'Video'}: ${v.videoUrl || v.thumbnailUrl || ''}]\n\n`;
           }
+          else if (sub.gridImage) {
+            // GRID_IMAGE (type 1) — image gallery grid
+            const g = sub.gridImage;
+            const mainUrl = typeof g.gridImageUrl === 'string' ? g.gridImageUrl : (g.gridImageUrl?.imageHighResUrl || g.gridImageUrl?.imagePreviewUrl || '');
+            fallbackText += `[🖼️ Grid Image: ${mainUrl}]`;
+            if (g.imageUrls && g.imageUrls.length) {
+              fallbackText += ` (${g.imageUrls.length} thumbnails)\n`;
+              for (const u of g.imageUrls.slice(0, 4)) {
+                const url = typeof u === 'string' ? u : (u.imageHighResUrl || u.imagePreviewUrl || '');
+                fallbackText += `  • ${url}\n`;
+              }
+            }
+            fallbackText += '\n\n';
+          }
+          else if (sub.dynamic) {
+            // DYNAMIC (type 6) — animated GIF/image
+            const d = sub.dynamic;
+            const typeLabel = typeof d.type === 'string' ? d.type.toUpperCase() : (d.type === 2 ? 'GIF' : d.type === 1 ? 'IMAGE' : 'UNKNOWN');
+            fallbackText += `[🎞️ Dynamic (${typeLabel}): ${d.url || ''}]\n\n`;
+          }
+          else if (sub.map) {
+            // MAP (type 7) — location card
+            const mp = sub.map;
+            fallbackText += `[📍 Map: ${mp.centerLatitude || ''},${mp.centerLongitude || ''}]`;
+            if (mp.annotations && mp.annotations.length) {
+              fallbackText += ` — ${mp.annotations.map(a => a.title || '').join(', ')}`;
+            }
+            fallbackText += '\n\n';
+          }
+          else if (sub.latex) {
+            // LATEX (type 8) — LaTeX expression
+            const lt = sub.latex;
+            if (lt.text) fallbackText += lt.text + '\n';
+            if (lt.expressions) {
+              for (const expr of lt.expressions) {
+                fallbackText += `  ${expr.latexExpression || expr.latex || ''}\n`;
+              }
+            }
+            fallbackText += '\n';
+          }
+          else if (sub.reels || sub.reel) {
+            // REEL / CONTENT_ITEMS (type 9) — video carousel
+            const reels = sub.reels || [sub.reel];
+            fallbackText += `[🎬 ${reels.length} Reel(s)]\n`;
+            for (const r of reels) {
+              fallbackText += `  • ${r.title || 'Video'}: ${r.videoUrl || ''}\n`;
+            }
+            fallbackText += '\n';
+          }
+          else if (sub.list) {
+            // LIST — flat list as single-column table
+            fallbackText += (sub.list.title ? `*${sub.list.title}*\n` : '');
+            if (Array.isArray(sub.list)) {
+              fallbackText += sub.list.map(r => Array.isArray(r) ? '• ' + r.join(' — ') : '• ' + r).join('\n') + '\n\n';
+            }
+          }
+          else if (sub.links) {
+            // LINK content with citations
+            if (sub.text) fallbackText += sub.text + '\n';
+            for (let i = 0; i < sub.links.length; i++) {
+              const l = sub.links[i];
+              fallbackText += `[${i+1}] ${l.displayName || l.title || 'Link'}: ${l.url}\n`;
+            }
+            fallbackText += '\n';
+          }
+          else if (sub.products) {
+            // PRODUCTS — structured metadata (fork commit 9b1f70a)
+            if (sub.products.title) fallbackText += `*${sub.products.title}*\n`;
+            if (sub.products.items) {
+              for (const p of sub.products.items) {
+                fallbackText += `  • ${p.title || p.name || ''}${p.price ? ' — ' + p.price : ''}\n`;
+              }
+            }
+            fallbackText += '\n';
+          }
+          else if (sub.posts) {
+            // POSTS — structured metadata (fork commit 9b1f70a)
+            if (sub.posts.items) {
+              for (const p of sub.posts.items) {
+                fallbackText += `  • ${p.title || ''}${p.url ? ': ' + p.url : ''}\n`;
+              }
+            }
+            fallbackText += '\n';
+          }
+          else if (sub.suggested) {
+            // SUGGESTED — structured metadata (fork commit 9b1f70a)
+            if (sub.suggested.items) {
+              fallbackText += '*Suggestions:*\n';
+              for (const s of sub.suggested.items) {
+                fallbackText += `  • ${s.title || s.text || ''}\n`;
+              }
+            }
+            fallbackText += '\n';
+          }
         }
       }
       
@@ -657,10 +950,80 @@ export const baileysBridge = {
       if (content.links && Array.isArray(content.links)) {
         fallbackText += content.links.map((l, i) => "[" + (i+1) + "] " + (l.title || 'Link') + ": " + l.url).join('\n') + '\n\n';
       }
+      // New flat content types (fork commit b9f5c84)
+      if (content.gridImage) {
+        const g = content.gridImage;
+        const mainUrl = typeof g.gridImageUrl === 'string' ? g.gridImageUrl : (g.gridImageUrl?.imageHighResUrl || g.gridImageUrl?.imagePreviewUrl || '');
+        fallbackText += `[🖼️ Grid Image: ${mainUrl}]\n\n`;
+      }
+      if (content.dynamic) {
+        const d = content.dynamic;
+        fallbackText += `[🎞️ Dynamic: ${d.url || ''}]\n\n`;
+      }
+      if (content.map) {
+        const mp = content.map;
+        fallbackText += `[📍 Map: ${mp.centerLatitude || ''},${mp.centerLongitude || ''}]\n\n`;
+      }
+      if (content.latex) {
+        if (content.latex.text) fallbackText += content.latex.text + '\n';
+        if (content.latex.expressions) {
+          for (const expr of content.latex.expressions) {
+            fallbackText += `  ${expr.latexExpression || expr.latex || ''}\n`;
+          }
+        }
+        fallbackText += '\n';
+      }
+      if (content.reels && Array.isArray(content.reels)) {
+        fallbackText += `[🎬 ${content.reels.length} Reel(s)]\n`;
+        for (const r of content.reels) {
+          fallbackText += `  • ${r.title || 'Video'}: ${r.videoUrl || ''}\n`;
+        }
+        fallbackText += '\n';
+      }
       if (content.footerText) fallbackText += "_" + content.footerText + "_";
       
       return sock.sendMessage(jid, { text: fallbackText.trim() || 'Rich content unavailable' }, sendOptions);
     }
+  },
+
+  /**
+   * Parses an incoming richResponseMessage / botForwardedMessage into a
+   * human-readable text representation. Handles both V1 (submessage-based)
+   * and V2 (base64-encoded unifiedResponse) formats.
+   *
+   * @param {object} message — The raw Baileys message object
+   * @returns {{ isRich: boolean, text: string, type: string, sections: Array }}
+   */
+  parseRichMessage(message) {
+    const botFwd = message?.botForwardedMessage?.message || message?.message?.botForwardedMessage?.message;
+    if (!botFwd) return { isRich: false, text: null, type: null, sections: [] };
+
+    const rich = botFwd.richResponseMessage;
+    if (!rich) return { isRich: false, text: null, type: null, sections: [] };
+
+    const sections = [];
+    let text = '';
+
+    // ── V2: base64-encoded unifiedResponse ──────────────────────────────
+    if (rich.unifiedResponse?.data) {
+      try {
+        const decoded = JSON.parse(
+          Buffer.from(rich.unifiedResponse.data, 'base64').toString('utf8')
+        );
+        text = _formatV2Sections(decoded.sections || [], sections);
+        return { isRich: true, text, type: 'V2-unified', sections };
+      } catch {
+        // Fall through to V1 if decode fails
+      }
+    }
+
+    // ── V1: submessage-based ────────────────────────────────────────────
+    if (rich.submessages && rich.submessages.length) {
+      text = _formatV1Submessages(rich.submessages, sections);
+      return { isRich: true, text, type: 'V1-submessage', sections };
+    }
+
+    return { isRich: false, text: null, type: null, sections: [] };
   },
 
   /**
