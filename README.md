@@ -67,7 +67,11 @@
 | 14 | **Order Message** | Interactive card + embedded ad-reply quoted inside a business order card |
 | 15 | **Rich Card** | Rich response table grid + interactive card with embedded ad-reply overlay |
 
-#### ✨ Rich-Messages Enhancement (v1.2.0)
+#### ✨ Rich-Messages Enhancement (v1.2.0+)
+- **Full submessage support**: All 10 V1 submessage types (TEXT, TABLE, CODE, INLINE_IMAGE, GRID_IMAGE, DYNAMIC, MAP, LATEX, CONTENT_ITEMS) + structured metadata types (products, posts, suggested)
+- **V2 generators**: 9 base64 unifiedResponse generators matching Meta AI's native format
+- **LaTeX image rendering**: Default `mathjax-node` renderer (optional peer dep) for LaTeX→PNG
+- **Rich message consumption**: `parseRichMessage()` decodes inbound V1 + V2 rich messages into readable text + structured sections
 - **sendInteractive upgrades**: Menu types 1, 4, 10, 12, 13, 14 now use `sendInteractive` (full proto control) as their primary tier, enabling:
   - Image headers with **title AND subtitle** (not available in simple nativeFlow)
   - **Embedded externalAdReply** inside the interactive message — double visual: interactive card + ad banner in one message
@@ -78,6 +82,7 @@
 - **Enhanced system/profile templates**: Visual stat rows, health bars, and status badges
 - **AI-Dynamic dashboard**: ASCII progress bars for system health/memory, multi-section box-drawing panels, 5 random themes, top-5 command rankings with visual bars
 - **`baileysBridge.sendRichCard`**: New premium card builder combining image header + subtitle + embedded adReply + business badge + AI message support in one call
+- **`!testrich` command**: 32-test interactive registry covering all V1/V2 generators, unit validation, and capture round-trips
 
 - Automatic **capability detection** on startup — unsupported message types fall back gracefully to a styled text menu
 - **Per-style image/audio** — custom background images and menu audio configurable per style
@@ -362,7 +367,7 @@ NEXORA-MD/
 │   │   ├── connection.js      # Baileys socket, pairing, reconnect logic
 │   │   ├── client.js          # Plugin loader with diagnostics
 │   │   ├── serializer.js      # Raw Baileys → rich message object
-│   │   ├── baileysBridge.js   # Facade for interactive/native-flow messages
+│   │   ├── baileysBridge.js   # Interactive messages, rich message gen + consumption
 │   │   ├── capabilities.js    # Proto feature detection at startup
 │   │   ├── footer.js          # Footer style manager
 │   │   └── credits.js         # Credit/brand helpers
@@ -503,6 +508,64 @@ The serializer correctly extracts command text from:
 | `listResponseMessage` | List row selections |
 | `templateButtonReplyMessage` | Template button replies |
 | `interactiveResponseMessage` | Native-flow button responses |
+| `botForwardedMessage` | Rich messages from Meta AI / NEXORA generators (V1 + V2 parsed) |
+| `stickerPackMessage` | Sticker pack name (fork addition) |
+| `lottieStickerMessage` | Animated stickers (fork addition) |
+| `pollResultSnapshotMessage` | Poll result question text (fork addition) |
+| `groupStatusMessageV2` | Group status wrapper (unwrapped, fork addition) |
+| `spoilerMessage` | Spoiler wrapper (unwrapped, fork addition) |
+
+---
+
+## 🎨 Rich Message System
+
+NEXORA-MD fully supports the Baileys fork's rich message system — both
+**generating** outbound rich messages and **consuming** inbound ones.
+
+### Generation (Outbound)
+
+`baileysBridge.sendRichResponse()` sends rich content via the fork's
+`prepareRichResponseMessage` pipeline. All submessage types are supported:
+
+| Submessage | Key | Example |
+|------------|-----|---------|
+| Text | `{ text: '...' }` | Plain text bubble |
+| Table | `{ table: { title, rows: [{ items: [...] }] } }` | Aligned-column table |
+| Code | `{ code: [{ codeContent: '...' }], language: 'js' }` | Syntax code block |
+| Inline Image | `{ inlineImage: { imageHighResUrl, ... }, imageText: '...' }` | Image with caption |
+| Grid Image | `{ gridImage: { gridImageUrl, imageUrls: [...] } }` | Image gallery grid |
+| Dynamic | `{ dynamic: { type: 2, url: '...' } }` | Animated GIF/image |
+| Map | `{ map: { centerLatitude, centerLongitude, annotations } }` | Location card |
+| LaTeX | `{ latex: { text, expressions: [{ latexExpression }] } }` | LaTeX rendering |
+| Reel | `{ reels: [{ title, videoUrl, ... }] }` | Video carousel |
+| Links | `{ links: [{ title, url }], text: '...' }` | Citation link collection |
+| Products | `{ products: { title, items: [{ title, price }] } }` | Product metadata |
+| Posts | `{ posts: { items: [{ title, url }] } }` | Social post metadata |
+| Suggested | `{ suggested: { items: [{ title }] } }` | Suggested prompt metadata |
+
+If the proto relay fails, `sendRichResponse` falls back to formatted plain text
+for every submessage type listed above.
+
+### Consumption (Inbound)
+
+`baileysBridge.parseRichMessage()` decodes incoming `botForwardedMessage`
+rich messages into a structured `{ isRich, text, type, sections }` result:
+
+- **V1 submessages**: iterates `richResponseMessage.submessages` and formats
+  each by `messageType` (GRID_IMAGE=1, TEXT=2, INLINE_IMAGE=3, TABLE=4,
+  CODE=5, DYNAMIC=6, MAP=7, LATEX=8, CONTENT_ITEMS=9)
+- **V2 unifiedResponse**: decodes the base64 `unifiedResponse.data` JSON
+  and formats each `view_model.primitive` by `__typename`
+
+The serializer's `extractBody` calls `parseRichMessage` for
+`botForwardedMessage` types, so incoming rich messages are available as
+`message.body` just like any other message type.
+
+### Test Suite
+
+Run `!testrich` (owner-only) to access the interactive rich message test
+registry — 32 tests across 10 groups covering V1, V2, links, unit
+validation, and capture round-trips for every submessage type.
 
 ---
 
