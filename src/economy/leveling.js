@@ -49,7 +49,7 @@ export function getLevelProgress(xp) {
 export function progressBar(current, max, length = 12) {
   const pct = max > 0 ? Math.min(Math.max(current, 0) / max, 1) : 1;
   const filled = Math.round(pct * length);
-  return '█'.repeat(filled) + '▒'.repeat(length - filled) + ` ${Math.round(pct * 100)}%`;
+  return '█'.repeat(filled) + '░'.repeat(length - filled) + ` ${Math.round(pct * 100)}%`;
 }
 
 const RANKS = [

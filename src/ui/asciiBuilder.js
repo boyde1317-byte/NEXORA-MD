@@ -85,7 +85,7 @@ export const asciiBuilder = {
     const clamped = Math.max(0, Math.min(100, percent));
     const filled = Math.round((clamped / 100) * width);
     const empty = width - filled;
-    const bar = `\u2588`.repeat(filled) + `\u2592`.repeat(empty);
+    const bar = `\u2588`.repeat(filled) + `\u2591`.repeat(empty);
     const prefix = label ? `${toSmallcaps(label)} ` : '';
     return `${prefix}[${bar}] ${Math.round(clamped)}%`;
   },
