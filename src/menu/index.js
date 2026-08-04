@@ -24,6 +24,7 @@ import aiDynamic from './types/aiDynamic.js';
 import orderMessage from './types/orderMessage.js';
 import richCard from './types/richCard.js';
 import buttonsCard from './types/buttonsCard.js';
+import listFallback from './types/listFallback.js';
 
 // Register them all statically in the manager
 menuManager.register(documentInteractive);
@@ -42,6 +43,7 @@ menuManager.register(aiDynamic);
 menuManager.register(orderMessage);
 menuManager.register(richCard);
 menuManager.register(buttonsCard);
+menuManager.register(listFallback);
 
 /**
  * Compiles the statistics and renders the active menu (or custom specified menu style).

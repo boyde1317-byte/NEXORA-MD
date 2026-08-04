@@ -738,7 +738,9 @@ export const baileysBridge = {
           address:          subtitle || '',
           ...(jpegThumbnail ? { jpegThumbnail } : {}),
         },
-        viewOnce:     true,
+        // viewOnce intentionally omitted — buttonsMessage IS the persistent menu card.
+        // Setting viewOnce:true would make it self-destruct after one tap, which
+        // is wrong for a menu. Only use viewOnce on single-use cards (about, result cards).
         ...(contextInfo ? { contextInfo } : {}),
         buttons:      (buttons || []).map(btn => ({
           buttonId:     btn.id || btn.buttonId || randomUUID(),

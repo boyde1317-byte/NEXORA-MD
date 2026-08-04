@@ -42,7 +42,8 @@ const hasGroupStatus  = true;   // groupStatusMessageV2
 //   is supported, optionText IS supported — but it is a field, not a message type.
 const hasBottomSheet  = false;  // BottomSheetMessage — NOT in WAProto.proto
 const hasOptionText   = true;   // optionText field ON nativeFlowMessage — IS supported
-const hasOfferText    = false;  // OfferTextMessage — NOT in WAProto.proto (offerText IS a nativeFlow field)
+const hasOfferText    = true;   // offerText IS a supported nativeFlow field (NOT a separate proto type — that's
+                               // why hasBottomSheet stays false). product.js uses it unconditionally and it works.
 
 // Proto-introspectable types (simple top-level check — reliable for non-nested):
 // Note: nested types (RequestPaymentMessage, EventMessage) are still unreliable via
