@@ -2,6 +2,45 @@ import { generateWAMessageFromContent, generateWAMessage, generateMessageID, gen
 import { randomBytes } from 'node:crypto';
 
 /**
+ * additionalNodes stanza that flags a relayed message as a business
+ * "native_flow" interactive card.
+ *
+ * WITHOUT this stanza, stock WhatsApp clients frequently deliver
+ * interactiveMessage/nativeFlowMessage/buttonsMessage payloads with the
+ * buttons silently missing (or the card rendering as a bare/broken bubble) —
+ * the server/client-side rendering of real tappable pill buttons + the
+ * "business card" grey body styling is gated on this <biz><interactive
+ * type="native_flow"> stanza being present on the wire, not merely on the
+ * message's proto content. This is a wire-protocol detail, not something
+ * exclusive to any particular Baileys fork — every fork (including this
+ * one) exposes the same `sock.relayMessage(jid, msg, { additionalNodes })`
+ * hook; community bots (NIXCODE/BIGST4CK and others) rely on exactly this
+ * to get buttons to render reliably on real devices.
+ */
+const NATIVE_FLOW_ADDITIONAL_NODES = [
+  {
+    tag: 'biz',
+    attrs: {},
+    content: [
+      {
+        tag: 'interactive',
+        attrs: { type: 'native_flow', v: '1' },
+        content: [{ tag: 'native_flow', attrs: { v: '9', name: 'mixed' } }],
+      },
+    ],
+  },
+];
+
+/** True if this raw message content carries buttons/native-flow/carousel UI. */
+function hasNativeFlowContent(messageContent) {
+  if (!messageContent || typeof messageContent !== 'object') return false;
+  if (messageContent.buttonsMessage) return true;
+  const im = messageContent.interactiveMessage;
+  if (im && (im.nativeFlowMessage || im.carouselMessage)) return true;
+  return false;
+}
+
+/**
  * Unified facade for interfacing with the custom Baileys fork.
  * This encapsulates all raw Baileys structures and methods so that
  * the rest of the menu and bot system doesn't rely on raw protobuf constructs.
@@ -85,8 +124,15 @@ export const baileysBridge = {
     });
 
     // sock.relayMessage only accepts MessageRelayOptions — do not spread `options`
-    // as it contains `quoted` which is not a valid relay param.
-    await sock.relayMessage(jid, message.message, { messageId: message.key.id });
+    // as it contains `quoted` which is not a valid relay param. We DO forward
+    // additionalNodes: callers can override, otherwise button/native-flow/carousel
+    // payloads get the native_flow biz stanza by default (see hasNativeFlowContent).
+    const additionalNodes = options.additionalNodes
+      ?? (hasNativeFlowContent(messageContent) ? NATIVE_FLOW_ADDITIONAL_NODES : undefined);
+    await sock.relayMessage(jid, message.message, {
+      messageId: message.key.id,
+      ...(additionalNodes ? { additionalNodes } : {}),
+    });
     return message;
   },
 
@@ -457,7 +503,12 @@ export const baileysBridge = {
         optionText,
         optionTitle: optionTitle || '📄 Options',
       } : {}),
-    }, options);
+    }, {
+      ...options,
+      // Buttons render unreliably (or not at all) on stock WhatsApp without
+      // this native_flow biz stanza — see NATIVE_FLOW_ADDITIONAL_NODES above.
+      additionalNodes: options.additionalNodes || NATIVE_FLOW_ADDITIONAL_NODES,
+    });
   },
 
   /**
@@ -621,7 +672,10 @@ export const baileysBridge = {
       cards,
       text,
       ...(footer ? { footer } : {}),
-    }, options);
+    }, {
+      ...options,
+      additionalNodes: options.additionalNodes || NATIVE_FLOW_ADDITIONAL_NODES,
+    });
   },
 
   async sendProduct(sock, jid, { title, description, productId, currency, price, footer, thumbnail, businessOwnerJid } = {}, options = {}) {
