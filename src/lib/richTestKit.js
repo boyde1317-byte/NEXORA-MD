@@ -37,10 +37,18 @@ import {
   generateInlineImageWithTable,
   generateInlineVideoWithStats,
   // V2 generators (base64-encoded unifiedResponse — Meta AI format)
-  generateInlineImageWithTableV2,
-  generateInlineVideoWithStatsV2,
+  generateListContentV2,
+  generateLatexContentV2,
+  generateMapContentV2,
   generateReelContentV2,
   generateReelWithStatsV2,
+  generateInlineImageWithTableV2,
+  generateInlineVideoWithStatsV2,
+  // GRID_IMAGE + DYNAMIC (V1 + V2)
+  generateGridImageContent,
+  generateDynamicContent,
+  generateGridImageContentV2,
+  generateDynamicContentV2,
 } from 'baileys';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -601,6 +609,291 @@ export async function testInlineImageWithTable(sock, jid, quoted) {
   return 'inline image + table ✓';
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// V2 Generators — new generators added in fork commit b9f5c84
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * V2 List — base64-encoded list with no header row (list vs table distinction).
+ */
+export async function testV2List(sock, jid, quoted) {
+  const generated = generateListContentV2(
+    'NEXORA Plugins',
+    [
+      ['ping',    'general',  '✅'],
+      ['about',   'general',  '✅'],
+      ['sticker', 'media',    '✅'],
+      ['daily',   'economy',  '✅'],
+      ['eval',    'owner',    '🔒'],
+      ['ai',      'ai',       '🧪'],
+    ],
+    quoted,
+    { headerText: '🧪 V2 List Generator', footer: 'base64 unifiedResponse — no header row' },
+  );
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 list ✓';
+}
+
+/**
+ * V2 LaTeX — base64-encoded LaTeX expression.
+ */
+export async function testV2Latex(sock, jid, quoted) {
+  const generated = generateLatexContentV2(quoted, {
+    text: '🧪 V2 LaTeX Test — Euler identity:',
+    expressions: [
+      { latexExpression: 'e^{i\\pi} + 1 = 0', url: '', width: 180, height: 50 },
+    ],
+    headerText: 'LaTeX V2',
+    footer: 'NEXORA-MD • base64 unifiedResponse',
+  });
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 latex ✓';
+}
+
+/**
+ * V2 Map — base64-encoded location card.
+ */
+export async function testV2Map(sock, jid, quoted) {
+  const generated = generateMapContentV2(
+    {
+      centerLatitude: 5.6037,
+      centerLongitude: -0.1870,
+      latitudeDelta: 0.02,
+      longitudeDelta: 0.02,
+      annotations: [
+        { latitude: 5.6050, longitude: -0.1880, title: 'Cafe V2 One', body: 'Independence Ave' },
+        { latitude: 5.6020, longitude: -0.1860, title: 'Cafe V2 Two', body: 'Ring Road Central' },
+      ],
+      showInfoList: true,
+    },
+    quoted,
+    {
+      headerText: '🧪 V2 Location Card — Accra',
+      footer: 'NEXORA-MD • base64 unifiedResponse',
+    },
+  );
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 map ✓';
+}
+
+/**
+ * V2 Reel — base64-encoded video carousel.
+ */
+export async function testV2Reel(sock, jid, quoted) {
+  const reels = [
+    {
+      title:          'V2 Reel Demo',
+      profileIconUrl: 'https://i.pravatar.cc/150?img=20',
+      thumbnailUrl:   'https://picsum.photos/id/240/400/600',
+      videoUrl:       'https://www.w3schools.com/html/mov_bbb.mp4',
+    },
+    {
+      title:          'V2 Reel Demo 2',
+      profileIconUrl: 'https://i.pravatar.cc/150?img=21',
+      thumbnailUrl:   'https://picsum.photos/id/241/400/600',
+      videoUrl:       'https://www.w3schools.com/html/mov_bbb.mp4',
+    },
+  ];
+  const generated = generateReelContentV2(reels, quoted, {
+    headerText: '🧪 V2 Reel Content — Video Carousel',
+    footer: 'NEXORA-MD • base64 unifiedResponse',
+    contentType: 'CAROUSEL',
+  });
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 reel ✓';
+}
+
+/**
+ * V2 Reel + Stats — base64-encoded video carousel + stats table.
+ */
+export async function testV2ReelWithStats(sock, jid, quoted) {
+  const generated = generateReelWithStatsV2(
+    {
+      reels: [
+        {
+          title:          'V2 TikTok Download',
+          profileIconUrl: 'https://i.pravatar.cc/150?img=22',
+          thumbnailUrl:   'https://picsum.photos/id/242/400/600',
+          videoUrl:       'https://www.w3schools.com/html/mov_bbb.mp4',
+        },
+      ],
+      tableHeaders: ['Metric', 'Value'],
+      tableRows: [
+        ['Views',     '2,345,678'],
+        ['Likes',     '56,789'],
+        ['Comments',  '2,345'],
+        ['Shares',    '4,321'],
+        ['Duration',  '01:12'],
+        ['Quality',   'HD (1080p)'],
+      ],
+    },
+    quoted,
+    {
+      headerText: '🧪 V2 Reel + Stats — TikTok Download',
+      footer: 'NEXORA-MD • base64 unifiedResponse',
+    },
+  );
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 reel + stats ✓';
+}
+
+/**
+ * V2 Inline Image + Table — base64-encoded image preview + stats table.
+ */
+export async function testV2InlineImageWithTable(sock, jid, quoted) {
+  const generated = generateInlineImageWithTableV2(
+    {
+      image: {
+        imageUrl: {
+          imagePreviewUrl: 'https://picsum.photos/id/237/400/300',
+          imageHighResUrl: 'https://picsum.photos/id/237/800/600',
+          sourceUrl: 'https://picsum.photos',
+        },
+        imageText: 'V2 Image Preview',
+        alignment: 0,
+        tapLinkUrl: 'https://github.com/boyde1317-byte/NEXORA-MD',
+      },
+      tableHeaders: ['Property', 'Value'],
+      tableRows: [
+        ['Resolution', '800x600'],
+        ['Format',     'JPEG'],
+        ['Source',     'picsum.photos'],
+        ['License',    'Unsplash'],
+      ],
+    },
+    quoted,
+    {
+      headerText: '🧪 V2 Inline Image + Table',
+      footer: 'NEXORA-MD • base64 unifiedResponse',
+    },
+  );
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 inline image + table ✓';
+}
+
+/**
+ * V2 Inline Video + Stats — base64-encoded single video + stats table.
+ */
+export async function testV2InlineVideoWithStats(sock, jid, quoted) {
+  const generated = generateInlineVideoWithStatsV2(
+    {
+      video: {
+        title:          'V2 Inline Video',
+        profileIconUrl: 'https://i.pravatar.cc/150?img=23',
+        thumbnailUrl:   'https://picsum.photos/id/243/400/600',
+        videoUrl:       'https://www.w3schools.com/html/mov_bbb.mp4',
+      },
+      tableHeaders: ['Metric', 'Value'],
+      tableRows: [
+        ['Views',     '3,456,789'],
+        ['Likes',     '67,890'],
+        ['Comments',  '3,456'],
+        ['Shares',    '5,432'],
+        ['Duration',  '01:30'],
+        ['Quality',   'HD (1080p)'],
+      ],
+    },
+    quoted,
+    {
+      headerText: '🧪 V2 Inline Video + Stats',
+      footer: 'NEXORA-MD • base64 unifiedResponse',
+    },
+  );
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 inline video + stats ✓';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GRID_IMAGE + DYNAMIC generators (fork commit b9f5c84)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * V1 Grid Image — image gallery grid using gridImageMetadata (messageType 1).
+ * Shows a main grid image + collection of thumbnails.
+ */
+export async function testV1GridImage(sock, jid, quoted) {
+  const generated = generateGridImageContent(
+    {
+      gridImageUrl: {
+        imagePreviewUrl: 'https://picsum.photos/id/237/400/400',
+        imageHighResUrl: 'https://picsum.photos/id/237/800/800',
+        sourceUrl: 'https://picsum.photos',
+      },
+      imageUrls: [
+        { imagePreviewUrl: 'https://picsum.photos/id/238/200/200', imageHighResUrl: 'https://picsum.photos/id/238/400/400', sourceUrl: 'https://picsum.photos' },
+        { imagePreviewUrl: 'https://picsum.photos/id/239/200/200', imageHighResUrl: 'https://picsum.photos/id/239/400/400', sourceUrl: 'https://picsum.photos' },
+        { imagePreviewUrl: 'https://picsum.photos/id/240/200/200', imageHighResUrl: 'https://picsum.photos/id/240/400/400', sourceUrl: 'https://picsum.photos' },
+        { imagePreviewUrl: 'https://picsum.photos/id/241/200/200', imageHighResUrl: 'https://picsum.photos/id/241/400/400', sourceUrl: 'https://picsum.photos' },
+      ],
+    },
+    quoted,
+    {
+      headerText: '🧪 V1 Grid Image — Photo Gallery',
+      footer: 'NEXORA-MD • gridImageMetadata (type 1)',
+    },
+  );
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V1 grid image ✓';
+}
+
+/**
+ * V1 Dynamic — animated GIF/image using dynamicMetadata (messageType 6).
+ */
+export async function testV1Dynamic(sock, jid, quoted) {
+  const generated = generateDynamicContent(
+    { type: 'gif', url: 'https://media.giphy.com/media/3oEjI6SIIHBdIwqEoI/giphy.gif', loopCount: 3, version: 1 },
+    quoted,
+    {
+      headerText: '🧪 V1 Dynamic — Animated GIF',
+      footer: 'NEXORA-MD • dynamicMetadata (type 6, GIF)',
+    },
+  );
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V1 dynamic ✓';
+}
+
+/**
+ * V2 Grid Image — base64-encoded image gallery grid.
+ */
+export async function testV2GridImage(sock, jid, quoted) {
+  const generated = generateGridImageContentV2(
+    {
+      gridImageUrl: {
+        imagePreviewUrl: 'https://picsum.photos/id/237/400/400',
+        imageHighResUrl: 'https://picsum.photos/id/237/800/800',
+        sourceUrl: 'https://picsum.photos',
+      },
+      imageUrls: [
+        { imagePreviewUrl: 'https://picsum.photos/id/238/200/200', imageHighResUrl: 'https://picsum.photos/id/238/400/400', sourceUrl: 'https://picsum.photos' },
+        { imagePreviewUrl: 'https://picsum.photos/id/239/200/200', imageHighResUrl: 'https://picsum.photos/id/239/400/400', sourceUrl: 'https://picsum.photos' },
+      ],
+    },
+    quoted,
+    {
+      headerText: '🧪 V2 Grid Image — Photo Gallery',
+      footer: 'NEXORA-MD • base64 unifiedResponse',
+    },
+  );
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 grid image ✓';
+}
+
+/**
+ * V2 Dynamic — base64-encoded animated content.
+ */
+export async function testV2Dynamic(sock, jid, quoted) {
+  const generated = generateDynamicContentV2(
+    { type: 'image', url: 'https://picsum.photos/id/300/400/300', loopCount: 0, version: 1 },
+    quoted,
+    {
+      headerText: '🧪 V2 Dynamic — Animated Image',
+      footer: 'NEXORA-MD • base64 unifiedResponse',
+    },
+  );
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 dynamic ✓';
+}
+
 // Master test registry
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -629,6 +922,19 @@ export const RICH_TESTS = [
   { id: "inlinevid",  label: "🎬 Inline Video+Table", fn: testInlineVideoWithStats, group: "Location" },
   { id: "inlineimg",  label: "🖼️ Inline Image+Table", fn: testInlineImageWithTable, group: "Images" },
   { id: "capture",    label: "🔄 Capture & Relay",   fn: testCaptureRelay,    group: "Capture" },
+  // V2 generators (new — fork commit b9f5c84)
+  { id: 'v2list',     label: '📋 V2 List',            fn: testV2List,          group: 'V2' },
+  { id: 'v2latex',    label: '∫ V2 LaTeX',            fn: testV2Latex,        group: 'V2' },
+  { id: 'v2map',      label: '📍 V2 Location Card',   fn: testV2Map,           group: 'V2' },
+  { id: 'v2reel',     label: '🎬 V2 Reel Carousel',  fn: testV2Reel,          group: 'V2' },
+  { id: 'v2reelstats',label: '🎬 V2 Reel + Stats',    fn: testV2ReelWithStats,  group: 'V2' },
+  { id: 'v2imgtable', label: '🖼️ V2 Image+Table',   fn: testV2InlineImageWithTable, group: 'V2' },
+  { id: 'v2vidtable', label: '🎬 V2 Video+Table',    fn: testV2InlineVideoWithStats, group: 'V2' },
+  // GRID_IMAGE + DYNAMIC (new — fork commit b9f5c84)
+  { id: 'v1grid',     label: '🖼️ V1 Grid Image',    fn: testV1GridImage,     group: 'Grid/Dynamic' },
+  { id: 'v1dyn',      label: '🎞️ V1 Dynamic GIF',    fn: testV1Dynamic,       group: 'Grid/Dynamic' },
+  { id: 'v2grid',     label: '🖼️ V2 Grid Image',    fn: testV2GridImage,     group: 'Grid/Dynamic' },
+  { id: 'v2dyn',      label: '🎞️ V2 Dynamic Image',  fn: testV2Dynamic,       group: 'Grid/Dynamic' },
 ];
 
 export async function runRichTest(sock, jid, testId, quoted) {
