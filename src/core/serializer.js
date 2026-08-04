@@ -150,6 +150,16 @@ async function findParticipant(participants, targetJid, sock) {
   const direct = participants.find(p => normaliseJid(p.id) === norm);
   if (direct) return direct;
 
+  // 1.5 Direct phoneNumber/lid field match — WhatsApp's group participant nodes
+  // already carry this bridge (phone_number/lid attrs, see groups.js), no
+  // session/signalRepository lookup needed. Cheaper and more reliable than
+  // step 2/3 below, which depend on an established Signal session existing.
+  const byField = participants.find(p =>
+    (p.phoneNumber && normaliseJid(p.phoneNumber) === norm) ||
+    (p.lid && normaliseJid(p.lid) === norm)
+  );
+  if (byField) return byField;
+
   const contacts = sock?.contacts || {};
 
   // 2. LID → phone JID (authoritative: signalRepository; fallback: contacts store)
@@ -195,18 +205,46 @@ async function findParticipant(participants, targetJid, sock) {
  * WhatsApp presents the owner's own account as an opaque LID instead of a
  * phone-number JID (common with privacy settings on newer accounts).
  */
-async function resolveIsOwner(sock, senderJid, fromMe) {
+async function resolveIsOwner(sock, senderJid, fromMe, groupJid) {
   const botNumber = sock?.user?.id?.split('@')[0]?.split(':')[0];
   const botIsOwner = !!(botNumber && config.owner.includes(botNumber));
   if (fromMe && botIsOwner) return true;
 
-  const rawNumber = normaliseJid(senderJid).split('@')[0];
+  const norm = normaliseJid(senderJid);
+  const rawNumber = norm.split('@')[0];
   if (config.owner.includes(rawNumber)) return true;
+
+  // Group metadata bridge — WhatsApp sends phone_number/lid attrs directly on
+  // each participant node (see groups.js), so this resolves the owner's real
+  // number even when NO Signal session exists yet for their LID. This is the
+  // failure mode that broke owner checks: a fresh/newly-active group presents
+  // the sender as an opaque LID, signalRepository.lidMapping has no entry for
+  // it yet (no session established), so the old code fell through and denied
+  // the real owner. Group metadata doesn't need a session — it's always there.
+  if (groupJid) {
+    try {
+      const meta = await sock.groupMetadata(groupJid);
+      const p = meta?.participants?.find(part => normaliseJid(part.id) === norm);
+      if (p?.phoneNumber && config.owner.includes(normaliseJid(p.phoneNumber).split('@')[0])) {
+        return true;
+      }
+      if (p?.lid && config.owner.includes(normaliseJid(p.lid).split('@')[0])) {
+        return true;
+      }
+    } catch (_) {
+      // Metadata fetch failed (rate limit, not-in-group edge case) — fall through.
+    }
+  }
 
   // Sender presented as a LID — resolve to the real phone number before giving up.
   const pnJid = await resolvePhoneJid(sock, senderJid);
   const pnNumber = pnJid.split('@')[0];
-  return config.owner.includes(pnNumber);
+  if (config.owner.includes(pnNumber)) return true;
+
+  // Owner configured by LID directly — resolve senderJid's LID form and compare.
+  const lidJid = await resolveLidJid(sock, senderJid);
+  const lidNumber = lidJid.split('@')[0];
+  return config.owner.includes(lidNumber);
 }
 
 export async function serialize(m, sock) {
@@ -227,7 +265,7 @@ export async function serialize(m, sock) {
     // LID fix: WhatsApp may present the sender as an opaque LID instead of a phone number
     // (privacy setting on newer accounts). resolveIsOwner follows the real LID↔PN bridge
     // (sock.signalRepository.lidMapping) rather than comparing the opaque LID directly.
-    message.isOwner  = await resolveIsOwner(sock, message.sender, message.fromMe);
+    message.isOwner  = await resolveIsOwner(sock, message.sender, message.fromMe, message.isGroup ? message.from : undefined);
   }
 
   if (message.message) {

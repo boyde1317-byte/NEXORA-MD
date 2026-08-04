@@ -91,16 +91,21 @@ export const menuTemplate = (menuData) => {
     }
 
     const cmds = menuData.categories[cat];
-    for (const cmd of cmds) {
+    cmds.forEach((cmd, cmdIdx) => {
       const desc = cmd.description ? ` \u2014 ${toSmallcaps(cmd.description)}` : '';
+      const isLastCmd = cmdIdx === cmds.length - 1;
       if (styleName === 'minimal') {
         formattedLines.push(`  ${bulletIcon} ${cmd.name}${desc}`);
+        if (!isLastCmd) formattedLines.push('');
       } else if (styleName === 'classic') {
         formattedLines.push(`\u2503 ${bulletIcon} ${cmd.name}${desc}`);
+        // Spacer keeps the vertical rule unbroken while giving each command room to breathe
+        if (!isLastCmd) formattedLines.push(`\u2503`);
       } else {
         formattedLines.push(`${borders.bulletLine}${bulletIcon} ${cmd.name}${desc}`);
+        if (!isLastCmd) formattedLines.push(`${borders.line}`);
       }
-    }
+    });
 
     // Add a small gap between categories (except after the last one)
     if (catIndex < sortedCategories.length) {
