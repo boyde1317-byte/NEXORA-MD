@@ -446,15 +446,15 @@ export async function testReelContent(sock, jid, quoted) {
   const reels = [
     {
       title:          'NEXORA-MD Demo Video',
-      profileIconUrl: 'https://github.com/boyde1317-byte.png',
-      thumbnailUrl:   'https://cdn.jsdelivr.net/gh/whatsapp/docs@main/static/img/logo.png',
-      videoUrl:       'https://example.com/demo.mp4',
+      profileIconUrl: 'https://i.pravatar.cc/150?img=12',
+      thumbnailUrl:   'https://picsum.photos/id/237/400/600',
+      videoUrl:       'https://www.w3schools.com/html/mov_bbb.mp4',
     },
     {
       title:          'Interactive Menu Showcase',
-      profileIconUrl: 'https://github.com/boyde1317-byte.png',
-      thumbnailUrl:   'https://cdn.jsdelivr.net/gh/whatsapp/docs@main/static/img/logo.png',
-      videoUrl:       'https://example.com/menu.mp4',
+      profileIconUrl: 'https://i.pravatar.cc/150?img=13',
+      thumbnailUrl:   'https://picsum.photos/id/238/400/600',
+      videoUrl:       'https://www.w3schools.com/html/mov_bbb.mp4',
     },
   ];
   const generated = generateReelContent(reels, quoted, {
@@ -474,9 +474,9 @@ export async function testReelWithStats(sock, jid, quoted) {
     reels: [
       {
         title:          'TikTok @user/video/123456',
-        profileIconUrl: 'https://github.com/boyde1317-byte.png',
-        thumbnailUrl:   'https://cdn.jsdelivr.net/gh/whatsapp/docs@main/static/img/logo.png',
-        videoUrl:       'https://v16-webapp.tiktok.com/example.mp4',
+        profileIconUrl: 'https://i.pravatar.cc/150?img=14',
+        thumbnailUrl:   'https://picsum.photos/id/239/400/600',
+        videoUrl:       'https://www.w3schools.com/html/mov_bbb.mp4',
       },
     ],
     tableTitle: 'Download Stats',
