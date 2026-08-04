@@ -65,7 +65,33 @@ function saveDb(data) {
   }
 }
 
+// ── One-time migration: remove stale welcome/goodbye defaults ─────────────
+// Previous versions set welcome: false / goodbye: false as the default for
+// every group. These should be treated as "not set" (use global default),
+// not as "explicitly disabled". We delete them from existing group records
+// so the new _isGreetingEnabled logic falls back to the global config.
+function migrateGreetingFlags(data) {
+  if (!data.groups) return;
+  let migrated = 0;
+  for (const jid of Object.keys(data.groups)) {
+    const g = data.groups[jid];
+    if ('welcome' in g && g.welcome === false) {
+      delete g.welcome;
+      migrated++;
+    }
+    if ('goodbye' in g && g.goodbye === false) {
+      delete g.goodbye;
+      migrated++;
+    }
+  }
+  if (migrated > 0) {
+    console.log(`[DB MIGRATION] Cleaned ${migrated} stale greeting flag(s) from existing groups.`);
+    saveDb(data);
+  }
+}
+
 let _data = loadDb();
+migrateGreetingFlags(_data);
 
 export const db = {
   data: _data,
@@ -107,8 +133,9 @@ export const db = {
     if (!_data.groups[jid]) {
       _data.groups[jid] = {
         jid,
-        welcome: false,
-        goodbye: false,
+        // welcome/goodbye are NOT set here — undefined means "use global default".
+        // They are only set to true/false when the owner explicitly toggles
+        // via .welcome on/off or .goodbye on/off inside the group.
         antilink: false,
         mute: false,
         createdAt: Date.now()

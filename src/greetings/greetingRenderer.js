@@ -5,6 +5,7 @@ import { messageCapability } from './messageCapability.js';
 import { welcome1 } from './greetingStyles/welcome1.js';
 import { welcome2 } from './greetingStyles/welcome2.js';
 import { welcome3 } from './greetingStyles/welcome3.js';
+import { db } from '../database/db.js';
 
 // Simple in-memory caches to prevent rate limiting & disk bottleneck
 const profilePicCache = new Map();
@@ -60,16 +61,50 @@ export const greetingRenderer = {
   },
 
   /**
+   * Checks whether greetings should fire for a given group.
+   *
+   * Resolution order:
+   *   1. Per-group DB flag (db.getGroup(jid).welcome / .goodbye)
+   *      — set via `.welcome on/off` run inside that group
+   *   2. Global greetingConfig flag (greeting.json)
+   *      — set via `.welcome on/off` run in DM (no group context)
+   *
+   * If the per-group flag is explicitly true or false, it wins.
+   * If the per-group flag was never set (undefined), we fall back to
+   * the global default.
+   */
+  _isGreetingEnabled(jid, isWelcome) {
+    const groupData = db.getGroup(jid);
+
+    if (isWelcome) {
+      // Per-group flag takes priority if explicitly set
+      if (typeof groupData.welcome === 'boolean') {
+        return groupData.welcome;
+      }
+      // Fall back to global
+      return greetingConfig.getEnabled();
+    } else {
+      // Goodbye
+      if (typeof groupData.goodbye === 'boolean') {
+        return groupData.goodbye;
+      }
+      // Fall back to global
+      return greetingConfig.getGoodbyeEnabled();
+    }
+  },
+
+  /**
    * Renders the chosen greeting and delivers it securely
    */
   async renderAndSend({ sock, jid, userJid, isWelcome }) {
     enqueueTask(async () => {
       try {
-        const configData = greetingConfig.load();
-        
-        // 1. Verify if feature is globally enabled
-        if (isWelcome && !configData.enabled) return;
-        if (!isWelcome && !configData.goodbyeEnabled) return;
+        // 1. Check if greeting is enabled for this group
+        //    Per-group flag (DB) → global config fallback
+        if (!this._isGreetingEnabled(jid, isWelcome)) {
+          console.log(`[GREETING RENDERER] ${isWelcome ? 'Welcome' : 'Goodbye'} disabled for ${jid} (per-group or global)`);
+          return;
+        }
 
         // 2. Fetch Group metadata
         let metadata;
