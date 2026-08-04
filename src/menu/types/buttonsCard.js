@@ -7,9 +7,9 @@
  * and the subtitle shows live time + status — exactly like the look from
  * BIGST4CK's ButtonV2 builder.
  *
- * Button types:
- *   type: 1 → quick reply (tappable pill button that runs a command)
- *   type: 1 + nativeFlowInfo → native flow list picker / single_select
+ * Two modes:
+ *   • Main menu (no args) → greeting body + system stats footer + Store + Navigation
+ *   • Category menu (args) → monospace command list (grey) + simple footer + Main Menu + Navigation
  *
  * The biz/native_flow additionalNodes stanza is injected automatically
  * by baileysBridge.relayMessage() (hasNativeFlowContent checks buttonsMessage).
@@ -19,10 +19,61 @@ import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { getGreeting } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
+import { buildFakeProductQuote } from '../../lib/waUtils.js';
 import brand from '../../../config/brand.js';
 import owner from '../../../config/owner.js';
-import { formatUptime } from '../../lib/utils.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
+
+/**
+ * Build the productMessage catalog quote used as contextInfo.
+ * This is what makes the card render as a "business catalog forward"
+ * — the quoted reply bar shows a product card with the bot name.
+ */
+function buildCatalogQuote(thumbnail) {
+  return buildFakeProductQuote({
+    title:           brand.name,
+    description:     brand.description || `${brand.name} by ${brand.creator}`,
+    currencyCode:   'BTC',
+    priceAmount1000: 100000000,
+    businessOwnerJid: '0@s.whatsapp.net',
+    ...(thumbnail ? { jpegThumbnail: thumbnail } : {}),
+  });
+}
+
+/**
+ * Build the navigation single_select button (native flow list picker).
+ * Opens a modal sheet with all command categories — tapping one runs
+ * `.menu <category>` to show that category's commands.
+ */
+function buildNavigationButton(prefix) {
+  const p = prefix || '.';
+  const categories = [
+    { title: 'All Commands', description: 'Show all commands', id: `${p}menu all` },
+    { title: 'AI',           description: 'AI chat & generation', id: `${p}menu ai` },
+    { title: 'Downloader',   description: 'Media downloaders',  id: `${p}menu downloader` },
+    { title: 'Tools',        description: 'Utility commands',    id: `${p}menu tools` },
+    { title: 'Games',        description: 'Mini games',          id: `${p}menu games` },
+    { title: 'Group',        description: 'Group management',    id: `${p}menu group` },
+    { title: 'Sticker',      description: 'Sticker commands',    id: `${p}menu sticker` },
+    { title: 'Owner',        description: 'Owner commands',     id: `${p}menu owner` },
+    { title: 'About',        description: 'Bot info',            id: `${p}about` },
+  ];
+  return {
+    buttonText: { displayText: '☰ Navigation' },
+    buttonId: 'menu_nav',
+    type: 1,
+    nativeFlowInfo: {
+      name: 'single_select',
+      paramsJson: JSON.stringify({
+        title: 'Select Category',
+        sections: [{
+          title: `${brand.name} Menu`,
+          rows: categories,
+        }],
+      }),
+    },
+  };
+}
 
 export const buttonsCardMenu = {
   id: 5,
@@ -32,8 +83,6 @@ export const buttonsCardMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     // ── Time & status (for the header subtitle) ───────────────────────────
-    // Real-time, not a placeholder. Timezone configurable via BOT_TZ env,
-    // defaults to Africa/Accra (the owner's timezone).
     const tz = process.env.BOT_TZ || 'Africa/Accra';
     const now = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
     const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -45,50 +94,50 @@ export const buttonsCardMenu = {
     const ramPct   = ((os.totalmem() - os.freemem()) / os.totalmem()) * 100;
     const serverStatus = loadPct > 80 || ramPct > 85 ? 'Degraded' : 'Online';
 
-    // ── Body text: monospace wrapping = grey rendering in WhatsApp ────────
-    const menuText = buildTextMenu(menuData);
-    const greeting = getGreeting();
-    const headerBlock =
-      `${greeting}\n` +
-      `${dateStr} · ${timeStr}\n` +
-      `Prefix: ${menuData.prefix} · Commands: ${menuData.totalCommands}\n` +
-      `─────────────────────────\n`;
-    const bodyText = '```' + headerBlock + menuText + '```';
-
-    // ── Footer: user/system stats in › style ─────────────────────────────
-    const memUsage = process.memoryUsage();
-    const ramMb = (memUsage.heapUsed / 1024 / 1024).toFixed(1);
-    const footerText =
-      `*»* *SYSTEM*\n` +
-      `  › *Status:* ${serverStatus}\n` +
-      `  › *Uptime:* ${menuData.uptime}\n` +
-      `  › *RAM:* ${ramMb} MB\n` +
-      `  › *Commands:* ${menuData.totalCommands}\n` +
-      `  › *Users:* ${menuData.users}\n` +
-      `  › *Version:* v${brand.version}\n\n` +
-      `${brand.name} ${brand.signature}`;
-
     // ── Thumbnail: high-quality brand image ───────────────────────────────
     let thumbnail = ASSET_URLS.thumbnail;
+    let thumbnailBuffer = null;
     try {
       const imgData = await imageManager.getMenuImage(5);
       if (imgData?.source?.startsWith('http')) {
         thumbnail = imgData.source;
       } else if (imgData?.buffer) {
         thumbnail = imgData.buffer;
+        thumbnailBuffer = imgData.buffer;
       }
     } catch (_) {}
 
-    // ── Buttons ───────────────────────────────────────────────────────────
-    const p = menuData.prefix || '.';
-    const buttons = [
-      { displayText: '📋 All Commands', id: `${p}menu all`, type: 1 },
-      { displayText: '🤖 System Info',  id: `${p}about`,    type: 1 },
-      { displayText: '💰 Daily Reward', id: `${p}daily`,    type: 1 },
-    ];
+    // ── Catalog quote (productMessage fake quote for the reply bar) ───────
+    const catalogQuote = buildCatalogQuote(thumbnailBuffer);
 
-    // ── Send via buttonsMessage card ──────────────────────────────────────
-    try {
+    // ── Build contextInfo with the catalog quote ──────────────────────────
+    const contextInfo = {
+      stanzaId:      catalogQuote.key.id || 'catalog',
+      participant:   catalogQuote.key.participant,
+      remoteJid:     catalogQuote.key.remoteJid,
+      quotedMessage: catalogQuote.message,
+    };
+
+    // ── Check if this is a category-specific menu (args passed) ───────────
+    const p = menuData.prefix || '.';
+    const categoryArg = m.text?.split(/\s+/)?.[1]?.toLowerCase();
+    const isCategoryMenu = categoryArg && categoryArg !== 'all';
+
+    if (isCategoryMenu) {
+      // ── CATEGORY MENU: monospace command list (grey text) ───────────────
+      const menuText = buildTextMenu(menuData);
+      const bodyText = '```' + menuText + '```';
+
+      const footerText =
+        `${brand.name} v${brand.version} · ${menuData.totalCommands} commands\n` +
+        `${brand.signature}`;
+
+      const buttons = [
+        { displayText: '📋 Main Menu', id: `${p}menu`, type: 1 },
+        { displayText: '📜 All Commands', id: `${p}menu all`, type: 1 },
+        buildNavigationButton(p),
+      ];
+
       return await baileysBridge.sendButtonsCard(sock, m.from, {
         body:       bodyText,
         footer:     footerText,
@@ -96,11 +145,71 @@ export const buttonsCardMenu = {
         subtitle:   `${serverStatus} · ${timeStr}`,
         thumbnail,
         buttons,
+        contextInfo,
       }, { quoted: m });
-    } catch (err) {
-      console.warn('[MENU buttonsCard] sendButtonsCard failed, falling back to text:', err.message);
-      // Fallback: plain text with the same content
-      throw err; // runWithFallback → plain text
+
+    } else {
+      // ── MAIN MENU: greeting body + system stats footer ─────────────────
+      const greeting = getGreeting();
+      const senderNumber = m.senderNumber || m.sender?.split('@')[0] || '';
+
+      // Body: greeting + date/time (regular text, NOT monospace — like BIGST4CK)
+      const bodyText =
+        `${greeting}, @${senderNumber}\n` +
+        `${dateStr} · ${timeStr}`;
+
+      // Footer: system stats with bold labels and progress bars (› style)
+      const memUsage = process.memoryUsage();
+      const ramMb = (memUsage.heapUsed / 1024 / 1024).toFixed(1);
+      const totalMem = os.totalmem();
+      const usedMem = totalMem - os.freemem();
+      const fmtRAM = (b) => {
+        const mb = b / 1024 / 1024;
+        return mb >= 1024 ? `${(mb / 1024).toFixed(2)} GB` : `${mb.toFixed(0)} MB`;
+      };
+
+      const createBar = (percent, maxBlocks = 8) => {
+        const filled = Math.round((percent / 100) * maxBlocks);
+        return '█'.repeat(filled) + '░'.repeat(maxBlocks - filled);
+      };
+
+      const footerText =
+        `*»* *USER*\n` +
+        `  › *Status:* ${m.isOwner ? 'Owner' : 'User'}\n` +
+        `  › *Prefix:* ${p}\n\n` +
+        `*»* *SYSTEM*\n` +
+        `  › *Status:* ${serverStatus}\n` +
+        `  › *Uptime:* ${menuData.uptime}\n` +
+        `  › *RAM:* ${fmtRAM(usedMem)}/${fmtRAM(totalMem)} ${createBar(ramPct, 8)}\n` +
+        `  › *CPU:* ${createBar(Math.min(loadPct, 100), 10)} ${Math.round(loadPct)}%\n` +
+        `  › *Commands:* ${menuData.totalCommands}\n` +
+        `  › *Users:* ${menuData.users}\n` +
+        `  › *Groups:* ${menuData.groups}\n` +
+        `  › *Version:* v${brand.version}\n\n` +
+        `${brand.name} ${brand.signature}`;
+
+      // Buttons: Store/quick action + Navigation single_select
+      const buttons = [
+        { displayText: '📋 All Commands', id: `${p}menu all`, type: 1 },
+        { displayText: '🤖 System Info',  id: `${p}about`,    type: 1 },
+        buildNavigationButton(p),
+      ];
+
+      // Add mentionedJid for the @sender mention in body
+      const contextInfoWithMention = {
+        ...contextInfo,
+        mentionedJid: m.sender ? [m.sender] : [],
+      };
+
+      return await baileysBridge.sendButtonsCard(sock, m.from, {
+        body:       bodyText,
+        footer:     footerText,
+        title:      brand.name,
+        subtitle:   `${serverStatus} · ${timeStr}`,
+        thumbnail,
+        buttons,
+        contextInfo: contextInfoWithMention,
+      }, { quoted: m });
     }
   },
 };
