@@ -633,7 +633,16 @@ export const baileysBridge = {
             fallbackText += sub.items.map(i => "• " + (i.title || '') + (i.text ? "\n  " + i.text : '')).join('\n\n') + '\n\n';
           }
           else if (sub.inlineImage) {
-            fallbackText += `[🖼️ ${sub.imageText || 'Image'}: ${sub.inlineImage}]\n\n`;
+            // imageUrl can now be an object { imagePreviewUrl, imageHighResUrl, sourceUrl }
+            // (fork commit 9b1f70a) or a legacy raw string.
+            const img = sub.inlineImage;
+            const url = typeof img === 'string' ? img : (img.imageHighResUrl || img.imagePreviewUrl || '');
+            fallbackText += `[🖼️ ${sub.imageText || 'Image'}: ${url}]\n\n`;
+          }
+          else if (sub.inlineVideo) {
+            // inlineVideo now sends CONTENT_ITEMS (type 9) with reelItem data.
+            const v = sub.inlineVideo;
+            fallbackText += `[🎬 ${v.title || 'Video'}: ${v.videoUrl || v.thumbnailUrl || ''}]\n\n`;
           }
         }
       }

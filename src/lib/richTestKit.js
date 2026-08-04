@@ -38,6 +38,8 @@ import {
   generateReelContent,
   generateReelWithStats,
   generateMapContent,
+  generateInlineImageWithTable,
+  generateInlineVideoWithStats,
 } from 'baileys';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -563,6 +565,43 @@ export async function testInlineVideoWithStats(sock, jid, quoted) {
   return 'inline video + stats \u2713';
 }
 
+/**
+ * Inline Image + Table — INLINE_IMAGE (type 3) + TABLE (type 4) submessages.
+ * Combines an image preview with a stats table — ideal for search results,
+ * weather cards, and download info with thumbnails.
+ */
+export async function testInlineImageWithTable(sock, jid, quoted) {
+  const generated = generateInlineImageWithTable(
+    {
+      image: {
+        imageUrl: {
+          imagePreviewUrl: 'https://picsum.photos/id/237/400/300',
+          imageHighResUrl: 'https://picsum.photos/id/237/800/600',
+          sourceUrl: 'https://picsum.photos',
+        },
+        imageText: 'NEXORA-MD Test Image',
+        alignment: 0,
+        tapLinkUrl: 'https://github.com/boyde1317-byte/NEXORA-MD',
+      },
+      tableTitle: 'Image Stats',
+      tableHeaders: [ 'Property', 'Value' ],
+      tableRows: [
+        [ 'Resolution',   '800x600'  ],
+        [ 'Format',       'JPEG'     ],
+        [ 'Source',       'picsum.photos' ],
+        [ 'License',      'Unsplash'  ],
+      ],
+    },
+    quoted,
+    {
+      headerText: '🧪 Inline Image + Table — search result card layout',
+      footer: 'NEXORA-MD • inlineImage (type 3) + table (type 4)',
+    }
+  );
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'inline image + table ✓';
+}
+
 // Master test registry
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -589,6 +628,7 @@ export const RICH_TESTS = [
   { id: "reelstats",  label: "🎬 Reel + Stats Table", fn: testReelWithStats,   group: "Reels" },
   { id: "map",        label: "📍 Location Card",     fn: testMapContent,      group: "Location" },
   { id: "inlinevid",  label: "🎬 Inline Video+Table", fn: testInlineVideoWithStats, group: "Location" },
+  { id: "inlineimg",  label: "🖼️ Inline Image+Table", fn: testInlineImageWithTable, group: "Images" },
   { id: "capture",    label: "🔄 Capture & Relay",   fn: testCaptureRelay,    group: "Capture" },
 ];
 
