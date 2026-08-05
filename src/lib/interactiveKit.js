@@ -522,6 +522,99 @@ export async function richArticleCard(sock, jid, { headerText, contentText, foot
   return sock.sendMessage(jid, { text: text.trim() }, sendOptions);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// NEW: Rich combination cards (v0.3.18-r3 — code+table, map+table, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Sends a code block + table combo (V2 native UI).
+ * @example
+ * await codeTableCard(sock, m.from, {
+ *   code: 'const x = 42',
+ *   language: 'javascript',
+ *   headers: ['Output', 'Value'],
+ *   rows: [['stdout', '42']],
+ *   headerText: 'Code Results',
+ * }, { quoted: m });
+ */
+export async function codeTableCard(sock, jid, content, opts = {}) {
+  if (!capabilities.richResponse) {
+    const text = '```' + (content.language || '') + '\n' + content.code + '\n```\n' +
+      (content.rows || []).map(r => r.join(' | ')).join('\n');
+    return sock.sendMessage(jid, { text }, opts);
+  }
+  return baileysBridge.sendCodeWithTable(sock, jid, content, opts);
+}
+
+/**
+ * Sends a map card + stats table combo (V2 native UI).
+ * @example
+ * await mapTableCard(sock, m.from, {
+ *   latitude: 37.7749, longitude: -122.4194,
+ *   headers: ['Population', 'Area'],
+ *   rows: [['870K', '121 km²']],
+ *   headerText: 'San Francisco',
+ * }, { quoted: m });
+ */
+export async function mapTableCard(sock, jid, content, opts = {}) {
+  if (!capabilities.richResponse) {
+    return sock.sendMessage(jid, { text: (content.headerText || 'Location') + ': ' + (content.latitude || '') + ',' + (content.longitude || '') }, opts);
+  }
+  return baileysBridge.sendMapWithTable(sock, jid, content, opts);
+}
+
+/**
+ * Sends text + inline image combo (V2 native UI).
+ * @example
+ * await textImageCard(sock, m.from, {
+ *   text: 'Check out this image:',
+ *   imageUrl: 'https://example.com/img.jpg',
+ *   caption: 'Sample',
+ * }, { quoted: m });
+ */
+export async function textImageCard(sock, jid, content, opts = {}) {
+  if (!capabilities.richResponse) {
+    return sock.sendMessage(jid, { text: content.text + '\n' + (content.imageUrl || '') }, opts);
+  }
+  return baileysBridge.sendTextWithImage(sock, jid, content, opts);
+}
+
+/**
+ * Sends multiple inline images as a native gallery (V2).
+ * @example
+ * await multiImageCard(sock, m.from, {
+ *   images: [{ imageUrl: 'https://a.jpg', imageText: 'A' }, { imageUrl: 'https://b.jpg', imageText: 'B' }],
+ *   headerText: 'Gallery',
+ * }, { quoted: m });
+ */
+export async function multiImageCard(sock, jid, content, opts = {}) {
+  if (!capabilities.richResponse) {
+    const text = (content.images || []).map(img => (img.imageText || '') + ': ' + (img.imageUrl || '')).join('\n');
+    return sock.sendMessage(jid, { text }, opts);
+  }
+  return baileysBridge.sendMultiImages(sock, jid, content, opts);
+}
+
+/**
+ * Sends a grid image gallery + table combo (V2 native UI).
+ */
+export async function gridTableCard(sock, jid, content, opts = {}) {
+  if (!capabilities.richResponse) {
+    return sock.sendMessage(jid, { text: content.headerText || 'Gallery' }, opts);
+  }
+  return baileysBridge.sendGridImageWithTable(sock, jid, content, opts);
+}
+
+/**
+ * Sends a dynamic (animated) + table combo (V2 native UI).
+ */
+export async function dynamicTableCard(sock, jid, content, opts = {}) {
+  if (!capabilities.richResponse) {
+    return sock.sendMessage(jid, { text: content.headerText || 'Dynamic' }, opts);
+  }
+  return baileysBridge.sendDynamicWithTable(sock, jid, content, opts);
+}
+
 export default {
   richCarouselCard,
   richMediaCard,
@@ -536,4 +629,11 @@ export default {
   offerCard,
   richTableCard,
   richCodeCard,
+  // New combination cards
+  codeTableCard,
+  mapTableCard,
+  textImageCard,
+  multiImageCard,
+  gridTableCard,
+  dynamicTableCard,
 };

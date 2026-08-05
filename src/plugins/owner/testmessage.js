@@ -14,6 +14,8 @@ import {
   selectMenu, actionCard, mixedCard,
   copyResultCard, bottomSheetCard, offerCard,
   richTableCard, richCodeCard,
+  codeTableCard, mapTableCard, textImageCard,
+  multiImageCard, gridTableCard, dynamicTableCard,
 } from '../../lib/interactiveKit.js';
 
 // ─── Test runners ─────────────────────────────────────────────────────────────
@@ -170,6 +172,85 @@ async function runNewsletter(sock, m) {
   }
 }
 
+// ─── New combo test runners (v0.3.18-r3) ─────────────────────────────────────
+
+async function runCodeTable(sock, m) {
+  await codeTableCard(sock, m.from, {
+    code: 'const results = await db.query("SELECT * FROM plugins WHERE active = 1");\nconsole.log(results.length + " active plugins");',
+    language: 'javascript',
+    headers: ['Plugin', 'Category', 'Status'],
+    rows: [['ping', 'general', '✅'], ['sticker', 'media', '✅'], ['daily', 'economy', '✅']],
+    tableTitle: 'Active Plugins',
+    headerText: '🧪 *CODE+TABLE TEST*',
+    footer: 'Code block + results table combo',
+  }, { quoted: m });
+  return 'code+table ✓';
+}
+
+async function runMapTable(sock, m) {
+  await mapTableCard(sock, m.from, {
+    latitude: 5.6037,
+    longitude: -0.1870,
+    annotations: [{ latitude: 5.6037, longitude: -0.1870, title: 'Accra' }],
+    headers: ['Population', 'Area', 'Timezone'],
+    rows: [['2.5M', '225 km²', 'GMT+0']],
+    tableTitle: 'City Stats',
+    headerText: '🧪 *MAP+TABLE TEST*',
+    footer: 'Map card + stats table combo',
+  }, { quoted: m });
+  return 'map+table ✓';
+}
+
+async function runTextImage(sock, m) {
+  await textImageCard(sock, m.from, {
+    text: 'This is a text + inline image combo test:',
+    imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png',
+    caption: 'NEXORA Test Image',
+    tapLinkUrl: 'https://github.com/boyde1317-byte',
+    headerText: '🧪 *TEXT+IMAGE TEST*',
+    footer: 'Text + inline image combo',
+  }, { quoted: m });
+  return 'text+image ✓';
+}
+
+async function runMultiImages(sock, m) {
+  await multiImageCard(sock, m.from, {
+    images: [
+      { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'Image 1' },
+      { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'Image 2' },
+    ],
+    headerText: '🧪 *MULTI-IMAGE TEST*',
+    footer: 'Stacked inline image gallery',
+  }, { quoted: m });
+  return 'multi-images ✓';
+}
+
+async function runGridTable(sock, m) {
+  await gridTableCard(sock, m.from, {
+    gridImageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png',
+    imageUrls: ['https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png'],
+    headers: ['Count', 'Resolution'],
+    rows: [['1', '1080p']],
+    tableTitle: 'Gallery Stats',
+    headerText: '🧪 *GRID+TABLE TEST*',
+    footer: 'Image grid + data table combo',
+  }, { quoted: m });
+  return 'grid+table ✓';
+}
+
+async function runDynamicTable(sock, m) {
+  await dynamicTableCard(sock, m.from, {
+    dynamicType: 'GIF',
+    dynamicUrl: 'https://media.giphy.com/media/example.gif',
+    headers: ['Type', 'Loop'],
+    rows: [['GIF', 'Infinite']],
+    tableTitle: 'GIF Info',
+    headerText: '🧪 *DYNAMIC+TABLE TEST*',
+    footer: 'Animated content + table combo',
+  }, { quoted: m });
+  return 'dynamic+table ✓';
+}
+
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 export default {
@@ -186,7 +267,9 @@ export default {
 
     const ALL_TYPES = [
       'quickreply', 'url', 'copy', 'select', 'bottomsheet',
-      'offer', 'table', 'code', 'newsletter', 'all',
+      'offer', 'table', 'code', 'newsletter',
+      'codetable', 'maptable', 'textimage', 'multiimages', 'gridtable', 'dynamictable',
+      'all',
     ];
 
     // ── No arg — show a single_select test type picker ────────────────────
@@ -207,7 +290,15 @@ export default {
           { id: `${p}testmessage table`,       title: '📊 Rich Table',       description: 'Native WA table (botForwardedMessage)' },
           { id: `${p}testmessage code`,        title: '💻 Rich Code',        description: 'Syntax-highlighted code block' },
           { id: `${p}testmessage newsletter`,  title: '📰 Newsletter Invite', description: 'Newsletter admin invite card' },
-          { id: `${p}testmessage all`,         title: '🚀 Run All Tests',    description: 'Execute every test in sequence' },
+        ]},
+        { title: 'New Combos (v0.3.18-r3)', rows: [
+          { id: `${p}testmessage codetable`,    title: '💻 Code+Table',       description: 'Code block + results table combo' },
+          { id: `${p}testmessage maptable`,     title: '📍 Map+Table',        description: 'Map card + stats table combo' },
+          { id: `${p}testmessage textimage`,    title: '🖼️ Text+Image',     description: 'Text + inline image combo' },
+          { id: `${p}testmessage multiimages`,  title: '🖼️ Multi-Images',   description: 'Stacked inline image gallery' },
+          { id: `${p}testmessage gridtable`,    title: '🖼️ Grid+Table',     description: 'Image grid + data table combo' },
+          { id: `${p}testmessage dynamictable`, title: '🎞️ Dynamic+Table',  description: 'Animated content + table combo' },
+          { id: `${p}testmessage all`,          title: '🚀 Run All Tests',   description: 'Execute every test in sequence' },
         ]},
       ], [], { quoted: m });
     }
@@ -230,21 +321,33 @@ export default {
       await run(() => runOffer(sock, m, p));
       await run(() => runRichTable(sock, m));
       await run(() => runRichCode(sock, m));
+      await run(() => runCodeTable(sock, m));
+      await run(() => runMapTable(sock, m));
+      await run(() => runTextImage(sock, m));
+      await run(() => runMultiImages(sock, m));
+      await run(() => runGridTable(sock, m));
+      await run(() => runDynamicTable(sock, m));
       // Newsletter last — may be slow
       await run(() => runNewsletter(sock, m));
       return await m.reply(`✅ *All tests complete!*\n\n${results.join('\n')}`);
     }
 
     const runners = {
-      quickreply:  () => runQuickReply(sock, m, p),
-      url:         () => runCtaUrl(sock, m),
-      copy:        () => runCtaCopy(sock, m),
-      select:      () => runSingleSelect(sock, m, p),
-      bottomsheet: () => runBottomSheet(sock, m, p),
-      offer:       () => runOffer(sock, m, p),
-      table:       () => runRichTable(sock, m),
-      code:        () => runRichCode(sock, m),
-      newsletter:  () => runNewsletter(sock, m),
+      quickreply:   () => runQuickReply(sock, m, p),
+      url:          () => runCtaUrl(sock, m),
+      copy:         () => runCtaCopy(sock, m),
+      select:       () => runSingleSelect(sock, m, p),
+      bottomsheet:  () => runBottomSheet(sock, m, p),
+      offer:        () => runOffer(sock, m, p),
+      table:        () => runRichTable(sock, m),
+      code:         () => runRichCode(sock, m),
+      newsletter:   () => runNewsletter(sock, m),
+      codetable:    () => runCodeTable(sock, m),
+      maptable:     () => runMapTable(sock, m),
+      textimage:    () => runTextImage(sock, m),
+      multiimages:  () => runMultiImages(sock, m),
+      gridtable:    () => runGridTable(sock, m),
+      dynamictable: () => runDynamicTable(sock, m),
     };
 
     const result = await runners[type]();

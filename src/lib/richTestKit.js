@@ -54,6 +54,19 @@ import {
   generateLatexImageContent,
   generateLatexInlineImageContent,
   generateLatexImageContentV2,
+  // NEW: Combination generators (v0.3.18-r3)
+  generateCodeWithTable,
+  generateMapWithTable,
+  generateTextWithInlineImage,
+  generateMultiInlineImages,
+  generateGridImageWithTable,
+  generateDynamicWithTable,
+  generateCodeWithTableV2,
+  generateMapWithTableV2,
+  generateTextWithInlineImageV2,
+  generateMultiInlineImagesV2,
+  generateGridImageWithTableV2,
+  generateDynamicWithTableV2,
 } from 'baileys';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -962,6 +975,239 @@ export async function testV2LatexImage(sock, jid, quoted) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// NEW: Combination generators (v0.3.18-r3 — code+table, map+table, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * V1 Code + Table — code block followed by a results table.
+ */
+export async function testV1CodeWithTable(sock, jid, quoted) {
+  const generated = generateCodeWithTable({
+    code: [
+      'const results = await db.query("SELECT * FROM plugins");',
+      'console.log(results.length + " plugins loaded");',
+    ].join('\n'),
+    language: 'javascript',
+    tableTitle: 'Query Results',
+    tableHeaders: ['Plugin', 'Category', 'Status'],
+    tableRows: [
+      ['ping', 'general', '✅'],
+      ['sticker', 'media', '✅'],
+      ['daily', 'economy', '✅'],
+    ],
+  }, quoted, {
+    headerText: '🧪 V1 Code+Table Combo',
+    footer: 'NEXORA-MD • new combination generator',
+  });
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V1 code+table ✓';
+}
+
+/**
+ * V1 Map + Table — map card followed by a stats table.
+ */
+export async function testV1MapWithTable(sock, jid, quoted) {
+  const generated = generateMapWithTable({
+    map: {
+      centerLatitude: 5.6037,
+      centerLongitude: -0.1870,
+      annotations: [
+        { latitude: 5.6037, longitude: -0.1870, title: 'Accra', body: 'Ghana capital' },
+      ],
+    },
+    tableTitle: 'City Stats',
+    tableHeaders: ['Population', 'Area', 'Timezone'],
+    tableRows: [['2.5M', '225 km²', 'GMT+0']],
+  }, quoted, {
+    headerText: '🧪 V1 Map+Table Combo',
+    footer: 'NEXORA-MD • Accra, Ghana',
+  });
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V1 map+table ✓';
+}
+
+/**
+ * V1 Text + Inline Image — text followed by a single image.
+ */
+export async function testV1TextWithImage(sock, jid, quoted) {
+  const generated = generateTextWithInlineImage(
+    'Here is an inline image rendered natively:',
+    { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'NEXORA Test Image', tapLinkUrl: 'https://github.com/boyde1317-byte' },
+    quoted,
+    { headerText: '🧪 V1 Text+Image Combo', footer: 'NEXORA-MD' },
+  );
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V1 text+image ✓';
+}
+
+/**
+ * V1 Multi Inline Images — stacked image gallery.
+ */
+export async function testV1MultiImages(sock, jid, quoted) {
+  const generated = generateMultiInlineImages([
+    { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'Image 1' },
+    { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'Image 2' },
+  ], quoted, {
+    headerText: '🧪 V1 Multi-Image Gallery',
+    footer: 'NEXORA-MD • stacked inline images',
+  });
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V1 multi-images ✓';
+}
+
+/**
+ * V1 Grid Image + Table — image grid followed by a table.
+ */
+export async function testV1GridWithTable(sock, jid, quoted) {
+  const generated = generateGridImageWithTable({
+    gridImage: {
+      gridImageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png',
+      imageUrls: ['https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png'],
+    },
+    tableTitle: 'Gallery Stats',
+    tableHeaders: ['Count', 'Resolution'],
+    tableRows: [['1', '1080p']],
+  }, quoted, {
+    headerText: '🧪 V1 Grid+Table Combo',
+    footer: 'NEXORA-MD',
+  });
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V1 grid+table ✓';
+}
+
+/**
+ * V1 Dynamic + Table — animated content followed by a table.
+ */
+export async function testV1DynamicWithTable(sock, jid, quoted) {
+  const generated = generateDynamicWithTable({
+    dynamic: { type: 'GIF', url: 'https://media.giphy.com/media/example.gif', loopCount: 0 },
+    tableTitle: 'GIF Info',
+    tableHeaders: ['Type', 'Loop'],
+    tableRows: [['GIF', 'Infinite']],
+  }, quoted, {
+    headerText: '🧪 V1 Dynamic+Table Combo',
+    footer: 'NEXORA-MD',
+  });
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V1 dynamic+table ✓';
+}
+
+/**
+ * V2 Code + Table — base64-encoded combo.
+ */
+export async function testV2CodeWithTable(sock, jid, quoted) {
+  const generated = generateCodeWithTableV2({
+    code: [
+      '// V2 Code+Table — base64 unifiedResponse',
+      "import { generateCodeWithTableV2 } from 'baileys';",
+      "const result = generateCodeWithTableV2(params, quoted, opts);",
+    ].join('\n'),
+    language: 'javascript',
+    tableTitle: 'V2 Features',
+    tableHeaders: ['Generator', 'Format', 'Renders'],
+    tableRows: [
+      ['Code+Table V2', 'base64', '✅'],
+      ['Map+Table V2', 'base64', '✅'],
+      ['Text+Image V2', 'base64', '✅'],
+    ],
+  }, quoted, {
+    headerText: '🧪 V2 Code+Table Combo',
+    footer: 'base64 unifiedResponse — Meta AI format',
+  });
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 code+table ✓';
+}
+
+/**
+ * V2 Map + Table — base64-encoded combo.
+ */
+export async function testV2MapWithTable(sock, jid, quoted) {
+  const generated = generateMapWithTableV2({
+    map: {
+      centerLatitude: 5.6037,
+      centerLongitude: -0.1870,
+      annotations: [
+        { latitude: 5.6037, longitude: -0.1870, title: 'Accra' },
+      ],
+    },
+    tableTitle: 'Location Stats',
+    tableHeaders: ['City', 'Country'],
+    tableRows: [['Accra', 'Ghana']],
+  }, quoted, {
+    headerText: '🧪 V2 Map+Table Combo',
+    footer: 'NEXORA-MD • base64',
+  });
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 map+table ✓';
+}
+
+/**
+ * V2 Text + Inline Image — base64-encoded combo.
+ */
+export async function testV2TextWithImage(sock, jid, quoted) {
+  const generated = generateTextWithInlineImageV2(
+    'V2 text+image combo — base64 unifiedResponse:',
+    { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'V2 Test Image' },
+    quoted,
+    { headerText: '🧪 V2 Text+Image Combo', footer: 'NEXORA-MD' },
+  );
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 text+image ✓';
+}
+
+/**
+ * V2 Multi Inline Images — base64-encoded gallery.
+ */
+export async function testV2MultiImages(sock, jid, quoted) {
+  const generated = generateMultiInlineImagesV2([
+    { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'V2 Image 1' },
+    { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'V2 Image 2' },
+  ], quoted, {
+    headerText: '🧪 V2 Multi-Image Gallery',
+    footer: 'NEXORA-MD • base64',
+  });
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 multi-images ✓';
+}
+
+/**
+ * V2 Grid Image + Table — base64-encoded combo.
+ */
+export async function testV2GridWithTable(sock, jid, quoted) {
+  const generated = generateGridImageWithTableV2({
+    gridImage: {
+      gridImageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png',
+      imageUrls: ['https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png'],
+    },
+    tableTitle: 'V2 Grid Stats',
+    tableHeaders: ['Images', 'Format'],
+    tableRows: [['1', 'base64']],
+  }, quoted, {
+    headerText: '🧪 V2 Grid+Table Combo',
+    footer: 'NEXORA-MD',
+  });
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 grid+table ✓';
+}
+
+/**
+ * V2 Dynamic + Table — base64-encoded combo.
+ */
+export async function testV2DynamicWithTable(sock, jid, quoted) {
+  const generated = generateDynamicWithTableV2({
+    dynamic: { type: 'GIF', url: 'https://media.giphy.com/media/example.gif' },
+    tableTitle: 'V2 Dynamic Info',
+    tableHeaders: ['Type', 'Format'],
+    tableRows: [['GIF', 'base64']],
+  }, quoted, {
+    headerText: '🧪 V2 Dynamic+Table Combo',
+    footer: 'NEXORA-MD',
+  });
+  await _relayGenerated(sock, jid, generated, { quoted });
+  return 'V2 dynamic+table ✓';
+}
+
 // Master test registry
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1006,6 +1252,19 @@ export const RICH_TESTS = [
   // LaTeX image rendering (requires mathjax-node)
   { id: 'v1lateximg', label: '📐 V1 LaTeX Image',     fn: testV1LatexImage,   group: 'LaTeX Image' },
   { id: 'v2lateximg', label: '📐 V2 LaTeX Image',     fn: testV2LatexImage,   group: 'LaTeX Image' },
+  // NEW: Combination generators (v0.3.18-r3)
+  { id: 'v1codetable',  label: '💻 V1 Code+Table',     fn: testV1CodeWithTable,     group: 'Combos V1' },
+  { id: 'v1maptable',   label: '📍 V1 Map+Table',      fn: testV1MapWithTable,      group: 'Combos V1' },
+  { id: 'v1textimg',    label: '🖼️ V1 Text+Image',    fn: testV1TextWithImage,     group: 'Combos V1' },
+  { id: 'v1multiimg',   label: '🖼️ V1 Multi-Images',  fn: testV1MultiImages,      group: 'Combos V1' },
+  { id: 'v1gridtable',  label: '🖼️ V1 Grid+Table',    fn: testV1GridWithTable,     group: 'Combos V1' },
+  { id: 'v1dyntable',   label: '🎞️ V1 Dynamic+Table', fn: testV1DynamicWithTable,  group: 'Combos V1' },
+  { id: 'v2codetable',  label: '💻 V2 Code+Table',     fn: testV2CodeWithTable,     group: 'Combos V2' },
+  { id: 'v2maptable',   label: '📍 V2 Map+Table',      fn: testV2MapWithTable,      group: 'Combos V2' },
+  { id: 'v2textimg',    label: '🖼️ V2 Text+Image',    fn: testV2TextWithImage,     group: 'Combos V2' },
+  { id: 'v2multiimg',   label: '🖼️ V2 Multi-Images',  fn: testV2MultiImages,      group: 'Combos V2' },
+  { id: 'v2gridtable',  label: '🖼️ V2 Grid+Table',    fn: testV2GridWithTable,     group: 'Combos V2' },
+  { id: 'v2dyntable',   label: '🎞️ V2 Dynamic+Table', fn: testV2DynamicWithTable,  group: 'Combos V2' },
 ];
 
 export async function runRichTest(sock, jid, testId, quoted) {

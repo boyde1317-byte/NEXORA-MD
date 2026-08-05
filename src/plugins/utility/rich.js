@@ -1,10 +1,14 @@
-import { richCarouselCard, richMediaCard, richArticleCard } from '../../lib/interactiveKit.js';
+import {
+  richCarouselCard, richMediaCard, richArticleCard,
+  codeTableCard, mapTableCard, textImageCard,
+  multiImageCard, gridTableCard, dynamicTableCard,
+} from '../../lib/interactiveKit.js';
 
 export default {
   name: 'rich',
   aliases: ['richresponse'],
   category: 'utility',
-  description: 'Test the new rich response components.',
+  description: 'Test the new rich response components and combo generators.',
   cooldown: 5000,
   execute: async ({ sock, m, args }) => {
     const type = args[0]?.toLowerCase() || 'carousel';
@@ -33,8 +37,80 @@ export default {
         ],
         suggested: ['Show more updates', 'Contact Support']
       }, { quoted: m });
+    } else if (type === 'codetable') {
+      await codeTableCard(sock, m.from, {
+        code: 'const plugins = await loadPlugins();\nconsole.log(plugins.length + " loaded");',
+        language: 'javascript',
+        headers: ['Plugin', 'Category', 'Status'],
+        rows: [['ping', 'general', '✅'], ['sticker', 'media', '✅']],
+        tableTitle: 'Loaded Plugins',
+        headerText: 'Code + Table Combo',
+        footer: 'NEXORA-MD',
+      }, { quoted: m });
+    } else if (type === 'maptable') {
+      await mapTableCard(sock, m.from, {
+        latitude: 5.6037, longitude: -0.1870,
+        annotations: [{ latitude: 5.6037, longitude: -0.1870, title: 'Accra' }],
+        headers: ['Population', 'Area'],
+        rows: [['2.5M', '225 km²']],
+        tableTitle: 'City Stats',
+        headerText: 'Map + Table Combo',
+        footer: 'NEXORA-MD',
+      }, { quoted: m });
+    } else if (type === 'textimage') {
+      await textImageCard(sock, m.from, {
+        text: 'Here is a text + inline image combo:',
+        imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png',
+        caption: 'Sample Image',
+        tapLinkUrl: 'https://github.com/boyde1317-byte',
+        headerText: 'Text + Image Combo',
+        footer: 'NEXORA-MD',
+      }, { quoted: m });
+    } else if (type === 'multiimages') {
+      await multiImageCard(sock, m.from, {
+        images: [
+          { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'Image 1' },
+          { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'Image 2' },
+        ],
+        headerText: 'Multi-Image Gallery',
+        footer: 'NEXORA-MD',
+      }, { quoted: m });
+    } else if (type === 'gridtable') {
+      await gridTableCard(sock, m.from, {
+        gridImageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png',
+        imageUrls: ['https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png'],
+        headers: ['Count', 'Resolution'],
+        rows: [['1', '1080p']],
+        tableTitle: 'Gallery Stats',
+        headerText: 'Grid + Table Combo',
+        footer: 'NEXORA-MD',
+      }, { quoted: m });
+    } else if (type === 'dynamictable') {
+      await dynamicTableCard(sock, m.from, {
+        dynamicType: 'GIF',
+        dynamicUrl: 'https://media.giphy.com/media/example.gif',
+        headers: ['Type', 'Loop'],
+        rows: [['GIF', 'Infinite']],
+        tableTitle: 'GIF Info',
+        headerText: 'Dynamic + Table Combo',
+        footer: 'NEXORA-MD',
+      }, { quoted: m });
     } else {
-      await m.reply('Available types: carousel, media, article');
+      await m.reply(
+        'Available rich types:\n\n' +
+        '*Existing:*\n' +
+        '• carousel — swipeable card carousel\n' +
+        '• media — inline image with link\n' +
+        '• article — rich article with citations\n\n' +
+        '*New Combos (v0.3.18-r3):*\n' +
+        '• codetable — code block + results table\n' +
+        '• maptable — map card + stats table\n' +
+        '• textimage — text + inline image\n' +
+        '• multiimages — stacked image gallery\n' +
+        '• gridtable — image grid + data table\n' +
+        '• dynamictable — animated content + table\n\n' +
+        'Usage: .rich <type>'
+      );
     }
   }
 };

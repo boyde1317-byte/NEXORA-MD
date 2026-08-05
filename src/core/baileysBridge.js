@@ -1254,7 +1254,7 @@ export const baileysBridge = {
       ];
       sections.push({
         view_model: {
-          primitive: { rows: unified_rows, __typename: 'GenATableUXPrimitive' },
+          primitive: { rows: unified_rows, __typename: 'GenAITableUXPrimitive' },
           __typename: 'GenAISingleLayoutViewModel',
         },
       });
@@ -1420,6 +1420,120 @@ export const baileysBridge = {
       console.warn('[baileysBridge.sendRichMap] relay failed:', err.message);
       const coords = (content.latitude || '') + ',' + (content.longitude || '');
       return sock.sendMessage(jid, { text: (content.title || 'Location') + ': ' + coords }, opts);
+    }
+  },
+
+  // ── New combination generators (v0.3.18-r3) ────────────────────────────────
+
+  /**
+   * Sends a code block + table (V2 — native UI combo).
+   */
+  async sendCodeWithTable(sock, jid, content, opts = {}) {
+    try {
+      const { generateCodeWithTableV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+      const generated = generateCodeWithTableV2(
+        { code: content.code, language: content.language, tableTitle: content.tableTitle, tableHeaders: content.headers, tableRows: content.rows },
+        opts.quoted,
+        { headerText: content.headerText, footer: content.footer }
+      );
+      return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
+    } catch (err) {
+      console.warn('[baileysBridge.sendCodeWithTable] relay failed:', err.message);
+      const text = '```' + (content.language || '') + '\n' + content.code + '\n```\n*' + (content.tableTitle || '') + '*\n' + content.rows.map(r => r.join(' | ')).join('\n');
+      return sock.sendMessage(jid, { text }, opts);
+    }
+  },
+
+  /**
+   * Sends a map card + stats table (V2 — native UI combo).
+   */
+  async sendMapWithTable(sock, jid, content, opts = {}) {
+    try {
+      const { generateMapWithTableV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+      const generated = generateMapWithTableV2(
+        { map: { centerLatitude: content.latitude, centerLongitude: content.longitude, annotations: content.annotations || [] }, tableTitle: content.tableTitle, tableHeaders: content.headers, tableRows: content.rows },
+        opts.quoted,
+        { headerText: content.headerText, footer: content.footer }
+      );
+      return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
+    } catch (err) {
+      console.warn('[baileysBridge.sendMapWithTable] relay failed:', err.message);
+      const coords = (content.latitude || '') + ',' + (content.longitude || '');
+      return sock.sendMessage(jid, { text: (content.headerText || 'Location') + ': ' + coords + '\n' + content.rows.map(r => r.join(' | ')).join('\n') }, opts);
+    }
+  },
+
+  /**
+   * Sends text + inline image (V2 — native UI combo).
+   */
+  async sendTextWithImage(sock, jid, content, opts = {}) {
+    try {
+      const { generateTextWithInlineImageV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+      const generated = generateTextWithInlineImageV2(
+        content.text,
+        { imageUrl: content.imageUrl, imageText: content.caption || '', tapLinkUrl: content.tapLinkUrl || '' },
+        opts.quoted,
+        { headerText: content.headerText, footer: content.footer }
+      );
+      return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
+    } catch (err) {
+      console.warn('[baileysBridge.sendTextWithImage] relay failed:', err.message);
+      return sock.sendMessage(jid, { text: content.text + '\n' + (content.imageUrl || '') }, opts);
+    }
+  },
+
+  /**
+   * Sends multiple inline images (V2 — native gallery).
+   */
+  async sendMultiImages(sock, jid, content, opts = {}) {
+    try {
+      const { generateMultiInlineImagesV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+      const generated = generateMultiInlineImagesV2(
+        content.images,
+        opts.quoted,
+        { headerText: content.headerText, footer: content.footer }
+      );
+      return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
+    } catch (err) {
+      console.warn('[baileysBridge.sendMultiImages] relay failed:', err.message);
+      const text = content.images.map(img => (img.imageText || '') + ': ' + (img.imageUrl || '')).join('\n');
+      return sock.sendMessage(jid, { text }, opts);
+    }
+  },
+
+  /**
+   * Sends a grid image gallery + table (V2 — native UI combo).
+   */
+  async sendGridImageWithTable(sock, jid, content, opts = {}) {
+    try {
+      const { generateGridImageWithTableV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+      const generated = generateGridImageWithTableV2(
+        { gridImage: { gridImageUrl: content.gridImageUrl, imageUrls: content.imageUrls || [] }, tableTitle: content.tableTitle, tableHeaders: content.headers, tableRows: content.rows },
+        opts.quoted,
+        { headerText: content.headerText, footer: content.footer }
+      );
+      return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
+    } catch (err) {
+      console.warn('[baileysBridge.sendGridImageWithTable] relay failed:', err.message);
+      return sock.sendMessage(jid, { text: content.headerText || 'Gallery' + '\n' + (content.gridImageUrl || '') }, opts);
+    }
+  },
+
+  /**
+   * Sends a dynamic (animated GIF/image) + table (V2 — native UI combo).
+   */
+  async sendDynamicWithTable(sock, jid, content, opts = {}) {
+    try {
+      const { generateDynamicWithTableV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+      const generated = generateDynamicWithTableV2(
+        { dynamic: { type: content.dynamicType || 'GIF', url: content.dynamicUrl, version: content.dynamicVersion || 1, loopCount: content.loopCount || 0 }, tableTitle: content.tableTitle, tableHeaders: content.headers, tableRows: content.rows },
+        opts.quoted,
+        { headerText: content.headerText, footer: content.footer }
+      );
+      return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
+    } catch (err) {
+      console.warn('[baileysBridge.sendDynamicWithTable] relay failed:', err.message);
+      return sock.sendMessage(jid, { text: content.headerText || 'Dynamic' + '\n' + (content.dynamicUrl || '') }, opts);
     }
   },
 };
