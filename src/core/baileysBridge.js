@@ -854,6 +854,217 @@ export const baileysBridge = {
 
     return await sock.sendMessage(jid, payload, options);
   }
+
+  // ───────────────────────────────────────────────────────────────────────
+  // RICH MESSAGE GENERATORS — direct relay via sock.relayMessage
+  // Uses the fork's generator functions (rich-message-utils.js) which build
+  // the complete botForwardedMessage proto and relay it untouched.
+  // All verified rendering on real WA clients (2026-08-04).
+  // ───────────────────────────────────────────────────────────────────────
+
+  /**
+   * Sends a rich table card (native WA table bubble).
+   */
+  async sendRichTable(sock, jid, content, opts = {}) {
+    try {
+      const { buildV2Content, buildV2ContextInfo } = await import('baileys/lib/Utils/rich-message-utils.js');
+      const sections = [];
+      if (content.headerText || content.title) {
+        sections.push({
+          view_model: {
+            primitive: { text: content.headerText || content.title, __typename: 'GenAIMarkdownTextUXPrimitive' },
+            __typename: 'GenAISingleLayoutViewModel',
+          },
+        });
+      }
+      const unified_rows = [
+        ...(content.headers ? [{ is_header: true, cells: content.headers.map(String) }] : []),
+        ...content.rows.map(r => ({ is_header: false, cells: r.map(String) })),
+      ];
+      sections.push({
+        view_model: {
+          primitive: { rows: unified_rows, __typename: 'GenATableUXPrimitive' },
+          __typename: 'GenAISingleLayoutViewModel',
+        },
+      });
+      if (content.footer) {
+        sections.push({
+          view_model: {
+            primitive: { text: content.footer, __typename: 'GenAIMarkdownTextUXPrimitive' },
+            __typename: 'GenAISingleLayoutViewModel',
+          },
+        });
+      }
+      const ctxInfo = buildV2ContextInfo(opts.quoted);
+      const generated = { message: buildV2Content(sections, ctxInfo), messageId: generateMessageIDV2() };
+      return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
+    } catch (err) {
+      console.warn('[baileysBridge.sendRichTable] relay failed:', err.message);
+      const allRows = [...(content.headers ? [content.headers] : []), ...content.rows];
+      const text = '*' + content.title + '*
+' + allRows.map(r => r.join(' | ')).join('
+') + (content.footer ? '
+_' + content.footer + '_' : '');
+      return sock.sendMessage(jid, { text }, opts);
+    }
+  },
+
+  /**
+   * Sends a rich code block (native syntax-highlighted).
+   */
+  async sendRichCode(sock, jid, content, opts = {}) {
+    try {
+      const { generateCodeBlockContentV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+      const generated = generateCodeBlockContentV2(
+        content.code,
+        opts.quoted,
+        { text: content.caption, footer: content.footer, language: content.language || 'javascript' }
+      );
+      return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
+    } catch (err) {
+      console.warn('[baileysBridge.sendRichCode] relay failed:', err.message);
+      const text = (content.caption ? '*' + content.caption + '*
+
+' : '') + '```
+' + content.code.slice(0, 3000) + '
+```';
+      return sock.sendMessage(jid, { text }, opts);
+    }
+  },
+
+  /**
+   * Sends an inline video + stats table (Meta AI layout).
+   */
+  async sendInlineVideoStats(sock, jid, content, opts = {}) {
+    try {
+      const { generateInlineVideoWithStatsV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+      const generated = generateInlineVideoWithStatsV2(content, opts.quoted, {
+        headerText: content.headerText,
+        footer: content.footer,
+      });
+      return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
+    } catch (err) {
+      console.warn('[baileysBridge.sendInlineVideoStats] relay failed:', err.message);
+      const title = (content.video && content.video.title) ? content.video.title : 'Video';
+      const text = title + '
+' + content.tableRows.map(r => r.join(' | ')).join('
+');
+      return sock.sendMessage(jid, { text }, opts);
+    }
+  },
+
+  /**
+   * Sends a reel carousel (swipeable video cards).
+   */
+  async sendReelCarousel(sock, jid, content, opts = {}) {
+    try {
+      const { generateReelContentV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+      const generated = generateReelContentV2(content.reels, opts.quoted, {
+        headerText: content.headerText,
+        footer: content.footer,
+      });
+      return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
+    } catch (err) {
+      console.warn('[baileysBridge.sendReelCarousel] relay failed:', err.message);
+      const text = content.reels.map(r => r.title + ': ' + r.videoUrl).join('
+
+');
+      return sock.sendMessage(jid, { text }, opts);
+    }
+  },
+
+  /**
+   * Sends a rich citation/links card.
+   */
+  async sendRichLinks(sock, jid, content, opts = {}) {
+    try {
+      const { generateLinkContentV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+      const generated = generateLinkContentV2(
+        content.text || content.headerText || 'Sources',
+        content.links,
+        opts.quoted,
+        { footer: content.footer }
+      );
+      return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
+    } catch (err) {
+      console.warn('[baileysBridge.sendRichLinks] relay failed:', err.message);
+      const text = content.links.map((l, i) => '[' + (i+1) + '] ' + l.title + '
+' + l.url).join('
+
+');
+      return sock.sendMessage(jid, { text }, opts);
+    }
+  },
+
+  /**
+   * Sends a rich inline image card.
+   */
+  async sendRichImage(sock, jid, content, opts = {}) {
+    try {
+      const { generateInlineImageWithTableV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+      // Use V2 image generator with an empty table (just the image section)
+      const generated = generateInlineImageWithTableV2(
+        {
+          image: {
+            imageUrl: typeof content.imageUrl === 'string'
+              ? { imagePreviewUrl: content.imageUrl, imageHighResUrl: content.imageUrl }
+              : content.imageUrl,
+            imageText: content.caption || '',
+            alignment: 0,
+            tapLinkUrl: content.tapLinkUrl || '',
+          },
+          tableHeaders: [''],
+          tableRows: [],
+        },
+        opts.quoted,
+        { headerText: content.headerText, footer: content.footer }
+      );
+      return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
+    } catch (err) {
+      console.warn('[baileysBridge.sendRichImage] relay failed:', err.message);
+      return sock.sendMessage(jid, { text: content.caption || content.imageUrl }, opts);
+    }
+  },
+
+  /**
+   * Sends a rich LaTeX math expression.
+   */
+  async sendRichLatex(sock, jid, content, opts = {}) {
+    try {
+      const { generateLatexContentV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+      const generated = generateLatexContentV2(
+        opts.quoted,
+        {
+          expressions: [{ latexExpression: content.latex, latexText: content.caption || '' }],
+          footer: content.footer,
+          headerText: content.headerText,
+        }
+      );
+      return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
+    } catch (err) {
+      console.warn('[baileysBridge.sendRichLatex] relay failed:', err.message);
+      return sock.sendMessage(jid, { text: content.latex }, opts);
+    }
+  },
+
+  /**
+   * Sends a rich location/map card.
+   */
+  async sendRichMap(sock, jid, content, opts = {}) {
+    try {
+      const { generateMapContentV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+      const generated = generateMapContentV2(
+        { centerLatitude: content.latitude, centerLongitude: content.longitude, ...content },
+        opts.quoted,
+        { footer: content.footer }
+      );
+      return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
+    } catch (err) {
+      console.warn('[baileysBridge.sendRichMap] relay failed:', err.message);
+      const coords = (content.latitude || '') + ',' + (content.longitude || '');
+      return sock.sendMessage(jid, { text: (content.title || 'Location') + ': ' + coords }, opts);
+    }
+  },
 };
 
 export default baileysBridge;

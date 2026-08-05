@@ -40,6 +40,11 @@ import {
   generateMapContent,
   generateInlineImageWithTable,
   generateInlineVideoWithStats,
+  // V2 generators (base64-encoded unifiedResponse — Meta AI format)
+  generateInlineImageWithTableV2,
+  generateInlineVideoWithStatsV2,
+  generateReelContentV2,
+  generateReelWithStatsV2,
 } from 'baileys';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -459,7 +464,7 @@ export async function testReelContent(sock, jid, quoted) {
       videoUrl:       'https://www.w3schools.com/html/mov_bbb.mp4',
     },
   ];
-  const generated = generateReelContent(reels, quoted, {
+  const generated = generateReelContentV2(reels, quoted, {
     headerText: '🧪 Reel Content Test — Video Carousel',
     footer: 'NEXORA-MD • contentItemsMetadata (type 9)',
   });
@@ -493,7 +498,7 @@ export async function testReelWithStats(sock, jid, quoted) {
       ['Quality',   'HD (720p)'],
     ],
   };
-  const generated = generateReelWithStats(params, quoted, {
+  const generated = generateReelWithStatsV2(params, quoted, {
     headerText: '🧪 Reel + Stats Table — TikTok Download Pattern',
     footer: 'NEXORA-MD • contentItems (type 9) + table (type 4) combined',
   });
@@ -535,7 +540,7 @@ export async function testMapContent(sock, jid, quoted) {
  * contentItemsMetadata but with contentType=0 instead of 1.
  */
 export async function testInlineVideoWithStats(sock, jid, quoted) {
-  const generated = generateInlineVideoWithStats(
+  const generated = generateInlineVideoWithStatsV2(
     {
       video: {
         title:          'TikTok @user/video/123456',
@@ -543,7 +548,6 @@ export async function testInlineVideoWithStats(sock, jid, quoted) {
         thumbnailUrl:   'https://picsum.photos/id/239/400/600',
         videoUrl:       'https://www.w3schools.com/html/mov_bbb.mp4',
       },
-      tableTitle: 'Download Stats',
       tableHeaders: ['Metric', 'Value'],
       tableRows: [
         ['Views',     '1,234,567'],
@@ -557,8 +561,8 @@ export async function testInlineVideoWithStats(sock, jid, quoted) {
     },
     quoted,
     {
-      headerText: '\ud83e\uddea Inline Video + Table \u2014 Meta AI layout (ContentType.DEFAULT)',
-      footer: 'NEXORA-MD \u2022 contentItems (type 9, DEFAULT) + table (type 4)',
+      headerText: '\ud83e\uddea Inline Video + Table \u2014 Meta AI layout (V2)',
+      footer: 'NEXORA-MD \u2022 contentItems (V2) + table (V2)',
     }
   );
   await _relayGenerated(sock, jid, generated, { quoted });
@@ -571,7 +575,7 @@ export async function testInlineVideoWithStats(sock, jid, quoted) {
  * weather cards, and download info with thumbnails.
  */
 export async function testInlineImageWithTable(sock, jid, quoted) {
-  const generated = generateInlineImageWithTable(
+  const generated = generateInlineImageWithTableV2(
     {
       image: {
         imageUrl: {
@@ -583,7 +587,6 @@ export async function testInlineImageWithTable(sock, jid, quoted) {
         alignment: 0,
         tapLinkUrl: 'https://github.com/boyde1317-byte/NEXORA-MD',
       },
-      tableTitle: 'Image Stats',
       tableHeaders: [ 'Property', 'Value' ],
       tableRows: [
         [ 'Resolution',   '800x600'  ],
