@@ -6,7 +6,7 @@
  */
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { actionCard } from '../../lib/interactiveKit.js';
-import { config } from '../../config/index.js';
+import { config } from '../../../config/index.js';
 
 export default {
   name: 'demote',

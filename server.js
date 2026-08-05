@@ -1,6 +1,10 @@
 // ─── Load environment variables FIRST before any other imports ───────────────
-import { config as dotenvConfig } from 'dotenv';
-dotenvConfig();
+// NOTE: 'dotenv/config' is a side-effecting import that runs at import-time
+// (not a function call), so it executes before other imports resolve —
+// unlike calling dotenvConfig() as a statement, which ESM hoists imports
+// above, causing env-dependent modules (e.g. config/index.js) to load
+// before .env is actually read.
+import 'dotenv/config';
 
 import express from 'express';
 import helmet from 'helmet';

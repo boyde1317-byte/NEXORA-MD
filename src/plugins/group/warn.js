@@ -6,7 +6,7 @@
  * Warnings expire after the configured time (default 24 hours).
  */
 import { db } from '../../database/db.js';
-import { config } from '../../config/index.js';
+import { config } from '../../../config/index.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { formatDuration } from '../../lib/utils.js';

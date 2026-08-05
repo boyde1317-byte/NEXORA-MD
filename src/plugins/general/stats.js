@@ -8,8 +8,8 @@ import { client } from '../../core/client.js';
 import { db } from '../../database/db.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { formatUptime, formatSize } from '../../lib/utils.js';
-import { config } from '../../config/index.js';
-import brand from '../../config/brand.js';
+import { config } from '../../../config/index.js';
+import brand from '../../../config/brand.js';
 import { actionCard } from '../../lib/interactiveKit.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 
