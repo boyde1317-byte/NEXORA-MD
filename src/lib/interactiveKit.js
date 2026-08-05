@@ -5,14 +5,49 @@
  * Maps task semantics → correct fork button type, then dispatches via
  * baileysBridge.sendNativeFlow with a graceful plain-text fallback.
  *
- * BUTTON TYPE SEMANTICS (fork's prepareNativeFlowButtons):
- *   quick_reply  { text, id }        → run a bot command on tap
- *   cta_url      { text, url }       → open an external URL
- *   cta_copy     { text, copy }      → copy a value to clipboard
- *   cta_call     { text, call }      → dial a phone number
- *   single_select{ text, sections }  → open a list picker / dropdown
- *   bottom_sheet  optionText/optionTitle props on sendNativeFlow →
- *                                      collapse all rows into a WA modal sheet
+ * BUTTON TYPE SEMANTICS (fork's prepareNativeFlowButtons — 26 types):
+ *
+ * Core buttons:
+ *   quick_reply   { text, id }           → run a bot command on tap
+ *   cta_url       { text, url, useWebview? } → open an external URL
+ *   cta_copy      { text, copy }          → copy a value to clipboard
+ *   cta_call      { text, call }          → dial a phone number
+ *   single_select { text, sections }      → open a list picker / dropdown
+ *
+ * Location/phone buttons:
+ *   cta_request_location { location }     → request user's location
+ *   cta_request_phone     { phone }        → request user's phone number
+ *   send_location         { sendLocation } → send a location pin
+ *   cta_address           { address, addressTitle?, addressDescription?, addressForm? }
+ *   cta_copy_address      { copyAddress }  → copy an address to clipboard
+ *
+ * Flow/auth buttons:
+ *   flow           { flow: { token, id, ctaText, action, actionPayload, callback, version, expiresAt, xToken } }
+ *   cta_sign_in    { signIn: { token, expiresAt } }
+ *   cta_sign_up   { signUp: { token, expiresAt } }
+ *   cta_sign_contract { signContract: { token, expiresAt } }
+ *
+ * Payment buttons:
+ *   cta_payment              { payment: { token, amount, currency, reference } }
+ *   cta_complete_payment     { completePayment: { token, reference } }
+ *   cta_review_and_pay       { reviewAndPay: { orderId, token, reference } }
+ *   cta_payment_verification { paymentVerification: { token, reference } }
+ *
+ * Social/utility buttons:
+ *   cta_subscribe  { subscribe: { id, expiration } }
+ *   cta_reminder   { reminder: { id, title, time } }
+ *   cta_open_chat  { openChat: { jid, message } }
+ *   cta_schedule   { schedule: { title, description, startTime, endTime } }
+ *   cta_amazon_link { amazonLink: { url } }
+ *   cta_delete_message { deleteMessage: { id } }
+ *   target         { targetCta: { text } }
+ *   custom (raw)  { name, paramsJson }     → pass-through to nativeFlow
+ *
+ * Message-level overlays:
+ *   bottom_sheet    optionText/optionTitle props → collapse all rows into a WA modal sheet
+ *   limited_time_offer  offerText/offerUrl/offerCode/offerExpiration → promo banner
+ *
+ * Every button also accepts an optional `icon` field (uppercase string).
  *
  * RICH CONTENT (botForwardedMessage / richResponseMessage):
  *   richTableCard → native WA table bubble (falls back to ASCII)
@@ -76,7 +111,7 @@ async function _send(sock, jid, payload, opts = {}) {
  * ], { quoted: m });
  */
 export async function actionCard(sock, jid, content, actions, opts = {}) {
-  const buttons = cap(actions.map(a => ({ text: a.label, id: a.cmd })));
+  const buttons = cap(actions.map(a => ({ text: a.label, id: a.cmd, ...(a.icon ? { icon: a.icon } : {}) })));
   return _send(sock, jid, { ...content, buttons }, opts);
 }
 
@@ -147,7 +182,7 @@ export async function actionCardWithAd(sock, jid, content, actions, ad, opts = {
  * @param {object} [opts]
  */
 export async function linkCard(sock, jid, content, links, opts = {}) {
-  const buttons = cap(links.map(l => ({ text: l.label, url: l.url })));
+  const buttons = cap(links.map(l => ({ text: l.label, url: l.url, ...(l.useWebview != null ? { useWebview: l.useWebview } : {}), ...(l.icon ? { icon: l.icon } : {}) })));
   return _send(sock, jid, { ...content, buttons }, opts);
 }
 
@@ -171,9 +206,9 @@ export async function linkCard(sock, jid, content, links, opts = {}) {
  *   extraButtons: [{ text: '🔁 Decode', id: `${prefix}base64 decode <result>` }],
  * }, { quoted: m });
  */
-export async function copyResultCard(sock, jid, { text, footer, copyLabel = '📋 Copy Result', copyValue, extraButtons = [] }, opts = {}) {
+export async function copyResultCard(sock, jid, { text, footer, copyLabel = '📋 Copy Result', copyValue, extraButtons = [], icon }, opts = {}) {
   const buttons = cap([
-    { text: copyLabel, copy: copyValue },
+    { text: copyLabel, copy: copyValue, ...(icon ? { icon } : {}) },
     ...extraButtons,
   ]);
   return _send(sock, jid, { text, footer, buttons }, opts);
@@ -205,11 +240,41 @@ export async function copyResultCard(sock, jid, { text, footer, copyLabel = '�
  */
 export async function mixedCard(sock, jid, content, specs, opts = {}) {
   const buttons = cap(specs.map(s => {
+    const icon = s.icon;
     switch (s.kind) {
-      case 'url':  return { text: s.label, url:  s.url };
-      case 'copy': return { text: s.label, copy: s.value };
-      case 'call': return { text: s.label, call: s.phone };
-      default:     return { text: s.label, id:   s.cmd };
+      // Core buttons
+      case 'url':         return { text: s.label, url: s.url, ...(s.useWebview != null ? { useWebview: s.useWebview } : {}), ...(icon ? { icon } : {}) };
+      case 'copy':        return { text: s.label, copy: s.value, ...(icon ? { icon } : {}) };
+      case 'call':        return { text: s.label, call: s.phone, ...(icon ? { icon } : {}) };
+      case 'action':      return { text: s.label, id: s.cmd, ...(icon ? { icon } : {}) };
+      // Location/phone buttons
+      case 'location':    return { text: s.label, location: true, ...(icon ? { icon } : {}) };
+      case 'phone':       return { text: s.label, phone: true, ...(icon ? { icon } : {}) };
+      case 'sendLocation': return { text: s.label, sendLocation: s.location || true, ...(icon ? { icon } : {}) };
+      case 'address':     return { text: s.label, address: true, addressTitle: s.addressTitle, addressDescription: s.addressDescription, addressForm: s.addressForm, ...(icon ? { icon } : {}) };
+      case 'copyAddress': return { text: s.label, copyAddress: s.copyAddress, ...(icon ? { icon } : {}) };
+      // Flow/auth buttons
+      case 'flow':        return { text: s.label, flow: s.flow, ...(icon ? { icon } : {}) };
+      case 'signIn':      return { text: s.label, signIn: s.signIn, ...(icon ? { icon } : {}) };
+      case 'signUp':      return { text: s.label, signUp: s.signUp, ...(icon ? { icon } : {}) };
+      case 'signContract': return { text: s.label, signContract: s.signContract, ...(icon ? { icon } : {}) };
+      // Payment buttons
+      case 'payment':     return { text: s.label, payment: s.payment, ...(icon ? { icon } : {}) };
+      case 'completePayment': return { text: s.label, completePayment: s.completePayment, ...(icon ? { icon } : {}) };
+      case 'reviewAndPay': return { text: s.label, reviewAndPay: s.reviewAndPay, ...(icon ? { icon } : {}) };
+      case 'paymentVerification': return { text: s.label, paymentVerification: s.paymentVerification, ...(icon ? { icon } : {}) };
+      // Social/utility buttons
+      case 'subscribe':   return { text: s.label, subscribe: s.subscribe, ...(icon ? { icon } : {}) };
+      case 'reminder':    return { text: s.label, reminder: s.reminder, ...(icon ? { icon } : {}) };
+      case 'openChat':    return { text: s.label, openChat: s.openChat, ...(icon ? { icon } : {}) };
+      case 'schedule':    return { text: s.label, schedule: s.schedule, ...(icon ? { icon } : {}) };
+      case 'amazonLink':  return { text: s.label, amazonLink: s.amazonLink, ...(icon ? { icon } : {}) };
+      case 'deleteMessage': return { text: s.label, deleteMessage: s.deleteMessage, ...(icon ? { icon } : {}) };
+      case 'target':      return { text: s.label, targetCta: s.targetCta, ...(icon ? { icon } : {}) };
+      // Custom/raw pass-through
+      case 'custom':      return { name: s.name, paramsJson: s.paramsJson };
+      // Default: quick_reply (backward compat)
+      default:            return { text: s.label, id: s.cmd, ...(icon ? { icon } : {}) };
     }
   }));
   return _send(sock, jid, { ...content, buttons }, opts);
@@ -615,6 +680,146 @@ export async function dynamicTableCard(sock, jid, content, opts = {}) {
   return baileysBridge.sendDynamicWithTable(sock, jid, content, opts);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// NEW BUTTON TYPE HELPERS (v0.3.18-r4 — full fork button API)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Sends a card with a WhatsApp Flow button.
+ * @param {object} sock
+ * @param {string} jid
+ * @param {{ text: string, footer?: string }} content
+ * @param {{ token: string, id: string, ctaText?: string, action?: string, actionPayload?: object, callback?: string, version?: number, expiresAt?: number, xToken?: string }} flow
+ * @param {object} [opts]
+ * @example
+ * await flowCard(sock, m.from, { text: 'Fill out this form:' }, {
+ *   token: 'flow_token', id: 'flow_id', ctaText: 'Open Form', version: 4,
+ * }, { quoted: m });
+ */
+export async function flowCard(sock, jid, content, flow, opts = {}) {
+  return _send(sock, jid, { ...content, buttons: [{ text: flow.ctaText || '📝 Open Form', flow }] }, opts);
+}
+
+/**
+ * Sends a card with a subscribe button (newsletter/channel).
+ * @example
+ * await subscribeCard(sock, m.from, { text: 'Subscribe to updates:' }, { id: 'sub_id', expiration: 0 }, { quoted: m });
+ */
+export async function subscribeCard(sock, jid, content, subscribe, opts = {}) {
+  return _send(sock, jid, { ...content, buttons: [{ text: '🔔 Subscribe', subscribe }] }, opts);
+}
+
+/**
+ * Sends a card with a reminder button.
+ * @example
+ * await reminderCard(sock, m.from, { text: 'Set a reminder:' }, { id: 'rem_1', title: 'Meeting', time: '2026-08-06T10:00:00Z' }, { quoted: m });
+ */
+export async function reminderCard(sock, jid, content, reminder, opts = {}) {
+  return _send(sock, jid, { ...content, buttons: [{ text: '⏰ Set Reminder', reminder }] }, opts);
+}
+
+/**
+ * Sends a card with a schedule button.
+ * @example
+ * await scheduleCard(sock, m.from, { text: 'Schedule an event:' }, { title: 'Team Sync', description: 'Weekly', startTime: '2026-08-06T10:00:00Z', endTime: '2026-08-06T11:00:00Z' }, { quoted: m });
+ */
+export async function scheduleCard(sock, jid, content, schedule, opts = {}) {
+  return _send(sock, jid, { ...content, buttons: [{ text: '📅 Schedule', schedule }] }, opts);
+}
+
+/**
+ * Sends a card with an open_chat button (opens a chat with a specific JID).
+ * @example
+ * await openChatCard(sock, m.from, { text: 'Contact support:' }, { jid: '233533416608@s.whatsapp.net', message: 'Hi, I need help' }, { quoted: m });
+ */
+export async function openChatCard(sock, jid, content, openChat, opts = {}) {
+  return _send(sock, jid, { ...content, buttons: [{ text: '💬 Open Chat', openChat }] }, opts);
+}
+
+/**
+ * Sends a card with a payment button.
+ * @example
+ * await paymentCard(sock, m.from, { text: 'Pay for premium:' }, { token: 'pay_token', amount: '500', currency: 'USD', reference: 'ref_1' }, { quoted: m });
+ */
+export async function paymentCard(sock, jid, content, payment, opts = {}) {
+  return _send(sock, jid, { ...content, buttons: [{ text: '💳 Pay', payment }] }, opts);
+}
+
+/**
+ * Sends a card with a review_and_pay button.
+ * @example
+ * await reviewAndPayCard(sock, m.from, { text: 'Review your order:' }, { orderId: 'ord_1', token: 'pay_token', reference: 'ref_1' }, { quoted: m });
+ */
+export async function reviewAndPayCard(sock, jid, content, reviewAndPay, opts = {}) {
+  return _send(sock, jid, { ...content, buttons: [{ text: '🧾 Review & Pay', reviewAndPay }] }, opts);
+}
+
+/**
+ * Sends a card requesting the user's location.
+ * @example
+ * await locationRequestCard(sock, m.from, { text: 'Share your location:' }, { quoted: m });
+ */
+export async function locationRequestCard(sock, jid, content, opts = {}) {
+  return _send(sock, jid, { ...content, buttons: [{ text: '📍 Share Location', location: true }] }, opts);
+}
+
+/**
+ * Sends a card requesting the user's phone number.
+ * @example
+ * await phoneRequestCard(sock, m.from, { text: 'Share your phone:' }, { quoted: m });
+ */
+export async function phoneRequestCard(sock, jid, content, opts = {}) {
+  return _send(sock, jid, { ...content, buttons: [{ text: '📱 Share Phone', phone: true }] }, opts);
+}
+
+/**
+ * Sends a card requesting the user's address.
+ * @example
+ * await addressRequestCard(sock, m.from, { text: 'Share your address:' }, { addressTitle: 'Delivery Address', addressDescription: 'Where should we deliver?' }, { quoted: m });
+ */
+export async function addressRequestCard(sock, jid, content, addressOpts = {}, opts = {}) {
+  return _send(sock, jid, {
+    ...content,
+    buttons: [{ text: '📍 Share Address', address: true, addressTitle: addressOpts.addressTitle || 'Address', addressDescription: addressOpts.addressDescription || '', addressForm: addressOpts.addressForm || {} }],
+  }, opts);
+}
+
+/**
+ * Sends a card with a sign-in button.
+ * @example
+ * await signInCard(sock, m.from, { text: 'Sign in to continue:' }, { token: 'signin_token', expiresAt: 0 }, { quoted: m });
+ */
+export async function signInCard(sock, jid, content, signIn, opts = {}) {
+  return _send(sock, jid, { ...content, buttons: [{ text: '🔐 Sign In', signIn }] }, opts);
+}
+
+/**
+ * Sends a card with a sign-up button.
+ * @example
+ * await signUpCard(sock, m.from, { text: 'Create an account:' }, { token: 'signup_token', expiresAt: 0 }, { quoted: m });
+ */
+export async function signUpCard(sock, jid, content, signUp, opts = {}) {
+  return _send(sock, jid, { ...content, buttons: [{ text: '📝 Sign Up', signUp }] }, opts);
+}
+
+/**
+ * Sends a card with an Amazon link button.
+ * @example
+ * await amazonLinkCard(sock, m.from, { text: 'View on Amazon:' }, { url: 'https://amazon.com/dp/B123' }, { quoted: m });
+ */
+export async function amazonLinkCard(sock, jid, content, amazonLink, opts = {}) {
+  return _send(sock, jid, { ...content, buttons: [{ text: '🛒 View on Amazon', amazonLink }] }, opts);
+}
+
+/**
+ * Sends a card with a custom/raw nativeFlow button (pass-through).
+ * @example
+ * await customButtonCard(sock, m.from, { text: 'Custom action:' }, { name: 'my_custom_cta', paramsJson: { display_text: 'Custom', foo: 'bar' } }, { quoted: m });
+ */
+export async function customButtonCard(sock, jid, content, customButton, opts = {}) {
+  return _send(sock, jid, { ...content, buttons: [customButton] }, opts);
+}
+
 export default {
   richCarouselCard,
   richMediaCard,
@@ -636,4 +841,19 @@ export default {
   multiImageCard,
   gridTableCard,
   dynamicTableCard,
+  // New button type helpers
+  flowCard,
+  subscribeCard,
+  reminderCard,
+  scheduleCard,
+  openChatCard,
+  paymentCard,
+  reviewAndPayCard,
+  locationRequestCard,
+  phoneRequestCard,
+  addressRequestCard,
+  signInCard,
+  signUpCard,
+  amazonLinkCard,
+  customButtonCard,
 };

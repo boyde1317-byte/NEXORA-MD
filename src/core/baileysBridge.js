@@ -655,13 +655,48 @@ export const baileysBridge = {
   }, options = {}) {
     // Route through sock.sendMessage → generateWAMessageContent (nativeFlow path).
     //
-    // Button format — use the fork's simple declarative style (prepareNativeFlowButtons):
-    //   { text: 'Label', id:   '.cmd'        }  → quick_reply
-    //   { text: 'Label', url:  'https://...' }  → cta_url (merchant_url auto-set)
-    //   { text: 'Label', copy: 'code'        }  → cta_copy
-    //   { text: 'Label', call: '+1234'       }  → cta_call
-    //   { text: 'Label', sections: [...]     }  → single_select list picker
+    // Button format — use the fork's simple declarative style (prepareNativeFlowButtons).
+    // The fork auto-detects button type from the property key. 26 types supported:
     //
+    // Core buttons:
+    //   { text, id }              → quick_reply (run a bot command)
+    //   { text, url, useWebview? } → cta_url (open URL; useWebview for in-app browser)
+    //   { text, copy }            → cta_copy (copy to clipboard)
+    //   { text, call }            → cta_call (dial a number)
+    //   { text, sections }        → single_select (list picker)
+    //
+    // Location/phone:
+    //   { text, location }        → cta_request_location
+    //   { text, phone }           → cta_request_phone
+    //   { text, sendLocation }    → send_location
+    //   { text, address, addressTitle?, addressDescription?, addressForm? } → cta_address
+    //   { text, copyAddress }     → cta_copy_address
+    //
+    // Flow/auth:
+    //   { text, flow: { token, id, ctaText, action, actionPayload, callback, version, expiresAt, xToken } } → flow
+    //   { text, signIn: { token, expiresAt } }    → cta_sign_in
+    //   { text, signUp: { token, expiresAt } }    → cta_sign_up
+    //   { text, signContract: { token, expiresAt } } → cta_sign_contract
+    //
+    // Payment:
+    //   { text, payment: { token, amount, currency, reference } }    → cta_payment
+    //   { text, completePayment: { token, reference } }               → cta_complete_payment
+    //   { text, reviewAndPay: { orderId, token, reference } }         → cta_review_and_pay
+    //   { text, paymentVerification: { token, reference } }           → cta_payment_verification
+    //
+    // Social/utility:
+    //   { text, subscribe: { id, expiration } }    → cta_subscribe
+    //   { text, reminder: { id, title, time } }    → cta_reminder
+    //   { text, openChat: { jid, message } }       → cta_open_chat
+    //   { text, schedule: { title, description, startTime, endTime } } → cta_schedule
+    //   { text, amazonLink: { url } }              → cta_amazon_link
+    //   { text, deleteMessage: { id } }           → cta_delete_message
+    //   { text, targetCta: { text } }              → target
+    //   { name, paramsJson }                       → custom raw pass-through
+    //
+    // Every button also accepts an optional `icon` field (uppercase string).
+    //
+    // Message-level overlays:
     // offerText    → limited_time_offer overlay banner (messageParamsJson)
     // optionText   → native bottom_sheet button that collapses all rows into a modal sheet
     // optionTitle  → title shown at the top of that sheet

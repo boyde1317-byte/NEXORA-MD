@@ -16,6 +16,10 @@ import {
   richTableCard, richCodeCard,
   codeTableCard, mapTableCard, textImageCard,
   multiImageCard, gridTableCard, dynamicTableCard,
+  flowCard, subscribeCard, reminderCard, scheduleCard,
+  openChatCard, paymentCard, reviewAndPayCard,
+  locationRequestCard, phoneRequestCard, addressRequestCard,
+  signInCard, signUpCard, amazonLinkCard, customButtonCard,
 } from '../../lib/interactiveKit.js';
 
 // ─── Test runners ─────────────────────────────────────────────────────────────
@@ -251,6 +255,165 @@ async function runDynamicTable(sock, m) {
   return 'dynamic+table ✓';
 }
 
+// ─── New button type test runners (v0.3.18-r4) ──────────────────────────────
+
+async function runFlow(sock, m) {
+  await flowCard(sock, m.from, {
+    text: '📝 *FLOW BUTTON TEST*\n\nTap to open a WhatsApp Flow form.',
+    footer: 'flow: { token, id, ctaText, action, version }',
+  }, {
+    token: 'nexora_flow_token',
+    id: 'nexora_flow_id',
+    ctaText: 'Open Flow Form',
+    action: 'navigate',
+    actionPayload: { screen: 'WELCOME_SCREEN' },
+    version: 4,
+  }, { quoted: m });
+  return 'flow ✓';
+}
+
+async function runSubscribe(sock, m) {
+  await subscribeCard(sock, m.from, {
+    text: '🔔 *SUBSCRIBE BUTTON TEST*\n\nTap to subscribe to a channel.',
+    footer: 'subscribe: { id, expiration }',
+  }, {
+    id: 'nexora_channel_sub_id',
+    expiration: 0,
+  }, { quoted: m });
+  return 'subscribe ✓';
+}
+
+async function runReminder(sock, m) {
+  await reminderCard(sock, m.from, {
+    text: '⏰ *REMINDER BUTTON TEST*\n\nTap to set a reminder.',
+    footer: 'reminder: { id, title, time }',
+  }, {
+    id: 'nexora_reminder_1',
+    title: 'NEXORA Test Reminder',
+    time: new Date(Date.now() + 3600000).toISOString(),
+  }, { quoted: m });
+  return 'reminder ✓';
+}
+
+async function runSchedule(sock, m) {
+  await scheduleCard(sock, m.from, {
+    text: '📅 *SCHEDULE BUTTON TEST*\n\nTap to schedule an event.',
+    footer: 'schedule: { title, description, startTime, endTime }',
+  }, {
+    title: 'NEXORA Team Sync',
+    description: 'Weekly team sync meeting',
+    startTime: new Date(Date.now() + 86400000).toISOString(),
+    endTime: new Date(Date.now() + 90000000).toISOString(),
+  }, { quoted: m });
+  return 'schedule ✓';
+}
+
+async function runOpenChat(sock, m) {
+  await openChatCard(sock, m.from, {
+    text: '💬 *OPEN CHAT BUTTON TEST*\n\nTap to open a chat with the developer.',
+    footer: 'openChat: { jid, message }',
+  }, {
+    jid: '233533416608@s.whatsapp.net',
+    message: 'Hi, I came from the NEXORA test message!',
+  }, { quoted: m });
+  return 'open_chat ✓';
+}
+
+async function runPayment(sock, m) {
+  await paymentCard(sock, m.from, {
+    text: '💳 *PAYMENT BUTTON TEST*\n\nTap to initiate a payment.',
+    footer: 'payment: { token, amount, currency, reference }',
+  }, {
+    token: 'nexora_pay_token',
+    amount: '500',
+    currency: 'USD',
+    reference: 'nexora_ref_1',
+  }, { quoted: m });
+  return 'payment ✓';
+}
+
+async function runReviewPay(sock, m) {
+  await reviewAndPayCard(sock, m.from, {
+    text: '🧾 *REVIEW & PAY BUTTON TEST*\n\nTap to review your order and pay.',
+    footer: 'reviewAndPay: { orderId, token, reference }',
+  }, {
+    orderId: 'nexora_order_1',
+    token: 'nexora_pay_token',
+    reference: 'nexora_ref_2',
+  }, { quoted: m });
+  return 'review_and_pay ✓';
+}
+
+async function runLocationRequest(sock, m) {
+  await locationRequestCard(sock, m.from, {
+    text: '📍 *LOCATION REQUEST TEST*\n\nTap to share your location.',
+    footer: 'cta_request_location',
+  }, { quoted: m });
+  return 'location_request ✓';
+}
+
+async function runPhoneRequest(sock, m) {
+  await phoneRequestCard(sock, m.from, {
+    text: '📱 *PHONE REQUEST TEST*\n\nTap to share your phone number.',
+    footer: 'cta_request_phone',
+  }, { quoted: m });
+  return 'phone_request ✓';
+}
+
+async function runAddressRequest(sock, m) {
+  await addressRequestCard(sock, m.from, {
+    text: '📍 *ADDRESS REQUEST TEST*\n\nTap to share your delivery address.',
+    footer: 'cta_address: { addressTitle, addressDescription, addressForm }',
+  }, {
+    addressTitle: 'Delivery Address',
+    addressDescription: 'Where should we deliver your order?',
+  }, { quoted: m });
+  return 'address_request ✓';
+}
+
+async function runSignIn(sock, m) {
+  await signInCard(sock, m.from, {
+    text: '🔐 *SIGN IN BUTTON TEST*\n\nTap to sign in to your account.',
+    footer: 'cta_sign_in: { token, expiresAt }',
+  }, {
+    token: 'nexora_signin_token',
+    expiresAt: 0,
+  }, { quoted: m });
+  return 'sign_in ✓';
+}
+
+async function runSignUp(sock, m) {
+  await signUpCard(sock, m.from, {
+    text: '📝 *SIGN UP BUTTON TEST*\n\nTap to create a new account.',
+    footer: 'cta_sign_up: { token, expiresAt }',
+  }, {
+    token: 'nexora_signup_token',
+    expiresAt: 0,
+  }, { quoted: m });
+  return 'sign_up ✓';
+}
+
+async function runAmazonLink(sock, m) {
+  await amazonLinkCard(sock, m.from, {
+    text: '🛒 *AMAZON LINK BUTTON TEST*\n\nTap to view a product on Amazon.',
+    footer: 'cta_amazon_link: { url }',
+  }, {
+    url: 'https://www.amazon.com/dp/B08N5WRWNW',
+  }, { quoted: m });
+  return 'amazon_link ✓';
+}
+
+async function runCustomButton(sock, m) {
+  await customButtonCard(sock, m.from, {
+    text: '⚙️ *CUSTOM BUTTON TEST*\n\nThis uses a raw pass-through button with custom name and params.',
+    footer: 'custom: { name, paramsJson }',
+  }, {
+    name: 'cta_custom_test',
+    paramsJson: JSON.stringify({ display_text: 'Custom Action', custom_field: 'nexora' }),
+  }, { quoted: m });
+  return 'custom_button ✓';
+}
+
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 export default {
@@ -269,6 +432,10 @@ export default {
       'quickreply', 'url', 'copy', 'select', 'bottomsheet',
       'offer', 'table', 'code', 'newsletter',
       'codetable', 'maptable', 'textimage', 'multiimages', 'gridtable', 'dynamictable',
+      // New button types (v0.3.18-r4)
+      'flow', 'subscribe', 'reminder', 'schedule', 'openchat',
+      'payment', 'reviewpay', 'location', 'phone', 'address',
+      'signin', 'signup', 'amazon', 'custom',
       'all',
     ];
 
@@ -298,6 +465,22 @@ export default {
           { id: `${p}testmessage multiimages`,  title: '🖼️ Multi-Images',   description: 'Stacked inline image gallery' },
           { id: `${p}testmessage gridtable`,    title: '🖼️ Grid+Table',     description: 'Image grid + data table combo' },
           { id: `${p}testmessage dynamictable`, title: '🎞️ Dynamic+Table',  description: 'Animated content + table combo' },
+        ]},
+        { title: 'New Buttons (v0.3.18-r4)', rows: [
+          { id: `${p}testmessage flow`,          title: '📝 Flow',            description: 'WhatsApp Flow form button' },
+          { id: `${p}testmessage subscribe`,    title: '🔔 Subscribe',       description: 'Channel subscribe button' },
+          { id: `${p}testmessage reminder`,     title: '⏰ Reminder',        description: 'Set a reminder button' },
+          { id: `${p}testmessage schedule`,     title: '📅 Schedule',        description: 'Schedule an event button' },
+          { id: `${p}testmessage openchat`,     title: '💬 Open Chat',       description: 'Open a chat with a JID' },
+          { id: `${p}testmessage payment`,      title: '💳 Payment',          description: 'Payment button' },
+          { id: `${p}testmessage reviewpay`,    title: '🧾 Review & Pay',   description: 'Review order + pay button' },
+          { id: `${p}testmessage location`,     title: '📍 Request Location', description: 'Request user location' },
+          { id: `${p}testmessage phone`,        title: '📱 Request Phone',    description: 'Request user phone number' },
+          { id: `${p}testmessage address`,      title: '📍 Request Address',  description: 'Request user address' },
+          { id: `${p}testmessage signin`,       title: '🔐 Sign In',          description: 'Sign-in button' },
+          { id: `${p}testmessage signup`,       title: '📝 Sign Up',          description: 'Sign-up button' },
+          { id: `${p}testmessage amazon`,       title: '🛒 Amazon Link',     description: 'Amazon product link button' },
+          { id: `${p}testmessage custom`,       title: '⚙️ Custom Button',    description: 'Raw pass-through button' },
           { id: `${p}testmessage all`,          title: '🚀 Run All Tests',   description: 'Execute every test in sequence' },
         ]},
       ], [], { quoted: m });
@@ -327,6 +510,21 @@ export default {
       await run(() => runMultiImages(sock, m));
       await run(() => runGridTable(sock, m));
       await run(() => runDynamicTable(sock, m));
+      // New button types
+      await run(() => runFlow(sock, m));
+      await run(() => runSubscribe(sock, m));
+      await run(() => runReminder(sock, m));
+      await run(() => runSchedule(sock, m));
+      await run(() => runOpenChat(sock, m));
+      await run(() => runPayment(sock, m));
+      await run(() => runReviewPay(sock, m));
+      await run(() => runLocationRequest(sock, m));
+      await run(() => runPhoneRequest(sock, m));
+      await run(() => runAddressRequest(sock, m));
+      await run(() => runSignIn(sock, m));
+      await run(() => runSignUp(sock, m));
+      await run(() => runAmazonLink(sock, m));
+      await run(() => runCustomButton(sock, m));
       // Newsletter last — may be slow
       await run(() => runNewsletter(sock, m));
       return await m.reply(`✅ *All tests complete!*\n\n${results.join('\n')}`);
@@ -348,6 +546,21 @@ export default {
       multiimages:  () => runMultiImages(sock, m),
       gridtable:    () => runGridTable(sock, m),
       dynamictable: () => runDynamicTable(sock, m),
+      // New button types (v0.3.18-r4)
+      flow:         () => runFlow(sock, m),
+      subscribe:    () => runSubscribe(sock, m),
+      reminder:     () => runReminder(sock, m),
+      schedule:     () => runSchedule(sock, m),
+      openchat:     () => runOpenChat(sock, m),
+      payment:      () => runPayment(sock, m),
+      reviewpay:    () => runReviewPay(sock, m),
+      location:     () => runLocationRequest(sock, m),
+      phone:        () => runPhoneRequest(sock, m),
+      address:      () => runAddressRequest(sock, m),
+      signin:       () => runSignIn(sock, m),
+      signup:       () => runSignUp(sock, m),
+      amazon:       () => runAmazonLink(sock, m),
+      custom:       () => runCustomButton(sock, m),
     };
 
     const result = await runners[type]();
