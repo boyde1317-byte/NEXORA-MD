@@ -3,7 +3,7 @@
   "description": "Next Generation WhatsApp Multi Device Framework",
   "author": "Aizen",
   "private": true,
-  "version": "1.2.0",
+  "version": "2.0.0",
   "type": "module",
   "engines": {
     "node": ">=20.0.0"
@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
-    "baileys": "git+https://github.com/boyde1317-byte/baileys.git#c817a8b88046401deffea12d855fbcea91a93f26",
+    "baileys": "git+https://github.com/boyde1317-byte/baileys.git#917cfdc629520d0823d4b99d22d1a020e109d65c",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.1",
@@ -27,7 +27,10 @@
     "pino": "^9.6.0",
     "qrcode-terminal": "^0.12.0",
     "sharp": "^0.33.0",
-    "wa-sticker-formatter": "^4.4.4"
+    "wa-sticker-formatter": "^4.4.4",
+    "chalk": "^5.4.1",
+    "uuid": "^10.0.0",
+    "linkifyjs": "^4.2.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

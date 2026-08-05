@@ -12,8 +12,8 @@ RUN npm ci --omit=dev || npm install --omit=dev
 # Copy application code
 COPY . .
 
-# Ensure session directory exists
-RUN mkdir -p session
+# Ensure session and temp directories exist
+RUN mkdir -p session /tmp/nexora-media
 
 # Create a non-root user and switch to it for security
 RUN groupadd -r botuser && useradd -r -g botuser -d /app botuser && \

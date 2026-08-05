@@ -1,5 +1,27 @@
 {
   "users": {},
   "groups": {},
-  "settings": {}
+  "settings": {
+    "_migrations": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "menuStyle": 1,
+    "theme": "modern",
+    "footerStyle": "clean",
+    "publicMode": true,
+    "autoRead": true,
+    "pluginStats": {},
+    "connectionStats": {
+      "totalConnections": 0,
+      "disconnects": 0,
+      "lastConnected": null,
+      "lastDisconnected": null,
+      "uptime": 0
+    }
+  }
 }

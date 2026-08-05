@@ -1,117 +1,109 @@
-import { withReactionStatus } from '../../lib/cosmetics.js';
-import { messageFormatter } from '../../ui/messageFormatter.js';
-import { asciiBuilder } from '../../ui/asciiBuilder.js';
-import { actionCard } from '../../lib/interactiveKit.js';
-
-const MAX_WARNINGS = 3;
-
 /**
- * Get per-group warnings for a user.
- * Warnings are stored under the group's data object, keyed by user JID,
- * so they don't carry across groups.
+ * warn.js — Enhanced warning system with expiry and auto-actions.
+ *
+ * Owner/admin can warn users. After reaching the threshold (default 3),
+ * the user is automatically removed from the group (if bot is admin).
+ * Warnings expire after the configured time (default 24 hours).
  */
-function getGroupWarnings(db, groupJid, userJid) {
-  const groupData = db.getGroup(groupJid);
-  const groupWarns = groupData.warnings || {};
-  return groupWarns[userJid] ?? 0;
-}
-
-function setGroupWarnings(db, groupJid, userJid, count) {
-  const groupData = db.getGroup(groupJid);
-  const groupWarns = groupData.warnings || {};
-  groupWarns[userJid] = count;
-  db.setGroup(groupJid, { warnings: groupWarns });
-}
+import { db } from '../../database/db.js';
+import { config } from '../../config/index.js';
+import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
+import { formatDuration } from '../../lib/utils.js';
 
 export default {
   name: 'warn',
-  aliases: ['warning', 'strike'],
+  aliases: ['warning'],
   category: 'group',
-  description: 'Warn a group member. At 3 warnings the user is kicked automatically.',
-  permissions: { groupOnly: true, admin: true, botAdmin: true },
-  cooldown: 3000,
-  execute: async ({ m, sock, args, db, config, prefix }) => {
+  description: 'Warn a user. 3 warnings = auto-removal. Usage: .warn @user [reason]',
+  cooldown: 2000,
+  permissions: { admin: true, owner: true },
+  execute: async ({ sock, m, args, prefix }) => {
     const p = prefix || '.';
-    const sub = args[0]?.toLowerCase();
 
-    if (sub === 'reset' || sub === 'clear') {
-      let target = null;
-      if (m.quoted) target = m.quoted.sender;
-      else if (m.msg?.contextInfo?.mentionedJid?.length) target = m.msg.contextInfo.mentionedJid[0];
-      else if (args[1]) {
-        const n = args[1].replace(/[^0-9]/g, '');
-        if (n) target = `${n}@s.whatsapp.net`;
-      }
-      if (!target) return await m.reply.error('Reply to or mention the user to reset warnings for.');
-      setGroupWarnings(db, m.from, target, 0);
-      // NOTE: { mentions: [target] } is intentionally passed as second arg to messageFormatter.success()
-      // (where it is silently ignored) to preserve existing behavior — the mention is embedded in
-      // the text only, not sent as a WhatsApp mention. Do not migrate to m.reply.success() here.
-      return await m.reply(messageFormatter.success(`Warnings reset for @${target.split('@')[0]}.`, { mentions: [target] }));
+    if (!m.isGroup) {
+      return await m.reply.error('This command only works in groups.');
     }
 
-    let target = null;
-    if (m.quoted) target = m.quoted.sender;
-    else if (m.msg?.contextInfo?.mentionedJid?.length) target = m.msg.contextInfo.mentionedJid[0];
-    else if (args[0] && /^\d+$/.test(args[0].replace(/[^0-9]/g, ''))) {
-      const n = args[0].replace(/[^0-9]/g, '');
-      if (n) target = `${n}@s.whatsapp.net`;
+    // Get target: mentioned user or replied-to user
+    let targetJid = null;
+    if (m.mentioned && m.mentioned.length > 0) {
+      targetJid = m.mentioned[0];
+    } else if (m.quoted) {
+      targetJid = m.quoted.sender;
     }
 
-    if (!target) {
-      return await m.reply.info(
-        `Usage:\n• \`${p}warn @user [reason]\` — add a warning\n• \`${p}warn reset @user\` — clear all warnings\n\nAt *3 warnings* the user is automatically kicked from the group.`,
-        'WARN SYSTEM'
+    if (!targetJid) {
+      return await m.reply.error(
+        `Usage: \`${p}warn @user [reason]\`\nOr reply to a message with \`${p}warn [reason]\``
       );
     }
 
-    const targetNum = target.split('@')[0].split(':')[0];
-    const botNum = sock.user?.id?.split('@')[0]?.split(':')[0];
-    if (targetNum === botNum) return await m.reply.error('Cannot warn the bot itself.');
-    if (config.owner.includes(targetNum)) return await m.reply.error('Cannot warn the bot owner.');
+    // Can't warn yourself or the bot
+    if (targetJid === m.sender) {
+      return await m.reply.error("You can't warn yourself.");
+    }
+    if (targetJid === sock.user?.id) {
+      return await m.reply.error("You can't warn the bot.");
+    }
 
-    const reason = (sub && sub !== 'reset' ? args.join(' ') : args.slice(1).join(' ')).trim() || 'No reason provided';
-    const newCount = getGroupWarnings(db, m.from, target) + 1;
-    setGroupWarnings(db, m.from, target, newCount);
+    const reason = args.slice(m.mentioned?.length || 0).join(' ').trim() || 'No reason provided';
+    const groupData = db.getGroup(m.from);
+    const warnings = groupData.warnings || {};
+    const userWarns = (warnings[targetJid] || 0) + 1;
 
-    await withReactionStatus(m, async () => {
-      if (newCount >= MAX_WARNINGS) {
-        try {
-          await sock.groupParticipantsUpdate(m.from, [target], 'remove');
-          await m.reply(
-            asciiBuilder.box('⚠️ USER KICKED', [
-              `👤 User    : @${targetNum}`,
-              `⚠️  Warnings: ${newCount}/${MAX_WARNINGS}`,
-              `📝 Reason  : ${reason}`,
-              ``,
-              `User was automatically removed for hitting the limit. Bye. 👋`,
-            ]) , { mentions: [target] }
-          );
-          setGroupWarnings(db, m.from, target, 0);
-        } catch (err) {
-          await m.reply.error(`Could not kick user after ${MAX_WARNINGS} warnings: ${err.message}`);
-        }
-      } else {
-        const warningText = asciiBuilder.box('⚠️ WARNING ISSUED', [
-            `👤 User    : @${targetNum}`,
-            `⚠️  Strike  : ${newCount}/${MAX_WARNINGS}`,
-            `📝 Reason  : ${reason}`,
-            ``,
-            newCount === MAX_WARNINGS - 1
-              ? `⚡ *Final warning!* One more strike and they\'re out.`
-              : `${MAX_WARNINGS - newCount} more strike(s) before I show them the door. 👋`,
-          ]);
-        try {
-          await actionCard(sock, m.from, {
-            text:   warningText,
-            footer: `Strike ${newCount}/${MAX_WARNINGS}`,
-          }, [
-            { label: '♻️ Reset Warnings', cmd: `${p}warn reset @${targetNum}` },
-          ], { mentions: [target], quoted: m });
-        } catch (_) {
-          await m.reply(warningText, { mentions: [target] });
-        }
+    // Check for warn expiry
+    const warnTimes = groupData.warnTimes || {};
+    const lastWarn = warnTimes[targetJid] || 0;
+    const warnExpiry = config.moderation?.warnExpiryMs || 86400000;
+
+    if (lastWarn && Date.now() - lastWarn > warnExpiry && userWarns > 1) {
+      // Previous warnings expired, reset
+      warnings[targetJid] = 1;
+    } else {
+      warnings[targetJid] = userWarns;
+    }
+    warnTimes[targetJid] = Date.now();
+
+    db.setGroup(m.from, { warnings, warnTimes });
+
+    const targetNum = targetJid.split('@')[0].split(':')[0];
+    const threshold = config.moderation?.antilinkWarnThreshold || 3;
+
+    if (userWarns >= threshold) {
+      // Try to remove user
+      try {
+        await sock.groupParticipantsUpdate(m.from, [targetJid], 'remove');
+        warnings[targetJid] = 0;
+        db.setGroup(m.from, { warnings });
+        return await m.reply(
+          asciiBuilder.box('Warning — Removal', [
+            `🚫 @${targetNum} has been removed`,
+            `▸ Warnings: ${threshold}/${threshold}`,
+            `▸ Reason: ${reason}`,
+          ]),
+          { mentions: [targetJid] }
+        );
+      } catch (_) {
+        return await m.reply(
+          asciiBuilder.box('Warning', [
+            `⚠️ @${targetNum} reached ${userWarns}/${threshold} warnings`,
+            `▸ Reason: ${reason}`,
+            `▸ Cannot remove — bot is not a group admin`,
+          ]),
+          { mentions: [targetJid] }
+        );
       }
-    });
-  }
+    }
+
+    return await m.reply(
+      asciiBuilder.box('Warning', [
+        `⚠️ @${targetNum} has been warned`,
+        `▸ Warning ${userWarns}/${threshold}`,
+        `▸ Reason: ${reason}`,
+        `▸ Expires in: ${formatDuration(warnExpiry)}`,
+      ]),
+      { mentions: [targetJid] }
+    );
+  },
 };

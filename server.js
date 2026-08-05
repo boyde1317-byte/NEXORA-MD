@@ -10,15 +10,20 @@ import { client } from './src/core/client.js';
 import { assetManager } from './src/assets/assetManager.js';
 import { db } from './src/database/db.js';
 import brand from './config/brand.js';
+import { config, configValidation } from './config/index.js';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = config.server.port;
+const HOST = config.server.host;
 
 // ─── Security Middleware ─────────────────────────────────────────────────────
 app.use(helmet({
-  contentSecurityPolicy: false, // We serve a simple inline page — no CSP needed
+  contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
 }));
+
+// Body parser for API endpoints
+app.use(express.json({ limit: '1mb' }));
 
 // Rate limit all API routes — prevent abuse
 const apiLimiter = rateLimit({
@@ -42,8 +47,12 @@ app.use('/api/', apiLimiter);
 
 // ─── Graceful Shutdown ────────────────────────────────────────────────────────
 let httpServer = null;
+let isShuttingDown = false;
 
 function gracefulShutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
   console.log(`\n[SHUTDOWN] ${signal} received. Closing connections and saving state...`);
 
   // 1. Stop the auto-save interval
@@ -86,13 +95,11 @@ process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
 // ─── Global error safety nets ─────────────────────────────────────────────────
 process.on('uncaughtException', (err) => {
   console.error('[CRITICAL] Uncaught Exception — saving DB then exiting:', err);
-  // Save DB state then exit — running in an unknown state is dangerous
   try { db.saveSync(); } catch (_) {}
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason) => {
-  // Log but do NOT exit — unhandled rejections are often recoverable (e.g. network blips)
   console.error('[CRITICAL] Unhandled Promise Rejection:', reason);
 });
 
@@ -140,6 +147,7 @@ app.get('/', (req, res) => {
           border: 1px solid #065f46;
           margin-top: 1.5rem;
         }
+        .version { color: #475569; font-size: 0.8rem; margin-top: 1rem; }
       </style>
     </head>
     <body>
@@ -148,44 +156,116 @@ app.get('/', (req, res) => {
         <p>${brand.description}</p>
         <p>Created by ${brand.creator} • Framework: ${brand.core}</p>
         <p><strong>Note:</strong> Check your server console logs to retrieve the pairing code or QR code.</p>
-        <div class="status-badge">● Nexora Core Ready</div>
+        <div class="status-badge">● Nexora Core v2 Ready</div>
+        <p class="version">v${brand.version} • Node.js ${process.version}</p>
       </div>
     </body>
     </html>
   `);
 });
 
+// ─── Enhanced Health Endpoint ─────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   const memUsage = process.memoryUsage();
+  const pluginStats = client.getPluginStats ? client.getPluginStats() : {};
+  const totalExecutions = Object.values(pluginStats).reduce((sum, s) => sum + (s.executions || 0), 0);
+  const totalErrors = Object.values(pluginStats).reduce((sum, s) => sum + (s.errors || 0), 0);
+
   res.json({
     status: 'healthy',
+    version: brand.version,
     uptime: process.uptime(),
+    uptimeFormatted: formatUptime(process.uptime()),
     botActive: !!client.socket,
-    // Don't expose the bot's raw phone number to unauthenticated callers
     botConnected: client.socket?.user ? true : false,
-    // Memory snapshot for monitoring — useful for spotting leaks in
-    // long-running deployments without needing an external APM.
+    botName: client.socket?.user?.name || null,
     memory: {
       rssMb: Math.round(memUsage.rss / 1024 / 1024),
       heapUsedMb: Math.round(memUsage.heapUsed / 1024 / 1024),
       heapTotalMb: Math.round(memUsage.heapTotal / 1024 / 1024),
+      externalMb: Math.round(memUsage.external / 1024 / 1024),
+      heapUsagePercent: Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100),
     },
-    // Plugin load status — surfaces misconfigured deployments early
-    pluginsLoaded: client.commands.size,
+    plugins: {
+      loaded: client.commands.size,
+      aliases: client.aliases.size,
+      totalExecutions,
+      totalErrors,
+    },
+    database: {
+      users: Object.keys(db.data?.users || {}).length,
+      groups: Object.keys(db.data?.groups || {}).length,
+    },
+    config: {
+      publicMode: config.publicMode,
+      autoRead: config.autoRead,
+      prefix: config.prefix,
+      features: config.features,
+    },
   });
 });
 
+// ─── API: Plugin stats endpoint ──────────────────────────────────────────────
+app.get('/api/plugins', (req, res) => {
+  const stats = client.getPluginStats ? client.getPluginStats() : {};
+  const plugins = [];
+
+  client.commands.forEach((cmd, name) => {
+    plugins.push({
+      name,
+      aliases: cmd.aliases || [],
+      category: cmd.category || 'hidden',
+      description: cmd.description || '',
+      cooldown: cmd.cooldown || 0,
+      stats: stats[name] || { executions: 0, errors: 0, lastUsed: null },
+    });
+  });
+
+  res.json({
+    total: plugins.length,
+    plugins: plugins.sort((a, b) => (b.stats.executions || 0) - (a.stats.executions || 0)),
+  });
+});
+
+// ─── API: Database stats endpoint ─────────────────────────────────────────────
+app.get('/api/database', (req, res) => {
+  res.json({
+    users: Object.keys(db.data?.users || {}).length,
+    groups: Object.keys(db.data?.groups || {}).length,
+    bannedUsers: Object.values(db.data?.users || {}).filter(u => u.banned).length,
+    premiumUsers: Object.values(db.data?.users || {}).filter(u => u.premium).length,
+  });
+});
+
+// ─── Helper: format uptime ───────────────────────────────────────────────────
+function formatUptime(seconds) {
+  const d = Math.floor(seconds / (3600 * 24));
+  const h = Math.floor((seconds % (3600 * 24)) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  const parts = [];
+  if (d > 0) parts.push(`${d}d`);
+  if (h > 0) parts.push(`${h}h`);
+  if (m > 0) parts.push(`${m}m`);
+  if (s > 0) parts.push(`${s}s`);
+  return parts.join(' ') || '0s';
+}
+
 // ─── Start ─────────────────────────────────────────────────────────────────────
-httpServer = app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`╭─────────────────────╮`);
-  console.log(`│      ${brand.name}      │`);
-  console.log(`├─────────────────────┤`);
-  console.log(`│ Developer: ${brand.creator}    │`);
-  console.log(`│ Engine: Core Ready  │`);
-  console.log(`│ Version: ${brand.version}      │`);
-  console.log(`│ Status: Starting    │`);
-  console.log(`╰─────────────────────╯`);
-  console.log(`[INFO] Web server listening on port ${PORT}...`);
+httpServer = app.listen(PORT, HOST, async () => {
+  console.log(`╭───────────────────────────────────╮`);
+  console.log(`│         ${brand.name} v${brand.version}         │`);
+  console.log(`├───────────────────────────────────┤`);
+  console.log(`│ Developer  : ${brand.creator}              │`);
+  console.log(`│ Engine     : ${brand.core}          │`);
+  console.log(`│ Version    : v${brand.version}                  │`);
+  console.log(`│ Status     : Starting              │`);
+  console.log(`╰───────────────────────────────────╯`);
+  console.log(`[INFO] Web server listening on ${HOST}:${PORT}...`);
+
+  if (configValidation.warnings.length > 0) {
+    console.log(`[CONFIG] ${configValidation.warnings.length} warning(s) detected. Check logs above.`);
+  }
 
   try {
     await assetManager.init();

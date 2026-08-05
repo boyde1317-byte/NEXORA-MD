@@ -24,16 +24,47 @@ const __dirname  = path.dirname(__filename);
 const logger = pino({ level: 'silent' });
 
 let reconnectAttempts = 0;
-const BASE_DELAY_MS   = 5000;
-const MAX_DELAY_MS    = 60000;
+const BASE_DELAY_MS   = config.reconnectLimit === 0 ? 5000 : 5000;
+const MAX_DELAY_MS    = config.keepAliveIntervalMs ? 60000 : 60000;
 
 // ── Memory bounds for the in-memory message store ──────────────────────────
-// Each chat gets up to MAX_MSGS_PER_CHAT cached messages. The total number of
-// distinct chats is capped at MAX_TRACKED_CHATS — when exceeded, the oldest
-// (least recently created) chat is evicted. This prevents unbounded memory
-// growth in long-running bots that handle thousands of groups.
 const MAX_MSGS_PER_CHAT = 500;
 const MAX_TRACKED_CHATS = 2000;
+
+// ── Connection state tracking ────────────────────────────────────────────────
+const connectionState = {
+  current: 'disconnected',
+  lastConnectTime: null,
+  totalConnects: 0,
+  totalDisconnects: 0,
+  totalMessages: 0,
+  totalCommands: 0,
+  totalErrors: 0,
+  lastIncomingTime: null,
+  lastOutgoingTime: null,
+  reconnectHistory: [],
+  stateHistory: [],
+};
+
+function setState(newState) {
+  const prev = connectionState.current;
+  connectionState.current = newState;
+  connectionState.stateHistory.push({
+    from: prev,
+    to: newState,
+    timestamp: Date.now(),
+  });
+  if (connectionState.stateHistory.length > 50) {
+    connectionState.stateHistory.shift();
+  }
+  if (newState === 'connected' && prev !== 'connected') {
+    connectionState.totalConnects++;
+    connectionState.lastConnectTime = Date.now();
+  }
+  if (newState === 'disconnected' && prev === 'connected') {
+    connectionState.totalDisconnects++;
+  }
+}
 
 /**
  * Exponential backoff delay: 5s, 10s, 20s, 40s … capped at 60s
@@ -42,8 +73,21 @@ function getReconnectDelay(attempt) {
   return Math.min(BASE_DELAY_MS * Math.pow(2, attempt - 1), MAX_DELAY_MS);
 }
 
+/**
+ * Export connection state for the stats endpoint and health checks.
+ */
+export function getConnectionState() {
+  return {
+    ...connectionState,
+    uptime: connectionState.lastConnectTime
+      ? Date.now() - connectionState.lastConnectTime
+      : 0,
+  };
+}
+
 export async function connectToWhatsApp() {
   console.log('[CONNECTION] Initializing WhatsApp multi-device connection...');
+  setState('connecting');
 
   // Ensure session directory exists
   const sessionDir = path.resolve(config.sessionPath);
@@ -58,7 +102,8 @@ export async function connectToWhatsApp() {
     version = v;
     console.log(`[CONNECTION] Using WA version: ${v.join('.')}`);
   } catch {
-    version = [2, 3000, 1015901307];
+    // Updated fallback to match fork's bundled version
+    version = [2, 3000, 1044479778];
     console.warn('[CONNECTION] Could not fetch latest version — using bundled fallback.');
   }
 
@@ -75,15 +120,10 @@ export async function connectToWhatsApp() {
     browser: ['Ubuntu', 'Chrome', '20.0.0'],
     markOnlineOnConnect: true,
     syncFullHistory: false,
-    connectTimeoutMs: 60000,
-    keepAliveIntervalMs: 30000,
+    connectTimeoutMs: config.connectTimeoutMs || 60000,
+    keepAliveIntervalMs: config.keepAliveIntervalMs || 30000,
     retryRequestDelayMs: 2000,
     // In-memory message store for retries and quoted message decryption.
-    // The previous empty-conversation fallback caused decryption failures
-    // when WhatsApp retried a message or needed the original content for a
-    // quoted reply. We cache the last MAX_MSGS_PER_CHAT messages per chat,
-    // and cap the total number of tracked chats to prevent unbounded memory
-    // growth in long-running bots with many groups.
     messageStore: new Map(),
     getMessage: async (key) => {
       const chat = key?.remoteJid;
@@ -138,22 +178,40 @@ export async function connectToWhatsApp() {
 
     } else if (connection === 'open') {
       reconnectAttempts = 0;
-      console.log(`\n╭─────────────────────╮`);
-      console.log(`│      NEXORA MD      │`);
-      console.log(`│                     │`);
-      console.log(`│      ${brand.signature}       │`);
-      console.log(`│                     │`);
-      console.log(`│ Successfully Online │`);
-      console.log(`╰─────────────────────╯\n`);
+      setState('connected');
+
+      const uptime = connectionState.lastConnectTime
+        ? Math.round((Date.now() - connectionState.lastConnectTime) / 1000)
+        : 0;
+
+      console.log(`\n╭───────────────────────────────────╮`);
+      console.log(`│         ${brand.name} v${brand.version}         │`);
+      console.log(`│                                   │`);
+      console.log(`│         ${brand.signature}              │`);
+      console.log(`│                                   │`);
+      console.log(`│       Successfully Online          │`);
+      console.log(`╰───────────────────────────────────╯\n`);
       console.log(`🤖 Logged in as: ${sock.user?.name || 'Bot'} (${sock.user?.id?.split(':')[0]})\n`);
+      console.log(`[CONNECTION] Total connects: ${connectionState.totalConnects}, Total disconnects: ${connectionState.totalDisconnects}\n`);
 
       // Restore any pending reminders from the database after reconnect
       restoreReminders(sock);
 
     } else if (connection === 'close') {
+      setState('disconnected');
       const statusCode   = lastDisconnect?.error?.output?.statusCode;
       const errorMessage = lastDisconnect?.error?.message || 'Unknown';
-      console.log(`[CONNECTION DEBUG] Disconnect — statusCode: ${statusCode}, reason: ${errorMessage}, DisconnectReason.loggedOut=${DisconnectReason.loggedOut}`);
+      console.log(`[CONNECTION] Disconnect — statusCode: ${statusCode}, reason: ${errorMessage}`);
+
+      connectionState.reconnectHistory.push({
+        attempt: reconnectAttempts + 1,
+        statusCode,
+        errorMessage,
+        timestamp: Date.now(),
+      });
+      if (connectionState.reconnectHistory.length > 20) {
+        connectionState.reconnectHistory.shift();
+      }
 
       // Determine whether this disconnect is recoverable
       const loggedOut          = statusCode === DisconnectReason.loggedOut;
@@ -163,7 +221,6 @@ export async function connectToWhatsApp() {
       if (loggedOut) {
         console.error('[CONNECTION] Session logged out by WhatsApp — clearing session and scheduling re-pair in 30s...');
         db.saveSync();
-        // Auto-clear stale session so next attempt starts fresh
         try {
           const files = fs.readdirSync(sessionDir);
           for (const f of files) fs.rmSync(path.join(sessionDir, f), { force: true });
@@ -193,13 +250,16 @@ export async function connectToWhatsApp() {
       // Recoverable disconnect — attempt reconnect with exponential backoff
       console.warn(`[CONNECTION] Closed (code: ${statusCode}, reason: ${errorMessage}). Attempting reconnect...`);
 
-      if (reconnectAttempts < config.reconnectLimit) {
+      // 0 = unlimited reconnects (production), >0 = limited attempts
+      const maxAttempts = config.reconnectLimit;
+      if (maxAttempts === 0 || reconnectAttempts < maxAttempts) {
         reconnectAttempts++;
         const delay = getReconnectDelay(reconnectAttempts);
-        console.log(`[CONNECTION] Reconnect attempt ${reconnectAttempts}/${config.reconnectLimit} in ${delay / 1000}s...`);
+        console.log(`[CONNECTION] Reconnect attempt ${reconnectAttempts}${maxAttempts > 0 ? `/${maxAttempts}` : ' (unlimited)'} in ${delay / 1000}s...`);
+        setState('reconnecting');
         setTimeout(connectToWhatsApp, delay);
       } else {
-        console.error(`[CONNECTION] Max reconnect attempts (${config.reconnectLimit}) reached. Shutting down.`);
+        console.error(`[CONNECTION] Max reconnect attempts (${maxAttempts}) reached. Shutting down.`);
         db.saveSync();
         process.exit(1);
       }
@@ -209,6 +269,10 @@ export async function connectToWhatsApp() {
   // ── Incoming messages ─────────────────────────────────────────────────────
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     if (chatUpdate.type !== 'notify') return;
+
+    connectionState.lastIncomingTime = Date.now();
+    connectionState.totalMessages += chatUpdate.messages.length;
+
     for (const rawMessage of chatUpdate.messages) {
       // Cache message for getMessage retries
       try {
@@ -240,6 +304,7 @@ export async function connectToWhatsApp() {
       try {
         await handleMessage(rawMessage, sock);
       } catch (err) {
+        connectionState.totalErrors++;
         console.error('[HANDLER ERROR] Uncaught error in message handler:', err.message || err);
       }
     }
@@ -255,11 +320,8 @@ export async function connectToWhatsApp() {
   });
 
   // ── Anti-call ────────────────────────────────────────────────────────────
-  // Toggled at runtime via the `.anticall` command (persisted through
-  // db.getSettings()). Only acts on the initial 'offer' so we don't try to
-  // reject a call that has already been answered/ended/timed out.
   sock.ev.on('call', async (calls) => {
-    if (!db.getSettings().anticall) return;
+    if (!config.features?.antiCall || !db.getSettings().anticall) return;
     for (const call of calls) {
       if (call.status !== 'offer') continue;
       try {
@@ -273,26 +335,19 @@ export async function connectToWhatsApp() {
     }
   });
 
-  // ── Graceful shutdown ──────────────────────────────────────────────────────
-  // The DB uses a 2s debounced save — without this, killing the process
-  // loses the most recent writes (user data, warnings, economy state, etc.)
-  let shuttingDown = false;
-  const gracefulShutdown = (signal) => {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    console.log(`\n[SHUTDOWN] Received ${signal}, saving database...`);
-    try {
-      db.stopAutoSave();
-      db.saveSync();
-      console.log('[SHUTDOWN] Database saved. Goodbye.');
-    } catch (err) {
-      console.error('[SHUTDOWN] Failed to save database:', err.message);
-    }
-    process.exit(0);
-  };
+  // ── Presence updates ──────────────────────────────────────────────────────
+  // Track presence to detect stale connections
+  sock.ev.on('presence.update', (update) => {
+    // Presence updates indicate the connection is alive
+    connectionState.lastIncomingTime = Date.now();
+  });
 
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  // ── Messages sent tracking ────────────────────────────────────────────────
+  const originalSendMessage = sock.sendMessage.bind(sock);
+  sock.sendMessage = async (...args) => {
+    connectionState.lastOutgoingTime = Date.now();
+    return originalSendMessage(...args);
+  };
 
   return sock;
 }
