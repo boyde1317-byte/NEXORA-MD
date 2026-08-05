@@ -1105,9 +1105,17 @@ export const baileysBridge = {
         // Setting viewOnce:true would make it self-destruct after one tap, which
         // is wrong for a menu. Only use viewOnce on single-use cards (about, result cards).
         ...(contextInfo ? { contextInfo } : {}),
+        // Accepts TWO input shapes so callers can mix plain buttons with
+        // pre-built ones (e.g. buildNavigationButton()'s raw nativeFlowInfo
+        // button from menu/types/buttonsCard.js):
+        //   flat:   { displayText|text|label, id|buttonId, type, nativeFlowInfo }
+        //   baileys:{ buttonText: { displayText }, buttonId, type, nativeFlowInfo }
+        // Reading only the flat keys silently dropped the label to '' for
+        // any already-baileys-shaped button (btn.buttonText.displayText),
+        // since btn.displayText/.text/.label are all undefined on that shape.
         buttons:      (buttons || []).map(btn => ({
           buttonId:     btn.id || btn.buttonId || randomUUID(),
-          buttonText:  { displayText: btn.displayText || btn.text || btn.label || '' },
+          buttonText:  { displayText: btn.displayText || btn.text || btn.label || btn.buttonText?.displayText || '' },
           type:         btn.type || 1,
           ...(btn.nativeFlowInfo ? { nativeFlowInfo: btn.nativeFlowInfo } : {}),
         })),

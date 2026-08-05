@@ -45,7 +45,7 @@ function buildCatalogQuote(thumbnail) {
  * Opens a modal sheet with all command categories — tapping one runs
  * `.menu <category>` to show that category's commands.
  */
-function buildNavigationButton(prefix) {
+export function buildNavigationButton(prefix) {
   const p = prefix || '.';
   const categories = [
     { title: 'All Commands', description: 'Show all commands', id: `${p}menu all` },

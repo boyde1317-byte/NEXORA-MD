@@ -1,18 +1,31 @@
 /**
  * @file src/plugins/general/about.js
  *
- * .about — Standalone bot info card.
+ * .about — Standalone bot info card, matching the BIGST4CK reference layout
+ * exactly (see reference/screenshot):
  *
- * Sends the BIGST4CK-style layout:
- *   1. buttonsCard (grey text body, location header with brand thumbnail,
- *      productMessage catalog quote in the reply bar, type:1 pill buttons)
- *   2. nativeFlow interactive card fallback
- *   3. Guaranteed plain-text fallback
+ *   Body   (normal white/black text): greeting + date/time
+ *   Footer (native WhatsApp grey text — buttonsMessage.footerText):
+ *     » USER   — status, level/xp bar, coin, registered, last active, cmds used, badges
+ *     » SYSTEM — status, mode, uptime, db size, cmd count, cpu bar, ram bar, ping, users, groups
+ *   Buttons (buttonsMessage.buttons — renders as a horizontal pill row):
+ *     ♥ Store   → plain quick-reply, opens .shop
+ *     ☰ Menu    → nativeFlowInfo single_select category picker
  *
- * Body structure mirrors BIGST4CK's `.info` output:
- *   greeting + date/time
- *   » USER   — status, level/xp, coins, registered, last active, cmds used
- *   » SYSTEM — status, mode, uptime, db size, command count, cpu, ram, ping, users, groups
+ * IMPORTANT — the "grey text" effect is WhatsApp's OWN native rendering of
+ * the buttonsMessage.footerText field. It is NOT a monospace/code-block
+ * trick. Wrapping the whole body in ``` backticks (as an earlier version of
+ * this file did) puts everything in the *body* slot instead, which renders
+ * as plain foreground text — that's why "the greyed text style didn't
+ * work". Keep body short; put the stats block in footer, using `*bold*`
+ * markdown per line exactly like buttonsCard.js's main menu (already
+ * verified working).
+ *
+ * IMPORTANT — the button row only shows side-by-side (as in the reference
+ * screenshot) with exactly the same 2-button shape BIGST4CK uses: one plain
+ * type:1 quick-reply + one type:1 button carrying nativeFlowInfo. Reuses
+ * buttonsCard.js's buildNavigationButton() so both commands share the same
+ * proven category-picker payload instead of duplicating it.
  */
 
 import os from 'os';
@@ -23,7 +36,7 @@ import { client } from '../../core/client.js';
 import { formatUptime } from '../../lib/utils.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
 import { buildFakeProductQuote } from '../../lib/waUtils.js';
-import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { buildNavigationButton } from '../../menu/types/buttonsCard.js';
 import brand from '../../../config/brand.js';
 import owner from '../../../config/owner.js';
 import { config } from '../../../config/index.js';
@@ -102,6 +115,11 @@ export default {
     const registered    = userData.registered
       ? new Date(userData.registered).toISOString().split('T')[0]
       : 'N/A';
+    const lastActive    = userData.lastActive
+      ? new Date(userData.lastActive).toLocaleString('en-US', {
+          hour: '2-digit', minute: '2-digit', timeZone: tz,
+        })
+      : `Today at ${timeStr}`;
     const commandsUsed  = userData.commandsUsed  || 0;
     const badges        = m.isOwner ? 'Owner' : (userData.premium ? 'Premium' : 'Member');
     const senderNum     = m.senderNumber || m.sender?.split('@')[0] || '';
@@ -116,79 +134,86 @@ export default {
     const pingStart = Date.now();
     const pingMs    = Date.now() - pingStart + 5;  // negligible; replace if measuring real RTT
 
-    // ── Body text (grey monospace block, › list style) ────────────────────
-    const xpBar    = createBar((xp / xpNext) * 100, 10);
-    const ramBar   = createBar(ramPct, 10);
-    const cpuBar   = createBar(Math.min(loadPct, 100), 10);
-
-    const body =
+    // ── Body: greeting + date/time ONLY — renders as normal text ───────────
+    const bodyText =
       `${getGreeting()}, @${senderNum}\n` +
-      `${dateStr} · ${timeStr}\n\n` +
+      `${dateStr} · ${timeStr}`;
 
-      `» USER\n` +
-      `  › Status: ${m.isOwner ? 'Owner' : 'User'}\n` +
-      `  › Level: Lv.${level} ${xpBar} ${xp}/${xpNext} XP\n` +
-      `  › Coin: ${coins}\n` +
-      `  › Registered: ${registered}\n` +
-      `  › Commands Used: ${commandsUsed}\n` +
-      `  › Badges: ${badges}\n\n` +
+    // ── Footer: USER/SYSTEM stats — this is what WhatsApp renders grey ─────
+    const xpBar  = createBar((xp / xpNext) * 100, 8);
+    const ramBar = createBar(ramPct, 8);
+    const cpuBar = createBar(Math.min(loadPct, 100), 10);
 
-      `» SYSTEM\n` +
-      `  › Status: ${serverStatus}\n` +
-      `  › Mode: ${process.env.BOT_MODE || 'Public'}\n` +
-      `  › Uptime: ${uptime}\n` +
-      `  › Database: ${dbSize}\n` +
-      `  › Commands: ${totalCmds} cmd\n` +
-      `  › CPU Load: ${cpuBar} ${Math.round(loadPct)}%\n` +
-      `  › RAM: ${fmtRAM(usedMem)}/${fmtRAM(totalMem)} ${ramBar}\n` +
-      `  › Ping: ${pingMs}ms\n` +
-      `  › Active Users: ${totalUsers}\n` +
-      `  › Total Groups: ${totalGroups}`;
+    const footerText =
+      `*»* *USER*\n` +
+      `  › *Status:* ${m.isOwner ? 'Owner' : 'User'}\n` +
+      `  › *Level:* Lv.${level} ${xpBar} ${xp}/${xpNext} XP\n` +
+      `  › *Coin:* ${coins}\n` +
+      `  › *Registered:* ${registered}\n` +
+      `  › *Last Active:* ${lastActive}\n` +
+      `  › *Commands Used:* ${commandsUsed.toLocaleString()}\n` +
+      `  › *Badges:* ${badges}\n\n` +
 
-    const footer =
-      `© ${brand.name} by ${brand.creator}\n` +
-      `Library: @${brand.core} · ${brand.engine}`;
+      `*»* *SYSTEM*\n` +
+      `  › *Status:* ${serverStatus}\n` +
+      `  › *Mode:* ${process.env.BOT_MODE || 'Public'}\n` +
+      `  › *Uptime:* ${uptime}\n` +
+      `  › *Database:* ${dbSize}\n` +
+      `  › *Commands:* ${totalCmds} cmd\n` +
+      `  › *CPU Load:* ${cpuBar} ${Math.round(loadPct)}%\n` +
+      `  › *RAM:* ${fmtRAM(usedMem)}/${fmtRAM(totalMem)} ${ramBar}\n` +
+      `  › *Ping:* ${pingMs}ms\n` +
+      `  › *Active Users:* ${totalUsers}\n` +
+      `  › *Total Groups:* ${totalGroups}\n\n` +
+      `© ${brand.name} by ${brand.creator}`;
 
     // ── Thumbnail ──────────────────────────────────────────────────────────
     const thumbnailUrl = process.env.ABOUT_IMAGE || ASSET_URLS.thumbnail;
 
-    // ── Catalog quote (productMessage in reply bar) ────────────────────────
-    // Fetch thumbnail buffer for the catalog quote card
+    // ── Catalog quote (productMessage in reply bar) — defensive, never throws ──
     let thumbBuf = null;
     try {
       const res = await fetch(thumbnailUrl, { signal: AbortSignal.timeout(8000) });
       if (res.ok) thumbBuf = Buffer.from(await res.arrayBuffer());
     } catch (_) {}
 
-    const catalogQuote = buildFakeProductQuote({
-      title:            brand.name,
-      description:      brand.description || `${brand.name} by ${brand.creator}`,
-      currencyCode:     'USD',
-      priceAmount1000:  0,
-      businessOwnerJid: '0@s.whatsapp.net',
-      ...(thumbBuf ? { jpegThumbnail: thumbBuf } : {}),
-    });
+    let contextInfo;
+    try {
+      const catalogQuote = buildFakeProductQuote({
+        title:            brand.name,
+        description:      brand.description || `${brand.name} by ${brand.creator}`,
+        currencyCode:     'USD',
+        priceAmount1000:  0,
+        businessOwnerJid: '0@s.whatsapp.net',
+        ...(thumbBuf ? { jpegThumbnail: thumbBuf } : {}),
+      });
+      contextInfo = {
+        stanzaId:      catalogQuote.key.id || 'about-catalog',
+        participant:   catalogQuote.key.participant,
+        remoteJid:     catalogQuote.key.remoteJid,
+        quotedMessage: catalogQuote.message,
+        mentionedJid:  m.sender ? [m.sender] : [],
+      };
+    } catch (err) {
+      console.warn('[about] Catalog quote build failed, sending without it:', err.message);
+      contextInfo = { mentionedJid: m.sender ? [m.sender] : [] };
+    }
 
-    const contextInfo = {
-      stanzaId:      catalogQuote.key.id || 'about-catalog',
-      participant:   catalogQuote.key.participant,
-      remoteJid:     catalogQuote.key.remoteJid,
-      quotedMessage: catalogQuote.message,
-      mentionedJid:  m.sender ? [m.sender] : [],
-    };
-
+    // ── Buttons: exactly 2, matching the reference screenshot's horizontal
+    // pill row — ♥ Store (plain quick-reply) + ☰ Menu (nativeFlowInfo picker).
+    // buildNavigationButton() is shared with buttonsCard.js's main menu, which
+    // is the already-verified working implementation of this exact pattern.
     const buttons = [
-      { displayText: `${p}menu`,         id: `${p}menu`,    type: 1 },
-      { displayText: `${p}ping`,          id: `${p}ping`,    type: 1 },
-      { displayText: '💬 Contact Owner',  id: `${p}owner`,   type: 1 },
+      { displayText: '♥ Store', id: `${p}shop`, type: 1 },
+      buildNavigationButton(p),
     ];
 
-    // ── Tier 1: buttonsCard (grey text, thumbnail header, catalog quote) ───
+    // ── Tier 1: buttonsCard (grey footerText, thumbnail header, catalog quote) ──
     if (capabilities.nativeFlow) {
       try {
         return await baileysBridge.sendButtonsCard(sock, m.from, {
-          body:        '```' + body + '```',
-          footer,
+          body:        bodyText,
+          footer:      footerText,
           title:       brand.name,
           subtitle:    `${serverStatus} · ${timeStr}`,
           thumbnail:   thumbnailUrl,
@@ -204,13 +229,12 @@ export default {
     if (capabilities.nativeFlow) {
       try {
         return await baileysBridge.sendNativeFlow(sock, m.from, {
-          text:    body,
-          footer,
+          text:    `${bodyText}\n\n${footerText}`,
+          footer:  `© ${brand.name} by ${brand.creator}`,
           title:   brand.name,
           image:   { url: thumbnailUrl },
           buttons: [
-            { text: `${p}menu`,         id: `${p}menu`  },
-            { text: `${p}ping`,          id: `${p}ping`  },
+            { text: '♥ Store',           id: `${p}shop`  },
             { text: '💬 Contact Owner',  url: `https://wa.me/${owner.ownerNumber || ''}` },
           ],
         }, { quoted: m });
@@ -221,7 +245,7 @@ export default {
 
     // ── Tier 3: plain text guaranteed fallback ─────────────────────────────
     return await sock.sendMessage(m.from, {
-      text:        `*${brand.name}*\n\n${body}\n\n${footer}`,
+      text:        `*${brand.name}*\n\n${bodyText}\n\n${footerText}`,
       mentions:    m.sender ? [m.sender] : [],
     }, { quoted: m });
   },
