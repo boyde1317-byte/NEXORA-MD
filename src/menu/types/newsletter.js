@@ -4,6 +4,7 @@ import { imageManager } from '../../images/imageManager.js';
 import { newsletterManager } from '../../newsletter/newsletterManager.js';
 import brand from '../../../config/brand.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
+import { buildFakeImageQuote } from '../../lib/waUtils.js';
 
 /**
  * Newsletter Menu (id: 7)
@@ -107,8 +108,26 @@ export const newsletterMenu = {
       console.warn('[MENU newsletter] Tier 2 (imageMessage) failed, continuing to text:', err.message);
     }
 
-    // ── Tier 3: Guaranteed plain text ────────────────────────────────────
-    return await sock.sendMessage(m.from, { text: caption }, { quoted: menuData.audioQuote || m });
+    // ── Tier 3: Guaranteed plain text + fake quote + banner ────────────────
+    const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData?.buffer || undefined });
+    const fallbackAdReply = {
+      title:                 `✦ ${toSmallcaps(menuData.botName)} ✦`,
+      body:                  `${menuData.totalCommands} commands • Newsletter`,
+      sourceUrl:             'https://wa.me/233533416608',
+      mediaType:             1,
+      renderLargerThumbnail: true,
+      showAdAttribution:     false,
+    };
+    if (imgData?.buffer) {
+      fallbackAdReply.thumbnail = imgData.buffer;
+    } else if (imgData?.source?.startsWith('http')) {
+      fallbackAdReply.thumbnailUrl = imgData.source;
+      fallbackAdReply.originalImageUrl = imgData.source;
+    }
+    return await sock.sendMessage(m.from, {
+      text:        caption,
+      contextInfo: { externalAdReply: fallbackAdReply },
+    }, { quoted: fakeImgQuote });
   },
 };
 

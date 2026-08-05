@@ -3,6 +3,7 @@ import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
+import { buildFakeImageQuote } from '../../lib/waUtils.js';
 
 /**
  * Event Message Menu (id: 3)
@@ -90,10 +91,26 @@ export const eventMessageMenu = {
       console.warn('[MENU eventMessage] Tier 2 (image banner) failed, continuing to text:', err.message);
     }
 
-    // ── Tier 3: Guaranteed plain text ─────────────────────────────────────
+    // ── Tier 3: Guaranteed plain text + fake quote + banner ────────────────
+    const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
+    const fallbackAdReply = {
+      title:                 `✦ ${toSmallcaps(menuData.botName)} ✦`,
+      body:                  `${menuData.totalCommands} commands • Event Menu`,
+      sourceUrl:             'https://wa.me/233533416608',
+      mediaType:             1,
+      renderLargerThumbnail: true,
+      showAdAttribution:     false,
+    };
+    if (imgData.buffer) {
+      fallbackAdReply.thumbnail = imgData.buffer;
+    } else if (imgData.source?.startsWith('http')) {
+      fallbackAdReply.thumbnailUrl = imgData.source;
+      fallbackAdReply.originalImageUrl = imgData.source;
+    }
     return await sock.sendMessage(m.from, {
-      text: `🎉 *${eventName}*\n\n${eventDesc}\n\n` + buildTextMenu(menuData),
-    }, { quoted: menuData.audioQuote || m });
+      text:        `🎉 *${eventName}*\n\n${eventDesc}\n\n` + buildTextMenu(menuData),
+      contextInfo: { externalAdReply: fallbackAdReply },
+    }, { quoted: fakeImgQuote });
   },
 };
 

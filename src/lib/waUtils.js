@@ -832,3 +832,63 @@ export async function sendStatus(sock, type = 'text', content, opts = {}) {
     default:      return sendTextStatus(sock, String(content), opts)
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4.  MENU BANNER — fake quoted image + externalAdReply banner
+//     Builds a combined { quoted, contextInfo } pair for plain-text and
+//     plain-text-with-buttons fallback tiers. Uses the same high-quality
+//     image rendering style as the richCard menu (id 15):
+//       renderLargerThumbnail: true, showAdAttribution: false
+//     The fake image quote shows a mini thumbnail in the reply bar; the
+//     externalAdReply banner shows a large thumbnail card above the text.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Build a fake image quote + externalAdReply banner for plain-text fallbacks.
+ *
+ * @param {object}  opts
+ * @param {object} [opts.imgData]        Image data from imageManager.getMenuImage()
+ * @param {object} [opts.adReply]        Pre-built externalAdReply object (optional — auto-built if omitted)
+ * @param {string} [opts.botName]        Bot name (for auto-built adReply)
+ * @param {number|string} [opts.totalCommands]  Command count (for auto-built adReply)
+ * @param {object} [opts.quoted]         Existing quoted message to preserve (takes priority over fake image quote)
+ * @returns {{ quoted: object, contextInfo: { externalAdReply: object } }}
+ *
+ * @example
+ * const { quoted, contextInfo } = buildMenuBanner({ imgData, adReply, botName: menuData.botName, totalCommands: menuData.totalCommands })
+ * await sock.sendMessage(m.from, { text: bodyText, contextInfo }, { quoted })
+ */
+export function buildMenuBanner({ imgData, adReply, botName, totalCommands, quoted } = {}) {
+  // ── Fake image quote — mini thumbnail in the reply bar ──
+  const fakeImgQuote = buildFakeImageQuote({
+    jpegThumbnail: imgData?.buffer || undefined,
+    url: imgData?.source?.startsWith('http') ? imgData.source : '',
+  });
+
+  // ── External ad-reply banner — large thumbnail card above text ──
+  // Use provided adReply or build one in the richCard (menu 15) style
+  let banner;
+  if (adReply) {
+    banner = adReply;
+  } else {
+    banner = {
+      title:                 `✦ ${botName || 'NEXORA-MD'} ✦`,
+      body:                  `${totalCommands || 0} commands ✦ NEXORA-MD`,
+      sourceUrl:             'https://wa.me/233533416608',
+      mediaType:             1,
+      renderLargerThumbnail: true,
+      showAdAttribution:     false,
+    };
+    if (imgData?.buffer) {
+      banner.thumbnail = imgData.buffer;
+    } else if (imgData?.source?.startsWith('http')) {
+      banner.thumbnailUrl = imgData.source;
+      banner.originalImageUrl = imgData.source;
+    }
+  }
+
+  return {
+    quoted: quoted || fakeImgQuote,
+    contextInfo: { externalAdReply: banner },
+  };
+}

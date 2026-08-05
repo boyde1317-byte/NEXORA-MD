@@ -25,6 +25,8 @@
 
 import { buildTextMenu } from '../formatter.js';
 import brand from '../../../config/brand.js';
+import { imageManager } from '../../images/imageManager.js';
+import { buildFakeImageQuote } from '../../lib/waUtils.js';
 import { config } from '../../../config/index.js';
 
 export const listFallbackMenu = {
@@ -87,11 +89,33 @@ export const listFallbackMenu = {
       console.warn('[MENU listFallback] listMessage failed, plain text:', err.message);
     }
 
-    // ── Tier 2: guaranteed plain text ─────────────────────────────────────
+    // ── Tier 2: guaranteed plain text + fake quote + banner ───────────────
     const fallbackText = buildTextMenu(menuData);
+    let fakeImgQuote, fallbackAdReply;
+    try {
+      const imgData = await imageManager.getMenuImage(16);
+      fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
+      fallbackAdReply = {
+        title:                 `✦ ${brand.name} ✦`,
+        body:                  `${menuData.totalCommands} commands • List Menu`,
+        sourceUrl:             'https://wa.me/233533416608',
+        mediaType:             1,
+        renderLargerThumbnail: true,
+        showAdAttribution:     false,
+      };
+      if (imgData.buffer) {
+        fallbackAdReply.thumbnail = imgData.buffer;
+      } else if (imgData.source?.startsWith('http')) {
+        fallbackAdReply.thumbnailUrl = imgData.source;
+        fallbackAdReply.originalImageUrl = imgData.source;
+      }
+    } catch (_) {
+      fakeImgQuote = m;
+    }
     return await sock.sendMessage(m.from, {
-      text: `*${brand.name} Menu*\n\n${fallbackText}`,
-    }, { quoted: m });
+      text:        `*${brand.name} Menu*\n\n${fallbackText}`,
+      ...(fallbackAdReply ? { contextInfo: { externalAdReply: fallbackAdReply } } : {}),
+    }, { quoted: fakeImgQuote || m });
   },
 };
 

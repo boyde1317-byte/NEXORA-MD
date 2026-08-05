@@ -2,6 +2,7 @@ import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
+import { buildFakeImageQuote } from '../../lib/waUtils.js';
 
 // Maximum carousel cards sent in a single batch.
 const MAX_CAROUSEL_CARDS = 10;
@@ -104,10 +105,26 @@ export const carouselMenu = {
       console.warn('[MENU carousel] Tier 2 (nativeFlow) failed, continuing to plain text:', err.message);
     }
 
-    // ── Tier 3: guaranteed plain text ─────────────────────────────────────
+    // ── Tier 3: guaranteed plain text + fake quote + banner ────────────────
+    const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
+    const fallbackAdReply = {
+      title:                 `✦ ${toSmallcaps(menuData.botName)} ✦`,
+      body:                  `${menuData.totalCommands} commands • Carousel`,
+      sourceUrl:             'https://wa.me/233533416608',
+      mediaType:             1,
+      renderLargerThumbnail: true,
+      showAdAttribution:     false,
+    };
+    if (imgData.buffer) {
+      fallbackAdReply.thumbnail = imgData.buffer;
+    } else if (imgData.source?.startsWith('http')) {
+      fallbackAdReply.thumbnailUrl = imgData.source;
+      fallbackAdReply.originalImageUrl = imgData.source;
+    }
     return await sock.sendMessage(m.from, {
-      text: `${headerText}\n\n` + buildTextMenu(menuData),
-    }, { quoted: menuData.audioQuote || m });
+      text:        `${headerText}\n\n` + buildTextMenu(menuData),
+      contextInfo: { externalAdReply: fallbackAdReply },
+    }, { quoted: fakeImgQuote });
   },
 };
 

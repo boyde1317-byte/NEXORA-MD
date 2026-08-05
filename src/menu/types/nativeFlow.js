@@ -3,6 +3,7 @@ import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
+import { buildFakeImageQuote } from '../../lib/waUtils.js';
 
 /**
  * Native Flow Menu (id: 4) \u2014 enhanced for rich-messages.
@@ -99,7 +100,7 @@ export const nativeFlowMenu = {
       return await sock.sendMessage(m.from, {
         text:        bodyText,
         contextInfo: { externalAdReply: adReply },
-      }, { quoted: menuData.audioQuote || m });
+      }, { quoted: buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined }) });
     } catch (err) {
       console.warn('[MENU nativeFlow] Tier 3 (adReply) failed, escalating to text:', err.message);
       throw err; // runWithFallback → plain text

@@ -79,14 +79,23 @@ const cap = (arr) => arr.slice(0, 10);
  * @param {object} [opts]
  */
 async function _send(sock, jid, payload, opts = {}) {
+  // Extract contextInfo so it's forwarded on the plain-text fallback path
+  // but NOT passed to sendNativeFlow (which doesn't support it).
+  const { contextInfo, ...nativePayload } = payload;
   if (!capabilities.nativeFlow) {
-    return sock.sendMessage(jid, { text: payload.text || '' }, opts);
+    return sock.sendMessage(jid, {
+      text: payload.text || '',
+      ...(contextInfo ? { contextInfo } : {}),
+    }, opts);
   }
   try {
-    return await baileysBridge.sendNativeFlow(sock, jid, payload, opts);
+    return await baileysBridge.sendNativeFlow(sock, jid, nativePayload, opts);
   } catch (err) {
     console.warn('[interactiveKit] nativeFlow failed, plain-text fallback:', err.message);
-    return sock.sendMessage(jid, { text: payload.text || '' }, opts);
+    return sock.sendMessage(jid, {
+      text: payload.text || '',
+      ...(contextInfo ? { contextInfo } : {}),
+    }, opts);
   }
 }
 

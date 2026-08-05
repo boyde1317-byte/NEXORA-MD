@@ -4,6 +4,7 @@ import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { buildFakeImageQuote } from '../../lib/waUtils.js';
 
 /**
  * Rich Card Menu (id: 15)
@@ -136,10 +137,12 @@ export const richCardMenu = {
       console.warn('[MENU richCard] Tier 3 (text + adReply) failed, escalating to plain text:', err.message);
     }
 
-    // ── Tier 4: guaranteed plain text ────────────────────────────────────
+    // ── Tier 4: guaranteed plain text + fake quote + banner ────────────────
+    const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
     return await sock.sendMessage(m.from, {
-      text: `\u2726 *${toSmallcaps(menuData.botName + ' Command Matrix')}* \u2726\n\n` + buildTextMenu(menuData),
-    }, { quoted: menuData.audioQuote || m });
+      text:        `\u2726 *${toSmallcaps(menuData.botName + ' Command Matrix')}* \u2726\n\n` + buildTextMenu(menuData),
+      contextInfo: { externalAdReply: adReply },
+    }, { quoted: fakeImgQuote });
   },
 };
 

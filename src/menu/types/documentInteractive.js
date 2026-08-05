@@ -4,6 +4,7 @@ import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { footerManager } from '../../core/footer.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
+import { buildFakeImageQuote } from '../../lib/waUtils.js';
 
 /**
  * Document Interactive Menu (id: 1) \u2014 enhanced for rich-messages.
@@ -122,8 +123,12 @@ export const documentInteractiveMenu = {
       console.warn('[MENU documentInteractive] Tier 3 (image banner) failed, falling back to text:', err.message);
     }
 
-    // ── Tier 4: guaranteed plain text ─────────────────────────────────────
-    return await sock.sendMessage(m.from, { text: bodyText }, { quoted: menuData.audioQuote || m });
+    // ── Tier 4: guaranteed plain text + fake quote + banner ───────────────
+    const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
+    return await sock.sendMessage(m.from, {
+      text:        bodyText,
+      contextInfo: { externalAdReply: adReply },
+    }, { quoted: fakeImgQuote });
   },
 };
 

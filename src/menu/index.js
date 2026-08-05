@@ -2,7 +2,7 @@ import { menuManager } from './manager.js';
 import { runWithFallback } from './fallback.js';
 import { collectMenuData } from './collector.js';
 import { mediaManager } from '../media/mediaManager.js';
-import { buildFakeLiveLocationQuote } from '../lib/waUtils.js';
+import { buildFakeLiveLocationQuote, buildMenuBanner, buildFakeImageQuote } from '../lib/waUtils.js';
 import { actionCard } from '../lib/interactiveKit.js';
 import { db } from '../database/db.js';
 import { imageManager } from '../images/imageManager.js';
@@ -90,13 +90,20 @@ export const showMenu = async (sock, m, customKey = null) => {
   if (customKey && activeMenu && String(activeMenu.id) !== String(menu.id)) {
     try {
       const p = menuData.prefix || '.';
+      let previewQuote = m, previewCtx = {};
+      try {
+        const imgData = await imageManager.getMenuImage(menu.id);
+        previewQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
+        previewCtx   = buildMenuBanner({ imgData, botName: menuData.botName, totalCommands: menuData.totalCommands }).contextInfo;
+      } catch (_) {}
       await actionCard(sock, m.from, {
-        text:   `\u{1F441}\uFE0F You're previewing *${menu.name}*.\nLike what you see? Make it permanent \u2014 one tap below.`,
-        footer: `Currently active: ${activeMenu.name}`,
+        text:        `👁️ You're previewing *${menu.name}*.\nLike what you see? Make it permanent — one tap below.`,
+        footer:      `Currently active: ${activeMenu.name}`,
+        contextInfo: previewCtx,
       }, [
-        { label: `\u2705 Set as Default`, cmd: `${p}setmenu ${menu.id}` },
-        { label: `\u{1F441}\uFE0F View Another Style`, cmd: `${p}menulist` },
-      ], { quoted: m });
+        { label: `✅ Set as Default`, cmd: `${p}setmenu ${menu.id}` },
+        { label: `👁️ View Another Style`, cmd: `${p}menulist` },
+      ], { quoted: previewQuote });
     } catch (_) {}
   }
 

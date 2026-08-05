@@ -1,6 +1,7 @@
 import { buildCompactMenu } from '../formatter.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { imageManager } from '../../images/imageManager.js';
+import { buildFakeImageQuote } from '../../lib/waUtils.js';
 
 export const reactionMenu = {
   id: 11,
@@ -76,7 +77,7 @@ export const reactionMenu = {
     return await sock.sendMessage(m.from, {
       text: finalMenuText,
       ...(hasImage ? { contextInfo: { externalAdReply: adReply } } : {}),
-    }, { quoted: menuData.audioQuote || m });
+    }, { quoted: buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined }) });
   }
 };
 

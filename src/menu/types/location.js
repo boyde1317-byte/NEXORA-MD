@@ -96,8 +96,25 @@ export const locationMenu = {
       console.warn('[MENU location] Tier 2 (adReply + location quote) failed, continuing to text:', err.message);
     }
 
-    // ── Tier 3: guaranteed plain text + live location badge ───────────────
-    return await sock.sendMessage(m.from, { text: menuText }, { quoted: locationQuote });
+    // ── Tier 3: guaranteed plain text + live location badge + banner ────────
+    const fallbackAdReply = {
+      title:                 `✦ ${menuData.botName.toUpperCase()} ✦`,
+      body:                  `${menuData.totalCommands} commands • Prefix: ${menuData.prefix}`,
+      sourceUrl:             'https://wa.me/233533416608',
+      mediaType:             1,
+      renderLargerThumbnail: true,
+      showAdAttribution:     false,
+    };
+    if (imgData.buffer) {
+      fallbackAdReply.thumbnail = imgData.buffer;
+    } else if (imgData.source?.startsWith('http')) {
+      fallbackAdReply.thumbnailUrl = imgData.source;
+      fallbackAdReply.originalImageUrl = imgData.source;
+    }
+    return await sock.sendMessage(m.from, {
+      text:        menuText,
+      contextInfo: { externalAdReply: fallbackAdReply },
+    }, { quoted: locationQuote });
   },
 };
 

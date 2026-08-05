@@ -5,6 +5,7 @@ import { capabilities } from '../../core/capabilities.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { buildFakeImageQuote } from '../../lib/waUtils.js';
 
 /**
  * AI-Dynamic Menu (id: 12) \u2014 enhanced for rich-messages.
@@ -186,7 +187,7 @@ export const aiDynamicMenu = {
       text,
       mentions:    [m.sender],
       contextInfo: { externalAdReply: adReply },
-    }, { quoted: menuData.audioQuote || m });
+    }, { quoted: buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined }) });
   }
 };
 

@@ -1,7 +1,7 @@
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
-import { buildFakeOrderQuote } from '../../lib/waUtils.js';
+import { buildFakeOrderQuote, buildFakeImageQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 
@@ -138,8 +138,12 @@ export const orderMessageMenu = {
       console.warn('[MENU orderMessage] Tier 3 (plain image) failed, continuing to text:', err.message);
     }
 
-    // ── Tier 4: guaranteed plain text ─────────────────────────────────────
-    return await sock.sendMessage(m.from, { text: bodyText }, { quoted: menuData.audioQuote || m });
+    // ── Tier 4: guaranteed plain text + fake quote + banner ───────────────
+    const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
+    return await sock.sendMessage(m.from, {
+      text:        bodyText,
+      contextInfo: { externalAdReply: adReply },
+    }, { quoted: fakeImgQuote });
   },
 };
 

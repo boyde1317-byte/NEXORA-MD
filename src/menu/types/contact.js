@@ -99,8 +99,25 @@ export const contactMenu = {
       console.warn('[MENU contact] Tier 2 (adReply + contact quote) failed, continuing to text:', err.message);
     }
 
-    // ── Tier 3: guaranteed plain text + contact badge ─────────────────────
-    return await sock.sendMessage(m.from, { text: menuText }, { quoted: contactQuote });
+    // ── Tier 3: guaranteed plain text + contact badge + banner ────────────
+    const fallbackAdReply = {
+      title:                 `✦ ${menuData.botName.toUpperCase()} ✦`,
+      body:                  `${menuData.totalCommands} commands • Prefix: ${menuData.prefix}`,
+      sourceUrl:             `https://wa.me/${ownerNumber}`,
+      mediaType:             1,
+      renderLargerThumbnail: true,
+      showAdAttribution:     false,
+    };
+    if (imgData.buffer) {
+      fallbackAdReply.thumbnail = imgData.buffer;
+    } else if (imgData.source?.startsWith('http')) {
+      fallbackAdReply.thumbnailUrl = imgData.source;
+      fallbackAdReply.originalImageUrl = imgData.source;
+    }
+    return await sock.sendMessage(m.from, {
+      text:        menuText,
+      contextInfo: { externalAdReply: fallbackAdReply },
+    }, { quoted: contactQuote });
   },
 };
 

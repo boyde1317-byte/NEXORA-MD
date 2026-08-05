@@ -4,6 +4,7 @@ import { capabilities } from '../../core/capabilities.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { buildFakeImageQuote } from '../../lib/waUtils.js';
 
 /**
  * Media Menu (id: 10) \u2014 enhanced for rich-messages.
@@ -108,7 +109,7 @@ export const mediaMenu = {
     return await sock.sendMessage(m.from, {
       text: caption,
       contextInfo: { externalAdReply: adReply },
-    }, { quoted: menuData.audioQuote || m });
+    }, { quoted: buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined }) });
   },
 };
 
