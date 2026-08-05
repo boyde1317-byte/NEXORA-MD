@@ -1216,7 +1216,7 @@ export const baileysBridge = {
     }
 
     return await sock.sendMessage(jid, payload, options);
-  }
+  },
 
   // ───────────────────────────────────────────────────────────────────────
   // RICH MESSAGE GENERATORS — direct relay via sock.relayMessage
@@ -1264,10 +1264,7 @@ export const baileysBridge = {
     } catch (err) {
       console.warn('[baileysBridge.sendRichTable] relay failed:', err.message);
       const allRows = [...(content.headers ? [content.headers] : []), ...content.rows];
-      const text = '*' + content.title + '*
-' + allRows.map(r => r.join(' | ')).join('
-') + (content.footer ? '
-_' + content.footer + '_' : '');
+      const text = '*' + content.title + '*\n' + allRows.map(r => r.join(' | ')).join('\n') + (content.footer ? '\n_' + content.footer + '_' : '');
       return sock.sendMessage(jid, { text }, opts);
     }
   },
@@ -1286,11 +1283,7 @@ _' + content.footer + '_' : '');
       return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
     } catch (err) {
       console.warn('[baileysBridge.sendRichCode] relay failed:', err.message);
-      const text = (content.caption ? '*' + content.caption + '*
-
-' : '') + '```
-' + content.code.slice(0, 3000) + '
-```';
+      const text = (content.caption ? '*' + content.caption + '*\n\n' : '') + '```\n' + content.code.slice(0, 3000) + '\n```';
       return sock.sendMessage(jid, { text }, opts);
     }
   },
@@ -1309,9 +1302,7 @@ _' + content.footer + '_' : '');
     } catch (err) {
       console.warn('[baileysBridge.sendInlineVideoStats] relay failed:', err.message);
       const title = (content.video && content.video.title) ? content.video.title : 'Video';
-      const text = title + '
-' + content.tableRows.map(r => r.join(' | ')).join('
-');
+      const text = title + '\n' + content.tableRows.map(r => r.join(' | ')).join('\n');
       return sock.sendMessage(jid, { text }, opts);
     }
   },
@@ -1329,9 +1320,7 @@ _' + content.footer + '_' : '');
       return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
     } catch (err) {
       console.warn('[baileysBridge.sendReelCarousel] relay failed:', err.message);
-      const text = content.reels.map(r => r.title + ': ' + r.videoUrl).join('
-
-');
+      const text = content.reels.map(r => r.title + ': ' + r.videoUrl).join('\n\n');
       return sock.sendMessage(jid, { text }, opts);
     }
   },
@@ -1351,10 +1340,7 @@ _' + content.footer + '_' : '');
       return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
     } catch (err) {
       console.warn('[baileysBridge.sendRichLinks] relay failed:', err.message);
-      const text = content.links.map((l, i) => '[' + (i+1) + '] ' + l.title + '
-' + l.url).join('
-
-');
+      const text = content.links.map((l, i) => '[' + (i+1) + '] ' + l.title + '\n' + l.url).join('\n\n');
       return sock.sendMessage(jid, { text }, opts);
     }
   },
