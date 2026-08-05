@@ -1,7 +1,11 @@
 import { buildCompactMenu } from '../formatter.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { imageManager } from '../../images/imageManager.js';
-import { buildFakeImageQuote } from '../../lib/waUtils.js';
+import { buildAboutContextInfo, resolveThumbnail, buildFakeImageQuote } from '../../lib/waUtils.js';
+import { buildNavigationButton } from './buttonsCard.js';
+import { capabilities } from '../../core/capabilities.js';
+import { baileysBridge } from '../../core/baileysBridge.js';
+import { ASSET_URLS } from '../../assets/assetUrls.js';
 
 export const reactionMenu = {
   id: 11,
@@ -10,13 +14,42 @@ export const reactionMenu = {
   supportedMessages: ['react', 'edit'],
 
   renderer: async ({ sock, m, menuData }) => {
-    // Pre-fetch image for externalAdReply banner on the final message.
-    // We do this early so the await doesn't delay the loading indicator.
+    // Pre-fetch image for thumbnail/externalAdReply banner.
     const imgData = await imageManager.getMenuImage(11);
 
-    // Build the externalAdReply card once — reused across Tier 1 edit fallback
-    // and Tier 2 fresh send. The edit message type does not support contextInfo,
-    // so we attach it only to fresh sends (Tier 2) and the initial loading stub.
+    // 1. React with a loading emoji (non-critical — ignore failure)
+    try { await m.react('⏳'); } catch (_) {}
+
+    // 2. Build final menu text & footer
+    const finalMenuText = buildCompactMenu(menuData);
+    const footerText = `${menuData.botName} • ${toSmallcaps('Reaction Menu')}`;
+
+    // ── Tier 1: sendButtonsCard ───────────────────────────────────────────
+    const thumbnail = resolveThumbnail(imgData, ASSET_URLS?.thumbnail);
+    const aboutCtx = buildAboutContextInfo({ botName: menuData.botName, description: `${menuData.totalCommands} commands`, thumbnail: imgData?.buffer });
+
+    if (capabilities.nativeFlow) {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 800));
+        try { await m.react('✅'); } catch (_) {}
+        return await baileysBridge.sendButtonsCard(sock, m.from, {
+          body:      finalMenuText,
+          footer:    footerText,
+          title:     menuData.botName,
+          subtitle:  `${menuData.totalCommands} commands • ${menuData.uptime}`,
+          thumbnail,
+          buttons: [
+            { displayText: '📋 All Commands', id: `${menuData.prefix}menu all`, type: 1 },
+            buildNavigationButton(menuData.prefix),
+          ],
+          contextInfo: aboutCtx,
+        }, { quoted: menuData.audioQuote || m });
+      } catch (err) {
+        console.warn('[MENU reaction] Tier 1 (sendButtonsCard) failed, trying react+edit:', err.message);
+      }
+    }
+
+    // ── Tier 2: Live-edit loading message (OLD Tier 1) ────────────────────
     const adReply = {
       title:                 `✦ ${toSmallcaps(menuData.botName)} ✦`,
       body:                  `${menuData.totalCommands} commands • Prefix: ${menuData.prefix}`,
@@ -29,34 +62,20 @@ export const reactionMenu = {
       adReply.thumbnail = imgData.buffer;
     } else if (imgData.source?.startsWith('http')) {
       adReply.thumbnailUrl = imgData.source;
-
       adReply.originalImageUrl = imgData.source;
     }
 
     const hasImage = !!(imgData.buffer || imgData.source?.startsWith('http'));
 
-    // 1. React with a loading emoji (non-critical — ignore failure)
-    try { await m.react('⏳'); } catch (_) {}
-
-    // 2. Send the loading placeholder — include the image banner here so that
-    //    even if live-edit rewrites the text later, the user already saw the image.
     const loadingMsg = await sock.sendMessage(m.from, {
       text: `✦ *${toSmallcaps(menuData.botName)}* ✦\n\n⏳ _${toSmallcaps('Synchronizing plugins and command directories')}..._`,
       ...(hasImage ? { contextInfo: { externalAdReply: adReply } } : {}),
     }, { quoted: menuData.audioQuote || m });
 
-    // 3. Brief pause for UX
     await new Promise(resolve => setTimeout(resolve, 1200));
 
-    // 4. Update reaction to complete (non-critical)
     try { await m.react('✅'); } catch (_) {}
 
-    // 5. Build the final menu text
-    const finalMenuText = buildCompactMenu(menuData);
-
-    // ── Tier 1: Live-edit the loading message ─────────────────────────────
-    // NOTE: `edit` messages do not carry contextInfo — the image banner already
-    // appeared on the original loading message above, so the UX is consistent.
     if (loadingMsg?.key) {
       try {
         return await sock.sendMessage(m.from, {
@@ -64,16 +83,14 @@ export const reactionMenu = {
           edit: loadingMsg.key,
         });
       } catch (editErr) {
-        console.warn('[MENU reaction] Tier 1 (live-edit) failed on this client, sending new message:', editErr.message);
-        // Attempt to delete the stale loading message so it doesn't confuse the user
+        console.warn('[MENU reaction] Tier 2 (live-edit) failed on this client, sending new message:', editErr.message);
         try {
           await sock.sendMessage(m.from, { delete: loadingMsg.key });
         } catch (_) {}
       }
     }
 
-    // ── Tier 2: Send as a fresh message (edit unsupported) ────────────────
-    // Attach the image banner so the fresh fallback also renders the image card.
+    // ── Tier 3: Send as a fresh message (edit unsupported) ────────────────
     return await sock.sendMessage(m.from, {
       text: finalMenuText,
       ...(hasImage ? { contextInfo: { externalAdReply: adReply } } : {}),

@@ -834,24 +834,25 @@ export async function sendStatus(sock, type = 'text', content, opts = {}) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4.  MENU BANNER — fake quoted image + externalAdReply banner
+// 4.  MENU BANNER — fake product quote + externalAdReply banner
 //     Builds a combined { quoted, contextInfo } pair for plain-text and
-//     plain-text-with-buttons fallback tiers. Uses the same high-quality
-//     image rendering style as the richCard menu (id 15):
-//       renderLargerThumbnail: true, showAdAttribution: false
-//     The fake image quote shows a mini thumbnail in the reply bar; the
-//     externalAdReply banner shows a large thumbnail card above the text.
+//     plain-text-with-buttons fallback tiers. Uses the .about command's
+//     rendering style:
+//       - buildFakeProductQuote catalog card in the reply bar
+//       - externalAdReply banner with .about-style title/body
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Build a fake image quote + externalAdReply banner for plain-text fallbacks.
+ * Build a fake product quote + externalAdReply banner for plain-text fallbacks.
+ * Matches the .about command's visual style: catalog card in the reply bar,
+ * banner with brand name as title and status info as body.
  *
  * @param {object}  opts
  * @param {object} [opts.imgData]        Image data from imageManager.getMenuImage()
  * @param {object} [opts.adReply]        Pre-built externalAdReply object (optional — auto-built if omitted)
- * @param {string} [opts.botName]        Bot name (for auto-built adReply)
+ * @param {string} [opts.botName]        Bot name (for auto-built adReply + product quote)
  * @param {number|string} [opts.totalCommands]  Command count (for auto-built adReply)
- * @param {object} [opts.quoted]         Existing quoted message to preserve (takes priority over fake image quote)
+ * @param {object} [opts.quoted]         Existing quoted message to preserve (takes priority over fake product quote)
  * @returns {{ quoted: object, contextInfo: { externalAdReply: object } }}
  *
  * @example
@@ -859,21 +860,25 @@ export async function sendStatus(sock, type = 'text', content, opts = {}) {
  * await sock.sendMessage(m.from, { text: bodyText, contextInfo }, { quoted })
  */
 export function buildMenuBanner({ imgData, adReply, botName, totalCommands, quoted } = {}) {
-  // ── Fake image quote — mini thumbnail in the reply bar ──
-  const fakeImgQuote = buildFakeImageQuote({
-    jpegThumbnail: imgData?.buffer || undefined,
-    url: imgData?.source?.startsWith('http') ? imgData.source : '',
+  // ── Fake product quote — catalog card in the reply bar (.about style) ──
+  const fakeProductQuote = buildFakeProductQuote({
+    title:           botName || 'NEXORA-MD',
+    description:     `${totalCommands || 0} commands`,
+    currencyCode:    'USD',
+    priceAmount1000: 0,
+    businessOwnerJid: WA_JID,
+    ...(imgData?.buffer ? { jpegThumbnail: imgData.buffer } : {}),
   });
 
-  // ── External ad-reply banner — large thumbnail card above text ──
-  // Use provided adReply or build one in the richCard (menu 15) style
+  // ── External ad-reply banner — .about style ──
+  // Title = brand name (no decorative symbols), body = status info
   let banner;
   if (adReply) {
     banner = adReply;
   } else {
     banner = {
-      title:                 `✦ ${botName || 'NEXORA-MD'} ✦`,
-      body:                  `${totalCommands || 0} commands ✦ NEXORA-MD`,
+      title:                 botName || 'NEXORA-MD',
+      body:                  `${totalCommands || 0} commands • Online`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
       renderLargerThumbnail: true,
@@ -888,7 +893,76 @@ export function buildMenuBanner({ imgData, adReply, botName, totalCommands, quot
   }
 
   return {
-    quoted: quoted || fakeImgQuote,
+    quoted: quoted || fakeProductQuote,
     contextInfo: { externalAdReply: banner },
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ABOUT-STYLE CARD BUILDER
+//     Standardized .about command rendering for all menu types.
+//     Uses sendButtonsCard with:
+//       - Thumbnail header (title + subtitle + 300x300 image)
+//       - buildFakeProductQuote catalog card in the reply bar
+//       - Pill buttons (displayText/id/type:1 + buildNavigationButton)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Build the contextInfo for an .about-style card.
+ * Creates a buildFakeProductQuote catalog card in the reply bar with
+ * the bot's brand image as the thumbnail.
+ *
+ * @param {object}  opts
+ * @param {string} [opts.botName]        Bot name for the product title
+ * @param {string} [opts.description]    Product description
+ * @param {Buffer} [opts.thumbnail]      Image buffer for the product thumbnail
+ * @param {string} [opts.mentionedJid]   JID to mention in the message
+ * @returns {object}                     contextInfo object for sendButtonsCard
+ */
+export function buildAboutContextInfo({ botName, description, thumbnail, mentionedJid } = {}) {
+  const catalogQuote = buildFakeProductQuote({
+    title:           botName || 'NEXORA-MD',
+    description:      description || '',
+    currencyCode:    'USD',
+    priceAmount1000: 0,
+    businessOwnerJid: WA_JID,
+    ...(thumbnail ? { jpegThumbnail: thumbnail } : {}),
+  });
+  return {
+    stanzaId:      catalogQuote.key.id || 'catalog',
+    participant:   catalogQuote.key.participant,
+    remoteJid:     catalogQuote.key.remoteJid,
+    quotedMessage: catalogQuote.message,
+    ...(mentionedJid ? { mentionedJid: Array.isArray(mentionedJid) ? mentionedJid : [mentionedJid] } : {}),
+  };
+}
+
+/**
+ * Build the standard .about-style button set.
+ * Two pill buttons: one quick action + one navigation category picker.
+ *
+ * @param {string} [prefix='.']      Command prefix
+ * @param {Array}  [customButtons]   Custom buttons to use instead of defaults
+ * @returns {Array}                   Array of button objects for sendButtonsCard
+ */
+export function buildAboutButtons(prefix = '.', customButtons) {
+  if (customButtons && Array.isArray(customButtons)) return customButtons;
+  return [
+    { displayText: '📋 All Commands', id: `${prefix}menu all`, type: 1 },
+    { displayText: '🤖 System Info',  id: `${prefix}about`,     type: 1 },
+  ];
+}
+
+/**
+ * Resolve a thumbnail for sendButtonsCard from imageManager data.
+ * Returns a URL string (preferred) or Buffer.
+ *
+ * @param {object} [imgData]   Image data from imageManager.getMenuImage()
+ * @param {string} [fallback]  Fallback URL if no imgData
+ * @returns {string|Buffer|undefined}
+ */
+export function resolveThumbnail(imgData, fallback) {
+  if (imgData?.source?.startsWith('http')) return imgData.source;
+  if (imgData?.buffer) return imgData.buffer;
+  return fallback;
 }

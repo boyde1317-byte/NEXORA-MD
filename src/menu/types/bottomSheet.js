@@ -5,9 +5,12 @@ import { imageManager } from '../../images/imageManager.js';
 import { footerManager } from '../../core/footer.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { buildAboutContextInfo, resolveThumbnail } from '../../lib/waUtils.js';
+import { buildNavigationButton } from './buttonsCard.js';
+import { ASSET_URLS } from '../../assets/assetUrls.js';
 
 /**
- * Bottom Sheet Menu (id: 13) \u2014 enhanced for rich-messages.
+ * Bottom Sheet Menu (id: 13) — enhanced for rich-messages.
  *
  * Enhanced with:
  *   - Richer body text using stat rows and visual dividers
@@ -17,15 +20,16 @@ import { asciiBuilder } from '../../ui/asciiBuilder.js';
  *   - Embedded externalAdReply for double visual on fallback tiers
  *
  * Tiers:
- *   1 \u2192 nativeFlow with optionText + image header (triggers native WA bottom sheet)
- *   2 \u2192 sendInteractive with image header + subtitle + embedded adReply
- *   3 \u2192 nativeFlow without optionText + image header (flat quick-reply buttons)
- *   4 \u2192 guaranteed plain text
+ *   1 → sendButtonsCard with thumbnail + catalog quote + navigation buttons
+ *   2 → nativeFlow with optionText + image header (triggers native WA bottom sheet)
+ *   3 → sendInteractive with image header + subtitle + embedded adReply
+ *   4 → nativeFlow without optionText + image header (flat quick-reply buttons)
+ *   5 → guaranteed plain text
  */
 export const bottomSheetMenu = {
   id: 13,
   name: 'bottomSheet',
-  description: 'Bottom sheet modal \u2014 optionText on nativeFlow collapses rows into a native WA sheet with rich visuals',
+  description: 'Bottom sheet modal — optionText on nativeFlow collapses rows into a native WA sheet with rich visuals',
   supportedMessages: ['interactiveMessage', 'nativeFlowMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
@@ -33,7 +37,7 @@ export const bottomSheetMenu = {
 
     // Build richer body text with visual stat rows
     const statBlock = [
-      `\u2726 *${toSmallcaps(menuData.botName + ' Command Center')}* \u2726`,
+      `✦ *${toSmallcaps(menuData.botName + ' Command Center')}* ✦`,
       '',
       asciiBuilder.statRow('Total Commands', menuData.totalCommands),
       asciiBuilder.statRow('Prefix', menuData.prefix),
@@ -45,17 +49,39 @@ export const bottomSheetMenu = {
     ].join('\n');
 
     const bodyText   = statBlock + buildTextMenu(menuData);
-    const footerText = footerManager.getFooter() || `${menuData.botName} \u2502 ${toSmallcaps('Bottom Sheet')}`;
+    const footerText = footerManager.getFooter() || `${menuData.botName} │ ${toSmallcaps('Bottom Sheet')}`;
 
     // Resolve image payload
     const imagePayload = imgData.source?.startsWith('http')
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
+    // ── Tier 1: sendButtonsCard ───────────────────────────────────────────
+    const thumbnail = resolveThumbnail(imgData, ASSET_URLS?.thumbnail);
+    const aboutCtx = buildAboutContextInfo({ botName: menuData.botName, description: `${menuData.totalCommands} commands`, thumbnail: imgData?.buffer });
+    if (capabilities.nativeFlow) {
+      try {
+        return await baileysBridge.sendButtonsCard(sock, m.from, {
+          body:      bodyText,
+          footer:    footerText,
+          title:     menuData.botName,
+          subtitle:  `${menuData.totalCommands} commands • ${menuData.uptime}`,
+          thumbnail,
+          buttons: [
+            { displayText: '📋 All Commands', id: `${menuData.prefix}menu all`, type: 1 },
+            buildNavigationButton(menuData.prefix),
+          ],
+          contextInfo: aboutCtx,
+        }, { quoted: menuData.audioQuote || m });
+      } catch (err) {
+        console.warn('[MENU bottomSheet] Tier 1 (sendButtonsCard) failed, trying nativeFlow + optionText:', err.message);
+      }
+    }
+
     // Build embedded externalAdReply for fallback tiers
     const adReply = {
-      title:                 `\u2726 ${menuData.botName} \u2726`,
-      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Bottom Sheet')}`,
+      title:                 `✦ ${menuData.botName} ✦`,
+      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} │ ${toSmallcaps('Bottom Sheet')}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
       renderLargerThumbnail: true,
@@ -68,18 +94,18 @@ export const bottomSheetMenu = {
       adReply.originalImageUrl = imgData.source;
     }
 
-    // Command rows exposed in the sheet \u2014 richer set with emoji prefixes
+    // Command rows exposed in the sheet — richer set with emoji prefixes
     const commandButtons = [
-      { text: '\u{1F3D1} Ping Speed',          id: `${menuData.prefix}ping` },
-      { text: '\u{2139}\uFE0F About Bot',           id: `${menuData.prefix}about` },
-      { text: '\u{1F4CB} Command List',          id: `${menuData.prefix}menulist` },
-      { text: '\u{1F916} System Stats',          id: `${menuData.prefix}menu aiDynamic` },
-      { text: '\u{1F3A8} Set Menu Style',         id: `${menuData.prefix}setmenu` },
-      { text: '\u{1F3ED} Set Footer',            id: `${menuData.prefix}setfooter` },
-      { text: '\u{1F4AC} Contact Dev',           url: 'https://wa.me/233533416608' },
+      { text: '🏓 Ping Speed',          id: `${menuData.prefix}ping` },
+      { text: 'ℹ️ About Bot',           id: `${menuData.prefix}about` },
+      { text: '📋 Command List',          id: `${menuData.prefix}menulist` },
+      { text: '🤖 System Stats',          id: `${menuData.prefix}menu aiDynamic` },
+      { text: '🎨 Set Menu Style',         id: `${menuData.prefix}setmenu` },
+      { text: '🏭 Set Footer',            id: `${menuData.prefix}setfooter` },
+      { text: '💬 Contact Dev',           url: 'https://wa.me/233533416608' },
     ];
 
-    // ── Tier 1: nativeFlow + optionText + image header ────────────────────
+    // ── Tier 2: nativeFlow + optionText + image header ────────────────────
     if (capabilities.nativeFlow) {
       try {
         return await baileysBridge.sendNativeFlow(sock, m.from, {
@@ -87,39 +113,39 @@ export const bottomSheetMenu = {
           footer:      footerText,
           image:       imagePayload,
           buttons:     commandButtons,
-          optionText:  '\u{1F4CB} ' + toSmallcaps('Browse All Commands'),
+          optionText:  '📋 ' + toSmallcaps('Browse All Commands'),
           optionTitle: menuData.botName + ' Menu',
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
-        console.warn('[MENU bottomSheet] Tier 1 (nativeFlow + optionText + image) failed, trying interactive:', err.message);
+        console.warn('[MENU bottomSheet] Tier 2 (nativeFlow + optionText + image) failed, trying interactive:', err.message);
       }
     }
 
-    // ── Tier 2: sendInteractive with image header + subtitle + embedded adReply ──
+    // ── Tier 3: sendInteractive with image header + subtitle + embedded adReply ──
     if (capabilities.interactive && imagePayload) {
       try {
         return await baileysBridge.sendInteractive(sock, m.from, {
           body:    bodyText,
           footer:  footerText,
           header:  {
-            title:    `\u2726 ${toSmallcaps(menuData.botName + ' Menu')} \u2726`,
-            subtitle: `${toSmallcaps('Quick Access')} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`,
+            title:    `✦ ${toSmallcaps(menuData.botName + ' Menu')} ✦`,
+            subtitle: `${toSmallcaps('Quick Access')} │ ${menuData.totalCommands} ${toSmallcaps('commands')}`,
             image:    imagePayload,
           },
           buttons: [
-            { name: 'quick_reply', params: { display_text: '\u{1F3D1} Ping Speed',       id: `${menuData.prefix}ping` } },
-            { name: 'quick_reply', params: { display_text: '\u{1F4CB} Command List',     id: `${menuData.prefix}menulist` } },
-            { name: 'quick_reply', params: { display_text: '\u{1F916} System Stats',     id: `${menuData.prefix}menu aiDynamic` } },
-            { name: 'cta_url',     params: { display_text: '\u{1F4AC} Contact Dev',      url: 'https://wa.me/233533416608' } },
+            { name: 'quick_reply', params: { display_text: '🏓 Ping Speed',       id: `${menuData.prefix}ping` } },
+            { name: 'quick_reply', params: { display_text: '📋 Command List',     id: `${menuData.prefix}menulist` } },
+            { name: 'quick_reply', params: { display_text: '🤖 System Stats',     id: `${menuData.prefix}menu aiDynamic` } },
+            { name: 'cta_url',     params: { display_text: '💬 Contact Dev',      url: 'https://wa.me/233533416608' } },
           ],
           contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
-        console.warn('[MENU bottomSheet] Tier 2 (sendInteractive + adReply) failed, trying flat nativeFlow:', err.message);
+        console.warn('[MENU bottomSheet] Tier 3 (sendInteractive + adReply) failed, trying flat nativeFlow:', err.message);
       }
     }
 
-    // ── Tier 3: nativeFlow without optionText + image header ──────────────
+    // ── Tier 4: nativeFlow without optionText + image header ──────────────
     if (capabilities.nativeFlow) {
       try {
         return await baileysBridge.sendNativeFlow(sock, m.from, {
@@ -129,12 +155,12 @@ export const bottomSheetMenu = {
           buttons: commandButtons.slice(0, 5),
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
-        console.warn('[MENU bottomSheet] Tier 3 (flat nativeFlow + image) failed, escalating to text:', err.message);
+        console.warn('[MENU bottomSheet] Tier 4 (flat nativeFlow + image) failed, escalating to text:', err.message);
         throw err; // propagate → runWithFallback → plain text
       }
     }
 
-    // ── Tier 4: nativeFlow unsupported — let runWithFallback render plain text
+    // ── Tier 5: nativeFlow unsupported — let runWithFallback render plain text
     throw new Error('bottomSheet: nativeFlow unsupported on this client');
   },
 };

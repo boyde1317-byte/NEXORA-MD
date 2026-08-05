@@ -9,24 +9,20 @@
  * this is the ONLY way to get a sectioned, tappable menu — otherwise you get
  * blank/broken cards or plain text.
  *
- * Use this as the dedicated compatibility style (.menu listFallback or .menu 16),
- * or as the final before-plaintext fallback tier in runWithFallback if the active
- * style fails.
- *
  * Tiers:
- *   1 → sock.sendMessage with listMessage sections (legacy, works on old clients)
- *   2 → plain text with section headers (guaranteed)
- *
- * WHY listMessage and not nativeFlow single_select:
- *   nativeFlow single_select opens a modal sheet but the card body itself renders
- *   as an interactive card — old clients show "message format not supported".
- *   listMessage is a first-class WA message type that old clients understand natively.
+ *   1 → sendButtonsCard with thumbnail + catalog quote + navigation buttons
+ *   2 → sock.sendMessage with listMessage sections (legacy, works on old clients)
+ *   3 → plain text with section headers (guaranteed)
  */
 
+import { capabilities } from '../../core/capabilities.js';
+import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import brand from '../../../config/brand.js';
 import { imageManager } from '../../images/imageManager.js';
-import { buildFakeImageQuote } from '../../lib/waUtils.js';
+import { buildAboutContextInfo, resolveThumbnail, buildFakeImageQuote } from '../../lib/waUtils.js';
+import { buildNavigationButton } from './buttonsCard.js';
+import { ASSET_URLS } from '../../assets/assetUrls.js';
 import { config } from '../../../config/index.js';
 
 export const listFallbackMenu = {
@@ -75,7 +71,32 @@ export const listFallbackMenu = {
 
     const footer = `${brand.name} • ${brand.creator}`;
 
-    // ── Tier 1: listMessage (legacy) ───────────────────────────────────────
+    // ── Tier 1: sendButtonsCard ───────────────────────────────────────────
+    let imgData = null;
+    try { imgData = await imageManager.getMenuImage(16); } catch (_) {}
+    const thumbnail = resolveThumbnail(imgData, ASSET_URLS?.thumbnail);
+    const aboutCtx = buildAboutContextInfo({ botName: menuData.botName || brand.name, description: `${menuData.totalCommands} commands`, thumbnail: imgData?.buffer });
+
+    if (capabilities.nativeFlow) {
+      try {
+        return await baileysBridge.sendButtonsCard(sock, m.from, {
+          body,
+          footer,
+          title: menuData.botName || brand.name,
+          subtitle: `${menuData.totalCommands} commands • ${menuData.uptime}`,
+          thumbnail,
+          buttons: [
+            { displayText: '📋 All Commands', id: `${p}menu all`, type: 1 },
+            buildNavigationButton(p),
+          ],
+          contextInfo: aboutCtx,
+        }, { quoted: menuData.audioQuote || m });
+      } catch (err) {
+        console.warn('[MENU listFallback] Tier 1 (sendButtonsCard) failed, trying listMessage:', err.message);
+      }
+    }
+
+    // ── Tier 2: listMessage (legacy) ───────────────────────────────────────
     try {
       return await sock.sendMessage(m.from, {
         text:       body,
@@ -86,15 +107,14 @@ export const listFallbackMenu = {
         listType:   1,   // SINGLE_SELECT
       }, { quoted: m });
     } catch (err) {
-      console.warn('[MENU listFallback] listMessage failed, plain text:', err.message);
+      console.warn('[MENU listFallback] Tier 2 (listMessage) failed, plain text:', err.message);
     }
 
-    // ── Tier 2: guaranteed plain text + fake quote + banner ───────────────
+    // ── Tier 3: guaranteed plain text + fake quote + banner ───────────────
     const fallbackText = buildTextMenu(menuData);
     let fakeImgQuote, fallbackAdReply;
     try {
-      const imgData = await imageManager.getMenuImage(16);
-      fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
+      fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData?.buffer || undefined });
       fallbackAdReply = {
         title:                 `✦ ${brand.name} ✦`,
         body:                  `${menuData.totalCommands} commands • List Menu`,
@@ -103,9 +123,9 @@ export const listFallbackMenu = {
         renderLargerThumbnail: true,
         showAdAttribution:     false,
       };
-      if (imgData.buffer) {
+      if (imgData?.buffer) {
         fallbackAdReply.thumbnail = imgData.buffer;
-      } else if (imgData.source?.startsWith('http')) {
+      } else if (imgData?.source?.startsWith('http')) {
         fallbackAdReply.thumbnailUrl = imgData.source;
         fallbackAdReply.originalImageUrl = imgData.source;
       }

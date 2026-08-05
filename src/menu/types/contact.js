@@ -1,34 +1,23 @@
+import { capabilities } from '../../core/capabilities.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
-import { buildFakeContactQuote } from '../../lib/waUtils.js';
+import { buildFakeContactQuote, buildAboutContextInfo, buildAboutButtons, resolveThumbnail } from '../../lib/waUtils.js';
+import { buildNavigationButton } from './buttonsCard.js';
+import { ASSET_URLS } from '../../assets/assetUrls.js';
 import { config } from '../../../config/index.js';
 import brand from '../../../config/brand.js';
 
 /**
- * Contact Menu (id: 9) — rewritten for itsliaaa 0.3.18-final fork.
+ * Contact Menu (id: 9)
  *
- * ONE message: nativeFlow interactive card (image header + body + buttons) quoted
- * inside a fake contactMessage so the reply bar shows a tappable vCard for the owner.
- *
- * Uses the fork's simple button format:
- *   { text, url }   → cta_url
- *   { text, id }    → quick_reply
- *   { text, copy }  → cta_copy
- *
- * The contact quote uses buildFakeContactQuote (status@broadcast sender) so
- * WA never looks up the original message in chat history — no ghost thread.
- *
- * Image strategy:
- *   imgData.buffer is passed as `image:` on the Tier 1 nativeFlow card.
- *   If the buffer download failed, the raw URL is passed as { url }.
- *   Tier 2 falls back to an externalAdReply banner on a plain text message.
- *   Tier 3 is bare text with the contact badge.
+ * Primary tier uses sendButtonsCard with owner contact quote in contextInfo.
  *
  * Tiers:
- *   1 → nativeFlow card (image + buttons) + owner contact card in reply bar
- *   2 → text + externalAdReply banner + owner contact card in reply bar
- *   3 → guaranteed plain text + owner contact card in reply bar
+ *   1 → sendButtonsCard (.about style) + owner contact badge in reply bar
+ *   2 → nativeFlow card (image + buttons) + owner contact card in reply bar
+ *   3 → text + externalAdReply banner + owner contact card in reply bar
+ *   4 → guaranteed plain text + owner contact card in reply bar
  */
 export const contactMenu = {
   id: 9,
@@ -50,6 +39,35 @@ export const contactMenu = {
       phoneNumber: ownerNumber,
     });
 
+    const contextInfo = {
+      stanzaId:      contactQuote.key.id,
+      participant:   contactQuote.key.participant,
+      remoteJid:     contactQuote.key.remoteJid,
+      quotedMessage: contactQuote.message,
+    };
+
+    const thumbnail = resolveThumbnail(imgData, ASSET_URLS?.thumbnail);
+
+    // ── Tier 1: sendButtonsCard + contact badge in reply bar ───────────────
+    if (capabilities.nativeFlow) {
+      try {
+        return await baileysBridge.sendButtonsCard(sock, m.from, {
+          body:      menuText,
+          footer:    footerText,
+          title:     menuData.botName,
+          subtitle:  `${menuData.totalCommands} commands • ${menuData.uptime}`,
+          thumbnail,
+          buttons: [
+            { displayText: '📋 All Commands', id: `${menuData.prefix}menu all`, type: 1 },
+            buildNavigationButton(menuData.prefix),
+          ],
+          contextInfo,
+        }, { quoted: menuData.audioQuote || m });
+      } catch (err) {
+        console.warn('[MENU contact] Tier 1 (sendButtonsCard + contact quote) failed, trying sendNativeFlow:', err.message);
+      }
+    }
+
     // Resolve image payload: prefer the { url } form — WA fetches it directly,
     // no local buffer download/re-upload round trip. Buffer is only a fallback
     // for local disk images that have no public URL.
@@ -57,7 +75,7 @@ export const contactMenu = {
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
-    // ── Tier 1: nativeFlow card (image + buttons) + contact badge ──────────
+    // ── Tier 2: nativeFlow card (image + buttons) + contact badge ──────────
     try {
       return await baileysBridge.sendNativeFlow(sock, m.from, {
         text:    menuText,
@@ -72,10 +90,10 @@ export const contactMenu = {
         ],
       }, { quoted: contactQuote });
     } catch (err) {
-      console.warn('[MENU contact] Tier 1 (nativeFlow + image + contact quote) failed, trying adReply:', err.message);
+      console.warn('[MENU contact] Tier 2 (nativeFlow + image + contact quote) failed, trying adReply:', err.message);
     }
 
-    // ── Tier 2: text + externalAdReply banner + contact badge ─────────────
+    // ── Tier 3: text + externalAdReply banner + contact badge ─────────────
     try {
       const adReply = {
         title:                 `✦ ${menuData.botName.toUpperCase()} ✦`,
@@ -88,7 +106,6 @@ export const contactMenu = {
         adReply.thumbnail = imgData.buffer;
       } else if (imgData.source?.startsWith('http')) {
         adReply.thumbnailUrl = imgData.source;
-
         adReply.originalImageUrl = imgData.source;
       }
       return await sock.sendMessage(m.from, {
@@ -96,10 +113,10 @@ export const contactMenu = {
         contextInfo: { externalAdReply: adReply },
       }, { quoted: contactQuote });
     } catch (err) {
-      console.warn('[MENU contact] Tier 2 (adReply + contact quote) failed, continuing to text:', err.message);
+      console.warn('[MENU contact] Tier 3 (adReply + contact quote) failed, continuing to text:', err.message);
     }
 
-    // ── Tier 3: guaranteed plain text + contact badge + banner ────────────
+    // ── Tier 4: guaranteed plain text + contact badge + banner ────────────
     const fallbackAdReply = {
       title:                 `✦ ${menuData.botName.toUpperCase()} ✦`,
       body:                  `${menuData.totalCommands} commands • Prefix: ${menuData.prefix}`,

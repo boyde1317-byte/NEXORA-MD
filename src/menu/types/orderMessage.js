@@ -1,33 +1,36 @@
+import capabilities from '../../core/capabilities.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
-import { buildFakeOrderQuote, buildFakeImageQuote } from '../../lib/waUtils.js';
+import { buildFakeOrderQuote, buildFakeImageQuote, buildAboutContextInfo, resolveThumbnail } from '../../lib/waUtils.js';
+import { buildNavigationButton } from './buttonsCard.js';
+import { ASSET_URLS } from '../../assets/assetUrls.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 
 /**
- * Order Message Menu (id: 14) \u2014 enhanced for rich-messages.
+ * Order Message Menu (id: 14) — .about-style rendering.
  *
- * Upgraded to use sendInteractive with image header + subtitle + embedded
- * externalAdReply, quoted inside a fake orderMessage for the business-order
- * card in the reply bar. Triple visual: interactive card + ad banner + order quote.
+ * Primary tier uses sendButtonsCard (thumbnail header + product catalog quote
+ * + pill buttons), matching the .about command's visual style.
+ * The order card quote is retained in Tier 2 (sendInteractive).
  *
  * Tiers:
- *   1 \u2192 sendInteractive with image header + subtitle + embedded adReply, quoted by order card
- *   2 \u2192 nativeFlow card with image header, quoted by order card
- *   3 \u2192 imageMessage with caption, quoted by order card
- *   4 \u2192 guaranteed plain text
+ *   1 → sendButtonsCard (.about style: thumbnail header + catalog quote + pill buttons)
+ *   2 → sendInteractive with image header + subtitle + embedded adReply, quoted by order card
+ *   3 → nativeFlow card with image header, quoted by order card
+ *   4 → imageMessage with caption, quoted by order card
+ *   5 → guaranteed plain text
  */
 export const orderMessageMenu = {
   id: 14,
   name: 'orderMessage',
-  description: 'Interactive card + image header + embedded ad-reply, quoted inside a business order card',
-  supportedMessages: ['interactiveMessage', 'nativeFlowMessage', 'orderMessage'],
+  description: 'About-style buttons card with thumbnail header + catalog quote + order card fallback',
+  supportedMessages: ['buttonsMessage', 'interactiveMessage', 'nativeFlowMessage', 'orderMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData = await imageManager.getMenuImage(14);
 
-    // Build richer body text with visual stat rows
     const statBlock = [
       `\u2726 *${toSmallcaps(menuData.botName + ' Command Catalog')}* \u2726`,
       '',
@@ -40,12 +43,11 @@ export const orderMessageMenu = {
     const bodyText = statBlock + buildTextMenu(menuData);
     const footerText = `${menuData.botName} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`;
 
-    // ── Resolve image payload once ─────────────────────────────────────────
     const imagePayload = imgData.source?.startsWith('http')
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
-    // ── Build order-quote thumbnail ────────────────────────────────────────
+    // Build order-quote for fallback tiers
     let orderQuote;
     try {
       orderQuote = buildFakeOrderQuote({
@@ -59,10 +61,10 @@ export const orderMessageMenu = {
       orderQuote = menuData.audioQuote || m;
     }
 
-    // Build embedded externalAdReply
+    // Build embedded externalAdReply for fallback tiers
     const adReply = {
-      title:                 `\u2726 ${menuData.botName} \u2726`,
-      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Order Card')}`,
+      title:                 menuData.botName,
+      body:                  `${menuData.totalCommands} commands \u2502 ${menuData.uptime}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
       renderLargerThumbnail: true,
@@ -75,7 +77,29 @@ export const orderMessageMenu = {
       adReply.originalImageUrl = imgData.source;
     }
 
-    // ── Tier 1: sendInteractive with image header + subtitle + embedded adReply ──
+    // ── Tier 1: sendButtonsCard (.about style) ─────────────────────────────
+    const thumbnail = resolveThumbnail(imgData, ASSET_URLS?.thumbnail);
+    const aboutCtx  = buildAboutContextInfo({ botName: menuData.botName, description: `${menuData.totalCommands} commands`, thumbnail: imgData?.buffer });
+    if (capabilities.nativeFlow) {
+      try {
+        return await baileysBridge.sendButtonsCard(sock, m.from, {
+          body:      bodyText,
+          footer:    footerText,
+          title:     menuData.botName,
+          subtitle:  `${menuData.totalCommands} commands \u2502 ${menuData.uptime}`,
+          thumbnail,
+          buttons: [
+            { displayText: '\u{1F4CB} All Commands', id: `${menuData.prefix}menu all`, type: 1 },
+            buildNavigationButton(menuData.prefix),
+          ],
+          contextInfo: aboutCtx,
+        }, { quoted: menuData.audioQuote || m });
+      } catch (err) {
+        console.warn('[MENU orderMessage] Tier 1 (sendButtonsCard) failed, trying sendInteractive:', err.message);
+      }
+    }
+
+    // ── Tier 2: sendInteractive with image header + subtitle + embedded adReply ──
     if (imagePayload) {
       try {
         return await baileysBridge.sendInteractive(sock, m.from, {
@@ -96,11 +120,11 @@ export const orderMessageMenu = {
           contextInfo: { externalAdReply: adReply },
         }, { quoted: orderQuote });
       } catch (err) {
-        console.warn('[MENU orderMessage] Tier 1 (sendInteractive + adReply + order) failed, trying nativeFlow:', err.message);
+        console.warn('[MENU orderMessage] Tier 2 (sendInteractive + adReply + order) failed, trying nativeFlow:', err.message);
       }
     }
 
-    // ── Tier 2: nativeFlow card with image header ──────────────────────────
+    // ── Tier 3: nativeFlow card with image header ──────────────────────────
     try {
       return await baileysBridge.sendNativeFlow(sock, m.from, {
         text:    bodyText,
@@ -115,10 +139,10 @@ export const orderMessageMenu = {
         ],
       }, { quoted: orderQuote });
     } catch (err) {
-      console.warn('[MENU orderMessage] Tier 2 (nativeFlow + image) failed, trying plain image:', err.message);
+      console.warn('[MENU orderMessage] Tier 3 (nativeFlow + image) failed, trying plain image:', err.message);
     }
 
-    // ── Tier 3: imageMessage with caption ─────────────────────────────────
+    // ── Tier 4: imageMessage with caption ─────────────────────────────────
     try {
       if (imgData.buffer) {
         return await sock.sendMessage(m.from, {
@@ -135,10 +159,10 @@ export const orderMessageMenu = {
         }, { quoted: orderQuote });
       }
     } catch (err) {
-      console.warn('[MENU orderMessage] Tier 3 (plain image) failed, continuing to text:', err.message);
+      console.warn('[MENU orderMessage] Tier 4 (plain image) failed, continuing to text:', err.message);
     }
 
-    // ── Tier 4: guaranteed plain text + fake quote + banner ───────────────
+    // ── Tier 5: guaranteed plain text + fake quote + banner ───────────────
     const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
     return await sock.sendMessage(m.from, {
       text:        bodyText,

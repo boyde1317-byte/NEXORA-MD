@@ -4,38 +4,34 @@ import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
-import { buildFakeImageQuote } from '../../lib/waUtils.js';
+import { buildFakeImageQuote, buildAboutContextInfo, resolveThumbnail } from '../../lib/waUtils.js';
+import { buildNavigationButton } from './buttonsCard.js';
+import { ASSET_URLS } from '../../assets/assetUrls.js';
 
 /**
- * Rich Card Menu (id: 15)
+ * Rich Card Menu (id: 15) — .about-style rendering.
  *
- * Uses the fork's sendRichResponse API to render a native WA table
- * showing command categories and counts — a visually striking data-grid
- * layout that no other menu style produces.
+ * Primary tier uses sendButtonsCard (thumbnail header + product catalog quote
+ * + pill buttons), matching the .about command's visual style.
+ * The native richResponse table is retained as Tier 2.
  *
- * The richResponse message type supports:
- *   - Table rows with aligned columns (category | commands | count)
- *   - Text blocks with bold headers and accent symbols
- *   - Footer text with bot metadata
- *
- * Falls back through:
- *   1 → sendRichResponse (native WA table bubble)
- *   2 → sendInteractive with image header + embedded externalAdReply
- *       (double visual: interactive card + ad banner in one message)
- *   3 → text + externalAdReply banner
- *   4 → guaranteed plain text
+ * Tiers:
+ *   1 → sendButtonsCard (.about style: thumbnail header + catalog quote + pill buttons)
+ *   2 → sendRichResponse (native WA table bubble)
+ *   3 → sendInteractive with image header + embedded externalAdReply
+ *   4 → text + externalAdReply banner
+ *   5 → guaranteed plain text
  */
 export const richCardMenu = {
   id: 15,
   name: 'richCard',
-  description: 'Rich response table card — native WA table grid + interactive ad-reply overlay',
-  supportedMessages: ['richResponseMessage', 'interactiveMessage', 'nativeFlowMessage', 'extendedTextMessage'],
+  description: 'About-style buttons card with thumbnail header + catalog quote + table fallback',
+  supportedMessages: ['buttonsMessage', 'richResponseMessage', 'interactiveMessage', 'nativeFlowMessage', 'extendedTextMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData = await imageManager.getMenuImage(15);
     const footerText = `${menuData.botName} \u2726 ${menuData.totalCommands} ${toSmallcaps('commands')} \u2726 ${menuData.uptime}`;
 
-    // ── Build table data from categories ────────────────────────────────
     const categories = Object.keys(menuData.categories).sort();
     const tableRows = categories.map(cat => {
       const cmds = menuData.categories[cat];
@@ -44,29 +40,7 @@ export const richCardMenu = {
       return [cat, top3 + overflow, String(cmds.length)];
     });
 
-    // ── Tier 1: Rich Response with native table ─────────────────────────
-    // Uses the fork's richResponse message format — renders a structured
-    // table bubble inside WhatsApp with aligned columns.
-    try {
-      const richContent = {
-        headerText: `\u2726 ${toSmallcaps(menuData.botName + ' Command Matrix')} \u2726`,
-        contentText: `${toSmallcaps('Total Commands')}: ${menuData.totalCommands}\n${toSmallcaps('Categories')}: ${categories.length}\n${toSmallcaps('Prefix')}: ${menuData.prefix}`,
-        table: tableRows,
-        footerText: toSmallcaps('Powered by') + ' ' + menuData.botName,
-      };
-      return await baileysBridge.sendRichResponse(sock, m.from, richContent, { quoted: menuData.audioQuote || m });
-    } catch (err) {
-      console.warn('[MENU richCard] Tier 1 (richResponse table) failed, trying interactive card:', err.message);
-    }
-
-    // ── Tier 2: sendInteractive with image header + embedded externalAdReply ──
-    // Double visual: interactive card with image header AND an externalAdReply
-    // banner embedded inside the same message via contextInfo.
-    const imagePayload = imgData.source?.startsWith('http')
-      ? { url: imgData.source }
-      : (imgData.buffer || undefined);
-
-    // Build the visual text body using the enhanced asciiBuilder
+    // Build visual text body
     const bodyLines = [];
     bodyLines.push(asciiBuilder.statRow('Total Commands', menuData.totalCommands));
     bodyLines.push(asciiBuilder.statRow('Categories', categories.length));
@@ -86,14 +60,14 @@ export const richCardMenu = {
 
     const bodyText = `\u2726 *${toSmallcaps(menuData.botName + ' Command Matrix')}* \u2726\n\n${bodyLines.join('\n')}`;
 
-    // Build the embedded externalAdReply
+    // Build embedded externalAdReply for fallback tiers
     const adReply = {
-      title: `\u2726 ${menuData.botName} \u2726`,
-      body: `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Rich Card View')}`,
-      sourceUrl: 'https://wa.me/233533416608',
-      mediaType: 1,
+      title:                 menuData.botName,
+      body:                  `${menuData.totalCommands} commands \u2502 ${menuData.uptime}`,
+      sourceUrl:             'https://wa.me/233533416608',
+      mediaType:             1,
       renderLargerThumbnail: true,
-      showAdAttribution: false,
+      showAdAttribution:     false,
     };
     if (imgData.buffer) {
       adReply.thumbnail = imgData.buffer;
@@ -102,7 +76,45 @@ export const richCardMenu = {
       adReply.originalImageUrl = imgData.source;
     }
 
-    const contextInfo = { externalAdReply: adReply };
+    // ── Tier 1: sendButtonsCard (.about style) ─────────────────────────────
+    const thumbnail = resolveThumbnail(imgData, ASSET_URLS?.thumbnail);
+    const aboutCtx  = buildAboutContextInfo({ botName: menuData.botName, description: `${menuData.totalCommands} commands`, thumbnail: imgData?.buffer });
+    if (capabilities.nativeFlow) {
+      try {
+        return await baileysBridge.sendButtonsCard(sock, m.from, {
+          body:      bodyText,
+          footer:    footerText,
+          title:     menuData.botName,
+          subtitle:  `${menuData.totalCommands} commands \u2502 ${menuData.uptime}`,
+          thumbnail,
+          buttons: [
+            { displayText: '\u{1F4CB} All Commands', id: `${menuData.prefix}menu all`, type: 1 },
+            buildNavigationButton(menuData.prefix),
+          ],
+          contextInfo: aboutCtx,
+        }, { quoted: menuData.audioQuote || m });
+      } catch (err) {
+        console.warn('[MENU richCard] Tier 1 (sendButtonsCard) failed, trying richResponse:', err.message);
+      }
+    }
+
+    // ── Tier 2: Rich Response with native table ─────────────────────────
+    try {
+      const richContent = {
+        headerText: `\u2726 ${toSmallcaps(menuData.botName + ' Command Matrix')} \u2726`,
+        contentText: `${toSmallcaps('Total Commands')}: ${menuData.totalCommands}\n${toSmallcaps('Categories')}: ${categories.length}\n${toSmallcaps('Prefix')}: ${menuData.prefix}`,
+        table: tableRows,
+        footerText: toSmallcaps('Powered by') + ' ' + menuData.botName,
+      };
+      return await baileysBridge.sendRichResponse(sock, m.from, richContent, { quoted: menuData.audioQuote || m });
+    } catch (err) {
+      console.warn('[MENU richCard] Tier 2 (richResponse table) failed, trying interactive card:', err.message);
+    }
+
+    // ── Tier 3: sendInteractive with image header + embedded externalAdReply ──
+    const imagePayload = imgData.source?.startsWith('http')
+      ? { url: imgData.source }
+      : (imgData.buffer || undefined);
 
     try {
       if (capabilities.nativeFlow) {
@@ -119,25 +131,25 @@ export const richCardMenu = {
             { name: 'quick_reply', params: { display_text: `\u{1F680} ${toSmallcaps('System Stats')}`, id: `${menuData.prefix}menu aiDynamic` } },
             { name: 'cta_url', params: { display_text: `\u{1F4AC} ${toSmallcaps('Contact Dev')}`, url: 'https://wa.me/233533416608' } },
           ],
-          contextInfo,
+          contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });
       }
     } catch (err) {
-      console.warn('[MENU richCard] Tier 2 (interactive + adReply) failed, trying text banner:', err.message);
+      console.warn('[MENU richCard] Tier 3 (interactive + adReply) failed, trying text banner:', err.message);
     }
 
-    // ── Tier 3: text + externalAdReply banner ────────────────────────────
+    // ── Tier 4: text + externalAdReply banner ────────────────────────────
     try {
       const fullText = bodyText + '\n\n' + buildTextMenu(menuData);
       return await sock.sendMessage(m.from, {
         text: fullText,
-        contextInfo,
+        contextInfo: { externalAdReply: adReply },
       }, { quoted: menuData.audioQuote || m });
     } catch (err) {
-      console.warn('[MENU richCard] Tier 3 (text + adReply) failed, escalating to plain text:', err.message);
+      console.warn('[MENU richCard] Tier 4 (text + adReply) failed, escalating to plain text:', err.message);
     }
 
-    // ── Tier 4: guaranteed plain text + fake quote + banner ────────────────
+    // ── Tier 5: guaranteed plain text + fake quote + banner ────────────────
     const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
     return await sock.sendMessage(m.from, {
       text:        `\u2726 *${toSmallcaps(menuData.botName + ' Command Matrix')}* \u2726\n\n` + buildTextMenu(menuData),
