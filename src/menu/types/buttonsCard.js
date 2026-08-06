@@ -242,3 +242,42 @@ export function buildNavigationFlowButton(prefix) {
     },
   };
 }
+
+/**
+ * Build a pill-style quick_reply button for buttonsMessage.
+ */
+export function buildPillButton(text, id) {
+  return { displayText: text, id, type: 1 };
+}
+
+/**
+ * Build a pill-style CTA URL button for buttonsMessage.
+ * Renders as a pill but opens the URL when tapped.
+ */
+export function buildPillUrlButton(text, url) {
+  return {
+    displayText: text,
+    id: 'cta_url_' + Math.random().toString(36).slice(2, 8),
+    type: 1,
+    nativeFlowInfo: {
+      name: 'cta_url',
+      paramsJson: JSON.stringify({ display_text: text, url }),
+    },
+  };
+}
+
+/**
+ * Build a pill-style CTA Copy button for buttonsMessage.
+ * Renders as a pill but copies text to clipboard when tapped.
+ */
+export function buildPillCopyButton(text, copyCode) {
+  return {
+    displayText: text,
+    id: 'cta_copy_' + Math.random().toString(36).slice(2, 8),
+    type: 1,
+    nativeFlowInfo: {
+      name: 'cta_copy',
+      paramsJson: JSON.stringify({ display_text: text, copy_code: copyCode }),
+    },
+  };
+}

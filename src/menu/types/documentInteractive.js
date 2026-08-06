@@ -5,7 +5,7 @@ import { imageManager } from '../../images/imageManager.js';
 import { footerManager } from '../../core/footer.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
-import { buildNavigationFlowButton } from './buttonsCard.js';
+import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
 
 /**
  * Document Interactive Menu (id: 1) \u2014 enhanced for rich-messages.
@@ -62,21 +62,19 @@ export const documentInteractiveMenu = {
     // externalAdReply banner embedded inside the same interactive card.
     if (capabilities.interactive && imagePayload) {
       try {
-        return await baileysBridge.sendInteractive(sock, m.from, {
-          body:    bodyText,
-          footer:  footerText,
-          header:  {
-            title:    `\u2726 ${toSmallcaps(menuData.botName + ' Menu')} \u2726`,
-            subtitle: `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Uptime')}: ${menuData.uptime}`,
-            image:    imagePayload,
-          },
+        return await baileysBridge.sendButtonsCard(sock, m.from, {
+          body:       bodyText,
+          footer:     footerText,
+          title:      `\u2726 ${toSmallcaps(menuData.botName + ' Menu')} \u2726`,
+          subtitle:   `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Uptime')}: ${menuData.uptime}`,
+          thumbnail:  imagePayload,
           buttons: [
-            { name: 'quick_reply', params: { display_text: `\u{1F4CB} ${toSmallcaps('Switch Menu Style')}`, id: `${menuData.prefix}menulist` } },
-            { name: 'quick_reply', params: { display_text: `\u26A1 ${toSmallcaps('System Info')}`,        id: `${menuData.prefix}menu aiDynamic` } },
-            { name: 'quick_reply', params: { display_text: `\u{1F3D1} ${toSmallcaps('Ping Bot')}`,           id: `${menuData.prefix}ping` } },
-            { name: 'cta_url',    params: { display_text: `\u{1F4AC} ${toSmallcaps('Contact Developer')}`,  url: 'https://wa.me/233533416608' } },
-            { name: 'cta_copy',   params: { display_text: `\u{1F4CE} ${toSmallcaps('Copy Prefix')}`,        copy: menuData.prefix } },
-            buildNavigationFlowButton(menuData.prefix),
+            buildPillButton(`\u{1F4CB} ${toSmallcaps('Switch Menu Style')}`, `${menuData.prefix}menulist`),
+            buildPillButton(`\u26A1 ${toSmallcaps('System Info')}`,        `${menuData.prefix}menu aiDynamic`),
+            buildPillButton(`\u{1F3D1} ${toSmallcaps('Ping Bot')}`,           `${menuData.prefix}ping`),
+            buildPillUrlButton(`\u{1F4AC} ${toSmallcaps('Contact Developer')}`, 'https://wa.me/233533416608'),
+            buildPillCopyButton(`\u{1F4CE} ${toSmallcaps('Copy Prefix')}`, menuData.prefix),
+            buildNavigationButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });

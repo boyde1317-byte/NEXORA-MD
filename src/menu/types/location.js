@@ -3,7 +3,7 @@ import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { buildFakeLiveLocationQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
-import { buildNavigationFlowButton } from './buttonsCard.js';
+import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
 
 /**
  * Location Menu (id: 8) — rewritten for itsliaaa 0.3.18-final fork.
@@ -57,18 +57,18 @@ export const locationMenu = {
 
     // ── Tier 1: nativeFlow card (image + buttons) + live location badge ────
     try {
-      return await baileysBridge.sendNativeFlow(sock, m.from, {
-        text:    menuText,
-        footer:  footerText,
-        title:   `✦ ${menuData.botName.toUpperCase()} ✦`,
-        image:   imagePayload,
+      return await baileysBridge.sendButtonsCard(sock, m.from, {
+        body:       menuText,
+        footer:     footerText,
+        title:      `✦ ${menuData.botName.toUpperCase()} ✦`,
+        thumbnail:  imagePayload,
         buttons: [
-          { text: '📋 Command List',   id:   `${menuData.prefix}menulist` },
-          { text: '📎 Copy Prefix',    copy: menuData.prefix },
-          { text: '🤖 System Stats',    id:   `${menuData.prefix}menu aiDynamic` },
-          { text: '💬 Contact',        url:  'https://wa.me/233533416608' },
-            buildNavigationFlowButton(menuData.prefix),
-          ],
+          buildPillButton('📋 Command List', `${menuData.prefix}menulist`),
+          buildPillCopyButton('📎 Copy Prefix', menuData.prefix),
+          buildPillButton('🤖 System Stats', `${menuData.prefix}menu aiDynamic`),
+          buildPillUrlButton('💬 Contact', 'https://wa.me/233533416608'),
+          buildNavigationButton(menuData.prefix),
+        ],
       }, { quoted: locationQuote });
     } catch (err) {
       console.warn('[MENU location] Tier 1 (nativeFlow + image + location quote) failed, trying adReply:', err.message);

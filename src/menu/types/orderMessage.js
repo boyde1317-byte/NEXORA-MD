@@ -4,7 +4,7 @@ import { imageManager } from '../../images/imageManager.js';
 import { buildFakeOrderQuote, buildFakeImageQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
-import { buildNavigationFlowButton } from './buttonsCard.js';
+import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
 
 /**
  * Order Message Menu (id: 14) \u2014 enhanced for rich-messages.
@@ -79,21 +79,19 @@ export const orderMessageMenu = {
     // ── Tier 1: sendInteractive with image header + subtitle + embedded adReply ──
     if (imagePayload) {
       try {
-        return await baileysBridge.sendInteractive(sock, m.from, {
-          body:    bodyText,
-          footer:  footerText,
-          header:  {
-            title:    `\u2726 ${toSmallcaps('Command Catalog')} \u2726`,
-            subtitle: `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Prefix')}: ${menuData.prefix}`,
-            image:    imagePayload,
-          },
+        return await baileysBridge.sendButtonsCard(sock, m.from, {
+          body:       bodyText,
+          footer:     footerText,
+          title:      `\u2726 ${toSmallcaps('Command Catalog')} \u2726`,
+          subtitle:   `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Prefix')}: ${menuData.prefix}`,
+          thumbnail:  imagePayload,
           buttons: [
-            { name: 'cta_url',     params: { display_text: '\u{1F4AC} Contact Developer',  url: 'https://wa.me/233533416608' } },
-            { name: 'cta_url',     params: { display_text: '\u{1F4E1} Official Channel',   url: 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326' } },
-            { name: 'cta_copy',    params: { display_text: '\u{1F4CE} Copy Prefix',        copy: menuData.prefix } },
-            { name: 'quick_reply', params: { display_text: '\u{1F3A8} Browse Menu Styles', id: `${menuData.prefix}menulist` } },
-            { name: 'quick_reply', params: { display_text: '\u{1F916} System Stats',       id: `${menuData.prefix}menu aiDynamic` } },
-            buildNavigationFlowButton(menuData.prefix),
+            buildPillUrlButton('\u{1F4AC} Contact Developer', 'https://wa.me/233533416608'),
+            buildPillUrlButton('\u{1F4E1} Official Channel', 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326'),
+            buildPillCopyButton('\u{1F4CE} Copy Prefix', menuData.prefix),
+            buildPillButton('\u{1F3A8} Browse Menu Styles', `${menuData.prefix}menulist`),
+            buildPillButton('\u{1F916} System Stats',       `${menuData.prefix}menu aiDynamic`),
+            buildNavigationButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },
         }, { quoted: orderQuote });

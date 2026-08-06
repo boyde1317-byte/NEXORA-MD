@@ -4,7 +4,7 @@ import { imageManager } from '../../images/imageManager.js';
 import { buildFakeContactQuote } from '../../lib/waUtils.js';
 import { config } from '../../../config/index.js';
 import brand from '../../../config/brand.js';
-import { buildNavigationFlowButton } from './buttonsCard.js';
+import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
 
 /**
  * Contact Menu (id: 9) — rewritten for itsliaaa 0.3.18-final fork.
@@ -60,18 +60,18 @@ export const contactMenu = {
 
     // ── Tier 1: nativeFlow card (image + buttons) + contact badge ──────────
     try {
-      return await baileysBridge.sendNativeFlow(sock, m.from, {
-        text:    menuText,
-        footer:  footerText,
-        title:   `✦ ${menuData.botName.toUpperCase()} ✦`,
-        image:   imagePayload,
+      return await baileysBridge.sendButtonsCard(sock, m.from, {
+        body:       menuText,
+        footer:     footerText,
+        title:      `✦ ${menuData.botName.toUpperCase()} ✦`,
+        thumbnail:  imagePayload,
         buttons: [
-          { text: `💬 Message ${ownerName}`, url:  `https://wa.me/${ownerNumber}` },
-          { text: '📋 Command List',          id:   `${menuData.prefix}menulist` },
-          { text: '📎 Copy Prefix',           copy: menuData.prefix },
-          { text: '🤖 System Stats',           id:   `${menuData.prefix}menu aiDynamic` },
-            buildNavigationFlowButton(menuData.prefix),
-          ],
+          buildPillUrlButton(`💬 Message ${ownerName}`, `https://wa.me/${ownerNumber}`),
+          buildPillButton('📋 Command List', `${menuData.prefix}menulist`),
+          buildPillCopyButton('📎 Copy Prefix', menuData.prefix),
+          buildPillButton('🤖 System Stats', `${menuData.prefix}menu aiDynamic`),
+          buildNavigationButton(menuData.prefix),
+        ],
       }, { quoted: contactQuote });
     } catch (err) {
       console.warn('[MENU contact] Tier 1 (nativeFlow + image + contact quote) failed, trying adReply:', err.message);
