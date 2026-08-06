@@ -1,20 +1,22 @@
 /**
  * owner.js — bot owner contact card.
  *
- * Sent as a single-card carousel (the fork's `cards` array with exactly one
- * entry) rather than plain text, so it gets the same swipeable-card chrome
- * as the multi-card menu carousel, plus a full nativeFlow button row
- * (call / chat / copy / quick_reply) on that one card.
+ * Sent via mixedCard (buttonsMessage) with a full button row
+ * (call / chat / copy / quick_reply).
  *
- * Tier 1: one-card carousel with call/url/copy/quick_reply buttons.
- * Tier 2: mixedCard (flat nativeFlow buttons, no carousel chrome).
- * Tier 3: guaranteed styled asciiBuilder box (no bare plain text).
+ * Tier 1: mixedCard (buttonsMessage — call/url/copy/quick_reply buttons).
+ * Tier 2: guaranteed styled asciiBuilder box (no bare plain text).
+ *
+ * carouselMessage was previously tried as Tier 1 here but was removed —
+ * relayMessage resolves fine even when the recipient's client can't
+ * render carouselMessage, so the try/catch fallback never actually
+ * caught the real-world failure (users saw "your version of WhatsApp
+ * doesn't support it").
  *
  * Owner number is intentionally hardcoded per product requirement — this is
  * a fixed contact card, not a per-deployment config value.
  */
 import brand from '../../../config/brand.js';
-import { baileysBridge } from '../../core/baileysBridge.js';
 import { getBrandThumbnail } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
@@ -50,22 +52,14 @@ export default {
       { text: 'ℹ️ About Bot',         id:   `${p}about` },
     ];
 
-    // ── Tier 1: one-card carousel ────────────────────────────────────────────
-    try {
-      return await baileysBridge.sendCarousel(sock, m.from, {
-        text: `👑 ${brand.name} — Owner Card`,
-        cards: [{
-          caption,
-          footer: brand.signature,
-          nativeFlow: buttons,
-          ...(thumbnailUrl ? { image: { url: thumbnailUrl } } : {}),
-        }],
-      }, { quoted: m });
-    } catch (err) {
-      console.warn('[owner] Tier 1 (carousel) failed, trying mixedCard:', err.message);
-    }
+    // NOTE: carouselMessage (baileysBridge.sendCarousel) is NOT used here —
+    // relayMessage resolves successfully even when the recipient's WA client
+    // can't render carouselMessage, so a try/catch around sendCarousel never
+    // actually catches the failure (it shows up as "your version of
+    // WhatsApp doesn't support it" on their screen). mixedCard
+    // (buttonsMessage-based) is the reliable path.
 
-    // ── Tier 2: mixedCard fallback (same buttons, no carousel chrome) ────────
+    // ── Tier 1: mixedCard (buttonsMessage — same buttons, reliable) ──────────
     try {
       return await mixedCard(sock, m.from, {
         text: caption,

@@ -1,6 +1,5 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { richTableCard } from '../../lib/interactiveKit.js';
-import { baileysBridge } from '../../core/baileysBridge.js';
 import { apkSearch } from '../../lib/downloader.js';
 import { formatSize } from '../../lib/utils.js';
 import { DownloadProgress } from '../../lib/progress.js';
@@ -30,32 +29,22 @@ export default {
         const results = (await apkSearch(query)).slice(0, MAX_RESULTS);
         await progress.done(`✅ Found ${results.length} result${results.length !== 1 ? 's' : ''}.`);
 
-        const cards = results.map((a, idx) => ({
-          caption: `📱 *${a.name}*\n📦 ${a.packageName}\n💾 ${formatSize(a.size)}${a.version ? `\n🏷️ v${a.version}` : ''}${a.rating ? `\n⭐ ${a.rating.toFixed(1)}` : ''}${a.downloads ? `\n⬇️ ${(a.downloads / 1e6).toFixed(1)}M downloads` : ''}`,
-          footer: `Result ${idx + 1} of ${results.length} • Unofficial 3rd-party catalog`,
-          nativeFlow: [{ text: '⬇️ Direct Download', url: a.url }],
-          ...(a.icon ? { image: { url: a.icon } } : {}),
-        }));
-
-        try {
-          await baileysBridge.sendCarousel(sock, m.from, {
-            text: `📱 *APK results for:* "${query}"\n_Fetched from a third-party catalog (Aptoide) — verify before installing._`,
-            cards,
-          }, { quoted: m });
-        } catch (err) {
-          console.warn('[apk] carousel failed, falling back to table card:', err.message);
-          await richTableCard(sock, m.from, {
-            title: `📱 APK RESULTS: ${query}`,
-            headers: ['App', 'Size', 'Version'],
-            rows: results.map(a => [
-              a.name.slice(0, 25),
-              formatSize(a.size),
-              a.version ? `v${a.version}` : '—',
-            ]),
-            footer: 'Unofficial 3rd-party catalog — verify before installing.',
-            buttons: results.slice(0, 3).map(a => ({ kind: 'url', label: `⬇️ ${a.name}`.slice(0, 24), url: a.url })),
-          }, { quoted: m });
-        }
+        // NOTE: carouselMessage (baileysBridge.sendCarousel) is NOT used here —
+        // relayMessage resolves successfully even when the recipient's WA
+        // client can't render carouselMessage, so a try/catch around
+        // sendCarousel never actually catches the failure. richTableCard
+        // (buttonsMessage-based) is the reliable path.
+        await richTableCard(sock, m.from, {
+          title: `📱 APK RESULTS: ${query}`,
+          headers: ['App', 'Size', 'Version'],
+          rows: results.map(a => [
+            a.name.slice(0, 25),
+            formatSize(a.size),
+            a.version ? `v${a.version}` : '—',
+          ]),
+          footer: 'Unofficial 3rd-party catalog — verify before installing.',
+          buttons: results.slice(0, 3).map(a => ({ kind: 'url', label: `⬇️ ${a.name}`.slice(0, 24), url: a.url })),
+        }, { quoted: m });
       } catch (err) {
         await progress.fail(`APK search failed: ${err.message}`);
       }

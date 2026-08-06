@@ -1,6 +1,5 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
-import { mixedCard } from '../../lib/interactiveKit.js';
-import { baileysBridge } from '../../core/baileysBridge.js';
+import { mixedCard, selectMenu } from '../../lib/interactiveKit.js';
 import { youtubeSearch, youtubeDownload, isUrl } from '../../lib/downloader.js';
 import { DownloadProgress } from '../../lib/progress.js';
 
@@ -64,43 +63,30 @@ export default {
         const results = (await youtubeSearch(query)).slice(0, MAX_RESULTS);
         await progress.done(`✅ Found ${results.length} results.`);
 
-        const cards = results.map((v, idx) => ({
-          caption: `🎵 *${v.title}*\n👤 ${v.author || 'Unknown'}\n⏱️ ${v.duration || '—'}${v.views ? `\n👁️ ${v.views}` : ''}`,
-          footer: `Result ${idx + 1} of ${results.length}`,
-          nativeFlow: [
-            { text: '🎵 Download Audio', id: `${prefix}play ${v.url}` },
-            { text: '🎬 Download Video', id: `${prefix}ytmp4 ${v.url}` },
-          ],
-          ...(v.thumbnail ? { image: { url: v.thumbnail } } : {}),
-        }));
-
-        try {
-          await baileysBridge.sendCarousel(sock, m.from, {
-            text: `🔎 *Top results for:* "${query}"\nFound ${results.length} tracks — tap a card to download. ✦`,
-            cards,
-          }, { quoted: m });
-        } catch (err) {
-          console.warn('[play] carousel failed, falling back to select menu:', err.message);
-          const { selectMenu } = await import('../lib/interactiveKit.js');
-          await selectMenu(sock, m.from, { text: `🔎 Results for "${query}":` }, '🎵 Pick a track', [
-            {
-              title: '🎵 Download Audio',
-              rows: results.map((v, idx) => ({
-                id: `${prefix}play ${v.url}`,
-                title: `${idx + 1}. ${v.title}`.slice(0, 60),
-                description: `${v.author || ''} • ${v.duration || ''}`,
-              })),
-            },
-            {
-              title: '🎬 Download Video',
-              rows: results.map((v, idx) => ({
-                id: `${prefix}ytmp4 ${v.url}`,
-                title: `${idx + 1}. ${v.title}`.slice(0, 60),
-                description: `${v.author || ''} • ${v.duration || ''}`,
-              })),
-            },
-          ], [], { quoted: m });
-        }
+        // NOTE: carouselMessage (baileysBridge.sendCarousel) is NOT used here.
+        // relayMessage resolves successfully even when the recipient's WA
+        // client can't render carouselMessage — the failure only shows up
+        // on their screen ("your version of WhatsApp doesn't support it"),
+        // so a try/catch around sendCarousel never actually catches it.
+        // selectMenu (buttonsMessage + single_select) is the reliable path.
+        await selectMenu(sock, m.from, { text: `🔎 Results for "${query}":` }, '🎵 Pick a track', [
+          {
+            title: '🎵 Download Audio',
+            rows: results.map((v, idx) => ({
+              id: `${prefix}play ${v.url}`,
+              title: `${idx + 1}. ${v.title}`.slice(0, 60),
+              description: `${v.author || ''} • ${v.duration || ''}`,
+            })),
+          },
+          {
+            title: '🎬 Download Video',
+            rows: results.map((v, idx) => ({
+              id: `${prefix}ytmp4 ${v.url}`,
+              title: `${idx + 1}. ${v.title}`.slice(0, 60),
+              description: `${v.author || ''} • ${v.duration || ''}`,
+            })),
+          },
+        ], [], { quoted: m });
       } catch (err) {
         await progress.fail(`Search failed: ${err.message}`);
         throw err;

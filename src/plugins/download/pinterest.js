@@ -10,7 +10,6 @@
  */
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
-import { baileysBridge } from '../../core/baileysBridge.js';
 import { pinterestSearch } from '../../lib/downloader.js';
 import { DownloadProgress } from '../../lib/progress.js';
 
@@ -50,31 +49,20 @@ export default {
         const results = (await pinterestSearch(query)).slice(0, count);
         await progress.done(`✅ Found ${results.length} images. Sending...`);
 
-        // Try carousel first (with open-pin links)
-        const cards = results.map((pin, idx) => ({
-          caption: `📌 *${(pin.title || 'Pinterest Image').slice(0, 80)}*`,
-          footer: `Result ${idx + 1} of ${results.length}`,
-          nativeFlow: [{ text: '🔗 Open Pin', url: pin.pinUrl }],
-          image: { url: pin.image },
-        }));
-
-        try {
-          await baileysBridge.sendCarousel(sock, m.from, {
-            text: `📌 *Pinterest results for:* "${query}"`,
-            cards,
-          }, { quoted: m });
-        } catch (err) {
-          console.warn('[pinterest] carousel failed, sending images individually:', err.message);
-          // Fallback: send each image directly to chat
-          for (const pin of results) {
-            try {
-              await sock.sendMessage(m.from, {
-                image: { url: pin.image },
-                caption: pin.title || '',
-              }, { quoted: m });
-            } catch (imgErr) {
-              console.warn('[pinterest] failed to send image:', imgErr.message);
-            }
+        // NOTE: carouselMessage (baileysBridge.sendCarousel) is NOT used here —
+        // relayMessage resolves successfully even when the recipient's WA
+        // client can't render carouselMessage, so a try/catch around
+        // sendCarousel never actually catches the failure. Sending each
+        // image as a plain image message is the reliable path — every
+        // WhatsApp client renders those.
+        for (const pin of results) {
+          try {
+            await sock.sendMessage(m.from, {
+              image: { url: pin.image },
+              caption: pin.title || '',
+            }, { quoted: m });
+          } catch (imgErr) {
+            console.warn('[pinterest] failed to send image:', imgErr.message);
           }
         }
 

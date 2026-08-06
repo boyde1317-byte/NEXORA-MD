@@ -7,7 +7,6 @@
 import { Providers } from '../../lib/webClient.js';
 import { copyResultCard, actionCardWithAd } from '../../lib/interactiveKit.js';
 import { getBrandThumbnail } from '../../lib/cosmetics.js';
-import { baileysBridge } from '../../core/baileysBridge.js';
 
 export default {
   name: 'news',
@@ -28,28 +27,12 @@ export default {
 
       const articles = result.articles.slice(0, 8);
 
-      // ── Tier 1: carousel — one card per article ──────────────────────
-      try {
-        const cards = articles.map((a, idx) => ({
-          caption:    `📰 *${a.title}*\n\n_${a.source?.name || 'Unknown Source'}_\n\n${(a.description || '').slice(0, 100)}${a.description?.length > 100 ? '…' : ''}`,
-          footer:     `Article ${idx + 1} of ${articles.length}`,
-          nativeFlow: [
-            { text: '🔗 Read Full Article', url: a.url },
-          ],
-          ...(a.urlToImage ? { image: { url: a.urlToImage } } : {}),
-        }));
-
-        return await baileysBridge.sendCarousel(sock, m.from, {
-          text: query
-            ? `📰 *NEWS: ${query.toUpperCase()}* — ${articles.length} articles`
-            : `📰 *TOP HEADLINES* — ${articles.length} articles`,
-          cards,
-        }, { quoted: m });
-      } catch (err) {
-        console.warn('[news] Tier 1 (carousel) failed, copyResultCard fallback:', err.message);
-      }
-
-      // ── Tier 2: copyResultCard with all links ────────────────────────
+      // NOTE: carouselMessage (baileysBridge.sendCarousel) is NOT used here —
+      // relayMessage resolves successfully even when the recipient's WA
+      // client can't render carouselMessage, so a try/catch around
+      // sendCarousel never actually catches the failure (it shows up as
+      // "your version of WhatsApp doesn't support it" on their screen).
+      // copyResultCard (buttonsMessage-based) is the reliable path.
       let text = `📰 *${query ? `NEWS: ${query.toUpperCase()}` : 'TOP HEADLINES'}*\n\n`;
       articles.forEach((a, i) => {
         text += `*${i + 1}. ${a.title}*\n_${a.source?.name || 'Unknown'}_ — ${a.description || ''}\n🔗 ${a.url}\n\n`;
