@@ -2,12 +2,10 @@ import { menuManager } from './manager.js';
 import { runWithFallback } from './fallback.js';
 import { collectMenuData } from './collector.js';
 import { mediaManager } from '../media/mediaManager.js';
-import { buildFakeLiveLocationQuote, buildMenuBanner, buildFakeImageQuote, buildAboutContextInfo, resolveThumbnail } from '../lib/waUtils.js';
+import { buildFakeLiveLocationQuote, buildMenuBanner, buildFakeImageQuote } from '../lib/waUtils.js';
 import { actionCard } from '../lib/interactiveKit.js';
+import { db } from '../database/db.js';
 import { imageManager } from '../images/imageManager.js';
-import { capabilities } from '../core/capabilities.js';
-import { baileysBridge } from '../core/baileysBridge.js';
-import { ASSET_URLS } from '../assets/assetUrls.js';
 
 // Import all 15 menu types
 import documentInteractive from './types/documentInteractive.js';
@@ -75,40 +73,14 @@ export const showMenu = async (sock, m, customKey = null) => {
   if (!customKey) {
     try {
       const p = menuData.prefix || '.';
-      const activeId = menuManager.getActiveMenu()?.id || 1;
-      let imgData = null;
-      try { imgData = await imageManager.getMenuImage(activeId); } catch (_) {}
-      const thumbnail = resolveThumbnail(imgData, ASSET_URLS?.thumbnail);
-      const aboutCtx = buildAboutContextInfo({
-        botName: menuData.botName,
-        description: `${menuData.totalCommands} commands`,
-        thumbnail: imgData?.buffer,
-      });
-
-      if (capabilities.nativeFlow) {
-        await baileysBridge.sendButtonsCard(sock, m.from, {
-          body:      `That's the overview. Want to go deeper? Tap below — I've got you. ✦`,
-          footer:    `${menuData.botName} │ ${menuData.totalCommands} commands`,
-          title:     menuData.botName,
-          subtitle:  `${menuData.totalCommands} commands • ${menuData.uptime}`,
-          thumbnail,
-          buttons: [
-            { displayText: '📖 Command Guide', id: `${p}help`, type: 1 },
-            { displayText: '🪅 Claim Daily',   id: `${p}daily`, type: 1 },
-            { displayText: '🏓 Ping Bot',      id: `${p}ping`, type: 1 },
-          ],
-          contextInfo: aboutCtx,
-        }, { quoted: m });
-      } else {
-        await actionCard(sock, m.from, {
-          text:   `That's the overview. Want to go deeper? Tap below \u2014 I've got you. \u2726`,
-          footer: `${menuData.botName} \u2502 ${menuData.totalCommands} commands`,
-        }, [
-          { label: '\u{1F4D6} Command Guide',   cmd: `${p}help` },
-          { label: '\u{1FA9} Claim Daily',     cmd: `${p}daily` },
-          { label: '\u{1F3D1} Ping Bot',        cmd: `${p}ping` },
-        ], { quoted: m });
-      }
+      await actionCard(sock, m.from, {
+        text:   `That's the overview. Want to go deeper? Tap below \u2014 I've got you. \u2726`,
+        footer: `${menuData.botName} \u2502 ${menuData.totalCommands} commands`,
+      }, [
+        { label: '\u{1F4D6} Command Guide',   cmd: `${p}help` },
+        { label: '\u{1FA9} Claim Daily',     cmd: `${p}daily` },
+        { label: '\u{1F3D1} Ping Bot',        cmd: `${p}ping` },
+      ], { quoted: m });
     } catch (_) {}
   }
 
@@ -118,43 +90,20 @@ export const showMenu = async (sock, m, customKey = null) => {
   if (customKey && activeMenu && String(activeMenu.id) !== String(menu.id)) {
     try {
       const p = menuData.prefix || '.';
-      let imgData = null;
-      try { imgData = await imageManager.getMenuImage(menu.id); } catch (_) {}
-      const thumbnail = resolveThumbnail(imgData, ASSET_URLS?.thumbnail);
-      const aboutCtx = buildAboutContextInfo({
-        botName: menuData.botName,
-        description: `Previewing ${menu.name}`,
-        thumbnail: imgData?.buffer,
-      });
-
-      if (capabilities.nativeFlow) {
-        await baileysBridge.sendButtonsCard(sock, m.from, {
-          body:      `👁️ You're previewing *${menu.name}*.\nLike what you see? Make it permanent — one tap below.`,
-          footer:    `Currently active: ${activeMenu.name}`,
-          title:     menuData.botName,
-          subtitle:  `Previewing ${menu.name}`,
-          thumbnail,
-          buttons: [
-            { displayText: '✅ Set as Default', id: `${p}setmenu ${menu.id}`, type: 1 },
-            { displayText: '👁️ View Another Style', id: `${p}menulist`, type: 1 },
-          ],
-          contextInfo: aboutCtx,
-        }, { quoted: m });
-      } else {
-        let previewQuote = m, previewCtx = {};
-        try {
-          previewQuote = buildFakeImageQuote({ jpegThumbnail: imgData?.buffer || undefined });
-          previewCtx   = buildMenuBanner({ imgData, botName: menuData.botName, totalCommands: menuData.totalCommands }).contextInfo;
-        } catch (_) {}
-        await actionCard(sock, m.from, {
-          text:        `👁️ You're previewing *${menu.name}*.\nLike what you see? Make it permanent — one tap below.`,
-          footer:      `Currently active: ${activeMenu.name}`,
-          contextInfo: previewCtx,
-        }, [
-          { label: `✅ Set as Default`, cmd: `${p}setmenu ${menu.id}` },
-          { label: `👁️ View Another Style`, cmd: `${p}menulist` },
-        ], { quoted: previewQuote });
-      }
+      let previewQuote = m, previewCtx = {};
+      try {
+        const imgData = await imageManager.getMenuImage(menu.id);
+        previewQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
+        previewCtx   = buildMenuBanner({ imgData, botName: menuData.botName, totalCommands: menuData.totalCommands }).contextInfo;
+      } catch (_) {}
+      await actionCard(sock, m.from, {
+        text:        `👁️ You're previewing *${menu.name}*.\nLike what you see? Make it permanent — one tap below.`,
+        footer:      `Currently active: ${activeMenu.name}`,
+        contextInfo: previewCtx,
+      }, [
+        { label: `✅ Set as Default`, cmd: `${p}setmenu ${menu.id}` },
+        { label: `👁️ View Another Style`, cmd: `${p}menulist` },
+      ], { quoted: previewQuote });
     } catch (_) {}
   }
 

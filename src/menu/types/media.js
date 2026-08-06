@@ -4,27 +4,25 @@ import { capabilities } from '../../core/capabilities.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
-import { buildFakeImageQuote, buildAboutContextInfo, resolveThumbnail } from '../../lib/waUtils.js';
-import { buildNavigationButton } from './buttonsCard.js';
-import { ASSET_URLS } from '../../assets/assetUrls.js';
+import { buildFakeImageQuote } from '../../lib/waUtils.js';
 
 /**
- * Media Menu (id: 10) — .about-style rendering.
+ * Media Menu (id: 10) \u2014 enhanced for rich-messages.
  *
- * Primary tier uses sendButtonsCard (thumbnail header + product catalog quote
- * + pill buttons), matching the .about command's visual style.
+ * Upgraded to use sendInteractive with image header + subtitle + embedded
+ * externalAdReply for a double-visual: interactive card AND ad banner.
+ * Richer body text with stat rows and visual dividers.
  *
  * Tiers:
- *   1 → sendButtonsCard (.about style: thumbnail header + catalog quote + pill buttons)
- *   2 → sendInteractive with image header + subtitle + embedded adReply
- *   3 → nativeFlow interactive card with image header + buttons
- *   4 → text + externalAdReply banner
+ *   1 \u2192 sendInteractive with image header + subtitle + embedded adReply
+ *   2 \u2192 nativeFlow interactive card with image header + buttons
+ *   3 \u2192 text + externalAdReply banner
  */
 export const mediaMenu = {
   id: 10,
   name: 'media',
-  description: 'About-style buttons card with thumbnail header + catalog quote + media dashboard',
-  supportedMessages: ['buttonsMessage', 'interactiveMessage', 'nativeFlowMessage', 'imageMessage', 'extendedTextMessage'],
+  description: 'Rich Media Showcase \u2014 interactive card with embedded ad-reply, stat dashboard, and action buttons',
+  supportedMessages: ['interactiveMessage', 'nativeFlowMessage', 'imageMessage', 'extendedTextMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData = await imageManager.getMenuImage(10);
@@ -35,6 +33,7 @@ export const mediaMenu = {
 
     const footerText = `${menuData.botName} \u2502 ${menuData.totalCommands} commands`;
 
+    // Build richer body text with visual stat rows
     const headerBlock = [
       `\u2726 *${toSmallcaps('Media Showcase Dashboard')}* \u2726`,
       '',
@@ -49,14 +48,14 @@ export const mediaMenu = {
 
     const caption = headerBlock + buildTextMenu(menuData);
 
-    // Build embedded externalAdReply for fallback tiers
+    // Build embedded externalAdReply
     const adReply = {
-      title:                 menuData.botName,
-      body:                  `${menuData.totalCommands} commands \u2502 ${menuData.uptime}`,
+      title:                 `${menuData.botName} ${toSmallcaps('Media Core')}`,
+      body:                  `${toSmallcaps('Uptime')}: ${menuData.uptime} \u2502 ${toSmallcaps('Plugins')}: ${menuData.totalCommands}`,
       sourceUrl:             `https://wa.me/${menuData.ownerNumber || '233597514499'}`,
       mediaType:             1,
       renderLargerThumbnail: true,
-      showAdAttribution:     false,
+      showAdAttribution:     true,
     };
     if (imgData.buffer) {
       adReply.thumbnail = imgData.buffer;
@@ -65,29 +64,7 @@ export const mediaMenu = {
       adReply.originalImageUrl = imgData.source;
     }
 
-    // ── Tier 1: sendButtonsCard (.about style) ─────────────────────────────
-    const thumbnail = resolveThumbnail(imgData, ASSET_URLS?.thumbnail);
-    const aboutCtx  = buildAboutContextInfo({ botName: menuData.botName, description: `${menuData.totalCommands} commands`, thumbnail: imgData?.buffer });
-    if (capabilities.nativeFlow) {
-      try {
-        return await baileysBridge.sendButtonsCard(sock, m.from, {
-          body:      caption,
-          footer:    footerText,
-          title:     menuData.botName,
-          subtitle:  `${menuData.totalCommands} commands \u2502 ${menuData.uptime}`,
-          thumbnail,
-          buttons: [
-            { displayText: '\u{1F4CB} All Commands', id: `${menuData.prefix}menu all`, type: 1 },
-            buildNavigationButton(menuData.prefix),
-          ],
-          contextInfo: aboutCtx,
-        }, { quoted: menuData.audioQuote || m });
-      } catch (err) {
-        console.warn('[MENU media] Tier 1 (sendButtonsCard) failed, trying sendInteractive:', err.message);
-      }
-    }
-
-    // ── Tier 2: sendInteractive with image header + subtitle + embedded adReply ──
+    // ── Tier 1: sendInteractive with image header + subtitle + embedded adReply ──
     if (capabilities.interactive && imagePayload) {
       try {
         return await baileysBridge.sendInteractive(sock, m.from, {
@@ -106,11 +83,11 @@ export const mediaMenu = {
           contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
-        console.warn('[MENU media] Tier 2 (sendInteractive + adReply) failed, trying nativeFlow:', err.message);
+        console.warn('[MENU media] Tier 1 (sendInteractive + adReply) failed, trying nativeFlow:', err.message);
       }
     }
 
-    // ── Tier 3: nativeFlow interactive card with buttons ───────────────────
+    // ── Tier 2: nativeFlow interactive card with buttons ───────────────────
     if (capabilities.nativeFlow) {
       try {
         return await baileysBridge.sendNativeFlow(sock, m.from, {
@@ -124,11 +101,11 @@ export const mediaMenu = {
           ],
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
-        console.warn('[MENU media] Tier 3 (nativeFlow) failed, trying adReply:', err.message);
+        console.warn('[MENU media] Tier 2 (nativeFlow) failed, trying adReply:', err.message);
       }
     }
 
-    // ── Tier 4: text + externalAdReply banner ───────────────────────────────
+    // ── Tier 3: text + externalAdReply banner ───────────────────────────────
     return await sock.sendMessage(m.from, {
       text: caption,
       contextInfo: { externalAdReply: adReply },

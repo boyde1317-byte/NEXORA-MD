@@ -3,41 +3,42 @@ import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
-import { buildFakeImageQuote, buildAboutContextInfo, resolveThumbnail } from '../../lib/waUtils.js';
-import { buildNavigationButton } from './buttonsCard.js';
-import { ASSET_URLS } from '../../assets/assetUrls.js';
+import { buildFakeImageQuote } from '../../lib/waUtils.js';
 
 /**
- * Native Flow Menu (id: 4) — .about-style rendering.
+ * Native Flow Menu (id: 4) \u2014 enhanced for rich-messages.
  *
- * Primary tier uses sendButtonsCard (thumbnail header + product catalog quote
- * + pill buttons), matching the .about command's visual style.
+ * Upgraded to use sendInteractive (full proto control) as Tier 1:
+ *   - Image header with title AND subtitle
+ *   - Embedded externalAdReply inside interactiveMessage.contextInfo
+ *     (double visual: interactive card + ad banner in one message)
+ *   - Mixed button types: quick_reply, cta_url, cta_copy
  *
  * Tiers:
- *   1 → sendButtonsCard (.about style: thumbnail header + catalog quote + pill buttons)
- *   2 → sendInteractive with image header + subtitle + embedded adReply + mixed buttons
- *   3 → nativeFlow interactive card with image header (simple declarative buttons)
- *   4 → text with externalAdReply banner
+ *   1 \u2192 sendInteractive with image header + subtitle + embedded adReply + mixed buttons
+ *   2 \u2192 nativeFlow interactive card with image header (simple declarative buttons)
+ *   3 \u2192 text with externalAdReply banner
  */
 export const nativeFlowMenu = {
   id: 4,
   name: 'nativeFlow',
-  description: 'About-style buttons card with thumbnail header + catalog quote + navigation',
-  supportedMessages: ['buttonsMessage', 'interactiveMessage', 'nativeFlowMessage'],
+  description: 'Advanced Native Flow \u2014 interactive card with embedded ad-reply, URL links, clipboard copy, quick-reply',
+  supportedMessages: ['interactiveMessage', 'nativeFlowMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData    = await imageManager.getMenuImage(4);
     const bodyText   = `\u26A1 *${toSmallcaps(menuData.botName + ' Menu')}*\n\n` + buildTextMenu(menuData);
     const footerText = `${menuData.botName} \u2502 ${toSmallcaps('Native Flow Active')}`;
 
+    // Resolve image payload
     const imagePayload = imgData.source?.startsWith('http')
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
-    // Build embedded externalAdReply for fallback tiers
+    // Build embedded externalAdReply for the interactive card
     const adReply = {
-      title:                 menuData.botName,
-      body:                  `${menuData.totalCommands} commands \u2502 ${menuData.prefix}`,
+      title:                 `\u2726 ${menuData.botName} \u2726`,
+      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Prefix')}: ${menuData.prefix}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
       renderLargerThumbnail: true,
@@ -50,29 +51,7 @@ export const nativeFlowMenu = {
       adReply.originalImageUrl = imgData.source;
     }
 
-    // ── Tier 1: sendButtonsCard (.about style) ─────────────────────────────
-    const thumbnail = resolveThumbnail(imgData, ASSET_URLS?.thumbnail);
-    const aboutCtx  = buildAboutContextInfo({ botName: menuData.botName, description: `${menuData.totalCommands} commands`, thumbnail: imgData?.buffer });
-    if (capabilities.nativeFlow) {
-      try {
-        return await baileysBridge.sendButtonsCard(sock, m.from, {
-          body:      bodyText,
-          footer:    footerText,
-          title:     menuData.botName,
-          subtitle:  `${menuData.totalCommands} commands \u2502 ${menuData.uptime}`,
-          thumbnail,
-          buttons: [
-            { displayText: '\u{1F4CB} All Commands', id: `${menuData.prefix}menu all`, type: 1 },
-            buildNavigationButton(menuData.prefix),
-          ],
-          contextInfo: aboutCtx,
-        }, { quoted: menuData.audioQuote || m });
-      } catch (err) {
-        console.warn('[MENU nativeFlow] Tier 1 (sendButtonsCard) failed, trying sendInteractive:', err.message);
-      }
-    }
-
-    // ── Tier 2: sendInteractive with image header + subtitle + embedded adReply ──
+    // ── Tier 1: sendInteractive with image header + subtitle + embedded adReply ──
     if (capabilities.interactive && imagePayload) {
       try {
         return await baileysBridge.sendInteractive(sock, m.from, {
@@ -93,11 +72,11 @@ export const nativeFlowMenu = {
           contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
-        console.warn('[MENU nativeFlow] Tier 2 (sendInteractive + adReply) failed, trying nativeFlow:', err.message);
+        console.warn('[MENU nativeFlow] Tier 1 (sendInteractive + adReply) failed, trying nativeFlow:', err.message);
       }
     }
 
-    // ── Tier 3: nativeFlow buttons with image header ──
+    // ── Tier 2: nativeFlow buttons with image header (simple declarative) ──
     try {
       return await baileysBridge.sendNativeFlow(sock, m.from, {
         text:    bodyText,
@@ -113,14 +92,19 @@ export const nativeFlowMenu = {
         ],
       }, { quoted: menuData.audioQuote || m });
     } catch (err) {
-      console.warn('[MENU nativeFlow] Tier 3 (nativeFlow + image) failed, trying adReply:', err.message);
+      console.warn('[MENU nativeFlow] Tier 2 (nativeFlow + image) failed, trying adReply:', err.message);
     }
 
-    // ── Tier 4: text + externalAdReply banner ─────────────────────────────
-    return await sock.sendMessage(m.from, {
-      text:        bodyText,
-      contextInfo: { externalAdReply: adReply },
-    }, { quoted: buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined }) });
+    // ── Tier 3: text + externalAdReply banner ─────────────────────────────
+    try {
+      return await sock.sendMessage(m.from, {
+        text:        bodyText,
+        contextInfo: { externalAdReply: adReply },
+      }, { quoted: buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined }) });
+    } catch (err) {
+      console.warn('[MENU nativeFlow] Tier 3 (adReply) failed, escalating to text:', err.message);
+      throw err; // runWithFallback → plain text
+    }
   },
 };
 

@@ -1,22 +1,36 @@
-import { capabilities } from '../../core/capabilities.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
-import { buildFakeLiveLocationQuote, buildAboutContextInfo, buildAboutButtons, resolveThumbnail } from '../../lib/waUtils.js';
-import { buildNavigationButton } from './buttonsCard.js';
-import { ASSET_URLS } from '../../assets/assetUrls.js';
+import { buildFakeLiveLocationQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 
 /**
- * Location Menu (id: 8)
+ * Location Menu (id: 8) — rewritten for itsliaaa 0.3.18-final fork.
  *
- * Primary tier uses sendButtonsCard with live location quote in contextInfo.
+ * ONE message: nativeFlow interactive card (body + buttons + image header) quoted
+ * inside a fake liveLocationMessage so the reply bar shows the distinctive pulsing
+ * live-location card (📍 caption + animated indicator).
+ *
+ * Uses the fork's simple button format:
+ *   { text, id }   → quick_reply
+ *   { text, copy } → cta_copy
+ *
+ * WHY liveLocationMessage and not locationMessage:
+ *   liveLocationMessage renders a standout animated card in the reply bar.
+ *   Plain locationMessage shows a static 📍 pin — much less distinctive.
+ *   Coordinates are proto-required but not visible; caption is what users see.
+ *
+ * Image strategy:
+ *   imgData.buffer is passed as `image:` on the nativeFlow card (Tier 1).
+ *   If the buffer download failed, the raw URL is passed as { url } so
+ *   WhatsApp can fetch it directly.
+ *   Tier 2 falls back to an externalAdReply text banner if nativeFlow fails.
+ *   Tier 3 is guaranteed plain text.
  *
  * Tiers:
- *   1 → sendButtonsCard (.about style) + live location badge in reply bar
- *   2 → nativeFlow card (image header + buttons) + live location in reply bar
- *   3 → text + externalAdReply banner + live location in reply bar
- *   4 → guaranteed plain text + live location in reply bar
+ *   1 → nativeFlow card (image header + buttons) + live location in reply bar
+ *   2 → text + externalAdReply banner + live location in reply bar
+ *   3 → guaranteed plain text + live location in reply bar
  */
 export const locationMenu = {
   id: 8,
@@ -33,35 +47,6 @@ export const locationMenu = {
       caption: `📍 ${toSmallcaps(menuData.botName || 'NEXORA-MD')} — ${toSmallcaps('Bot Command')} ✦`,
     });
 
-    const contextInfo = {
-      stanzaId:      locationQuote.key.id,
-      participant:   locationQuote.key.participant,
-      remoteJid:     locationQuote.key.remoteJid,
-      quotedMessage: locationQuote.message,
-    };
-
-    const thumbnail = resolveThumbnail(imgData, ASSET_URLS?.thumbnail);
-
-    // ── Tier 1: sendButtonsCard + live location badge in reply bar ──────────
-    if (capabilities.nativeFlow) {
-      try {
-        return await baileysBridge.sendButtonsCard(sock, m.from, {
-          body:      menuText,
-          footer:    footerText,
-          title:     menuData.botName,
-          subtitle:  `${menuData.totalCommands} commands • ${menuData.uptime}`,
-          thumbnail,
-          buttons: [
-            { displayText: '📋 All Commands', id: `${menuData.prefix}menu all`, type: 1 },
-            buildNavigationButton(menuData.prefix),
-          ],
-          contextInfo,
-        }, { quoted: menuData.audioQuote || m });
-      } catch (err) {
-        console.warn('[MENU location] Tier 1 (sendButtonsCard + location quote) failed, trying sendNativeFlow:', err.message);
-      }
-    }
-
     // Resolve image payload: prefer the { url } form — WA fetches it directly,
     // no local buffer download/re-upload round trip. Buffer is only a fallback
     // for local disk images that have no public URL.
@@ -69,7 +54,7 @@ export const locationMenu = {
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
-    // ── Tier 2: nativeFlow card (image + buttons) + live location badge ────
+    // ── Tier 1: nativeFlow card (image + buttons) + live location badge ────
     try {
       return await baileysBridge.sendNativeFlow(sock, m.from, {
         text:    menuText,
@@ -84,10 +69,10 @@ export const locationMenu = {
         ],
       }, { quoted: locationQuote });
     } catch (err) {
-      console.warn('[MENU location] Tier 2 (nativeFlow + image + location quote) failed, trying adReply:', err.message);
+      console.warn('[MENU location] Tier 1 (nativeFlow + image + location quote) failed, trying adReply:', err.message);
     }
 
-    // ── Tier 3: text + externalAdReply banner + live location badge ────────
+    // ── Tier 2: text + externalAdReply banner + live location badge ────────
     try {
       const adReply = {
         title:                 `✦ ${menuData.botName.toUpperCase()} ✦`,
@@ -100,6 +85,7 @@ export const locationMenu = {
         adReply.thumbnail = imgData.buffer;
       } else if (imgData.source?.startsWith('http')) {
         adReply.thumbnailUrl = imgData.source;
+
         adReply.originalImageUrl = imgData.source;
       }
       return await sock.sendMessage(m.from, {
@@ -107,10 +93,10 @@ export const locationMenu = {
         contextInfo: { externalAdReply: adReply },
       }, { quoted: locationQuote });
     } catch (err) {
-      console.warn('[MENU location] Tier 3 (adReply + location quote) failed, continuing to text:', err.message);
+      console.warn('[MENU location] Tier 2 (adReply + location quote) failed, continuing to text:', err.message);
     }
 
-    // ── Tier 4: guaranteed plain text + live location badge + banner ────────
+    // ── Tier 3: guaranteed plain text + live location badge + banner ────────
     const fallbackAdReply = {
       title:                 `✦ ${menuData.botName.toUpperCase()} ✦`,
       body:                  `${menuData.totalCommands} commands • Prefix: ${menuData.prefix}`,

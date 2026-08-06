@@ -1,18 +1,15 @@
 import { capabilities } from '../../core/capabilities.js';
-import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { newsletterManager } from '../../newsletter/newsletterManager.js';
 import brand from '../../../config/brand.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
-import { buildAboutContextInfo, resolveThumbnail, buildFakeImageQuote } from '../../lib/waUtils.js';
-import { buildNavigationButton } from './buttonsCard.js';
-import { ASSET_URLS } from '../../assets/assetUrls.js';
+import { buildFakeImageQuote } from '../../lib/waUtils.js';
 
 /**
  * Newsletter Menu (id: 7)
  *
- * Sends the menu as an .about style card with newsletter admin invite fallback.
+ * Sends the menu as a WhatsApp Channel (newsletter) admin invite card.
  *
  * CAPABILITY GATE:
  *   `capabilities.newsletter.adminInviteMessage` is always false because
@@ -22,13 +19,20 @@ import { ASSET_URLS } from '../../assets/assetUrls.js';
  *   Instead, gate on `capabilities.newsletter.enabled` (true — static verdict)
  *   AND require a valid `menuData.channelJid`. The runtime socket check in
  *   baileysScanner.js verifies that newsletter methods are actually available.
- *   Any actual failure (no channel, wrong account type) is caught by fallback tiers.
+ *   Any actual failure (no channel, wrong account type) is caught by Tier 2.
+ *
+ * Image strategy:
+ *   The NewsletterAdminInviteMessage proto does not expose an image field via
+ *   the fork's sendNewsletterInvite API. So we send the menu image as a
+ *   dedicated imageMessage immediately before the invite card — this gives the
+ *   invite a visual header without modifying the newsletter proto.
+ *   For the plain-text fallback (Tier 2) we embed the image directly as an
+ *   imageMessage with the caption so it appears as a single rich card.
  *
  * Tiers:
- *   1 → sendButtonsCard with thumbnail + catalog quote + navigation buttons
- *   2 → image banner + newsletter admin invite card (requires channelJid)
- *   3 → imageMessage with caption (plain-text style + image in one bubble)
- *   4 → guaranteed plain text (image unavailable or send failed)
+ *   1 → image banner + newsletter admin invite card (requires channelJid)
+ *   2 → imageMessage with caption (plain-text style + image in one bubble)
+ *   3 → guaranteed plain text (image unavailable or send failed)
  */
 export const newsletterMenu = {
   id: 7,
@@ -51,32 +55,7 @@ export const newsletterMenu = {
       `• *${toSmallcaps('System Uptime')}:* ${menuData.uptime}\n\n` +
       textContent;
 
-    const footerText = `${menuData.botName} • ${toSmallcaps('Official Channel')}`;
-
-    // ── Tier 1: sendButtonsCard ───────────────────────────────────────────
-    const thumbnail = resolveThumbnail(imgData, ASSET_URLS?.thumbnail);
-    const aboutCtx = buildAboutContextInfo({ botName: menuData.botName, description: `${menuData.totalCommands} commands`, thumbnail: imgData?.buffer });
-
-    if (capabilities.nativeFlow) {
-      try {
-        return await baileysBridge.sendButtonsCard(sock, m.from, {
-          body:      caption,
-          footer:    footerText,
-          title:     menuData.botName,
-          subtitle:  `${menuData.totalCommands} commands • ${menuData.uptime}`,
-          thumbnail,
-          buttons: [
-            { displayText: '📋 All Commands', id: `${menuData.prefix}menu all`, type: 1 },
-            buildNavigationButton(menuData.prefix),
-          ],
-          contextInfo: aboutCtx,
-        }, { quoted: menuData.audioQuote || m });
-      } catch (err) {
-        console.warn('[MENU newsletter] Tier 1 (sendButtonsCard) failed, trying newsletter invite:', err.message);
-      }
-    }
-
-    // ── Tier 2: image banner + newsletter admin invite card ───────────────
+    // ── Tier 1: image banner + newsletter admin invite card ───────────────
     const hasChannel = !!menuData.channelJid;
 
     if (capabilities.newsletter?.enabled && hasChannel) {
@@ -102,15 +81,15 @@ export const newsletterMenu = {
           forwardingEnabled: true,
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
-        console.warn('[MENU newsletter] Tier 2 (image + newsletter invite) failed:', err.message);
-        // Fall through to Tier 3
+        console.warn('[MENU newsletter] Tier 1 (image + newsletter invite) failed:', err.message);
+        // Fall through to Tier 2
       }
     } else if (!hasChannel) {
-      console.warn('[MENU newsletter] No channelJid in menuData — skipping Tier 2. ' +
+      console.warn('[MENU newsletter] No channelJid in menuData — skipping Tier 1. ' +
         'Set CHANNEL_JID in .env or config to enable newsletter invite cards.');
     }
 
-    // ── Tier 3: imageMessage with caption ─────────────────────────────────
+    // ── Tier 2: imageMessage with caption ─────────────────────────────────
     // Sends image + full menu text as one rich bubble. Preferred over bare text.
     try {
       if (imgData.buffer) {
@@ -126,10 +105,10 @@ export const newsletterMenu = {
         }, { quoted: menuData.audioQuote || m });
       }
     } catch (err) {
-      console.warn('[MENU newsletter] Tier 3 (imageMessage) failed, continuing to text:', err.message);
+      console.warn('[MENU newsletter] Tier 2 (imageMessage) failed, continuing to text:', err.message);
     }
 
-    // ── Tier 4: Guaranteed plain text + fake quote + banner ────────────────
+    // ── Tier 3: Guaranteed plain text + fake quote + banner ────────────────
     const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData?.buffer || undefined });
     const fallbackAdReply = {
       title:                 `✦ ${toSmallcaps(menuData.botName)} ✦`,

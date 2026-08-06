@@ -4,43 +4,46 @@ import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { footerManager } from '../../core/footer.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
-import { buildFakeImageQuote, buildAboutContextInfo, resolveThumbnail } from '../../lib/waUtils.js';
-import { buildNavigationButton } from './buttonsCard.js';
-import { ASSET_URLS } from '../../assets/assetUrls.js';
+import { buildFakeImageQuote } from '../../lib/waUtils.js';
 
 /**
- * Document Interactive Menu (id: 1) — .about-style rendering.
+ * Document Interactive Menu (id: 1) \u2014 enhanced for rich-messages.
  *
- * Primary tier uses sendButtonsCard (thumbnail header + product catalog quote
- * + pill buttons), matching the .about command's visual style.
- * sendInteractive is retained as Tier 2 fallback for richer button types.
+ * Upgraded to use sendInteractive (full proto control) instead of sendNativeFlow
+ * (simple declarative) for richer visual output:
+ *   - Image header with title AND subtitle (not available in nativeFlow)
+ *   - Embedded externalAdReply inside interactiveMessage.contextInfo
+ *     (double visual: interactive card + ad banner in one message)
+ *   - Full nativeFlow buttons with display_text
  *
  * Tiers:
- *   1 → sendButtonsCard (.about style: thumbnail header + catalog quote + pill buttons)
- *   2 → sendInteractive with image header + subtitle + embedded adReply
- *   3 → nativeFlow interactive card with image header + action buttons
- *   4 → image with caption + externalAdReply banner
- *   5 → guaranteed plain text
+ *   1 \u2192 sendInteractive with image header + subtitle + embedded adReply
+ *   2 \u2192 nativeFlow interactive card with image header + 5 action buttons
+ *   3 \u2192 image with caption + externalAdReply banner
+ *   4 \u2192 guaranteed plain text
  */
 export const documentInteractiveMenu = {
   id: 1,
   name: 'documentInteractive',
-  description: 'Interactive card — .about-style buttons card with thumbnail header + catalog quote',
-  supportedMessages: ['buttonsMessage', 'interactiveMessage', 'nativeFlowMessage'],
+  description: 'Interactive card \u2014 image header + subtitle + embedded adReply + action buttons',
+  supportedMessages: ['interactiveMessage', 'nativeFlowMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData    = await imageManager.getMenuImage(1);
     const footerText = footerManager.getFooter() || `${menuData.botName} \u2502 Uptime: ${menuData.uptime}`;
     const bodyText   = `\u2726 *${toSmallcaps(menuData.botName)}* \u2726\n\n` + buildTextMenu(menuData);
 
+    // Resolve image payload: prefer the { url } form \u2014 WA fetches it directly,
+    // no local buffer download/re-upload round trip. Buffer is only a fallback
+    // for local disk images that have no public URL.
     const imagePayload = imgData.source?.startsWith('http')
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
-    // Build the embedded externalAdReply for fallback tiers
+    // Build the embedded externalAdReply for double visual impact
     const adReply = {
-      title:                 menuData.botName,
-      body:                  `${menuData.totalCommands} commands \u2502 ${menuData.uptime}`,
+      title:                 `\u2726 ${menuData.botName} \u2726`,
+      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Interactive Card')}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
       renderLargerThumbnail: true,
@@ -53,29 +56,9 @@ export const documentInteractiveMenu = {
       adReply.originalImageUrl = imgData.source;
     }
 
-    // ── Tier 1: sendButtonsCard (.about style) ─────────────────────────────
-    const thumbnail = resolveThumbnail(imgData, ASSET_URLS?.thumbnail);
-    const aboutCtx  = buildAboutContextInfo({ botName: menuData.botName, description: `${menuData.totalCommands} commands`, thumbnail: imgData?.buffer });
-    if (capabilities.nativeFlow) {
-      try {
-        return await baileysBridge.sendButtonsCard(sock, m.from, {
-          body:      bodyText,
-          footer:    footerText,
-          title:     menuData.botName,
-          subtitle:  `${menuData.totalCommands} commands \u2502 ${menuData.uptime}`,
-          thumbnail,
-          buttons: [
-            { displayText: '\u{1F4CB} All Commands', id: `${menuData.prefix}menu all`, type: 1 },
-            buildNavigationButton(menuData.prefix),
-          ],
-          contextInfo: aboutCtx,
-        }, { quoted: menuData.audioQuote || m });
-      } catch (err) {
-        console.warn('[MENU documentInteractive] Tier 1 (sendButtonsCard) failed, trying sendInteractive:', err.message);
-      }
-    }
-
-    // ── Tier 2: sendInteractive with image header + subtitle + embedded adReply ──
+    // ── Tier 1: sendInteractive with image header + subtitle + embedded adReply ──
+    // Full proto control: image header with title AND subtitle, plus an
+    // externalAdReply banner embedded inside the same interactive card.
     if (capabilities.interactive && imagePayload) {
       try {
         return await baileysBridge.sendInteractive(sock, m.from, {
@@ -96,11 +79,11 @@ export const documentInteractiveMenu = {
           contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
-        console.warn('[MENU documentInteractive] Tier 2 (sendInteractive + adReply) failed, trying nativeFlow:', err.message);
+        console.warn('[MENU documentInteractive] Tier 1 (sendInteractive + adReply) failed, trying nativeFlow:', err.message);
       }
     }
 
-    // ── Tier 3: nativeFlow interactive card with image header ─────────────
+    // ── Tier 2: nativeFlow interactive card with image header ─────────────
     if (capabilities.nativeFlow) {
       try {
         return await baileysBridge.sendNativeFlow(sock, m.from, {
@@ -116,11 +99,11 @@ export const documentInteractiveMenu = {
           ],
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
-        console.warn('[MENU documentInteractive] Tier 3 (nativeFlow) failed, trying image banner:', err.message);
+        console.warn('[MENU documentInteractive] Tier 2 (nativeFlow) failed, trying image banner:', err.message);
       }
     }
 
-    // ── Tier 4: image with caption + externalAdReply ──────────────────────
+    // ── Tier 3: image with caption + externalAdReply ──────────────────────
     try {
       if (imgData.buffer) {
         return await sock.sendMessage(m.from, {
@@ -137,10 +120,10 @@ export const documentInteractiveMenu = {
         }, { quoted: menuData.audioQuote || m });
       }
     } catch (err) {
-      console.warn('[MENU documentInteractive] Tier 4 (image banner) failed, falling back to text:', err.message);
+      console.warn('[MENU documentInteractive] Tier 3 (image banner) failed, falling back to text:', err.message);
     }
 
-    // ── Tier 5: guaranteed plain text + fake quote + banner ───────────────
+    // ── Tier 4: guaranteed plain text + fake quote + banner ───────────────
     const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
     return await sock.sendMessage(m.from, {
       text:        bodyText,

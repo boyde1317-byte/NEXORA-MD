@@ -19,10 +19,26 @@ import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { getGreeting } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
-import { buildAboutContextInfo, resolveThumbnail } from '../../lib/waUtils.js';
+import { buildFakeProductQuote } from '../../lib/waUtils.js';
 import brand from '../../../config/brand.js';
 import owner from '../../../config/owner.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
+
+/**
+ * Build the productMessage catalog quote used as contextInfo.
+ * This is what makes the card render as a "business catalog forward"
+ * — the quoted reply bar shows a product card with the bot name.
+ */
+function buildCatalogQuote(thumbnail) {
+  return buildFakeProductQuote({
+    title:           brand.name,
+    description:     brand.description || `${brand.name} by ${brand.creator}`,
+    currencyCode:   'BTC',
+    priceAmount1000: 100000000,
+    businessOwnerJid: '0@s.whatsapp.net',
+    ...(thumbnail ? { jpegThumbnail: thumbnail } : {}),
+  });
+}
 
 /**
  * Build the navigation single_select button (native flow list picker).
@@ -79,18 +95,28 @@ export const buttonsCardMenu = {
     const serverStatus = loadPct > 80 || ramPct > 85 ? 'Degraded' : 'Online';
 
     // ── Thumbnail: high-quality brand image ───────────────────────────────
-    let imgData = null;
+    let thumbnail = ASSET_URLS.thumbnail;
+    let thumbnailBuffer = null;
     try {
-      imgData = await imageManager.getMenuImage(5);
+      const imgData = await imageManager.getMenuImage(5);
+      if (imgData?.source?.startsWith('http')) {
+        thumbnail = imgData.source;
+      } else if (imgData?.buffer) {
+        thumbnail = imgData.buffer;
+        thumbnailBuffer = imgData.buffer;
+      }
     } catch (_) {}
-    const thumbnail = resolveThumbnail(imgData, ASSET_URLS?.thumbnail);
 
     // ── Catalog quote (productMessage fake quote for the reply bar) ───────
-    const contextInfo = buildAboutContextInfo({
-      botName: brand.name,
-      description: brand.description || `${brand.name} by ${brand.creator}`,
-      thumbnail: imgData?.buffer,
-    });
+    const catalogQuote = buildCatalogQuote(thumbnailBuffer);
+
+    // ── Build contextInfo with the catalog quote ──────────────────────────
+    const contextInfo = {
+      stanzaId:      catalogQuote.key.id || 'catalog',
+      participant:   catalogQuote.key.participant,
+      remoteJid:     catalogQuote.key.remoteJid,
+      quotedMessage: catalogQuote.message,
+    };
 
     // ── Check if this is a category-specific menu (args passed) ───────────
     const p = menuData.prefix || '.';
@@ -170,12 +196,10 @@ export const buttonsCardMenu = {
       ];
 
       // Add mentionedJid for the @sender mention in body
-      const contextInfoWithMention = buildAboutContextInfo({
-        botName: brand.name,
-        description: brand.description || `${brand.name} by ${brand.creator}`,
-        thumbnail: imgData?.buffer,
+      const contextInfoWithMention = {
+        ...contextInfo,
         mentionedJid: m.sender ? [m.sender] : [],
-      });
+      };
 
       return await baileysBridge.sendButtonsCard(sock, m.from, {
         body:       bodyText,
