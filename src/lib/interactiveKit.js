@@ -319,13 +319,58 @@ export async function mixedCard(sock, jid, content, specs, opts = {}) {
  * ], [], { quoted: m });
  */
 export async function selectMenu(sock, jid, content, pickerLabel, sections, sideButtons = [], opts = {}) {
-  const buttons = cap([
-    { text: pickerLabel, sections },
-    ...sideButtons.map(s => s.kind === 'url'
-      ? { text: s.label, url: s.url }
-      : { text: s.label, id: s.cmd }),
-  ]);
-  return _send(sock, jid, { ...content, buttons }, opts);
+  // Build a single_select picker button in buttonsMessage format.
+  // This used to go through sendNativeFlow (nativeFlowMessage), which many
+  // WhatsApp client versions reject with "unsupported message type". The
+  // single_select mechanism works fine inside buttonsMessage (buttonsMessage
+  // is the more widely-supported proto), so we route through sendButtonsCard
+  // instead — same picker UX, much better compatibility.
+  const { brand } = await import('../menu/types/buttonsCard.js');
+
+  // Flatten sections into a single_select button
+  const allRows = sections.flatMap(s =>
+    s.rows.map(r => ({
+      title:       r.title,
+      description: r.description || '',
+      id:          r.id,
+    }))
+  );
+
+  const pickerButton = {
+    buttonText: { displayText: pickerLabel },
+    buttonId:  'select_menu',
+    type:      1,
+    nativeFlowInfo: {
+      name: 'single_select',
+      paramsJson: JSON.stringify({
+        title: 'Select',
+        sections: sections.map(s => ({
+          title: s.title,
+          rows:  s.rows.map(r => ({
+            title:       r.title,
+            description: r.description || '',
+            id:          r.id,
+          })),
+        })),
+      }),
+    },
+  };
+
+  const sideBtns = sideButtons.map(s => {
+    if (s.kind === 'url') {
+      return { displayText: s.label, id: s.url, type: 1 };
+    }
+    return { displayText: s.label, id: s.cmd, type: 1 };
+  });
+
+  const buttons = cap([pickerButton, ...sideBtns]);
+
+  return await baileysBridge.sendButtonsCard(sock, jid, {
+    body:    content.text,
+    footer:  content.footer || '',
+    title:   content.title,
+    buttons,
+  }, opts);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
