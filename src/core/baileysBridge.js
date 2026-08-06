@@ -1064,11 +1064,15 @@ export const baileysBridge = {
   /**
    * Sends a buttonsMessage card — the OLD-style WhatsApp button card format.
    *
-   * This is the format that produces the distinctive "grey body text" card
-   * look (when the body is wrapped in monospace) with a high-quality thumbnail
-   * in the header and tappable pill buttons at the bottom. It uses
-   * headerType: 6 (locationMessage) to embed the thumbnail, which renders
-   * as a card with the image at the top.
+   * This is the format that produces the distinctive "grey footer text" card
+   * look (footerText renders in WhatsApp's native grey dim style) with a
+   * high-quality image in the header and tappable pill buttons at the bottom.
+   * Uses headerType: 4 (imageMessage) — uploads the thumbnail to WhatsApp's
+   * media servers so it renders as a proper card image header.
+   *
+   * Previously used headerType: 6 (locationMessage) with (0,0) coordinates
+   * as a hack to embed a jpegThumbnail. That rendered as a broken/incomplete
+   * location pin on many WhatsApp clients — switched to a real image upload.
    *
    * The `biz`/`native_flow` additionalNodes stanza is attached automatically
    * by relayMessage() (hasNativeFlowContent checks for buttonsMessage).
@@ -1076,12 +1080,11 @@ export const baileysBridge = {
    * @param {object} sock
    * @param {string} jid
    * @param {object} card
-   * @param {string} card.body           Card body text (wrap in ``` for grey look)
-   * @param {string} [card.footer]       Card footer text
-   * @param {string} [card.title]        Header title (shows as location name)
-   * @param {string} [card.subtitle]     Header subtitle (shows as location address)
-   *                                     — pass time/status here for "time in header" look
-   * @param {*}      [card.thumbnail]    Header image — Buffer, {url}, or fetch-able URL string
+   * @param {string} card.body           Card body text (renders as normal foreground text)
+   * @param {string} [card.footer]       Card footer text (renders in WhatsApp's native grey dim style)
+   * @param {string} [card.title]        Prepended to body as *bold* heading (no separate header slot with image)
+   * @param {string} [card.subtitle]     Prepended to body under title
+   * @param {*}      [card.thumbnail]    Header image — Buffer, {url}, or fetch-able URL string (uploaded to WA servers)
    * @param {Array}  [card.buttons]     Old-style buttons:
    *   { displayText: 'Label', id: '.cmd', type: 1 }                        → quick reply
    *   { displayText: 'Label', id: '.cmd', type: 1, nativeFlowInfo: {...} } → native flow (list, etc.)
@@ -1091,8 +1094,13 @@ export const baileysBridge = {
   async sendButtonsCard(sock, jid, {
     body, footer, title, subtitle, thumbnail, buttons, contextInfo,
   }, options = {}) {
-    // ── Fetch + resize thumbnail to 300x300 (like BIGST4CK's NIXCODE builder) ──
-    let jpegThumbnail = null;
+    // ── Upload thumbnail to WhatsApp media servers as a real image header ──
+    // Previously used headerType: 6 (locationMessage) with coordinates (0,0)
+    // as a hack to embed a jpegThumbnail. That renders as a broken/incomplete
+    // location pin on many WhatsApp clients. Switched to headerType: 4
+    // (imageMessage) — uploads the image properly so it renders as a clean
+    // card image header, no location artifacts.
+    let imageMessage = null;
     if (thumbnail) {
       try {
         let buf;
@@ -1108,34 +1116,39 @@ export const baileysBridge = {
           buf = Buffer.from(thumbnail);
         }
         if (buf) {
-          // Use sharp if available, otherwise pass raw
+          // Resize to 300x300 for consistent card header sizing
           try {
             const sharp = (await import('sharp')).default;
-            jpegThumbnail = await sharp(buf)
+            buf = await sharp(buf)
               .resize(300, 300, { fit: 'cover', position: 'center' })
               .jpeg()
               .toBuffer();
-          } catch {
-            jpegThumbnail = buf;
-          }
+          } catch { /* pass raw if sharp unavailable */ }
+          // Upload to WhatsApp media servers — required for buttonsMessage
+          // image headers (headerType: 4). A raw buffer without upload
+          // produces an invalid proto (hasMediaAttachment but no media URL).
+          imageMessage = await this._uploadImageMessage(sock, jid, { image: buf }, options);
         }
       } catch (err) {
-        console.warn('[baileysBridge.sendButtonsCard] Thumbnail fetch failed:', err.message);
+        console.warn('[baileysBridge.sendButtonsCard] Thumbnail upload failed:', err.message);
       }
+    }
+
+    // title/subtitle were previously stored in locationMessage.name/.address.
+    // With an image header there's no such slot, so prepend them to body.
+    let contentText = body || '';
+    if (title) {
+      contentText = `*${title}*${subtitle ? `\n${subtitle}` : ''}\n\n${contentText}`.trim();
     }
 
     const msgContent = {
       buttonsMessage: {
-        contentText:   body || '',
+        contentText,
         footerText:    footer || '',
-        headerType:     6,  // location header (renders thumbnail as card image)
-        locationMessage: {
-          degreesLatitude:  0,
-          degreesLongitude: 0,
-          name:             title || '',
-          address:          subtitle || '',
-          ...(jpegThumbnail ? { jpegThumbnail } : {}),
-        },
+        ...(imageMessage
+          ? { headerType: 4, imageMessage }
+          : { headerType: 1 }  // no header if image upload failed
+        ),
         // viewOnce intentionally omitted — buttonsMessage IS the persistent menu card.
         // Setting viewOnce:true would make it self-destruct after one tap, which
         // is wrong for a menu. Only use viewOnce on single-use cards (about, result cards).
