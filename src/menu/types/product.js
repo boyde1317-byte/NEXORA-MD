@@ -4,7 +4,12 @@ import { imageManager } from '../../images/imageManager.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
 
 /**
- * Product / Offer Overlay Menu (id: 5) — rewritten for itsliaaa 0.3.18-final fork.
+ * Product / Offer Overlay Menu (id: 17) — rewritten for itsliaaa 0.3.18-final fork.
+ *
+ * NOTE: was previously id 5, which collided with buttonsCard.js (also id 5).
+ * Renumbered to 17 (next free slot) to fix silent menu-lookup conflicts —
+ * `.menu 5` and `.menulist`'s id column were pointing to different menus
+ * depending on module registration order.
  *
  * Uses the fork's `offerText` API to attach a limited_time_offer banner to the
  * top of an interactive card. This is the proper offer overlay mechanism — it
@@ -22,7 +27,7 @@ import { buildFakeImageQuote } from '../../lib/waUtils.js';
  *   3 → guaranteed plain text
  */
 export const productMenu = {
-  id: 5,
+  id: 17,
   name: 'product',
   description: 'Offer overlay card — limited_time_offer banner + image header + action buttons',
   supportedMessages: ['interactiveMessage', 'nativeFlowMessage'],

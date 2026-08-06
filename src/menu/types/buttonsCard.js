@@ -47,16 +47,21 @@ function buildCatalogQuote(thumbnail) {
  */
 export function buildNavigationButton(prefix) {
   const p = prefix || '.';
+  // NOTE: these route through `.help <category>` (real command-category
+  // browser), NOT `.menu <category>` — `.menu` only accepts a menu STYLE
+  // name/id (aiDynamic, buttonsCard, etc.), it has no concept of command
+  // categories. Category names below match the real `category:` values
+  // used across src/plugins/ (verified against the plugin source).
   const categories = [
-    { title: 'All Commands', description: 'Show all commands', id: `${p}menu all` },
-    { title: 'AI',           description: 'AI chat & generation', id: `${p}menu ai` },
-    { title: 'Downloader',   description: 'Media downloaders',  id: `${p}menu downloader` },
-    { title: 'Tools',        description: 'Utility commands',    id: `${p}menu tools` },
-    { title: 'Games',        description: 'Mini games',          id: `${p}menu games` },
-    { title: 'Group',        description: 'Group management',    id: `${p}menu group` },
-    { title: 'Sticker',      description: 'Sticker commands',    id: `${p}menu sticker` },
-    { title: 'Owner',        description: 'Owner commands',     id: `${p}menu owner` },
-    { title: 'About',        description: 'Bot info',            id: `${p}about` },
+    { title: 'All Commands', description: 'Browse every category', id: `${p}help` },
+    { title: 'AI',           description: 'AI chat & generation',  id: `${p}help ai` },
+    { title: 'Download',     description: 'Media downloaders',     id: `${p}help download` },
+    { title: 'Utility',      description: 'Utility commands',      id: `${p}help utility` },
+    { title: 'Games',        description: 'Mini games',            id: `${p}help games` },
+    { title: 'Group',        description: 'Group management',      id: `${p}help group` },
+    { title: 'Media',        description: 'Media & sticker tools', id: `${p}help media` },
+    { title: 'Owner',        description: 'Owner commands',        id: `${p}help owner` },
+    { title: 'About',        description: 'Bot info',              id: `${p}about` },
   ];
   return {
     buttonText: { displayText: '☰ Navigation' },
@@ -215,33 +220,6 @@ export const buttonsCardMenu = {
 };
 
 export default buttonsCardMenu;
-
-/**
- * Build the navigation single_select button in nativeFlowMessage format.
- * For use with sendInteractive / sendRichCard (interactiveMessage proto).
- * Same categories as buildNavigationButton, adapted for nativeFlow buttons.
- */
-export function buildNavigationFlowButton(prefix) {
-  const p = prefix || '.';
-  const categories = [
-    { title: 'All Commands', description: 'Show all commands', id: `${p}menu all` },
-    { title: 'AI',           description: 'AI chat & generation', id: `${p}menu ai` },
-    { title: 'Downloader',   description: 'Media downloaders',  id: `${p}menu downloader` },
-    { title: 'Tools',        description: 'Utility commands',    id: `${p}menu tools` },
-    { title: 'Games',        description: 'Mini games',          id: `${p}menu games` },
-    { title: 'Group',        description: 'Group management',    id: `${p}menu group` },
-    { title: 'Sticker',      description: 'Sticker commands',    id: `${p}menu sticker` },
-    { title: 'Owner',        description: 'Owner commands',     id: `${p}menu owner` },
-    { title: 'About',        description: 'Bot info',            id: `${p}about` },
-  ];
-  return {
-    name: 'single_select',
-    params: {
-      title: 'Select Category',
-      sections: [{ title: `${brand.name} Menu`, rows: categories }],
-    },
-  };
-}
 
 /**
  * Build a pill-style quick_reply button for buttonsMessage.
