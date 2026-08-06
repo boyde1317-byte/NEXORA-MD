@@ -7,7 +7,7 @@ import { buildMenuBanner } from '../lib/waUtils.js';
  * Executes a menu renderer inside a try/catch containment zone.
  * If the renderer crashes or is unsupported by the platform,
  * it falls back to sending a beautifully formatted text menu with a
- * fake quoted image + externalAdReply banner (richCard menu-15 style).
+ * fake product catalog quote + externalAdReply banner (.about command style).
  * 
  * @param {Function} renderFn - The active menu renderer function to execute
  * @param {object} context - Context params: { sock, m, menuData }
