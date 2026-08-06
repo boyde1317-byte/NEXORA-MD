@@ -1,4 +1,12 @@
-import { generateWAMessageFromContent, generateWAMessage, generateMessageID, generateMessageIDV2, proto } from 'baileys';
+import {
+  generateWAMessageFromContent, generateWAMessage, generateMessageID, generateMessageIDV2, proto,
+  buildV2Content, buildV2ContextInfo,
+  generateCodeBlockContentV2, generateInlineVideoWithStatsV2, generateReelContentV2,
+  generateLinkContentV2, generateInlineImageWithTableV2, generateLatexContentV2,
+  generateMapContentV2,
+  generateCodeWithTableV2, generateMapWithTableV2, generateTextWithInlineImageV2,
+  generateMultiInlineImagesV2, generateGridImageWithTableV2, generateDynamicWithTableV2,
+} from 'baileys';
 
 // ── Rich message formatting helpers (for parseRichMessage consumption) ─────
 
@@ -32,12 +40,12 @@ function _formatV1Submessages(submessages, sections) {
         break;
       }
       case RICH_SUBMESSAGE_TYPES.CODE: {
-        const meta = sub.codeBlockMetadata || {};
+        const meta = sub.codeMetadata || {};
         const codeText = meta.codeBlocks
           ? meta.codeBlocks.map(b => b.codeContent || '').join('')
           : (meta.code || '');
-        text += `\`\`\`${meta.language || ''}\n${codeText}\n\`\`\`\n\n`;
-        sections.push({ type: 'code', language: meta.language, code: codeText });
+        text += `\`\`\`${meta.codeLanguage || ''}\n${codeText}\n\`\`\`\n\n`;
+        sections.push({ type: 'code', language: meta.codeLanguage, code: codeText });
         break;
       }
       case RICH_SUBMESSAGE_TYPES.INLINE_IMAGE: {
@@ -83,7 +91,7 @@ function _formatV1Submessages(submessages, sections) {
       }
       case RICH_SUBMESSAGE_TYPES.CONTENT_ITEMS: {
         const meta = sub.contentItemsMetadata || {};
-        const items = meta.contentItems || [];
+        const items = meta.itemsMetadata || [];
         text += `[🎬 ${items.length} Reel(s)]\n`;
         for (const item of items) {
           const reel = item.reelItem || {};
@@ -1286,7 +1294,7 @@ export const baileysBridge = {
    */
   async sendRichTable(sock, jid, content, opts = {}) {
     try {
-      const { buildV2Content, buildV2ContextInfo } = await import('baileys/lib/Utils/rich-message-utils.js');
+      // buildV2Content and buildV2ContextInfo are statically imported at the top of this file
       const sections = [];
       if (content.headerText || content.title) {
         sections.push({
@@ -1330,7 +1338,7 @@ export const baileysBridge = {
    */
   async sendRichCode(sock, jid, content, opts = {}) {
     try {
-      const { generateCodeBlockContentV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+      // generateCodeBlockContentV2 is statically imported at the top of this file
       const generated = generateCodeBlockContentV2(
         content.code,
         opts.quoted,
@@ -1349,7 +1357,7 @@ export const baileysBridge = {
    */
   async sendInlineVideoStats(sock, jid, content, opts = {}) {
     try {
-      const { generateInlineVideoWithStatsV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+
       const generated = generateInlineVideoWithStatsV2(content, opts.quoted, {
         headerText: content.headerText,
         footer: content.footer,
@@ -1368,7 +1376,7 @@ export const baileysBridge = {
    */
   async sendReelCarousel(sock, jid, content, opts = {}) {
     try {
-      const { generateReelContentV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+
       const generated = generateReelContentV2(content.reels, opts.quoted, {
         headerText: content.headerText,
         footer: content.footer,
@@ -1386,7 +1394,7 @@ export const baileysBridge = {
    */
   async sendRichLinks(sock, jid, content, opts = {}) {
     try {
-      const { generateLinkContentV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+
       const generated = generateLinkContentV2(
         content.text || content.headerText || 'Sources',
         content.links,
@@ -1406,7 +1414,7 @@ export const baileysBridge = {
    */
   async sendRichImage(sock, jid, content, opts = {}) {
     try {
-      const { generateInlineImageWithTableV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+
       // Use V2 image generator with an empty table (just the image section)
       const generated = generateInlineImageWithTableV2(
         {
@@ -1436,7 +1444,7 @@ export const baileysBridge = {
    */
   async sendRichLatex(sock, jid, content, opts = {}) {
     try {
-      const { generateLatexContentV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+
       const generated = generateLatexContentV2(
         opts.quoted,
         {
@@ -1457,7 +1465,7 @@ export const baileysBridge = {
    */
   async sendRichMap(sock, jid, content, opts = {}) {
     try {
-      const { generateMapContentV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+
       const generated = generateMapContentV2(
         { centerLatitude: content.latitude, centerLongitude: content.longitude, ...content },
         opts.quoted,
@@ -1478,7 +1486,7 @@ export const baileysBridge = {
    */
   async sendCodeWithTable(sock, jid, content, opts = {}) {
     try {
-      const { generateCodeWithTableV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+
       const generated = generateCodeWithTableV2(
         { code: content.code, language: content.language, tableTitle: content.tableTitle, tableHeaders: content.headers, tableRows: content.rows },
         opts.quoted,
@@ -1497,7 +1505,7 @@ export const baileysBridge = {
    */
   async sendMapWithTable(sock, jid, content, opts = {}) {
     try {
-      const { generateMapWithTableV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+
       const generated = generateMapWithTableV2(
         { map: { centerLatitude: content.latitude, centerLongitude: content.longitude, annotations: content.annotations || [] }, tableTitle: content.tableTitle, tableHeaders: content.headers, tableRows: content.rows },
         opts.quoted,
@@ -1516,7 +1524,7 @@ export const baileysBridge = {
    */
   async sendTextWithImage(sock, jid, content, opts = {}) {
     try {
-      const { generateTextWithInlineImageV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+
       const generated = generateTextWithInlineImageV2(
         content.text,
         { imageUrl: content.imageUrl, imageText: content.caption || '', tapLinkUrl: content.tapLinkUrl || '' },
@@ -1535,7 +1543,7 @@ export const baileysBridge = {
    */
   async sendMultiImages(sock, jid, content, opts = {}) {
     try {
-      const { generateMultiInlineImagesV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+
       const generated = generateMultiInlineImagesV2(
         content.images,
         opts.quoted,
@@ -1554,7 +1562,7 @@ export const baileysBridge = {
    */
   async sendGridImageWithTable(sock, jid, content, opts = {}) {
     try {
-      const { generateGridImageWithTableV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+
       const generated = generateGridImageWithTableV2(
         { gridImage: { gridImageUrl: content.gridImageUrl, imageUrls: content.imageUrls || [] }, tableTitle: content.tableTitle, tableHeaders: content.headers, tableRows: content.rows },
         opts.quoted,
@@ -1572,7 +1580,7 @@ export const baileysBridge = {
    */
   async sendDynamicWithTable(sock, jid, content, opts = {}) {
     try {
-      const { generateDynamicWithTableV2 } = await import('baileys/lib/Utils/rich-message-utils.js');
+
       const generated = generateDynamicWithTableV2(
         { dynamic: { type: content.dynamicType || 'GIF', url: content.dynamicUrl, version: content.dynamicVersion || 1, loopCount: content.loopCount || 0 }, tableTitle: content.tableTitle, tableHeaders: content.headers, tableRows: content.rows },
         opts.quoted,

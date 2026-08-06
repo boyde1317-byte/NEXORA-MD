@@ -76,9 +76,11 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function _relayGenerated(sock, jid, generated, options = {}) {
+  // Generators embed quoted context via buildRichContextInfo / buildV2ContextInfo.
+  // Do NOT pass quoted here — it would double-set contextInfo at the wrong level
+  // and cause WhatsApp to drop native rendering on the message.
   const message = await generateWAMessageFromContent(jid, generated.message, {
     userJid: sock.user?.id || '0@s.whatsapp.net',
-    quoted: options.quoted,
   });
   await sock.relayMessage(jid, message.message, { messageId: message.key.id });
   return message;
