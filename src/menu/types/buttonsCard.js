@@ -215,3 +215,30 @@ export const buttonsCardMenu = {
 };
 
 export default buttonsCardMenu;
+
+/**
+ * Build the navigation single_select button in nativeFlowMessage format.
+ * For use with sendInteractive / sendRichCard (interactiveMessage proto).
+ * Same categories as buildNavigationButton, adapted for nativeFlow buttons.
+ */
+export function buildNavigationFlowButton(prefix) {
+  const p = prefix || '.';
+  const categories = [
+    { title: 'All Commands', description: 'Show all commands', id: `${p}menu all` },
+    { title: 'AI',           description: 'AI chat & generation', id: `${p}menu ai` },
+    { title: 'Downloader',   description: 'Media downloaders',  id: `${p}menu downloader` },
+    { title: 'Tools',        description: 'Utility commands',    id: `${p}menu tools` },
+    { title: 'Games',        description: 'Mini games',          id: `${p}menu games` },
+    { title: 'Group',        description: 'Group management',    id: `${p}menu group` },
+    { title: 'Sticker',      description: 'Sticker commands',    id: `${p}menu sticker` },
+    { title: 'Owner',        description: 'Owner commands',     id: `${p}menu owner` },
+    { title: 'About',        description: 'Bot info',            id: `${p}about` },
+  ];
+  return {
+    name: 'single_select',
+    params: {
+      title: 'Select Category',
+      sections: [{ title: `${brand.name} Menu`, rows: categories }],
+    },
+  };
+}

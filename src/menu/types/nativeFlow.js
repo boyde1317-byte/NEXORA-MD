@@ -4,6 +4,7 @@ import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
+import { buildNavigationFlowButton } from './buttonsCard.js';
 
 /**
  * Native Flow Menu (id: 4) \u2014 enhanced for rich-messages.
@@ -68,6 +69,7 @@ export const nativeFlowMenu = {
             { name: 'cta_copy',   params: { display_text: `\u{1F4CE} ${toSmallcaps('Copy Prefix')}`,        copy: menuData.prefix } },
             { name: 'quick_reply', params: { display_text: `\u{1F916} ${toSmallcaps('System Stats')}`,       id: `${menuData.prefix}menu aiDynamic` } },
             { name: 'quick_reply', params: { display_text: `\u{1F3A8} ${toSmallcaps('Change Menu Style')}`,   id: `${menuData.prefix}menulist` } },
+            buildNavigationFlowButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });

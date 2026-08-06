@@ -6,6 +6,7 @@ import { baileysBridge } from '../../core/baileysBridge.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
+import { buildNavigationFlowButton } from './buttonsCard.js';
 
 /**
  * AI-Dynamic Menu (id: 12) \u2014 enhanced for rich-messages.
@@ -156,6 +157,7 @@ export const aiDynamicMenu = {
             { name: 'quick_reply', params: { display_text: `\u{1F4CB} ${toSmallcaps('Browse Menu Styles')}`, id: `${menuData.prefix}menulist` } },
             { name: 'quick_reply', params: { display_text: `\u{1F3D1} ${toSmallcaps('Ping Bot')}`,           id: `${menuData.prefix}ping` } },
             { name: 'cta_url',    params: { display_text: `\u{1F4AC} ${toSmallcaps('Contact Developer')}`,   url: 'https://wa.me/233533416608' } },
+            buildNavigationFlowButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });

@@ -4,6 +4,7 @@ import { imageManager } from '../../images/imageManager.js';
 import { buildFakeOrderQuote, buildFakeImageQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { buildNavigationFlowButton } from './buttonsCard.js';
 
 /**
  * Order Message Menu (id: 14) \u2014 enhanced for rich-messages.
@@ -92,6 +93,7 @@ export const orderMessageMenu = {
             { name: 'cta_copy',    params: { display_text: '\u{1F4CE} Copy Prefix',        copy: menuData.prefix } },
             { name: 'quick_reply', params: { display_text: '\u{1F3A8} Browse Menu Styles', id: `${menuData.prefix}menulist` } },
             { name: 'quick_reply', params: { display_text: '\u{1F916} System Stats',       id: `${menuData.prefix}menu aiDynamic` } },
+            buildNavigationFlowButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },
         }, { quoted: orderQuote });

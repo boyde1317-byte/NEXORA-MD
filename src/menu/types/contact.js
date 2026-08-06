@@ -4,6 +4,7 @@ import { imageManager } from '../../images/imageManager.js';
 import { buildFakeContactQuote } from '../../lib/waUtils.js';
 import { config } from '../../../config/index.js';
 import brand from '../../../config/brand.js';
+import { buildNavigationFlowButton } from './buttonsCard.js';
 
 /**
  * Contact Menu (id: 9) — rewritten for itsliaaa 0.3.18-final fork.
@@ -69,7 +70,8 @@ export const contactMenu = {
           { text: '📋 Command List',          id:   `${menuData.prefix}menulist` },
           { text: '📎 Copy Prefix',           copy: menuData.prefix },
           { text: '🤖 System Stats',           id:   `${menuData.prefix}menu aiDynamic` },
-        ],
+            buildNavigationFlowButton(menuData.prefix),
+          ],
       }, { quoted: contactQuote });
     } catch (err) {
       console.warn('[MENU contact] Tier 1 (nativeFlow + image + contact quote) failed, trying adReply:', err.message);

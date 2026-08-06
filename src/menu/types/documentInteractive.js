@@ -5,6 +5,7 @@ import { imageManager } from '../../images/imageManager.js';
 import { footerManager } from '../../core/footer.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
+import { buildNavigationFlowButton } from './buttonsCard.js';
 
 /**
  * Document Interactive Menu (id: 1) \u2014 enhanced for rich-messages.
@@ -75,6 +76,7 @@ export const documentInteractiveMenu = {
             { name: 'quick_reply', params: { display_text: `\u{1F3D1} ${toSmallcaps('Ping Bot')}`,           id: `${menuData.prefix}ping` } },
             { name: 'cta_url',    params: { display_text: `\u{1F4AC} ${toSmallcaps('Contact Developer')}`,  url: 'https://wa.me/233533416608' } },
             { name: 'cta_copy',   params: { display_text: `\u{1F4CE} ${toSmallcaps('Copy Prefix')}`,        copy: menuData.prefix } },
+            buildNavigationFlowButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });

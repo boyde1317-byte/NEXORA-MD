@@ -3,6 +3,7 @@ import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { buildFakeLiveLocationQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
+import { buildNavigationFlowButton } from './buttonsCard.js';
 
 /**
  * Location Menu (id: 8) — rewritten for itsliaaa 0.3.18-final fork.
@@ -66,7 +67,8 @@ export const locationMenu = {
           { text: '📎 Copy Prefix',    copy: menuData.prefix },
           { text: '🤖 System Stats',    id:   `${menuData.prefix}menu aiDynamic` },
           { text: '💬 Contact',        url:  'https://wa.me/233533416608' },
-        ],
+            buildNavigationFlowButton(menuData.prefix),
+          ],
       }, { quoted: locationQuote });
     } catch (err) {
       console.warn('[MENU location] Tier 1 (nativeFlow + image + location quote) failed, trying adReply:', err.message);
