@@ -1,32 +1,28 @@
-import { capabilities } from '../../core/capabilities.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { footerManager } from '../../core/footer.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { buildPillButton, buildPillUrlButton, buildNavigationButton } from './buttonsCard.js';
 
 /**
- * Bottom Sheet Menu (id: 13) \u2014 enhanced for rich-messages.
+ * Bottom Sheet Menu (id: 13) — enhanced for rich-messages.
  *
- * Enhanced with:
- *   - Richer body text using stat rows and visual dividers
- *   - More command buttons in the sheet (up to 10)
- *   - Better visual organization with emoji-prefixed commands
- *   - Image header with subtitle via sendInteractive fallback
- *   - Embedded externalAdReply for double visual on fallback tiers
+ * Uses sendButtonsCard (buttonsMessage proto) as Tier 1 for universal
+ * WhatsApp client compatibility. The single_select category picker works
+ * inside buttonsMessage via nativeFlowInfo.
  *
  * Tiers:
- *   1 \u2192 nativeFlow with optionText + image header (triggers native WA bottom sheet)
- *   2 \u2192 sendInteractive with image header + subtitle + embedded adReply
- *   3 \u2192 nativeFlow without optionText + image header (flat quick-reply buttons)
- *   4 \u2192 guaranteed plain text
+ *   1 → sendButtonsCard with image header + subtitle + embedded adReply
+ *   2 → imageMessage with caption + externalAdReply
+ *   3 → guaranteed plain text
  */
 export const bottomSheetMenu = {
   id: 13,
   name: 'bottomSheet',
-  description: 'Bottom sheet modal \u2014 optionText on nativeFlow collapses rows into a native WA sheet with rich visuals',
-  supportedMessages: ['interactiveMessage', 'nativeFlowMessage'],
+  description: 'Pill-button card with image header + navigation picker + embedded ad-reply',
+  supportedMessages: ['interactiveMessage', 'buttonsMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData    = await imageManager.getMenuImage(13);
@@ -52,7 +48,7 @@ export const bottomSheetMenu = {
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
-    // Build embedded externalAdReply for fallback tiers
+    // Build embedded externalAdReply
     const adReply = {
       title:                 `\u2726 ${menuData.botName} \u2726`,
       body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Bottom Sheet')}`,
@@ -68,74 +64,55 @@ export const bottomSheetMenu = {
       adReply.originalImageUrl = imgData.source;
     }
 
-    // Command rows exposed in the sheet \u2014 richer set with emoji prefixes
-    const commandButtons = [
-      { text: '\u{1F3D1} Ping Speed',          id: `${menuData.prefix}ping` },
-      { text: '\u{2139}\uFE0F About Bot',           id: `${menuData.prefix}about` },
-      { text: '\u{1F4CB} Command List',          id: `${menuData.prefix}menulist` },
-      { text: '\u{1F916} System Stats',          id: `${menuData.prefix}menu aiDynamic` },
-      { text: '\u{1F3A8} Set Menu Style',         id: `${menuData.prefix}setmenu` },
-      { text: '\u{1F3ED} Set Footer',            id: `${menuData.prefix}setfooter` },
-      { text: '\u{1F4AC} Contact Dev',           url: 'https://wa.me/233533416608' },
-    ];
-
-    // ── Tier 1: nativeFlow + optionText + image header ────────────────────
-    if (capabilities.nativeFlow) {
+    // ── Tier 1: sendButtonsCard with image header + subtitle + embedded adReply ──
+    if (imagePayload) {
       try {
-        return await baileysBridge.sendNativeFlow(sock, m.from, {
-          text:        bodyText,
-          footer:      footerText,
-          image:       imagePayload,
-          buttons:     commandButtons,
-          optionText:  '\u{1F4CB} ' + toSmallcaps('Browse All Commands'),
-          optionTitle: menuData.botName + ' Menu',
-        }, { quoted: menuData.audioQuote || m });
-      } catch (err) {
-        console.warn('[MENU bottomSheet] Tier 1 (nativeFlow + optionText + image) failed, trying interactive:', err.message);
-      }
-    }
-
-    // ── Tier 2: sendInteractive with image header + subtitle + embedded adReply ──
-    if (capabilities.interactive && imagePayload) {
-      try {
-        return await baileysBridge.sendInteractive(sock, m.from, {
-          body:    bodyText,
-          footer:  footerText,
-          header:  {
-            title:    `\u2726 ${toSmallcaps(menuData.botName + ' Menu')} \u2726`,
-            subtitle: `${toSmallcaps('Quick Access')} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`,
-            image:    imagePayload,
-          },
+        return await baileysBridge.sendButtonsCard(sock, m.from, {
+          body:       bodyText,
+          footer:     footerText,
+          title:      `\u2726 ${toSmallcaps(menuData.botName + ' Menu')} \u2726`,
+          subtitle:   `${toSmallcaps('Quick Access')} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`,
+          thumbnail:  imagePayload,
           buttons: [
-            { name: 'quick_reply', params: { display_text: '\u{1F3D1} Ping Speed',       id: `${menuData.prefix}ping` } },
-            { name: 'quick_reply', params: { display_text: '\u{1F4CB} Command List',     id: `${menuData.prefix}menulist` } },
-            { name: 'quick_reply', params: { display_text: '\u{1F916} System Stats',     id: `${menuData.prefix}menu aiDynamic` } },
-            { name: 'cta_url',     params: { display_text: '\u{1F4AC} Contact Dev',      url: 'https://wa.me/233533416608' } },
+            buildPillButton('\u{1F3D1} Ping Speed',        `${menuData.prefix}ping`),
+            buildPillButton('\u2139\uFE0F About Bot',       `${menuData.prefix}about`),
+            buildPillButton('\u{1F4CB} Command List',      `${menuData.prefix}menulist`),
+            buildPillButton('\u{1F916} System Stats',      `${menuData.prefix}menu aiDynamic`),
+            buildPillUrlButton('\u{1F4AC} Contact Dev',    'https://wa.me/233533416608'),
+            buildNavigationButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
-        console.warn('[MENU bottomSheet] Tier 2 (sendInteractive + adReply) failed, trying flat nativeFlow:', err.message);
+        console.warn('[MENU bottomSheet] Tier 1 (sendButtonsCard + adReply) failed, trying image:', err.message);
       }
     }
 
-    // ── Tier 3: nativeFlow without optionText + image header ──────────────
-    if (capabilities.nativeFlow) {
-      try {
-        return await baileysBridge.sendNativeFlow(sock, m.from, {
-          text:    bodyText,
-          footer:  footerText,
-          image:   imagePayload,
-          buttons: commandButtons.slice(0, 5),
+    // ── Tier 2: imageMessage with caption + externalAdReply ────────────────
+    try {
+      if (imgData.buffer) {
+        return await sock.sendMessage(m.from, {
+          image:       imgData.buffer,
+          mimetype:    imgData.mimetype,
+          caption:      bodyText,
+          contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });
-      } catch (err) {
-        console.warn('[MENU bottomSheet] Tier 3 (flat nativeFlow + image) failed, escalating to text:', err.message);
-        throw err; // propagate → runWithFallback → plain text
+      } else if (imgData.source?.startsWith('http')) {
+        return await sock.sendMessage(m.from, {
+          image:       { url: imgData.source },
+          caption:      bodyText,
+          contextInfo: { externalAdReply: adReply },
+        }, { quoted: menuData.audioQuote || m });
       }
+    } catch (err) {
+      console.warn('[MENU bottomSheet] Tier 2 (image + adReply) failed, continuing to text:', err.message);
     }
 
-    // ── Tier 4: nativeFlow unsupported — let runWithFallback render plain text
-    throw new Error('bottomSheet: nativeFlow unsupported on this client');
+    // ── Tier 3: guaranteed plain text + banner ────────────────────────────
+    return await sock.sendMessage(m.from, {
+      text:        bodyText,
+      contextInfo: { externalAdReply: adReply },
+    }, { quoted: menuData.audioQuote || m });
   },
 };
 

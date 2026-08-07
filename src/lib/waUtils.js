@@ -532,12 +532,45 @@ export function buildFakePaymentQuote({ currencyCode = 'USD', amount1000 = 1000,
 }
 
 /**
+ * Build a fake newsletterAdminInviteMessage quoted context.
+ * Renders as a WhatsApp Channel invite card in the reply bar.
+ * Pass the result as { quoted: buildFakeNewsletterQuote(...) }.
+ *
+ * @param {object} [opts]
+ * @param {string} [opts.newsletterJid]  Channel JID (e.g. 123456789@newsletter)
+ * @param {string} [opts.newsletterName] Channel display name
+ * @param {string} [opts.caption]        Caption text on the invite
+ *
+ * @example
+ * const quote = buildFakeNewsletterQuote({ newsletterJid: '123@newsletter', newsletterName: 'My Channel' })
+ * await sock.sendMessage(m.from, { text: 'Hello' }, { quoted: quote })
+ */
+export function buildFakeNewsletterQuote({ newsletterJid, newsletterName, caption } = {}) {
+  return {
+    key: {
+      fromMe:      false,
+      participant: WA_JID,
+      remoteJid:   STATUS_JID,
+      id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
+    },
+    message: {
+      newsletterAdminInviteMessage: {
+        newsletterJid:    newsletterJid || '120363293577041544@newsletter',
+        newsletterName:   newsletterName || 'NEXORA-MD Updates',
+        caption:          caption || 'Made with ♥️ By Aizen',
+        inviteExpiration: Math.floor(Date.now() / 1000) + 86400 * 7,
+      },
+    },
+  }
+}
+
+/**
  * Pick a random fake quote from the full pool of available builders.
  * Useful for adding variety to greetings, welcome messages, or any send
  * where the specific quote type doesn't matter.
  *
  * @param {object} [perTypeOpts]  Optional per-type option overrides keyed by builder name:
- *   { order, contact, audio, liveLocation, location, text, document, image, gif, product, groupInvite, payment }
+ *   { order, contact, audio, liveLocation, location, text, document, image, gif, product, groupInvite, payment, newsletter }
  *
  * @example
  * await sock.sendMessage(m.from, { text: 'Hello!' }, { quoted: buildRandomFakeQuote() })
@@ -556,6 +589,7 @@ export function buildRandomFakeQuote(perTypeOpts = {}) {
     () => buildFakeProductQuote(perTypeOpts.product || {}),
     () => buildFakeGroupInviteQuote(perTypeOpts.groupInvite || {}),
     () => buildFakePaymentQuote(perTypeOpts.payment || {}),
+    () => buildFakeNewsletterQuote(perTypeOpts.newsletter || {}),
   ]
   return pool[Math.floor(Math.random() * pool.length)]()
 }

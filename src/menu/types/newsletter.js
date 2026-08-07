@@ -1,132 +1,152 @@
-import { capabilities } from '../../core/capabilities.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { newsletterManager } from '../../newsletter/newsletterManager.js';
 import brand from '../../../config/brand.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
-import { buildFakeImageQuote } from '../../lib/waUtils.js';
+import { buildFakeImageQuote, buildFakeNewsletterQuote } from '../../lib/waUtils.js';
+import { baileysBridge } from '../../core/baileysBridge.js';
+import { buildPillButton, buildPillUrlButton, buildNavigationButton } from './buttonsCard.js';
 
 /**
  * Newsletter Menu (id: 7)
  *
- * Sends the menu as a WhatsApp Channel (newsletter) admin invite card.
- *
- * CAPABILITY GATE:
- *   `capabilities.newsletter.adminInviteMessage` is always false because
- *   NewsletterAdminInviteMessage is a nested proto type that protobufjs cannot
- *   detect via direct property introspection. Do NOT gate on it here.
- *
- *   Instead, gate on `capabilities.newsletter.enabled` (true — static verdict)
- *   AND require a valid `menuData.channelJid`. The runtime socket check in
- *   baileysScanner.js verifies that newsletter methods are actually available.
- *   Any actual failure (no channel, wrong account type) is caught by Tier 2.
- *
- * Image strategy:
- *   The NewsletterAdminInviteMessage proto does not expose an image field via
- *   the fork's sendNewsletterInvite API. So we send the menu image as a
- *   dedicated imageMessage immediately before the invite card — this gives the
- *   invite a visual header without modifying the newsletter proto.
- *   For the plain-text fallback (Tier 2) we embed the image directly as an
- *   imageMessage with the caption so it appears as a single rich card.
+ * Uses sendButtonsCard (buttonsMessage proto) as Tier 1 for universal
+ * WhatsApp client compatibility. A fake newsletterAdminInviteMessage quote
+ * is used for the reply bar (channel invite card). The native newsletter
+ * admin invite is retained as Tier 2 when a channelJid is configured.
  *
  * Tiers:
- *   1 → image banner + newsletter admin invite card (requires channelJid)
- *   2 → imageMessage with caption (plain-text style + image in one bubble)
- *   3 → guaranteed plain text (image unavailable or send failed)
+ *   1 → sendButtonsCard with image header + newsletter quote + adReply
+ *   2 → Native newsletter admin invite card (requires channelJid)
+ *   3 → imageMessage with caption
+ *   4 → Guaranteed plain text
  */
 export const newsletterMenu = {
   id: 7,
   name: 'newsletter',
-  description: 'WhatsApp Channel/Newsletter official announcement style feed',
-  supportedMessages: ['newsletterAdminInviteMessage', 'newsletterFollowerInviteMessage'],
+  description: 'Channel-style pill-button card with newsletter quote + optional native invite fallback',
+  supportedMessages: ['interactiveMessage', 'buttonsMessage', 'newsletterAdminInviteMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData = await imageManager.getMenuImage(7);
 
     const textContent = buildTextMenu(menuData);
-    const caption =
-      `✦ *${toSmallcaps(menuData.botName + ' Menu')}* ✦\n\n` +
-      `_Verified Partner • Official Channel_\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `📋 *${toSmallcaps('System Brief')}*\n` +
-      `• *${toSmallcaps('Status')}:* Optimal\n` +
-      `• *${toSmallcaps('Framework')}:* Baileys\n` +
-      `• *${toSmallcaps('Total Commands')}:* ${menuData.totalCommands}\n` +
-      `• *${toSmallcaps('System Uptime')}:* ${menuData.uptime}\n\n` +
+    const bodyText =
+      `\u2726 *${toSmallcaps(menuData.botName + ' Menu')}* \u2726\n\n` +
+      `_Verified Partner \u2502 Official Channel_\n` +
+      `\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n` +
+      `\u{1F4CB} *${toSmallcaps('System Brief')}*\n` +
+      `\u2022 *${toSmallcaps('Status')}:* Optimal\n` +
+      `\u2022 *${toSmallcaps('Framework')}:* Baileys\n` +
+      `\u2022 *${toSmallcaps('Total Commands')}:* ${menuData.totalCommands}\n` +
+      `\u2022 *${toSmallcaps('System Uptime')}:* ${menuData.uptime}\n\n` +
       textContent;
 
-    // ── Tier 1: image banner + newsletter admin invite card ───────────────
-    const hasChannel = !!menuData.channelJid;
+    const footerText = `${menuData.botName} \u2502 ${toSmallcaps('Newsletter')}`;
 
-    if (capabilities.newsletter?.enabled && hasChannel) {
+    // Resolve image payload
+    const imagePayload = imgData.source?.startsWith('http')
+      ? { url: imgData.source }
+      : (imgData.buffer || undefined);
+
+    // Build fake newsletter quote for reply bar
+    const newsletterQuote = buildFakeNewsletterQuote({
+      newsletterJid:   menuData.channelJid || '120363293577041544@newsletter',
+      newsletterName:  `${brand.name} Updates`,
+      caption:         `Made with \u2665\uFE0F By Aizen`,
+    });
+
+    // Build embedded externalAdReply
+    const adReply = {
+      title:                 `\u{1F4E1} ${toSmallcaps(menuData.botName + ' Channel')} \u{1F4E1}`,
+      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Official')}`,
+      sourceUrl:             'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326',
+      mediaType:             1,
+      renderLargerThumbnail: true,
+      showAdAttribution:     false,
+    };
+    if (imgData.buffer) {
+      adReply.thumbnail = imgData.buffer;
+    } else if (imgData.source?.startsWith('http')) {
+      adReply.thumbnailUrl = imgData.source;
+      adReply.originalImageUrl = imgData.source;
+    }
+
+    // ── Tier 1: sendButtonsCard with image header + newsletter quote ──────
+    if (imagePayload) {
+      try {
+        return await baileysBridge.sendButtonsCard(sock, m.from, {
+          body:       bodyText,
+          footer:     footerText,
+          title:      `\u{1F4E1} ${toSmallcaps('Official Channel')} \u{1F4E1}`,
+          subtitle:   `${toSmallcaps('Commands')}: ${menuData.totalCommands} \u2502 ${toSmallcaps('Uptime')}: ${menuData.uptime}`,
+          thumbnail:  imagePayload,
+          buttons: [
+            buildPillButton('\u{1F3D1} Ping Speed',        `${menuData.prefix}ping`),
+            buildPillButton('\u{1F4CB} Command List',       `${menuData.prefix}menulist`),
+            buildPillButton('\u{1F916} System Stats',       `${menuData.prefix}menu aiDynamic`),
+            buildPillUrlButton('\u{1F4E1} Official Channel', 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326'),
+            buildNavigationButton(menuData.prefix),
+          ],
+          contextInfo: { externalAdReply: adReply },
+        }, { quoted: newsletterQuote });
+      } catch (err) {
+        console.warn('[MENU newsletter] Tier 1 (sendButtonsCard + newsletter quote) failed, trying native invite:', err.message);
+      }
+    }
+
+    // ── Tier 2: Native newsletter admin invite (requires channelJid) ──────
+    const hasChannel = !!menuData.channelJid;
+    if (hasChannel) {
       try {
         // Send image banner first — newsletter invite has no image field.
         if (imgData.buffer) {
           await sock.sendMessage(m.from, {
             image:    imgData.buffer,
             mimetype: imgData.mimetype,
-            caption:  `📡 *${toSmallcaps(menuData.botName)}* — ${toSmallcaps('Broadcasting now')}`,
-          }, { quoted: menuData.audioQuote || m });
+            caption:  `\u{1F4E1} *${toSmallcaps(menuData.botName)}* \u2014 ${toSmallcaps('Broadcasting now')}`,
+          }, { quoted: newsletterQuote });
         } else if (imgData.source?.startsWith('http')) {
           await sock.sendMessage(m.from, {
             image:   { url: imgData.source },
-            caption: `📡 *${toSmallcaps(menuData.botName)}* — ${toSmallcaps('Broadcasting now')}`,
-          }, { quoted: menuData.audioQuote || m });
+            caption: `\u{1F4E1} *${toSmallcaps(menuData.botName)}* \u2014 ${toSmallcaps('Broadcasting now')}`,
+          }, { quoted: newsletterQuote });
         }
 
         return await newsletterManager.sendNewsletterInvite(sock, m.from, {
           name:              `${brand.name} Updates`,
-          caption,
+          caption:            bodyText,
           newsletterJid:     menuData.channelJid,
           forwardingEnabled: true,
-        }, { quoted: menuData.audioQuote || m });
+        }, { quoted: newsletterQuote });
       } catch (err) {
-        console.warn('[MENU newsletter] Tier 1 (image + newsletter invite) failed:', err.message);
-        // Fall through to Tier 2
+        console.warn('[MENU newsletter] Tier 2 (native newsletter invite) failed:', err.message);
       }
-    } else if (!hasChannel) {
-      console.warn('[MENU newsletter] No channelJid in menuData — skipping Tier 1. ' +
-        'Set CHANNEL_JID in .env or config to enable newsletter invite cards.');
     }
 
-    // ── Tier 2: imageMessage with caption ─────────────────────────────────
-    // Sends image + full menu text as one rich bubble. Preferred over bare text.
+    // ── Tier 3: imageMessage with caption ─────────────────────────────────
     try {
       if (imgData.buffer) {
         return await sock.sendMessage(m.from, {
           image:    imgData.buffer,
           mimetype: imgData.mimetype,
-          caption,
-        }, { quoted: menuData.audioQuote || m });
+          caption:   bodyText,
+        }, { quoted: newsletterQuote });
       } else if (imgData.source?.startsWith('http')) {
         return await sock.sendMessage(m.from, {
           image:   { url: imgData.source },
-          caption,
-        }, { quoted: menuData.audioQuote || m });
+          caption:  bodyText,
+        }, { quoted: newsletterQuote });
       }
     } catch (err) {
-      console.warn('[MENU newsletter] Tier 2 (imageMessage) failed, continuing to text:', err.message);
+      console.warn('[MENU newsletter] Tier 3 (imageMessage) failed, continuing to text:', err.message);
     }
 
-    // ── Tier 3: Guaranteed plain text + fake quote + banner ────────────────
+    // ── Tier 4: Guaranteed plain text + banner ────────────────────────────
     const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData?.buffer || undefined });
-    const fallbackAdReply = {
-      title:                 `✦ ${toSmallcaps(menuData.botName)} ✦`,
-      body:                  `${menuData.totalCommands} commands • Newsletter`,
-      sourceUrl:             'https://wa.me/233533416608',
-      mediaType:             1,
-      renderLargerThumbnail: true,
-      showAdAttribution:     false,
-    };
-    if (imgData?.buffer) {
-      fallbackAdReply.thumbnail = imgData.buffer;
-    } else if (imgData?.source?.startsWith('http')) {
-      fallbackAdReply.thumbnailUrl = imgData.source;
-      fallbackAdReply.originalImageUrl = imgData.source;
-    }
     return await sock.sendMessage(m.from, {
-      text:        caption,
-      contextInfo: { externalAdReply: fallbackAdReply },
+      text:        bodyText,
+      contextInfo: { externalAdReply: adReply },
     }, { quoted: fakeImgQuote });
   },
 };

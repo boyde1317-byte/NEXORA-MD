@@ -7,23 +7,22 @@ import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
 
 /**
- * Order Message Menu (id: 14) \u2014 enhanced for rich-messages.
+ * Order Message Menu (id: 14) — enhanced for rich-messages.
  *
- * Upgraded to use sendInteractive with image header + subtitle + embedded
- * externalAdReply, quoted inside a fake orderMessage for the business-order
- * card in the reply bar. Triple visual: interactive card + ad banner + order quote.
+ * Uses sendButtonsCard (buttonsMessage proto) as Tier 1 for universal
+ * WhatsApp client compatibility. A fake orderMessage quote is used for
+ * the reply bar (business order card with thumbnail + item count).
  *
  * Tiers:
- *   1 \u2192 sendInteractive with image header + subtitle + embedded adReply, quoted by order card
- *   2 \u2192 nativeFlow card with image header, quoted by order card
- *   3 \u2192 imageMessage with caption, quoted by order card
- *   4 \u2192 guaranteed plain text
+ *   1 → sendButtonsCard with image header + subtitle + embedded adReply, quoted by order card
+ *   2 → imageMessage with caption, quoted by order card
+ *   3 → guaranteed plain text
  */
 export const orderMessageMenu = {
   id: 14,
   name: 'orderMessage',
   description: 'Interactive card + image header + embedded ad-reply, quoted inside a business order card',
-  supportedMessages: ['interactiveMessage', 'nativeFlowMessage', 'orderMessage'],
+  supportedMessages: ['interactiveMessage', 'buttonsMessage', 'orderMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData = await imageManager.getMenuImage(14);
@@ -47,14 +46,16 @@ export const orderMessageMenu = {
       : (imgData.buffer || undefined);
 
     // ── Build order-quote thumbnail ────────────────────────────────────────
+    // Use the small mock thumbnail for the quoted message (not the full-size
+    // buffer) to avoid inflating the quoted message proto. The full image is
+    // uploaded separately by sendButtonsCard for the card header.
     let orderQuote;
     try {
       orderQuote = buildFakeOrderQuote({
         orderId:    'NEXORA-CMD-PACK',
         itemCount:  menuData.totalCommands,
-        thumbnail:  imgData.buffer || undefined,
-        sellerName: menuData.botName,
-        token:      menuData.prefix,
+        thumbnail:  imgData.thumbnail || undefined,
+        title:      menuData.botName,
       });
     } catch (_) {
       orderQuote = menuData.audioQuote || m;
@@ -76,7 +77,7 @@ export const orderMessageMenu = {
       adReply.originalImageUrl = imgData.source;
     }
 
-    // ── Tier 1: sendInteractive with image header + subtitle + embedded adReply ──
+    // ── Tier 1: sendButtonsCard with image header + subtitle + embedded adReply ──
     if (imagePayload) {
       try {
         return await baileysBridge.sendButtonsCard(sock, m.from, {
@@ -96,49 +97,31 @@ export const orderMessageMenu = {
           contextInfo: { externalAdReply: adReply },
         }, { quoted: orderQuote });
       } catch (err) {
-        console.warn('[MENU orderMessage] Tier 1 (sendInteractive + adReply + order) failed, trying nativeFlow:', err.message);
+        console.warn('[MENU orderMessage] Tier 1 (sendButtonsCard + adReply + order) failed, trying image:', err.message);
       }
     }
 
-    // ── Tier 2: nativeFlow card with image header ──────────────────────────
-    try {
-      return await baileysBridge.sendNativeFlow(sock, m.from, {
-        text:    bodyText,
-        footer:  footerText,
-        image:   imagePayload,
-        buttons: [
-          { text: '\u{1F4AC} Contact Developer',  url:  'https://wa.me/233533416608' },
-          { text: '\u{1F4E1} Official Channel',   url:  'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326' },
-          { text: '\u{1F4CE} Copy Prefix',        copy: menuData.prefix },
-          { text: '\u{1F3A8} Browse Menu Styles',   id:   `${menuData.prefix}menulist` },
-          { text: '\u{1F916} System Stats',        id:   `${menuData.prefix}menu aiDynamic` },
-        ],
-      }, { quoted: orderQuote });
-    } catch (err) {
-      console.warn('[MENU orderMessage] Tier 2 (nativeFlow + image) failed, trying plain image:', err.message);
-    }
-
-    // ── Tier 3: imageMessage with caption ─────────────────────────────────
+    // ── Tier 2: imageMessage with caption ─────────────────────────────────
     try {
       if (imgData.buffer) {
         return await sock.sendMessage(m.from, {
-          image:    imgData.buffer,
-          mimetype: imgData.mimetype,
-          caption:  bodyText,
+          image:       imgData.buffer,
+          mimetype:    imgData.mimetype,
+          caption:      bodyText,
           contextInfo: { externalAdReply: adReply },
         }, { quoted: orderQuote });
       } else if (imgData.source?.startsWith('http')) {
         return await sock.sendMessage(m.from, {
-          image:   { url: imgData.source },
-          caption: bodyText,
+          image:       { url: imgData.source },
+          caption:      bodyText,
           contextInfo: { externalAdReply: adReply },
         }, { quoted: orderQuote });
       }
     } catch (err) {
-      console.warn('[MENU orderMessage] Tier 3 (plain image) failed, continuing to text:', err.message);
+      console.warn('[MENU orderMessage] Tier 2 (image + order quote) failed, continuing to text:', err.message);
     }
 
-    // ── Tier 4: guaranteed plain text + fake quote + banner ───────────────
+    // ── Tier 3: guaranteed plain text + fake quote + banner ───────────────
     const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
     return await sock.sendMessage(m.from, {
       text:        bodyText,
