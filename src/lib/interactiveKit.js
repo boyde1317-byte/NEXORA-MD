@@ -796,7 +796,22 @@ export async function openChatCard(sock, jid, content, openChat, opts = {}) {
  * await paymentCard(sock, m.from, { text: 'Pay for premium:' }, { token: 'pay_token', amount: '500', currency: 'USD', reference: 'ref_1' }, { quoted: m });
  */
 export async function paymentCard(sock, jid, content, payment, opts = {}) {
-  return _send(sock, jid, { ...content, buttons: [{ text: '💳 Pay', payment }] }, opts);
+  // requestPaymentMessage is a standalone proto message type — route through
+  // baileysBridge.sendPayment() which builds it directly, NOT through
+  // nativeFlowMessage (cta_payment button). This ensures the payment card
+  // renders on all clients that support WhatsApp Payments.
+  try {
+    return await baileysBridge.sendPayment(sock, jid, {
+      amount: payment.amount || 10000,
+      currency: payment.currency || 'USD',
+      note: content.text || 'Payment Request',
+      ...(payment.reference ? { reference: payment.reference } : {}),
+    }, opts);
+  } catch (err) {
+    // Fallback to nativeFlow cta_payment if standalone fails
+    console.warn('[paymentCard] sendPayment failed, trying nativeFlow:', err.message);
+    return _send(sock, jid, { ...content, buttons: [{ text: '💳 Pay', payment }] }, opts);
+  }
 }
 
 /**
@@ -823,7 +838,21 @@ export async function locationRequestCard(sock, jid, content, opts = {}) {
  * await phoneRequestCard(sock, m.from, { text: 'Share your phone:' }, { quoted: m });
  */
 export async function phoneRequestCard(sock, jid, content, opts = {}) {
-  return _send(sock, jid, { ...content, buttons: [{ text: '📱 Share Phone', phone: true }] }, opts);
+  // requestPhoneNumberMessage is a standalone proto message type — it does NOT
+  // need nativeFlowMessage. It renders a native "Share Phone Number" button on
+  // ALL WhatsApp clients, regardless of nativeFlow support.
+  // The fork handles it: sock.sendMessage(jid, { requestPhoneNumber: true })
+  // → m.requestPhoneNumberMessage = {}
+  try {
+    return await sock.sendMessage(jid, {
+      requestPhoneNumber: true,
+      ...(content.contextInfo ? { contextInfo: content.contextInfo } : {}),
+    }, opts);
+  } catch (err) {
+    // Fallback to nativeFlow if standalone fails
+    console.warn('[phoneRequestCard] standalone failed, trying nativeFlow:', err.message);
+    return _send(sock, jid, { ...content, buttons: [{ text: '📱 Share Phone', phone: true }] }, opts);
+  }
 }
 
 /**
