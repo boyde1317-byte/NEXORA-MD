@@ -13,6 +13,7 @@ import { client } from '../../core/client.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { selectMenu, actionCard } from '../../lib/interactiveKit.js';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 export default {
   name: 'help',
@@ -84,7 +85,7 @@ export default {
       lines.push(`_Type \`${p}help <command>\` for detailed usage._`);
       lines.push(`_Type \`${p}menu\` for the interactive menu._`);
 
-      return await m.reply(asciiBuilder.box('Command Guide', lines));
+      return await m.reply(asciiBuilder.box('Command Guide', lines), { contextInfo: buildEnrichedContextInfo() });
     }
 
     // ── Category listing: .help <category> ──────────────────────────────
@@ -99,7 +100,7 @@ export default {
 
       // Add interactive buttons for the first few commands in the category
       try {
-        await m.reply(asciiBuilder.box(`${query} Commands`, lines));
+        await m.reply(asciiBuilder.box(`${query} Commands`, lines), { contextInfo: buildEnrichedContextInfo() });
         const quickButtons = cmds.slice(0, 4).map(c => ({
           label: `▶️ ${p}${c}`,
           cmd:   `${p}help ${c}`,
@@ -111,7 +112,7 @@ export default {
           }, quickButtons, { quoted: m });
         }
       } catch (_) {
-        await m.reply(asciiBuilder.box(`${query} Commands`, lines));
+        await m.reply(asciiBuilder.box(`${query} Commands`, lines), { contextInfo: buildEnrichedContextInfo() });
       }
       return;
     }
@@ -161,6 +162,6 @@ export default {
     lines.push('');
     lines.push(`_Type \`${p}${command.name}\` to use this command. Go on, I dare you. ✦_`);
 
-    await m.reply(asciiBuilder.box(command.name, lines));
+    await m.reply(asciiBuilder.box(command.name, lines), { contextInfo: buildEnrichedContextInfo() });
   }
 };

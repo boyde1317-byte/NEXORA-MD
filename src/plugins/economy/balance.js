@@ -8,6 +8,7 @@ import { withReactionStatus } from '../../lib/cosmetics.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { getLevelProgress, progressBar, rankBadge } from '../../economy/leveling.js';
 import { actionCard } from '../../lib/interactiveKit.js';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 export default {
   name: 'balance',
@@ -39,7 +40,7 @@ export default {
       const title = isSelf ? 'YOUR BALANCE' : `BALANCE — +${targetJid.split('@')[0].slice(-6)}`;
       const text = asciiBuilder.box(title, lines);
 
-      await m.reply(text);
+      await m.reply(text, { contextInfo: buildEnrichedContextInfo() });
 
       try {
         await actionCard(sock, m.from, {

@@ -4,6 +4,7 @@
  * Or reply to a message with .purge — deletes from that message onward (bot messages only)
  */
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 export default {
   name: 'purge',
@@ -55,7 +56,7 @@ export default {
 
       return await m.reply(asciiBuilder.box('Purge Complete', [
         `🗑️ Deleted ${deleted} message${deleted !== 1 ? 's' : ''}`,
-      ]));
+      ]), { contextInfo: buildEnrichedContextInfo() });
     } catch (err) {
       return await m.reply.error(`Purge failed: ${err.message}`);
     }

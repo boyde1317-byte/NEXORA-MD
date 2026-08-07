@@ -14,6 +14,7 @@
  *   - uguu       → uguu.se           (temporary-hosting CDN, plain-text API)
  *   - tmpfiles   → tmpfiles.org      (original host, JSON API, ~60min expiry)
  */
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 
@@ -212,7 +213,7 @@ export default {
       }
 
       const output = asciiBuilder.box('🔗 MEDIA UPLOADED', lines);
-      await m.reply(output);
+      await m.reply(output, { contextInfo: buildEnrichedContextInfo() });
     });
   }
 };

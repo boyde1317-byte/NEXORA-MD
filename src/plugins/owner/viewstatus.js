@@ -12,6 +12,7 @@
  * Aliases: .vs, .statuslist, .fetchstatus
  */
 import { withReactionStatus } from '../../lib/cosmetics.js';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 export default {
   name: 'viewstatus',
@@ -59,7 +60,7 @@ export default {
             text += `• ${name}\n  ${jid}\n`;
           }
           text += `\nUse \`${p}viewstatus @number\` to fetch status for a specific contact.`;
-          await m.reply(text);
+          await m.reply(text, { contextInfo: buildEnrichedContextInfo() });
         } else if (jids.length > 0) {
           // Fetch status for specific contacts
           const results = await sock.fetchStatus(...jids);
@@ -74,7 +75,7 @@ export default {
             const status = entry?.status || 'No status set';
             text += `*${name}*\n${status}\n\n`;
           }
-          await m.reply(text);
+          await m.reply(text, { contextInfo: buildEnrichedContextInfo() });
         } else {
           return await m.reply.error(
             `Usage:\n• \`${p}viewstatus\` — List contacts\n• \`${p}viewstatus @234...\` — Fetch specific status`

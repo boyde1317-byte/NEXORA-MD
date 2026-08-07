@@ -4,6 +4,7 @@
  * Upgraded from copyResultCard → richTableCard for structured weather data
  * display, with mixedCard follow-up for map and refresh actions.
  */
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 import { Providers } from '../../lib/webClient.js';
 import { richTableCard, mixedCard, actionCardWithAd } from '../../lib/interactiveKit.js';
 import { getBrandThumbnail } from '../../lib/cosmetics.js';
@@ -84,7 +85,8 @@ ${current.weatherDesc[0].value} • ${current.temp_C}°C`,
         `*Feels Like:* ${current.FeelsLikeC}°C\n` +
         `*Humidity:* ${current.humidity}%\n` +
         `*Wind:* ${current.windspeedKmph} km/h ${current.winddir16Point}\n` +
-        `*Visibility:* ${current.visibility} km`
+        `*Visibility:* ${current.visibility} km`,
+        { contextInfo: buildEnrichedContextInfo() }
       );
     } catch (err) {
       await m.reply.error(`Failed to fetch weather: ${err.message}`);

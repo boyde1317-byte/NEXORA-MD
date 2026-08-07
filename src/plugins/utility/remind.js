@@ -1,5 +1,6 @@
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { db } from '../../database/db.js';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 const MAX_MINUTES = 1440;
 const activeReminders = new Map();
@@ -90,7 +91,7 @@ export default {
       if (!userReminders.length) {
         return await m.reply.info('You have no active reminders.', 'REMINDERS');
       }
-      return await m.reply(asciiBuilder.box('YOUR REMINDERS', userReminders));
+      return await m.reply(asciiBuilder.box('YOUR REMINDERS', userReminders), { contextInfo: buildEnrichedContextInfo() });
     }
 
     if (args[0]?.toLowerCase() === 'cancel' && args[1]) {
@@ -149,6 +150,6 @@ export default {
       `📝 Message : ${message.length > 50 ? message.slice(0, 47) + '...' : message}`,
       ``,
       `Use \`${p}remind cancel ${id}\` to cancel.`,
-    ]));
+    ]), { contextInfo: buildEnrichedContextInfo() });
   }
 };

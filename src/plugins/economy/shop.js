@@ -17,6 +17,7 @@ import { richTableCard, actionCard, selectMenu } from '../../lib/interactiveKit.
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { grantXp, withUserLock } from '../../economy/leveling.js';
 import { themeManager } from '../../ui/themeManager.js';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 const SHOP_ITEMS = [
   { id: 'title',    name: 'Custom Title',       price: 500,  desc: 'Set a custom title on your profile' },
@@ -174,7 +175,7 @@ export default {
         );
         lines.push('', `_Your balance: ${coins.toLocaleString()} 🪙_`);
         lines.push('', `Use \`${p}shop buy <id>\` to purchase.`);
-        await m.reply(asciiBuilder.box('🛒 COIN SHOP', lines));
+        await m.reply(asciiBuilder.box('🛒 COIN SHOP', lines), { contextInfo: buildEnrichedContextInfo() });
       }
     });
   }

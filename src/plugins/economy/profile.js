@@ -9,6 +9,7 @@ import { withReactionStatus } from '../../lib/cosmetics.js';
 import { richTableCard, mixedCard } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { getLevelProgress, progressBar, rankBadge, streakEmoji } from '../../economy/leveling.js';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 export default {
   name: 'profile',
@@ -134,7 +135,7 @@ export default {
         }
       }
 
-      await m.reply(text);
+      await m.reply(text, { contextInfo: buildEnrichedContextInfo() });
     });
   }
 };

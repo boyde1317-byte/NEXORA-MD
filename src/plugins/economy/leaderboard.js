@@ -8,6 +8,7 @@ import { withReactionStatus } from '../../lib/cosmetics.js';
 import { richTableCard, actionCard } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { xpToLevel, rankBadge } from '../../economy/leveling.js';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 const PLACE = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
 const PAGE_SIZE = 10;
@@ -138,7 +139,7 @@ export default {
       rows.push(`Page ${page}/${totalPages} • Use \`${p}lb ${mode} <page>\` to navigate`);
 
       const title = mode === 'coins' ? `🪙 COINS — PAGE ${page}` : `✨ XP — PAGE ${page}`;
-      await m.reply(asciiBuilder.box(title, rows));
+      await m.reply(asciiBuilder.box(title, rows), { contextInfo: buildEnrichedContextInfo() });
     });
   }
 };

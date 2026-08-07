@@ -4,6 +4,7 @@
  */
 import { db } from '../../database/db.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 export default {
   name: 'ban',
@@ -31,6 +32,6 @@ export default {
     return await m.reply(asciiBuilder.box('User Banned', [
       `🚫 @${targetNum} has been banned`,
       `▸ Reason: ${reason}`,
-    ]), { mentions: [targetJid] });
+    ]), { mentions: [targetJid], contextInfo: buildEnrichedContextInfo() });
   },
 };

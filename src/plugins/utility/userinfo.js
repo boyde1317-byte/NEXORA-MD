@@ -11,6 +11,7 @@ import { getDisplayName } from '../../lib/displayName.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { actionCard } from '../../lib/interactiveKit.js';
 import { formatDuration } from '../../lib/utils.js';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 export default {
   name: 'userinfo',
@@ -80,7 +81,7 @@ export default {
     }
 
     const text = asciiBuilder.box('User Info', lines);
-    await m.reply(text);
+    await m.reply(text, { contextInfo: buildEnrichedContextInfo() });
 
     // Follow-up buttons
     try {

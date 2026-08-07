@@ -29,16 +29,13 @@
  */
 
 import os from 'os';
-import { baileysBridge } from '../../core/baileysBridge.js';
-import { capabilities } from '../../core/capabilities.js';
 import { db } from '../../database/db.js';
 import { client } from '../../core/client.js';
 import { formatUptime } from '../../lib/utils.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
-import { buildFakeProductQuote } from '../../lib/waUtils.js';
+import { sendInfoCard } from '../../lib/infoCard.js';
 import { buildNavigationButton } from '../../menu/types/buttonsCard.js';
 import brand from '../../../config/brand.js';
-import owner from '../../../config/owner.js';
 import { config } from '../../../config/index.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -170,83 +167,22 @@ export default {
     // ── Thumbnail ──────────────────────────────────────────────────────────
     const thumbnailUrl = process.env.ABOUT_IMAGE || ASSET_URLS.thumbnail;
 
-    // ── Catalog quote (productMessage in reply bar) — defensive, never throws ──
-    let thumbBuf = null;
-    try {
-      const res = await fetch(thumbnailUrl, { signal: AbortSignal.timeout(8000) });
-      if (res.ok) thumbBuf = Buffer.from(await res.arrayBuffer());
-    } catch (_) {}
-
-    let contextInfo;
-    try {
-      const catalogQuote = buildFakeProductQuote({
-        title:            brand.name,
-        description:      brand.description || `${brand.name} by ${brand.creator}`,
-        currencyCode:     'USD',
-        priceAmount1000:  0,
-        businessOwnerJid: '0@s.whatsapp.net',
-        ...(thumbBuf ? { jpegThumbnail: thumbBuf } : {}),
-      });
-      contextInfo = {
-        stanzaId:      catalogQuote.key.id || 'about-catalog',
-        participant:   catalogQuote.key.participant,
-        remoteJid:     catalogQuote.key.remoteJid,
-        quotedMessage: catalogQuote.message,
-        mentionedJid:  m.sender ? [m.sender] : [],
-      };
-    } catch (err) {
-      console.warn('[about] Catalog quote build failed, sending without it:', err.message);
-      contextInfo = { mentionedJid: m.sender ? [m.sender] : [] };
-    }
-
-    // ── Buttons: exactly 2, matching the reference screenshot's horizontal
-    // pill row — ♥ Store (plain quick-reply) + ☰ Menu (nativeFlowInfo picker).
-    // buildNavigationButton() is shared with buttonsCard.js's main menu, which
-    // is the already-verified working implementation of this exact pattern.
+    // ── Buttons: ♥ Store + ☰ Menu (horizontal pill row) ────────────────────
     const buttons = [
-      { displayText: '♥ Store', id: `${p}shop`, type: 1 },
+      { displayText: '\u2665 Store', id: `${p}shop`, type: 1 },
       buildNavigationButton(p),
     ];
 
-    // ── Tier 1: buttonsCard (grey footerText, thumbnail header, catalog quote) ──
-    if (capabilities.nativeFlow) {
-      try {
-        return await baileysBridge.sendButtonsCard(sock, m.from, {
-          body:        bodyText,
-          footer:      footerText,
-          title:       brand.name,
-          subtitle:    `${serverStatus} · ${timeStr}`,
-          thumbnail:   thumbnailUrl,
-          buttons,
-          contextInfo,
-        }, { quoted: m });
-      } catch (err) {
-        console.warn('[about] Tier 1 (buttonsCard) failed, trying nativeFlow:', err.message);
-      }
-    }
-
-    // ── Tier 2: nativeFlow interactive card ───────────────────────────────
-    if (capabilities.nativeFlow) {
-      try {
-        return await baileysBridge.sendNativeFlow(sock, m.from, {
-          text:    `${bodyText}\n\n${footerText}`,
-          footer:  `© ${brand.name} by ${brand.creator}`,
-          title:   brand.name,
-          image:   { url: thumbnailUrl },
-          buttons: [
-            { text: '♥ Store',           id: `${p}shop`  },
-            { text: '💬 Contact Owner',  url: `https://wa.me/${owner.ownerNumber || ''}` },
-          ],
-        }, { quoted: m });
-      } catch (err) {
-        console.warn('[about] Tier 2 (nativeFlow) failed, plain text:', err.message);
-      }
-    }
-
-    // ── Tier 3: plain text guaranteed fallback ─────────────────────────────
-    return await sock.sendMessage(m.from, {
-      text:        `*${brand.name}*\n\n${bodyText}\n\n${footerText}`,
-      mentions:    m.sender ? [m.sender] : [],
+    // ── Send info card (product quote + buttonsCard + tiers) ───────────────
+    return await sendInfoCard(sock, m.from, {
+      body:       bodyText,
+      footer:     footerText,
+      title:      brand.name,
+      subtitle:   `${serverStatus} \u00B7 ${timeStr}`,
+      thumbnail:  thumbnailUrl,
+      buttons,
+      mentions:   m.sender ? [m.sender] : [],
+      prefix:     p,
     }, { quoted: m });
   },
 };

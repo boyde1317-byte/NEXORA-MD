@@ -14,6 +14,7 @@
  * Uses actionCard for a quick "Clear AFK" follow-up button, matching the
  * button styling used across the rest of the bot's commands.
  */
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 import { actionCardWithAd } from '../../lib/interactiveKit.js';
 import { getBrandThumbnail } from '../../lib/cosmetics.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
@@ -61,8 +62,7 @@ Anyone who mentions or replies to you will be notified.`,
         '',
         'Anyone who mentions or replies to you will be notified.',
         'Send any message to come back automatically.',
-      ]));
+      ]), { contextInfo: buildEnrichedContextInfo() });
     }
   }
 };
-

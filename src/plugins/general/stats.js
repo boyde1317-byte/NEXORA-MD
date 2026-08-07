@@ -12,6 +12,7 @@ import { config } from '../../../config/index.js';
 import brand from '../../../config/brand.js';
 import { actionCard } from '../../lib/interactiveKit.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 export default {
   name: 'stats',
@@ -105,7 +106,7 @@ export default {
 
     const text = asciiBuilder.sections(`${brand.name} Statistics`, sections);
 
-    await m.reply(text);
+    await m.reply(text, { contextInfo: buildEnrichedContextInfo() });
 
     // Follow-up with quick action buttons
     try {

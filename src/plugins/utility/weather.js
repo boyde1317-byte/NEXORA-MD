@@ -8,6 +8,7 @@
  *   .weather <city>           — current weather
  *   .weather <city> forecast   — 3-day forecast
  */
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { richTableCard, actionCard, mixedCard } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
@@ -113,7 +114,7 @@ export default {
             ], { quoted: m });
           } catch (_) {
             const lines = rows.map(r => r.join('  '));
-            await m.reply(asciiBuilder.box(`3-DAY FORECAST — ${geo.name}`, lines));
+            await m.reply(asciiBuilder.box(`3-DAY FORECAST — ${geo.name}`, lines), { contextInfo: buildEnrichedContextInfo() });
           }
         } else {
           // ── Current weather ──────────────────────────────────────────────
@@ -129,7 +130,7 @@ export default {
               { kind: 'action', label: '🔍 Another City',   cmd: `${p}weather` },
             ], { quoted: m });
           } catch (_) {
-            await m.reply(text);
+            await m.reply(text, { contextInfo: buildEnrichedContextInfo() });
           }
         }
       } catch (err) {

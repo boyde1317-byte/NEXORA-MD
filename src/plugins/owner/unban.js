@@ -3,6 +3,7 @@
  */
 import { db } from '../../database/db.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 export default {
   name: 'unban',
@@ -26,6 +27,6 @@ export default {
     return await m.reply(asciiBuilder.box('User Unbanned', [
       `✅ @${targetNum} has been unbanned`,
       `▸ Access restored`,
-    ]), { mentions: [targetJid] });
+    ]), { mentions: [targetJid], contextInfo: buildEnrichedContextInfo() });
   },
 };

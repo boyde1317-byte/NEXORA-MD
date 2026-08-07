@@ -2,6 +2,7 @@ import { menuManager } from '../../menu/manager.js';
 import { scanCapabilities } from '../../core/baileysScanner.js';
 import { selectMenu } from '../../lib/interactiveKit.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 /**
  * Lists all registered menu presentation styles with accurate compatibility status.
@@ -137,6 +138,6 @@ export default {
     text += `🟢 ${toSmallcaps('Native')}  🟠 ${toSmallcaps('Account-gated')}  🟡 ${toSmallcaps('Fallback')}\n\n`;
     text += `${toSmallcaps('Tap the style picker above to switch instantly,')} ${toSmallcaps('or use')} \`${p}setmenu <id>\``;
 
-    await m.reply(text);
+    await m.reply(text, { contextInfo: buildEnrichedContextInfo() });
   },
 };

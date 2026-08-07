@@ -4,6 +4,7 @@
  * Sends the @-mention announcement, then a nativeFlow follow-up card
  * with group management quick_reply buttons so admins can take action fast.
  */
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 import { withReactionStatus, getBrandThumbnail } from '../../lib/cosmetics.js';
 import { actionCardWithAd } from '../../lib/interactiveKit.js';
 
@@ -48,7 +49,7 @@ export default {
         }, { mentions, quoted: m });
       } catch (_) {
         // Cosmetic card failed — the mentions must still go out.
-        await sock.sendMessage(m.from, { text: tagText, mentions }, {});
+        await sock.sendMessage(m.from, { text: tagText, mentions, contextInfo: buildEnrichedContextInfo() }, {});
       }
     });
   },

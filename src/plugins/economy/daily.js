@@ -10,6 +10,7 @@ import { richTableCard, actionCardWithAd } from '../../lib/interactiveKit.js';
 import { messageFormatter } from '../../ui/messageFormatter.js';
 import brand from '../../../config/brand.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 const COOLDOWN_MS  = 24 * 60 * 60 * 1000;
 const BASE_COINS   = 100;
@@ -119,7 +120,7 @@ export default {
         ...(leveledUp ? ['', `🎉 *LEVEL UP! You are now Level ${after.level}!*`] : []),
         ...(streak === MAX_STREAK ? ['', `🏆 *MAX STREAK! Keep it up!*`] : []),
       ];
-      await m.reply(asciiBuilder.box('💰 DAILY REWARD CLAIMED', lines));
+      await m.reply(asciiBuilder.box('💰 DAILY REWARD CLAIMED', lines), { contextInfo: buildEnrichedContextInfo() });
         });
       } catch (lockErr) {
         await m.reply.warn(lockErr.message);

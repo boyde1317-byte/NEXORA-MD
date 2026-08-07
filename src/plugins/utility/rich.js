@@ -1,3 +1,4 @@
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 import {
   richCarouselCard, richMediaCard, richArticleCard,
   codeTableCard, mapTableCard, textImageCard,
@@ -109,7 +110,8 @@ export default {
         '• multiimages — stacked image gallery\n' +
         '• gridtable — image grid + data table\n' +
         '• dynamictable — animated content + table\n\n' +
-        'Usage: .rich <type>'
+        'Usage: .rich <type>',
+        { contextInfo: buildEnrichedContextInfo() }
       );
     }
   }

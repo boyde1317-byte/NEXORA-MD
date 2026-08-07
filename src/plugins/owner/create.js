@@ -13,6 +13,7 @@
  *
  * Aliases: .newgroup, .creategroup
  */
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
 
@@ -169,7 +170,7 @@ export default {
         { kind: 'action', label: '📋 Group Info',  cmd: `${p}groupinfo` },
       ], { quoted: m });
     } catch (_) {
-      await m.reply(successMsg);
+      await m.reply(successMsg, { contextInfo: buildEnrichedContextInfo() });
     }
   }
 };

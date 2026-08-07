@@ -1,3 +1,4 @@
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 import { client } from '../../core/client.js';
 import { db } from '../../database/db.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
@@ -28,7 +29,7 @@ export default {
         try {
           db.save();
           await client.loadPlugins();
-          await m.reply(`✅ *All plugins reloaded successfully!* Bot is updated without connection loss.\n\n_Tip: Run \`${p}restart hard\` to completely reboot the bot container._`);
+          await m.reply(`✅ *All plugins reloaded successfully!* Bot is updated without connection loss.\n\n_Tip: Run \`${p}restart hard\` to completely reboot the bot container._`, { contextInfo: buildEnrichedContextInfo() });
         } catch (err) {
           await m.reply.error(`*Hot-reload failed:* ${err.message}`);
           throw err;

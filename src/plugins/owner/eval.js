@@ -1,4 +1,5 @@
 import vm from 'node:vm';
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 export default {
   name: 'eval',
@@ -70,7 +71,7 @@ export default {
         ? output.slice(0, 3500) + '\n... (truncated)'
         : output;
 
-      await m.reply(`✦ *Result:*\n\`\`\`javascript\n${truncated}\n\`\`\``);
+      await m.reply(`✦ *Result:*\n\`\`\`javascript\n${truncated}\n\`\`\``, { contextInfo: buildEnrichedContextInfo() });
     } catch (err) {
       await m.reply.error(`${err.stack || err.message}`);
     }

@@ -4,6 +4,7 @@
  * Fixed: hardcoded '!ocr' in usage message → uses prefix variable.
  * Improved: copy button for extracted text.
  */
+import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { copyResultCard } from '../../lib/interactiveKit.js';
 
@@ -67,7 +68,7 @@ export default {
             copyValue:  text,
           }, { quoted: m });
         } catch (_) {
-          await m.reply(`🔍 *OCR RESULT*\n\n${displayText}`);
+          await m.reply(`🔍 *OCR RESULT*\n\n${displayText}`, { contextInfo: buildEnrichedContextInfo() });
         }
       } catch (err) {
         await m.reply.error(`OCR failed: ${err.message}`);
