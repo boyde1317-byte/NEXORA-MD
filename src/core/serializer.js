@@ -366,8 +366,18 @@ export async function serialize(m, sock) {
   };
 
   // ── Reply helper ──────────────────────────────────────────────────────────
+  // Accepts an optional `contextInfo` inside options — when present it is
+  // merged into the message content (not sendMessage options) so callers
+  // can enrich plain-text replies with newsletter quotes + externalAdReply:
+  //   m.reply(text)                                    // plain text (backward-compatible)
+  //   m.reply(text, { contextInfo: buildEnrichedContextInfo() })  // enriched
   const replyFn = async (text, options = {}) => {
-    return await sock.sendMessage(message.from, { text }, { quoted: m, ...options });
+    const { contextInfo, ...sendOptions } = options;
+    return await sock.sendMessage(
+      message.from,
+      { text, ...(contextInfo ? { contextInfo } : {}) },
+      { quoted: m, ...sendOptions }
+    );
   };
 
   replyFn.success = async (text, options = {}) =>
