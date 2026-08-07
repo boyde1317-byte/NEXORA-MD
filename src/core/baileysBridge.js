@@ -331,11 +331,12 @@ export const baileysBridge = {
     });
 
     // sock.relayMessage only accepts MessageRelayOptions — do not spread `options`
-    // as it contains `quoted` which is not a valid relay param. We DO forward
-    // additionalNodes: callers can override, otherwise button/native-flow/carousel
-    // payloads get the native_flow biz stanza by default (see hasNativeFlowContent).
-    const additionalNodes = options.additionalNodes
-      ?? (hasNativeFlowContent(messageContent) ? NATIVE_FLOW_ADDITIONAL_NODES : undefined);
+    // as it contains `quoted` which is not a valid relay param.
+    // The fork's relayMessage auto-attaches the biz node via getBizBinaryNode
+    // when shouldIncludeBizBinaryNode detects buttons/carousel/nativeFlow.
+    // We no longer pass a static biz node — the fork generates the correct one
+    // dynamically (with actual button names, bizAttributes, quality_control).
+    const additionalNodes = options.additionalNodes;
     await sock.relayMessage(jid, message.message, {
       messageId: message.key.id,
       ...(additionalNodes ? { additionalNodes } : {}),
@@ -747,9 +748,7 @@ export const baileysBridge = {
       } : {}),
     }, {
       ...options,
-      // Buttons render unreliably (or not at all) on stock WhatsApp without
-      // this native_flow biz stanza — see NATIVE_FLOW_ADDITIONAL_NODES above.
-      additionalNodes: options.additionalNodes || NATIVE_FLOW_ADDITIONAL_NODES,
+      // The fork auto-attaches the biz node for buttonsMessage via getBizBinaryNode.
     });
   },
 
@@ -1201,7 +1200,8 @@ export const baileysBridge = {
       ...(footer ? { footer } : {}),
     }, {
       ...options,
-      additionalNodes: options.additionalNodes || NATIVE_FLOW_ADDITIONAL_NODES,
+      // The fork auto-attaches the biz node for carouselMessage via getBizBinaryNode,
+      // extracting actual button names from carousel cards.
     });
   },
 
