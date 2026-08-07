@@ -127,7 +127,7 @@ function _formatV2Sections(sections, outSections) {
         text += (prim.text || '') + '\n\n';
         outSections.push({ type: 'text', content: prim.text });
         break;
-      case 'GenAITableUXPrimitive':
+      case 'GenATableUXPrimitive':
         if (prim.title) text += `*${prim.title}*\n`;
         if (prim.rows) {
           for (const row of prim.rows) {
@@ -1310,7 +1310,7 @@ export const baileysBridge = {
       ];
       sections.push({
         view_model: {
-          primitive: { rows: unified_rows, __typename: 'GenAITableUXPrimitive' },
+          primitive: { rows: unified_rows, __typename: 'GenATableUXPrimitive' },
           __typename: 'GenAISingleLayoutViewModel',
         },
       });
