@@ -1,93 +1,96 @@
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
-import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
-import { buildPillButton, buildPillUrlButton, buildPillCopyButton, buildNavigationButton } from './buttonsCard.js';
 
 /**
- * Product / Offer Menu (id: 17) — rewritten for universal compatibility.
+ * Product / Offer Overlay Menu (id: 17) — rewritten for itsliaaa 0.3.18-final fork.
  *
  * NOTE: was previously id 5, which collided with buttonsCard.js (also id 5).
- * Renumbered to 17 (next free slot) to fix silent menu-lookup conflicts.
+ * Renumbered to 17 (next free slot) to fix silent menu-lookup conflicts —
+ * `.menu 5` and `.menulist`'s id column were pointing to different menus
+ * depending on module registration order.
  *
- * Uses sendButtonsCard (buttonsMessage proto) as Tier 1 for universal
- * WhatsApp client compatibility. The offer text is embedded as a subtitle
- * + externalAdReply banner.
+ * Uses the fork's `offerText` API to attach a limited_time_offer banner to the
+ * top of an interactive card. This is the proper offer overlay mechanism — it
+ * creates a standout promotional strip (title text + optional URL / copy code)
+ * above the card body, entirely within the WA nativeFlow spec.
+ *
+ * offerText    → text shown on the offer banner
+ * offerUrl     → tappable URL on the banner
+ * offerCode    → copyable promo code on the banner
+ * offerExpiry  → Unix timestamp (seconds) for the offer's expiration countdown
  *
  * Tiers:
- *   1 → sendButtonsCard with image header + offer subtitle + embedded adReply
- *   2 → imageMessage with caption + externalAdReply
+ *   1 → nativeFlow + offerText overlay (image header + offer banner + buttons)
+ *   2 → image with caption + externalAdReply (offer banner unsupported on client)
  *   3 → guaranteed plain text
  */
 export const productMenu = {
   id: 17,
   name: 'product',
-  description: 'Offer-style pill-button card with promotional banner + image header',
-  supportedMessages: ['interactiveMessage', 'buttonsMessage'],
+  description: 'Offer overlay card — limited_time_offer banner + image header + action buttons',
+  supportedMessages: ['interactiveMessage', 'nativeFlowMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData   = await imageManager.getMenuImage(5);
-    const bodyText  = `\u2726 *${menuData.botName.toUpperCase()}* \u2726\n\n` + buildTextMenu(menuData);
-    const footerText = `${menuData.botName} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`;
+    const bodyText  = `✦ *${menuData.botName.toUpperCase()}* ✦\n\n` + buildTextMenu(menuData);
+    const footerText = `${menuData.botName} • ${menuData.totalCommands} commands`;
 
-    // Resolve image payload
+    // Resolve image payload: prefer the { url } form — WA fetches it directly,
+    // no local buffer download/re-upload round trip. Buffer is only a fallback
+    // for local disk images that have no public URL.
     const imagePayload = imgData.source?.startsWith('http')
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
-    // Build embedded externalAdReply with offer banner styling
-    const adReply = {
-      title:                 `\u{1F381} ${toSmallcaps('Free Premium Access')} \u2014 ${toSmallcaps('Expires Soon')}`,
-      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Offer Code')}: NEXORA-FREE`,
-      sourceUrl:             'https://wa.me/233533416608',
-      mediaType:             1,
-      renderLargerThumbnail: true,
-      showAdAttribution:     false,
-    };
-    if (imgData.buffer) {
-      adReply.thumbnail = imgData.buffer;
-    } else if (imgData.source?.startsWith('http')) {
-      adReply.thumbnailUrl = imgData.source;
-      adReply.originalImageUrl = imgData.source;
-    }
-
-    // ── Tier 1: sendButtonsCard with image header + offer subtitle + adReply ──
-    if (imagePayload) {
-      try {
-        return await baileysBridge.sendButtonsCard(sock, m.from, {
-          body:       bodyText,
-          footer:     footerText,
-          title:      `\u2726 ${toSmallcaps('Premium Command Pack')} \u2726`,
-          subtitle:   `\u{1F381} ${toSmallcaps('Free Premium')} \u2502 ${toSmallcaps('Code')}: NEXORA-FREE`,
-          thumbnail:  imagePayload,
-          buttons: [
-            buildPillUrlButton('\u{1F4AC} Contact Developer',  'https://wa.me/233533416608'),
-            buildPillCopyButton('\u{1F4CE} Copy Offer Code',   'NEXORA-FREE'),
-            buildPillButton('\u{1F916} System Stats',          `${menuData.prefix}menu aiDynamic`),
-            buildPillButton('\u{1F3A8} Browse Menu Styles',    `${menuData.prefix}menulist`),
-            buildNavigationButton(menuData.prefix),
-          ],
-          contextInfo: { externalAdReply: adReply },
-        }, { quoted: menuData.audioQuote || m });
-      } catch (err) {
-        console.warn('[MENU product] Tier 1 (sendButtonsCard + offer) failed, trying image banner:', err.message);
-      }
-    }
-
-    // ── Tier 2: imageMessage with caption + externalAdReply ────────────────
+    // ── Tier 1: nativeFlow with offer overlay ─────────────────────────────
+    // offerText injects a limited_time_offer object into messageParamsJson, which
+    // renders as a highlighted offer banner at the top of the interactive card.
     try {
+      return await baileysBridge.sendNativeFlow(sock, m.from, {
+        text:      bodyText,
+        footer:    footerText,
+        image:     imagePayload,
+        offerText:  '🎁 Free Premium Access — Expires Soon',
+        offerUrl:   'https://wa.me/233533416608',
+        offerCode:  'NEXORA-FREE',
+        offerExpiry: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // expires in 7 days
+        buttons: [
+          { text: '💬 Contact Developer', url:  'https://wa.me/233533416608' },
+          { text: '📎 Copy Prefix',       copy: menuData.prefix },
+          { text: '🤖 System Stats',       id:   `${menuData.prefix}menu aiDynamic` },
+          { text: '🎨 Browse Menu Styles', id:   `${menuData.prefix}menulist` },
+        ],
+      }, { quoted: menuData.audioQuote || m });
+    } catch (err) {
+      console.warn('[MENU product] Tier 1 (offer overlay) failed, trying image banner:', err.message);
+    }
+
+    // ── Tier 2: image with caption + externalAdReply ──────────────────────
+    try {
+      const adReply = {
+        title:                 `✦ ${menuData.botName.toUpperCase()} ✦`,
+        body:                  `${menuData.totalCommands} commands • ${menuData.uptime} uptime`,
+        sourceUrl:             'https://wa.me/233533416608',
+        mediaType:             1,
+        renderLargerThumbnail: true,
+      };
       if (imgData.buffer) {
+        adReply.thumbnail = imgData.buffer;
         return await sock.sendMessage(m.from, {
           image:       imgData.buffer,
           mimetype:    imgData.mimetype,
-          caption:      bodyText,
+          caption:     bodyText,
           contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });
       } else if (imgData.source?.startsWith('http')) {
+        adReply.thumbnailUrl = imgData.source;
+
+        adReply.originalImageUrl = imgData.source;
         return await sock.sendMessage(m.from, {
           image:       { url: imgData.source },
-          caption:      bodyText,
+          caption:     bodyText,
           contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });
       }
@@ -97,9 +100,23 @@ export const productMenu = {
 
     // ── Tier 3: guaranteed plain text + fake quote + banner ───────────────
     const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
+    const fallbackAdReply = {
+      title:                 `✦ ${menuData.botName.toUpperCase()} ✦`,
+      body:                  `${menuData.totalCommands} commands • ${menuData.uptime}`,
+      sourceUrl:             'https://wa.me/233533416608',
+      mediaType:             1,
+      renderLargerThumbnail: true,
+      showAdAttribution:     false,
+    };
+    if (imgData.buffer) {
+      fallbackAdReply.thumbnail = imgData.buffer;
+    } else if (imgData.source?.startsWith('http')) {
+      fallbackAdReply.thumbnailUrl = imgData.source;
+      fallbackAdReply.originalImageUrl = imgData.source;
+    }
     return await sock.sendMessage(m.from, {
       text:        bodyText,
-      contextInfo: { externalAdReply: adReply },
+      contextInfo: { externalAdReply: fallbackAdReply },
     }, { quoted: fakeImgQuote });
   },
 };
