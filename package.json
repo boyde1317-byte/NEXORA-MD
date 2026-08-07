@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
-    "baileys": "github:boyde1317-byte/baileys#389d1245eb94f56d3fcd97f0fca4a08e544d5914",
+    "baileys": "github:boyde1317-byte/baileys#677d18804d769a7644dd411df346076b3ed4c1c2",
     "chalk": "^5.4.1",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
