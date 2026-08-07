@@ -20,6 +20,7 @@ import { getRandomResponse } from '../nexora-messages.js';
 import { suggestCommand } from '../lib/fuzzyMatch.js';
 import { toSmallcaps } from '../lib/smallcaps.js';
 import { actionCard } from '../lib/interactiveKit.js';
+import { connectionMonitor } from '../core/connectionMonitor.js';
 
 // ── Hoisted regexes (compiled once, not on every message) ─────────────────────
 // Anti-link pattern: matches URLs and known social/messaging platform links.
@@ -495,6 +496,7 @@ try {
   try {
     await command.execute(ctx);
     console.log(`[CMD] ${command.name} ← ${sender.split('@')[0]} in ${isGroupMsg ? jid : 'DM'}`);
+    connectionMonitor.recordCommandExecuted(command.name);
 
     // ── Track command usage statistics ───────────────────────────────
     // stats.commandsUsed is read by the menu collector and aiDynamic menu

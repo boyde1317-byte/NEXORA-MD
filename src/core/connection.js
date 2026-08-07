@@ -17,6 +17,7 @@ import { handleMessage } from '../handlers/message.js';
 import { restoreReminders } from '../plugins/utility/remind.js';
 import { handleGroupParticipantsUpdate } from '../handlers/group.js';
 import { client } from './client.js';
+import { connectionMonitor } from './connectionMonitor.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -31,41 +32,6 @@ const MAX_DELAY_MS    = config.keepAliveIntervalMs ? 60000 : 60000;
 const MAX_MSGS_PER_CHAT = 500;
 const MAX_TRACKED_CHATS = 2000;
 
-// ── Connection state tracking ────────────────────────────────────────────────
-const connectionState = {
-  current: 'disconnected',
-  lastConnectTime: null,
-  totalConnects: 0,
-  totalDisconnects: 0,
-  totalMessages: 0,
-  totalCommands: 0,
-  totalErrors: 0,
-  lastIncomingTime: null,
-  lastOutgoingTime: null,
-  reconnectHistory: [],
-  stateHistory: [],
-};
-
-function setState(newState) {
-  const prev = connectionState.current;
-  connectionState.current = newState;
-  connectionState.stateHistory.push({
-    from: prev,
-    to: newState,
-    timestamp: Date.now(),
-  });
-  if (connectionState.stateHistory.length > 50) {
-    connectionState.stateHistory.shift();
-  }
-  if (newState === 'connected' && prev !== 'connected') {
-    connectionState.totalConnects++;
-    connectionState.lastConnectTime = Date.now();
-  }
-  if (newState === 'disconnected' && prev === 'connected') {
-    connectionState.totalDisconnects++;
-  }
-}
-
 /**
  * Exponential backoff delay: 5s, 10s, 20s, 40s … capped at 60s
  */
@@ -75,19 +41,35 @@ function getReconnectDelay(attempt) {
 
 /**
  * Export connection state for the stats endpoint and health checks.
+ * Reads from the connectionMonitor singleton.
  */
 export function getConnectionState() {
+  const health  = connectionMonitor.getHealth();
+  const metrics = connectionMonitor.getMetrics();
+  const stats   = connectionMonitor.getReconnectStats();
+  const state   = connectionMonitor.getState();
+  const history = connectionMonitor.getStateHistory();
+
   return {
-    ...connectionState,
-    uptime: connectionState.lastConnectTime
-      ? Date.now() - connectionState.lastConnectTime
-      : 0,
+    current:            state,
+    lastConnectTime:    health.uptime > 0 ? Date.now() - health.uptime : null,
+    totalConnects:      stats.successfulReconnects + 1, // +1 for initial connect (not a reconnect)
+    totalDisconnects:   stats.failedReconnects,
+    totalMessages:      health.totalMessages,
+    totalCommands:      metrics.commandsExecuted,
+    totalErrors:        health.totalErrors,
+    lastIncomingTime:   health.lastIncomingAge != null ? Date.now() - health.lastIncomingAge : null,
+    lastOutgoingTime:   health.lastOutgoingAge != null ? Date.now() - health.lastOutgoingAge : null,
+    reconnectHistory:   connectionMonitor.getReconnectHistory(),
+    stateHistory:       history,
+    uptime:             health.uptime,
+    latency:             connectionMonitor.heartbeat.getLatency(),
   };
 }
 
 export async function connectToWhatsApp() {
   console.log('[CONNECTION] Initializing WhatsApp multi-device connection...');
-  setState('connecting');
+  connectionMonitor.recordConnecting();
 
   // Ensure session directory exists
   const sessionDir = path.resolve(config.sessionPath);
@@ -178,11 +160,10 @@ export async function connectToWhatsApp() {
 
     } else if (connection === 'open') {
       reconnectAttempts = 0;
-      setState('connected');
+      connectionMonitor.recordConnected(sock);
 
-      const uptime = connectionState.lastConnectTime
-        ? Math.round((Date.now() - connectionState.lastConnectTime) / 1000)
-        : 0;
+      const health  = connectionMonitor.getHealth();
+      const stats   = connectionMonitor.getReconnectStats();
 
       console.log(`\n╭───────────────────────────────────╮`);
       console.log(`│         ${brand.name} v${brand.version}         │`);
@@ -192,26 +173,17 @@ export async function connectToWhatsApp() {
       console.log(`│       Successfully Online          │`);
       console.log(`╰───────────────────────────────────╯\n`);
       console.log(`🤖 Logged in as: ${sock.user?.name || 'Bot'} (${sock.user?.id?.split(':')[0]})\n`);
-      console.log(`[CONNECTION] Total connects: ${connectionState.totalConnects}, Total disconnects: ${connectionState.totalDisconnects}\n`);
+      console.log(`[CONNECTION] Total connects: ${stats.successfulReconnects + 1}, Total disconnects: ${stats.failedReconnects}\n`);
 
       // Restore any pending reminders from the database after reconnect
       restoreReminders(sock);
 
     } else if (connection === 'close') {
-      setState('disconnected');
       const statusCode   = lastDisconnect?.error?.output?.statusCode;
       const errorMessage = lastDisconnect?.error?.message || 'Unknown';
       console.log(`[CONNECTION] Disconnect — statusCode: ${statusCode}, reason: ${errorMessage}`);
 
-      connectionState.reconnectHistory.push({
-        attempt: reconnectAttempts + 1,
-        statusCode,
-        errorMessage,
-        timestamp: Date.now(),
-      });
-      if (connectionState.reconnectHistory.length > 20) {
-        connectionState.reconnectHistory.shift();
-      }
+      connectionMonitor.recordDisconnect(errorMessage, statusCode, errorMessage);
 
       // Determine whether this disconnect is recoverable
       const loggedOut          = statusCode === DisconnectReason.loggedOut;
@@ -256,7 +228,7 @@ export async function connectToWhatsApp() {
         reconnectAttempts++;
         const delay = getReconnectDelay(reconnectAttempts);
         console.log(`[CONNECTION] Reconnect attempt ${reconnectAttempts}${maxAttempts > 0 ? `/${maxAttempts}` : ' (unlimited)'} in ${delay / 1000}s...`);
-        setState('reconnecting');
+        connectionMonitor.recordReconnectAttempt(errorMessage, reconnectAttempts);
         setTimeout(connectToWhatsApp, delay);
       } else {
         console.error(`[CONNECTION] Max reconnect attempts (${maxAttempts}) reached. Shutting down.`);
@@ -270,10 +242,9 @@ export async function connectToWhatsApp() {
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     if (chatUpdate.type !== 'notify') return;
 
-    connectionState.lastIncomingTime = Date.now();
-    connectionState.totalMessages += chatUpdate.messages.length;
-
     for (const rawMessage of chatUpdate.messages) {
+      connectionMonitor.recordIncomingMessage(rawMessage);
+
       // Cache message for getMessage retries
       try {
         const chat = rawMessage?.key?.remoteJid;
@@ -304,7 +275,7 @@ export async function connectToWhatsApp() {
       try {
         await handleMessage(rawMessage, sock);
       } catch (err) {
-        connectionState.totalErrors++;
+        connectionMonitor.recordErrorCaught(err);
         console.error('[HANDLER ERROR] Uncaught error in message handler:', err.message || err);
       }
     }
@@ -312,6 +283,7 @@ export async function connectToWhatsApp() {
 
   // ── Group participant events ───────────────────────────────────────────────
   sock.ev.on('group-participants.update', async (update) => {
+    connectionMonitor.recordGroupEvent(update);
     try {
       await handleGroupParticipantsUpdate(update, sock);
     } catch (err) {
@@ -338,16 +310,13 @@ export async function connectToWhatsApp() {
   // ── Presence updates ──────────────────────────────────────────────────────
   // Track presence to detect stale connections
   sock.ev.on('presence.update', (update) => {
-    // Presence updates indicate the connection is alive
-    connectionState.lastIncomingTime = Date.now();
+    // Presence updates indicate the connection is alive — record as incoming
+    connectionMonitor.heartbeat.recordIncoming();
   });
 
   // ── Messages sent tracking ────────────────────────────────────────────────
-  const originalSendMessage = sock.sendMessage.bind(sock);
-  sock.sendMessage = async (...args) => {
-    connectionState.lastOutgoingTime = Date.now();
-    return originalSendMessage(...args);
-  };
+  // connectionMonitor.attachSocket(sock) patches sendMessage to record outgoing
+  // messages automatically — no need for a manual wrapper here.
 
   return sock;
 }
