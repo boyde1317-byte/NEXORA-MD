@@ -2,19 +2,24 @@
  * @file src/plugins/general/credits.js
  *
  * .credits — Shows bot creator, framework, version, and signature.
- * Wraps the unused src/core/credits.js module as a user-facing command.
+ * Wraps src/core/credits.js as a user-facing command.
  *
- * Uses sendButtonsCard with a fake product catalog quote (like .about)
- * for visual consistency with other info commands.
+ * Visual stack:
+ *   1. Newsletter admin invite quote (newsletterAdminInviteMessage) — gives
+ *      the reply bar a "invited to channel" look instead of a product catalog.
+ *   2. externalAdReply thumbnail — small link-preview banner with the bot's
+ *      logo and a source URL, rendered inside contextInfo.
+ *   3. sendButtonsCard pill buttons — universal WhatsApp client compatibility.
  */
 
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { capabilities } from '../../core/capabilities.js';
-import { buildFakeProductQuote } from '../../lib/waUtils.js';
+import { buildFakeNewsletterQuote } from '../../lib/waUtils.js';
 import { buildNavigationButton } from '../../menu/types/buttonsCard.js';
 import credits from '../../core/credits.js';
 import brand from '../../../config/brand.js';
 import { config } from '../../../config/index.js';
+import { ASSET_URLS } from '../../assets/assetUrls.js';
 
 export default {
   name:        'credits',
@@ -35,24 +40,33 @@ export default {
 
     const footerText = `\u00A9 ${brand.name} by ${brand.creator}`;
 
-    // Build product catalog quote
+    // ── Newsletter admin invite quote ────────────────────────────────────
     let contextInfo;
     try {
-      const catalogQuote = buildFakeProductQuote({
-        title:           brand.name,
-        description:    `by ${brand.creator}`,
-        currencyCode:   'USD',
-        priceAmount1000: 0,
+      const newsletterQuote = buildFakeNewsletterQuote({
+        newsletterName: `${brand.name} Updates`,
+        caption:        `${brand.tagline || brand.description || 'Made with \u2665\uFE0F By ' + brand.creator}`,
       });
       contextInfo = {
-        stanzaId:      catalogQuote.key.id,
-        participant:    catalogQuote.key.participant,
-        remoteJid:      catalogQuote.key.remoteJid,
-        quotedMessage:  catalogQuote.message,
+        stanzaId:      newsletterQuote.key.id,
+        participant:    newsletterQuote.key.participant,
+        remoteJid:      newsletterQuote.key.remoteJid,
+        quotedMessage:  newsletterQuote.message,
       };
     } catch (_) {
       contextInfo = {};
     }
+
+    // ── externalAdReply thumbnail banner ──────────────────────────────────
+    contextInfo.externalAdReply = {
+      title:                  brand.name,
+      body:                   `${brand.tagline || 'By ' + brand.creator}`,
+      sourceUrl:              'https://github.com/boyde1317-byte/NEXORA-MD',
+      mediaType:              1,
+      renderLargerThumbnail:  false,
+      showAdAttribution:      false,
+      thumbnailUrl:           ASSET_URLS.thumbnail,
+    };
 
     const buttons = [
       { displayText: '\u{1F4AC} Contact Dev', id: `${p}owner`, type: 1 },
