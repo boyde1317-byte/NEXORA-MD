@@ -49,20 +49,29 @@ export const isUrl = (s) => {
 };
 
 async function getJson(path, { timeout = DEFAULT_TIMEOUT } = {}) {
+  const MAX_RETRIES = 2;  // try each backend up to 2 times (4 total attempts)
+  const RETRY_DELAY = 1500;  // ms between retries
   let lastError;
-  for (const base of BACKENDS) {
-    try {
-      const res = await fetch(`${base}${path}`, { signal: AbortSignal.timeout(timeout) });
-      if (!res.ok) throw new Error(`Downloader backend returned HTTP ${res.status}.`);
-      const ct = res.headers.get('content-type') ?? '';
-      if (!ct.includes('json')) throw new Error('Downloader backend returned an unexpected (non-JSON) response — the link may be invalid or unsupported.');
-      return await res.json();
-    } catch (err) {
-      lastError = err;
-      // Try next backend
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    for (const base of BACKENDS) {
+      try {
+        const res = await fetch(`${base}${path}`, { signal: AbortSignal.timeout(timeout) });
+        if (!res.ok) throw new Error(`Backend returned HTTP ${res.status}.`);
+        const ct = res.headers.get('content-type') ?? '';
+        if (!ct.includes('json')) throw new Error('Non-JSON response — the link may be invalid or unsupported.');
+        return await res.json();
+      } catch (err) {
+        lastError = err;
+        // Try next backend immediately, then retry cycle after delay
+      }
+    }
+    // All backends failed this attempt — wait before retrying
+    if (attempt < MAX_RETRIES - 1) {
+      await new Promise(r => setTimeout(r, RETRY_DELAY));
     }
   }
-  throw lastError || new Error('All downloader backends are unavailable.');
+  throw new Error(`Download failed after ${MAX_RETRIES} attempts. The backend may be temporarily unavailable — try again in a moment.`);
 }
 
 /** YouTube search (used by .play / .ytmp4 without a direct URL). */

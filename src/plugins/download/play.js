@@ -1,7 +1,6 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard, selectMenu } from '../../lib/interactiveKit.js';
 import { youtubeSearch, youtubeDownload, isUrl } from '../../lib/downloader.js';
-import { DownloadProgress } from '../../lib/progress.js';
 
 const MAX_RESULTS = 5;
 
@@ -23,12 +22,9 @@ export default {
     await withReactionStatus(m, async () => {
       // Direct URL — resolve straight to audio.
       if (isUrl(query)) {
-        const progress = new DownloadProgress(sock, m.from, m);
-        await progress.start('Downloading audio');
         try {
           const data = await youtubeDownload(query);
           if (!data.mp3) throw new Error('No audio stream available for that video.');
-          await progress.done(`✅ ${data.title || 'Audio downloaded'}!`);
 
           const metaParts = [
             `🎵 *${data.title || 'YouTube Audio'}*`,
@@ -37,10 +33,15 @@ export default {
             data.views ? `👁️ ${data.views}` : null,
           ].filter(Boolean).join('\n');
 
+          // Send audio first, then a single metadata card with buttons.
+          // WhatsApp can't combine audio + buttons in one message, so this
+          // is the minimum: 2 messages (audio + card).
           await sock.sendMessage(m.from, {
             audio: { url: data.mp3 },
             mimetype: 'audio/mpeg',
+            ptt: false,
           }, { quoted: m });
+
           return await mixedCard(sock, m.from, {
             text: metaParts,
             footer: 'NEXORA-MD • YouTube Audio',
@@ -51,25 +52,15 @@ export default {
             { kind: 'action', label: '🎵 Play Another',     cmd: `${prefix}play` },
           ], { quoted: m });
         } catch (err) {
-          await progress.fail(`Download failed: ${err.message}`);
-          throw err;
+          return await m.reply.error(`Couldn't download that audio: ${err.message}`);
         }
       }
 
-      // Query — search and let the user pick.
-      const progress = new DownloadProgress(sock, m.from, m);
-      await progress.start(`Searching YouTube for "${query}"`);
+      // Query — search and let the user pick. Single message (selectMenu).
       try {
         const results = (await youtubeSearch(query)).slice(0, MAX_RESULTS);
-        await progress.done(`✅ Found ${results.length} results.`);
 
-        // NOTE: carouselMessage (baileysBridge.sendCarousel) is NOT used here.
-        // relayMessage resolves successfully even when the recipient's WA
-        // client can't render carouselMessage — the failure only shows up
-        // on their screen ("your version of WhatsApp doesn't support it"),
-        // so a try/catch around sendCarousel never actually catches it.
-        // selectMenu (buttonsMessage + single_select) is the reliable path.
-        await selectMenu(sock, m.from, { text: `🔎 Results for "${query}":` }, '🎵 Pick a track', [
+        return await selectMenu(sock, m.from, { text: `🔎 Results for "${query}":` }, '🎵 Pick a track', [
           {
             title: '🎵 Download Audio',
             rows: results.map((v, idx) => ({
@@ -88,8 +79,7 @@ export default {
           },
         ], [], { quoted: m });
       } catch (err) {
-        await progress.fail(`Search failed: ${err.message}`);
-        throw err;
+        return await m.reply.error(`Search failed: ${err.message}`);
       }
     });
   }

@@ -1,26 +1,22 @@
 /**
- * progress.js — Elapsed-time progress feedback for long-running commands.
+ * progress.js — Silent progress tracker for long-running commands.
  *
- * Sends an initial "working" message, then edits it every few seconds with
- * the elapsed time so users know the bot hasn't frozen. Falls back to
- * sending a fresh message if the client rejects edits.
+ * Previously sent a separate "⏳ Processing..." text message that was edited
+ * over time, then the actual result was sent as a second message — causing
+ * double messages. Now silent: the reaction lifecycle (withReactionStatus)
+ * handles visual feedback via ⏳→✅/❌ reactions. This class is kept for API
+ * compatibility so existing plugins don't break, but it no longer sends
+ * any text messages.
  *
- * Usage:
+ * Usage (unchanged API):
  *   const progress = new DownloadProgress(sock, jid, m);
- *   await progress.start('Downloading audio...');
+ *   await progress.start('Downloading audio');  // no-op, just stores label
  *   // ... do work ...
- *   await progress.done('✅ Download complete!');
- *   // or: await progress.fail('❌ Download failed: reason');
+ *   await progress.done('✅ Download complete!');  // no-op
+ *   // or: await progress.fail('❌ Download failed: reason');  // no-op
  */
 
 export class DownloadProgress {
-  /**
-   * @param {object} sock  Baileys socket
-   * @param {string} jid   Target chat JID
-   * @param {object} quoted  Message to quote (m)
-   * @param {object} [opts]
-   * @param {number} [opts.intervalMs=4000]  How often to update the message
-   */
   constructor(sock, jid, quoted, opts = {}) {
     this.sock = sock;
     this.jid = jid;
@@ -41,54 +37,24 @@ export class DownloadProgress {
   }
 
   async _edit(text) {
-    if (!this._sent?.key) {
-      await this.sock.sendMessage(this.jid, { text }, { quoted: this.quoted });
-      return;
-    }
-    try {
-      await this.sock.sendMessage(this.jid, { text, edit: this._sent.key });
-    } catch (_) {
-      // Client rejected edit — send fresh message as fallback
-      try {
-        this._sent = await this.sock.sendMessage(this.jid, { text }, { quoted: this.quoted });
-      } catch (_) {}
-    }
+    // No-op: we no longer send/edit text messages.
+    // The reaction lifecycle handles visual feedback.
   }
 
-  /**
-   * Start the progress indicator with an initial label.
-   * @param {string} label  What's being done, e.g. "Downloading audio"
-   */
   async start(label = 'Processing') {
     this._label = label;
     this._startTime = Date.now();
-    this._sent = await this.sock.sendMessage(this.jid, {
-      text: `⏳ ${label}...`,
-    }, { quoted: this.quoted });
-
-    this._timer = setInterval(async () => {
-      await this._edit(`⏳ ${this._label}... (${this._formatElapsed()} elapsed)`);
-    }, this.intervalMs);
+    // No message sent — silent. Reaction lifecycle shows ⏳.
   }
 
-  /**
-   * Stop the progress and send a final success message.
-   * @param {string} message  Final message (defaults to a generic success)
-   */
   async done(message) {
     this._stop();
-    if (message) {
-      await this._edit(message);
-    }
+    // No message sent — the plugin's result message IS the done indicator.
   }
 
-  /**
-   * Stop the progress and send a final failure message.
-   * @param {string} message  Error message
-   */
   async fail(message) {
     this._stop();
-    await this._edit(message || '⨯ Operation failed.');
+    // Caller should throw or send its own error message.
   }
 
   _stop() {
