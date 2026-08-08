@@ -278,57 +278,8 @@ try {
     return;
   }
 
-  // ── First-time user onboarding ─────────────────────────────────────────
-  // Detect if this is the user's first interaction and send a welcome guide
-  // with interactive tappable buttons so new users can explore without typing.
-  if (!m.fromMe) {
-    try {
-      const userRec = db.getUser(sender);
-      if (!userRec.hasOnboarded && !userRec.banned) {
-        db.setUser(sender, { hasOnboarded: true });
-        const number = sender.split('@')[0].split(':')[0];
-        const p = config.prefix[0] || '.';
-        const welcomeText = [
-          `✦ *${toSmallcaps('Welcome to ' + config.botName)}* ✦`,
-          ``,
-          `Hey @${number} — I'm ${config.botName}. Not just a bot — *your* bot.`,
-          `Think of me as the friend who knows everything and can actually do stuff. ☕`,
-          ``,
-          `Tap a button below to jump in, or type *${p}menu* for the full console. ✦`,
-        ].join('\n');
-        try {
-          await actionCard(sock, jid, {
-            text:   welcomeText,
-            footer: `${config.botName} • Quick Start`,
-          }, [
-            { label: '🎮 Open Menu',      cmd: `${p}menu` },
-            { label: '📖 Command Guide',   cmd: `${p}help` },
-            { label: '🪙 Claim Daily',     cmd: `${p}daily` },
-            { label: '🏓 Ping Bot',        cmd: `${p}ping` },
-          ], { quoted: rawMessage, mentions: [sender] });
-        } catch (_) {
-          // Fallback: plain text if interactive cards are unavailable
-          await sock.sendMessage(jid, {
-            text: [
-              `✦ *${toSmallcaps('Welcome to ' + config.botName)}* ✦`,
-              ``,
-              `Hey @${number} — I'm ${config.botName}. Here's the quick start:`,
-              ``,
-              `• ${p}menu  — ${toSmallcaps('Interactive command console')}`,
-              `• ${p}help  — ${toSmallcaps('Detailed command guide')}`,
-              `• ${p}ping  — ${toSmallcaps('Check if I am alive')}`,
-              `• ${p}daily — ${toSmallcaps('Claim daily rewards')}`,
-              ``,
-              `Type *${p}menu* to see everything I can do. I'll be here. ✦`,
-            ].join('\n'),
-            mentions: [sender],
-          }, { quoted: rawMessage }).catch(() => {});
-        }
-      }
-    } catch (err) {
-      console.error('[ONBOARDING] Error:', err.message);
-    }
-  }
+  // ── First-time user onboarding removed (was spamming groups) ──
+
 
   // Only respond to prefixed commands
   const prefix = config.prefix.find(p => body.startsWith(p));
