@@ -13,7 +13,6 @@ import { mixedCard} from '../../lib/interactiveKit.js';
  *  - Custom author: .sticker --author=MyName
  *  - Emoji overlay: .sticker 🎉
  *  - Better error messages with usage examples
- *  - Follow-up card with "make another" + "list stickers"
  */
 const CROP_KEYWORDS = ['crop', 'circle', 'rounded'];
 const STRETCH_KEYWORDS = ['stretch', 'full', 'contain'];
@@ -123,6 +122,8 @@ export default {
       const stickerBuffer = await sticker.toBuffer();
       await progress.done('');
 
+      // Single message — the sticker itself is the complete response.
+      // Removed follow-up mixedCard to prevent double messages.
       await sock.sendMessage(m.from, { sticker: stickerBuffer }, { quoted: m });
     } catch (err) {
       console.error('[PLUGIN ERROR] sticker conversion failed:', err);

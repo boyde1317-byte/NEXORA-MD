@@ -7,7 +7,6 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { getLevelProgress, progressBar, rankBadge } from '../../economy/leveling.js';
-import { actionCard } from '../../lib/interactiveKit.js';
 import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 export default {
@@ -17,8 +16,6 @@ export default {
   description: 'Quick check of your coin balance, XP, and level.',
   cooldown: 3000,
   execute: async ({ m, sock, db, prefix }) => {
-    const p = prefix || '.';
-
     await withReactionStatus(m, async () => {
       const targetJid = m.quoted?.sender || m.sender;
       const isSelf = targetJid === m.sender;
@@ -40,18 +37,8 @@ export default {
       const title = isSelf ? 'YOUR BALANCE' : `BALANCE — +${targetJid.split('@')[0].slice(-6)}`;
       const text = asciiBuilder.box(title, lines);
 
+      // Single message reply — removed follow-up action card to prevent double messages.
       await m.reply(text, { contextInfo: buildEnrichedContextInfo() });
-
-      try {
-        await actionCard(sock, m.from, {
-          text: 'What\'s next? ✦',
-          footer: 'NEXORA • Wallet',
-        }, [
-          { label: '🪙 Claim Daily',  cmd: `${p}daily` },
-          { label: '🏆 Leaderboard',  cmd: `${p}top` },
-          { label: '👤 Full Profile', cmd: `${p}profile` },
-        ], { quoted: m });
-      } catch (_) { /* non-critical */ }
     });
   }
 };

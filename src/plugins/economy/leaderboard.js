@@ -3,9 +3,12 @@
  *
  * Shows 10 users per page. Use `.lb 2` for page 2, `.lb coins 2` for page 2
  * of the coins ranking, etc.
+ *
+ * Removed follow-up actionCard to prevent double messages — users navigate
+ * with `.lb <page>` or `.lb coins <page>` instead of tapping buttons.
  */
 import { withReactionStatus } from '../../lib/cosmetics.js';
-import { richTableCard, actionCard } from '../../lib/interactiveKit.js';
+import { richTableCard } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { xpToLevel, rankBadge } from '../../economy/leveling.js';
 import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
@@ -62,7 +65,7 @@ export default {
       const senderNum  = m.sender.split('@')[0].split(':')[0];
       const senderRank = entries.findIndex(e => e.number === senderNum);
 
-      // ── Tier 1: richTableCard ────────────────────────────────────────────
+      // ── Tier 1: richTableCard — single message ────────────────────────
       try {
         const rows = pageEntries.map((u, i) => {
           const globalRank = startIdx + i;
@@ -88,32 +91,14 @@ export default {
             : u.xp.toLocaleString();
           footer += `\nYour rank: #${senderRank + 1} • ${label}: ${value}`;
         }
+        footer += `\nUse \`${p}lb ${mode} <page>\` to navigate`;
 
-        await richTableCard(sock, m.from, {
+        return await richTableCard(sock, m.from, {
           title:   mode === 'coins' ? `🪙 COINS LEADERBOARD — PAGE ${page}` : `✨ XP LEADERBOARD — PAGE ${page}`,
           headers: ['#', 'Number', 'Rank', label],
           rows,
           footer,
         }, { quoted: m });
-
-        // Build pagination buttons
-        const buttons = [];
-        if (page > 1) {
-          buttons.push({ label: '⬅️ Previous', cmd: `${p}lb ${mode} ${page - 1}` });
-        }
-        if (page < totalPages) {
-          buttons.push({ label: '➡️ Next', cmd: `${p}lb ${mode} ${page + 1}` });
-        }
-        const flipMode  = mode === 'coins' ? 'xp' : 'coins';
-        const flipLabel = mode === 'coins' ? '✨ Switch to XP' : '🪙 Switch to Coins';
-        buttons.push({ label: flipLabel, cmd: `${p}lb ${flipMode} ${page}` });
-
-        const senderNote = senderRank === 0 ? ' You\'re at the top. 👑' : senderRank > 0 && senderRank < 10 ? ' You\'re in the top 10. 🔥' : '';
-
-        return await actionCard(sock, m.from, {
-          text:   `Showing ${pageEntries.length} users on page ${page} of ${totalPages}.${senderNote}`,
-          footer: 'NEXORA • Hall of Fame',
-        }, buttons, { quoted: m });
       } catch (err) {
         console.warn('[leaderboard] richTableCard failed, plain-text fallback:', err.message);
       }

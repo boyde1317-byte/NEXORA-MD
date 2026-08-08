@@ -13,7 +13,7 @@
  *  .shop theme <modern|classic|minimal> — set theme after purchasing
  */
 import { withReactionStatus } from '../../lib/cosmetics.js';
-import { richTableCard, actionCard, selectMenu } from '../../lib/interactiveKit.js';
+import { richTableCard, selectMenu } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { grantXp, withUserLock } from '../../economy/leveling.js';
 import { themeManager } from '../../ui/themeManager.js';
@@ -40,8 +40,6 @@ export default {
     const subCmd = args[0]?.toLowerCase();
 
     // ── Theme sub-command: .shop theme <name> ───────────────────────────
-    // Lets users who purchased the theme unlock self-serve switching without
-    // needing an admin to run .settheme for them.
     if (subCmd === 'theme') {
       const userData = db.getUser(m.sender);
       if (!userData.customTheme) {
@@ -142,7 +140,7 @@ export default {
       return;
     }
 
-    // ── Shop listing ───────────────────────────────────────────────────
+    // ── Shop listing — single message ──────────────────────────────────
     await withReactionStatus(m, async () => {
       const userData = db.getUser(m.sender);
       const coins = userData.coins ?? 0;
@@ -159,15 +157,6 @@ export default {
           ]),
           footer: `Your balance: ${coins.toLocaleString()} 🪙 • Use \`${p}shop buy <id>\` to purchase`,
         }, { quoted: m });
-
-        await actionCard(sock, m.from, {
-          text: 'Ready to spend some coins? Treat yourself. ✦',
-          footer: 'NEXORA • Shop',
-        }, [
-          { label: '🪙 Claim Daily',   cmd: `${p}daily` },
-          { label: '💰 Check Balance', cmd: `${p}balance` },
-          { label: '🏆 Leaderboard',   cmd: `${p}top` },
-        ], { quoted: m });
       } catch (err) {
         console.warn('[shop] richTableCard failed, ASCII fallback:', err.message);
         const lines = SHOP_ITEMS.map(i =>

@@ -1,12 +1,11 @@
 /**
  * profile.js — User profile card.
  *
- * Upgraded from asciiBuilder + plain image → richTableCard + mixedCard.
- * Profile picture is sent as image header, then richTable for stats, then
- * mixedCard with economy navigation buttons.
+ * Sends profile picture (if available) + richTableCard with stats.
+ * Removed follow-up mixedCard to prevent double messages.
  */
 import { withReactionStatus } from '../../lib/cosmetics.js';
-import { richTableCard, mixedCard } from '../../lib/interactiveKit.js';
+import { richTableCard } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { getLevelProgress, progressBar, rankBadge, streakEmoji } from '../../economy/leveling.js';
 import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
@@ -51,7 +50,7 @@ export default {
 
       const title = isSelf ? '👤 YOUR PROFILE' : `👤 PROFILE — +${number}`;
 
-      // ── Tier 1: profile picture + richTableCard + mixedCard ─────────────
+      // ── Tier 1: profile picture + richTableCard — single content pair ──
       try {
         // Send profile picture first as visual header if available
         if (ppUrl) {
@@ -71,7 +70,7 @@ export default {
           d.warnings > 0 ? ['Warnings', `${d.warnings}/3 ⚠️`] : null,
         ].filter(Boolean);
 
-        await richTableCard(sock, m.from, {
+        return await richTableCard(sock, m.from, {
           title,
           headers: ['Field', 'Value'],
           rows: [
@@ -89,20 +88,8 @@ export default {
           ],
           footer: `${isSelf ? 'Your stats' : `Stats for +${number}`} • NEXORA Profile`,
         }, { quoted: ppUrl ? undefined : m });
-
-        if (isSelf) {
-          return await mixedCard(sock, m.from, {
-            text:   `📊 What's next on the grind? ${badge} ${streak > 0 ? '🔥' : '✦'}`,
-            footer: 'NEXORA • Profile',
-          }, [
-            { kind: 'action', label: '🪙 Claim Daily',      cmd: `${p}daily` },
-            { kind: 'action', label: '🏆 Leaderboard',      cmd: `${p}lb` },
-            { kind: 'action', label: '🏅 Leaderboard Coins',cmd: `${p}lb coins` },
-          ], { quoted: m });
-        }
-        return;
       } catch (err) {
-        console.warn('[profile] Tier 1 (richTableCard + mixedCard) failed:', err.message);
+        console.warn('[profile] Tier 1 (richTableCard) failed:', err.message);
       }
 
       // ── Tier 2: plain image + asciiBuilder fallback ──────────────────────
