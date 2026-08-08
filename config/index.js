@@ -167,6 +167,23 @@ const rawConfig = {
     antiCall: parseBool(process.env.ANTI_CALL, true),
     autoRecovery: parseBool(process.env.AUTO_RECOVERY, true),
     hotReload: parseBool(process.env.HOT_RELOAD, process.env.NODE_ENV === 'development'),
+    // ── externalAdReply preview cards on text-only replies ────────────────
+    // When enabled, every m.reply(text) call automatically gets a contextInfo
+    // with an externalAdReply banner (bot logo + source URL link-preview card)
+    // attached — no need for each plugin to pass contextInfo manually.
+    // Set AD_REPLY_CARDS=false in .env to disable.
+    adReplyCards: parseBool(process.env.AD_REPLY_CARDS, true),
+  },
+
+  // ── externalAdReply card appearance ──────────────────────────────────────
+  // Defaults pulled from config/brand.js at runtime — override via env only
+  // if you need per-deployment customisation.
+  adReply: {
+    title: process.env.AD_REPLY_TITLE || '',        // empty = use brand.name
+    body: process.env.AD_REPLY_BODY || '',           // empty = use brand.tagline
+    sourceUrl: process.env.AD_REPLY_URL || '',       // empty = GitHub repo URL
+    thumbnailUrl: process.env.AD_REPLY_THUMBNAIL || '', // empty = ASSET_URLS.thumbnail
+    renderLargerThumbnail: parseBool(process.env.AD_REPLY_LARGE_THUMB, false),
   },
 
   // ── Web server ────────────────────────────────────────────────────────────

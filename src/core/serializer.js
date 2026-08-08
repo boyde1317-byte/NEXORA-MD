@@ -3,6 +3,7 @@ import baileysBridge from './baileysBridge.js';
 import { config } from '../../config/index.js';
 import { messageFormatter } from '../ui/messageFormatter.js';
 import { db } from '../database/db.js';
+import { buildEnrichedContextInfo } from '../lib/enrichContext.js';
 
 /**
  * Extracts the body text from a raw message content object.
@@ -241,143 +242,133 @@ async function resolveIsOwner(sock, senderJid, fromMe, groupJid) {
     try {
       const meta = await sock.groupMetadata(groupJid);
       const p = meta?.participants?.find(part => normaliseJid(part.id) === norm);
-      if (p?.phoneNumber && config.owner.includes(normaliseJid(p.phoneNumber).split('@')[0])) {
-        return true;
+      if (p?.phoneNumber) {
+        const ownerNum = p.phoneNumber.replace(/[^0-9]/g, '');
+        if (config.owner.includes(ownerNum)) return true;
       }
-      if (p?.lid && config.owner.includes(normaliseJid(p.lid).split('@')[0])) {
-        return true;
+      if (p?.lid) {
+        const lidNorm = normaliseJid(p.lid);
+        if (lidNorm !== norm) {
+          const viaRepo = await resolvePhoneJid(sock, lidNorm);
+          if (viaRepo !== lidNorm) {
+            const ownerNum = viaRepo.split('@')[0];
+            if (config.owner.includes(ownerNum)) return true;
+          }
+        }
       }
     } catch (_) {
-      // Metadata fetch failed (rate limit, not-in-group edge case) — fall through.
+      // groupMetadata can fail if the bot isn't in the group or is rate-limited
     }
   }
 
-  // Sender presented as a LID — resolve to the real phone number before giving up.
-  const pnJid = await resolvePhoneJid(sock, senderJid);
-  const pnNumber = pnJid.split('@')[0];
-  if (config.owner.includes(pnNumber)) return true;
-
-  // Owner configured by LID directly — resolve senderJid's LID form and compare.
-  const lidJid = await resolveLidJid(sock, senderJid);
-  const lidNumber = lidJid.split('@')[0];
-  if (config.owner.includes(lidNumber)) return true;
-
-  // ── Sudo owners (runtime-added via .addowner command) ────────────────
-  // These are stored in db.settings.sudoOwners and persist across restarts.
-  // They have the same privileges as env-configured root owners.
-  const sudoOwners = db?.data?.settings?.sudoOwners;
-  if (Array.isArray(sudoOwners) && sudoOwners.length > 0) {
-    const sudoNumbers = sudoOwners.map(o => o.number || o);
-    if (sudoNumbers.includes(rawNumber)) return true;
-    if (sudoNumbers.includes(pnNumber)) return true;
-    if (sudoNumbers.includes(lidNumber)) return true;
-
-    // Group metadata bridge for sudo owners (same reason as root owners above)
-    if (groupJid) {
-      try {
-        const meta = await sock.groupMetadata(groupJid);
-        const p = meta?.participants?.find(part => normaliseJid(part.id) === norm);
-        if (p?.phoneNumber && sudoNumbers.includes(normaliseJid(p.phoneNumber).split('@')[0])) {
-          return true;
-        }
-        if (p?.lid && sudoNumbers.includes(normaliseJid(p.lid).split('@')[0])) {
-          return true;
-        }
-      } catch (_) {
-        // Metadata fetch failed — fall through.
-      }
+  // LID → phone resolution via signalRepository (authoritative)
+  if (norm.endsWith('@lid')) {
+    const phoneJid = await resolvePhoneJid(sock, norm);
+    if (phoneJid !== norm) {
+      const phoneNum = phoneJid.split('@')[0];
+      if (config.owner.includes(phoneNum)) return true;
     }
   }
 
   return false;
 }
 
-export async function serialize(m, sock) {
-  if (!m) return m;
+/**
+ * Serialise a raw Baileys message into a convenient `m` object with
+ * helper methods (.reply, .react, .edit, .delete, .download).
+ *
+ * @param {object} rawMessage  Raw Baileys message
+ * @param {import('baileys').WASocket} sock
+ * @returns {Promise<object|null>}
+ */
+export async function serialize(rawMessage, sock) {
+  if (!rawMessage?.message || !rawMessage?.key?.remoteJid) return null;
 
-  const message = { ...m };
+  const type = Object.keys(rawMessage.message)[0] || '';
+  const msgContent = rawMessage.message[type];
+  const jid = rawMessage.key.remoteJid;
 
-  if (message.key) {
-    message.id       = message.key.id;
-    message.from     = message.key.remoteJid;
-    message.fromMe   = message.key.fromMe;
-    message.sock     = sock;
-    message.isGroup  = message.from?.endsWith('@g.us') ?? false;
+  const message = {
+    // ── Identity ──────────────────────────────────────────────────────────
+    key: rawMessage.key,
+    id: rawMessage.key.id,
+    from: jid,
+    sender: normaliseJid(rawMessage.key.participant || (rawMessage.key.fromMe ? sock.user?.id : '') || jid),
+    fromMe: rawMessage.key.fromMe || false,
+    isGroup: jid.endsWith('@g.us'),
+    isStatus: jid === 'status@broadcast',
+    isNewsletter: jid.endsWith('@newsletter'),
 
-    const rawSender  = message.key.participant || message.key.remoteJid;
-    message.sender   = normaliseJid(rawSender);
-    message.senderNumber = message.sender.split('@')[0];
-    // LID fix: WhatsApp may present the sender as an opaque LID instead of a phone number
-    // (privacy setting on newer accounts). resolveIsOwner follows the real LID↔PN bridge
-    // (sock.signalRepository.lidMapping) rather than comparing the opaque LID directly.
-    message.isOwner  = await resolveIsOwner(sock, message.sender, message.fromMe, message.isGroup ? message.from : undefined);
-  }
+    // ── Content ────────────────────────────────────────────────────────────
+    type,
+    msg: msgContent,
+    body: '',
+    hasMedia: false,
+    hasQuotedMsg: false,
 
-  if (message.message) {
-    const types = Object.keys(message.message);
+    // ── Metadata ──────────────────────────────────────────────────────────
+    timestamp: (rawMessage.messageTimestamp || Date.now()) * 1000,
+    sock,
 
-    // Skip pure protocol / key-distribution messages
-    const type = types.find(t =>
-      t !== 'messageContextInfo' &&
-      t !== 'senderKeyDistributionMessage' &&
-      t !== 'protocolMessage'
-    ) || types[0];
-
-    message.type    = type;
-    const msgContent = message.message[type];
-    message.msg     = msgContent;
-
-    // Extract body text — safe for every known message shape
-    message.body = extractBody(type, msgContent);
-
-    // ── Quoted message parsing ──────────────────────────────────────────────
-    const contextInfo = msgContent?.contextInfo;
-    if (contextInfo?.quotedMessage) {
-      const qMessage = contextInfo.quotedMessage;
-      const qTypes   = Object.keys(qMessage);
-      const qType    = qTypes.find(t => t !== 'messageContextInfo') || qTypes[0];
-      const qContent = qMessage[qType];
-
-      // Guard: participant can be absent in DMs or self-quoting — never crash
-      const rawQuotedSender = contextInfo.participant || message.key.remoteJid || '';
-      const quotedSender    = normaliseJid(rawQuotedSender);
-
-      message.quoted = {
-        id:           contextInfo.stanzaId,
-        sender:       quotedSender,
-        senderNumber: quotedSender.split('@')[0],
-        isOwner:      await resolveIsOwner(sock, quotedSender, quotedSender === normaliseJid(sock.user?.id)),
-        type:         qType,
-        message:      qMessage,
-        msg:          qContent,
-        body:         extractBody(qType, qContent),
-        download: async () => {
-          const fakeMessage = {
-            key: {
-              remoteJid:   message.from,
-              fromMe:      quotedSender === normaliseJid(sock.user?.id),
-              id:          contextInfo.stanzaId,
-              participant: contextInfo.participant
-            },
-            message: qMessage
-          };
-          return await downloadMediaMessage(fakeMessage, 'buffer', {});
-        }
-      };
-    }
-  }
-
-  // ── Group helpers ──────────────────────────────────────────────────────────
-  message.getGroupMetadata = async () => {
-    if (!message.isGroup) return null;
-    try {
-      return await sock.groupMetadata(message.from);
-    } catch (e) {
-      console.error(`[SERIALIZER] Failed to fetch group metadata for ${message.from}:`, e.message);
-      return null;
-    }
+    // ── Group metadata cache ──────────────────────────────────────────────
+    _groupMeta: null,
+    getGroupMetadata: async () => {
+      if (message._groupMeta) return message._groupMeta;
+      if (!message.isGroup) return null;
+      try {
+        message._groupMeta = await sock.groupMetadata(jid);
+      } catch (_) {
+        message._groupMeta = null;
+      }
+      return message._groupMeta;
+    },
   };
 
+  // Resolve owner status (async, cached on first call)
+  message._isOwner = undefined;
+  Object.defineProperty(message, 'isOwner', {
+    get() {
+      if (message._isOwner !== undefined) return Promise.resolve(message._isOwner);
+      return resolveIsOwner(sock, message.sender, message.fromMe, message.isGroup ? jid : null).then(result => {
+        message._isOwner = result;
+        return result;
+      });
+    },
+  });
+
+  // Extract body text
+  message.body = extractBody(type, msgContent);
+
+  // Detect quoted message
+  if (msgContent?.contextInfo?.quotedMessage || msgContent?.contextInfo?.stanzaId) {
+    message.hasQuotedMsg = true;
+    const q = msgContent.contextInfo;
+    message.quoted = {
+      key: {
+        id: q.stanzaId,
+        remoteJid: q.remoteJid || jid,
+        participant: normaliseJid(q.participant || ''),
+        fromMe: normaliseJid(q.participant || '') === normaliseJid(sock.user?.id || ''),
+      },
+      sender: normaliseJid(q.participant || ''),
+      message: q.quotedMessage || {},
+      type: q.quotedMessage ? Object.keys(q.quotedMessage)[0] : '',
+      body: q.quotedMessage ? extractBody(Object.keys(q.quotedMessage)[0], Object.values(q.quotedMessage)[0]) : '',
+      download: async () => {
+        if (!q.quotedMessage) return null;
+        const fakeMsg = { message: q.quotedMessage, key: { id: q.stanzaId, remoteJid: q.remoteJid || jid, participant: q.participant } };
+        return await downloadMediaMessage(fakeMsg, 'buffer', {});
+      },
+    };
+  }
+
+  // Detect media
+  const mediaTypes = ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage', 'stickerMessage', 'pttMessage'];
+  if (mediaTypes.includes(type) || (type === 'documentWithCaptionMessage' && msgContent?.message?.documentMessage)) {
+    message.hasMedia = true;
+  }
+
+  // ── Admin helpers (async, cached) ─────────────────────────────────────────
   message.isAdmin = async () => {
     if (!message.isGroup) return false;
     const meta = await message.getGroupMetadata();
@@ -396,17 +387,34 @@ export async function serialize(m, sock) {
   };
 
   // ── Reply helper ──────────────────────────────────────────────────────────
-  // Accepts an optional `contextInfo` inside options — when present it is
-  // merged into the message content (not sendMessage options) so callers
-  // can enrich plain-text replies with newsletter quotes + externalAdReply:
-  //   m.reply(text)                                    // plain text (backward-compatible)
-  //   m.reply(text, { contextInfo: buildEnrichedContextInfo() })  // enriched
+  // Automatically attaches an externalAdReply preview card (link-preview
+  // banner with bot logo + source URL) to every text-only reply, controlled
+  // by config.features.adReplyCards (default: true).
+  //
+  // Callers can still override by passing their own contextInfo:
+  //   m.reply(text)                                    // auto-attaches ad-reply card
+  //   m.reply(text, { contextInfo: customContextInfo }) // uses caller's contextInfo
+  //   m.reply(text, { skipAdReply: true })               // force-skip the card
   const replyFn = async (text, options = {}) => {
-    const { contextInfo, ...sendOptions } = options;
+    const { contextInfo, skipAdReply, ...sendOptions } = options;
     message._replyCount = (message._replyCount || 0) + 1;
+
+    // Auto-attach externalAdReply card when:
+    //   1. Feature flag is enabled
+    //   2. Caller didn't pass their own contextInfo
+    //   3. Caller didn't explicitly skip it
+    let finalContextInfo = contextInfo;
+    if (!finalContextInfo && !skipAdReply && config.features?.adReplyCards !== false) {
+      try {
+        finalContextInfo = buildEnrichedContextInfo();
+      } catch (_) {
+        // enrichContext build failed — send bare text, never break the reply
+      }
+    }
+
     return await sock.sendMessage(
       message.from,
-      { text, ...(contextInfo ? { contextInfo } : {}) },
+      { text, ...(finalContextInfo ? { contextInfo: finalContextInfo } : {}) },
       { quoted: m, ...sendOptions }
     );
   };
