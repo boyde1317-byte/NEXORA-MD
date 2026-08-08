@@ -273,6 +273,9 @@ httpServer = app.listen(PORT, HOST, async () => {
 
   try {
     await assetManager.init();
+    // Pre-fetch and cache the externalAdReply thumbnail so the first reply isn't delayed
+    const { initThumbnail } = await import('./src/lib/enrichContext.js');
+    await initThumbnail();
     await client.loadPlugins();
     await connectToWhatsApp();
   } catch (err) {

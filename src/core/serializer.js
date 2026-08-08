@@ -406,7 +406,7 @@ export async function serialize(rawMessage, sock) {
     let finalContextInfo = contextInfo;
     if (!finalContextInfo && !skipAdReply && config.features?.adReplyCards !== false) {
       try {
-        finalContextInfo = buildEnrichedContextInfo();
+        finalContextInfo = await buildEnrichedContextInfo();
       } catch (_) {
         // enrichContext build failed — send bare text, never break the reply
       }
