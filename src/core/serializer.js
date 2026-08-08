@@ -2,6 +2,7 @@ import { downloadMediaMessage } from 'baileys';
 import baileysBridge from './baileysBridge.js';
 import { config } from '../../config/index.js';
 import { messageFormatter } from '../ui/messageFormatter.js';
+import { db } from '../database/db.js';
 
 /**
  * Extracts the body text from a raw message content object.
@@ -259,7 +260,36 @@ async function resolveIsOwner(sock, senderJid, fromMe, groupJid) {
   // Owner configured by LID directly — resolve senderJid's LID form and compare.
   const lidJid = await resolveLidJid(sock, senderJid);
   const lidNumber = lidJid.split('@')[0];
-  return config.owner.includes(lidNumber);
+  if (config.owner.includes(lidNumber)) return true;
+
+  // ── Sudo owners (runtime-added via .addowner command) ────────────────
+  // These are stored in db.settings.sudoOwners and persist across restarts.
+  // They have the same privileges as env-configured root owners.
+  const sudoOwners = db?.data?.settings?.sudoOwners;
+  if (Array.isArray(sudoOwners) && sudoOwners.length > 0) {
+    const sudoNumbers = sudoOwners.map(o => o.number || o);
+    if (sudoNumbers.includes(rawNumber)) return true;
+    if (sudoNumbers.includes(pnNumber)) return true;
+    if (sudoNumbers.includes(lidNumber)) return true;
+
+    // Group metadata bridge for sudo owners (same reason as root owners above)
+    if (groupJid) {
+      try {
+        const meta = await sock.groupMetadata(groupJid);
+        const p = meta?.participants?.find(part => normaliseJid(part.id) === norm);
+        if (p?.phoneNumber && sudoNumbers.includes(normaliseJid(p.phoneNumber).split('@')[0])) {
+          return true;
+        }
+        if (p?.lid && sudoNumbers.includes(normaliseJid(p.lid).split('@')[0])) {
+          return true;
+        }
+      } catch (_) {
+        // Metadata fetch failed — fall through.
+      }
+    }
+  }
+
+  return false;
 }
 
 export async function serialize(m, sock) {

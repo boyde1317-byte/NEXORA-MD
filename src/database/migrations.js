@@ -147,6 +147,16 @@ export const migrations = [
         }
       }
     }
+  },
+  {
+    id: 7,
+    name: 'addSudoOwners',
+    up(data) {
+      if (!data.settings) data.settings = {};
+      if (!Array.isArray(data.settings.sudoOwners)) {
+        data.settings.sudoOwners = [];
+      }
+    }
   }
 ];
 
