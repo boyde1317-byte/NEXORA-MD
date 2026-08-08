@@ -85,6 +85,7 @@ export function buildFakeOrderQuote({ title, thumbnail, itemCount = 1, orderId, 
       fromMe:      false,
       participant: WA_JID,
       remoteJid:   STATUS_JID,
+      id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
       orderMessage: {
@@ -133,6 +134,7 @@ export function buildFakeContactQuote({ displayName, phoneNumber, vcard } = {}) 
       fromMe:      false,
       participant: WA_JID,
       remoteJid:   STATUS_JID,
+      id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
       // ContactMessage proto (verified): only displayName, vcard, contextInfo.
@@ -180,6 +182,7 @@ export function buildFakeAudioQuote({ audioMessage, seconds = 9999999, ptt = tru
       fromMe:      false,
       participant: WA_JID,
       remoteJid:   STATUS_JID,
+      id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
       audioMessage: audioMessage || {
@@ -229,6 +232,7 @@ export function buildFakeLocationQuote({
       fromMe:      false,
       participant: WA_JID,
       remoteJid:   STATUS_JID,
+      id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
       locationMessage: {
@@ -271,6 +275,7 @@ export function buildFakeLiveLocationQuote({
       fromMe:      false,
       participant: WA_JID,
       remoteJid:   STATUS_JID,
+      id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
       liveLocationMessage: {
@@ -304,6 +309,7 @@ export function buildFakeTextQuote({ text, title, jpegThumbnail } = {}) {
       fromMe:      false,
       participant: WA_JID,
       remoteJid:   STATUS_JID,
+      id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
       extendedTextMessage: {
@@ -331,6 +337,7 @@ export function buildFakeDocumentQuote({ title, fileName, mimetype, jpegThumbnai
       fromMe:      false,
       participant: WA_JID,
       remoteJid:   STATUS_JID,
+      id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
       documentMessage: {
@@ -362,6 +369,7 @@ export function buildFakeImageQuote({ url, jpegThumbnail, viewOnce = false, heig
       fromMe:      false,
       participant: WA_JID,
       remoteJid:   STATUS_JID,
+      id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
       imageMessage: {
@@ -396,6 +404,7 @@ export function buildFakeGifQuote({ caption, jpegThumbnail, seconds = 999999999,
       fromMe:      false,
       participant: WA_JID,
       remoteJid:   STATUS_JID,
+      id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
       videoMessage: {
@@ -438,6 +447,7 @@ export function buildFakeProductQuote({
       fromMe:      false,
       participant: WA_JID,
       remoteJid:   STATUS_JID,
+      id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
       productMessage: {
@@ -475,6 +485,7 @@ export function buildFakeGroupInviteQuote({ groupJid, inviteCode = 'null', group
       fromMe:      false,
       participant: WA_JID,
       remoteJid:   WA_JID,
+      id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
       groupInviteMessage: {
@@ -509,6 +520,7 @@ export function buildFakePaymentQuote({ currencyCode = 'USD', amount1000 = 1000,
       fromMe:      false,
       participant: WA_JID,
       remoteJid:   WA_JID,
+      id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
       requestPaymentMessage: {

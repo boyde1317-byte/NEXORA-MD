@@ -89,7 +89,7 @@ export const newsletterMenu = {
             buildNavigationButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: newsletterQuote });
+        }, { quoted: menuData.audioQuote || m });
       } catch (err) {
         console.warn('[MENU newsletter] Tier 1 (sendButtonsCard + newsletter quote) failed, trying native invite:', err.message);
       }
@@ -131,12 +131,12 @@ export const newsletterMenu = {
           image:    imgData.buffer,
           mimetype: imgData.mimetype,
           caption:   bodyText,
-        }, { quoted: newsletterQuote });
+        }, { quoted: menuData.audioQuote || m });
       } else if (imgData.source?.startsWith('http')) {
         return await sock.sendMessage(m.from, {
           image:   { url: imgData.source },
           caption:  bodyText,
-        }, { quoted: newsletterQuote });
+        }, { quoted: menuData.audioQuote || m });
       }
     } catch (err) {
       console.warn('[MENU newsletter] Tier 3 (imageMessage) failed, continuing to text:', err.message);

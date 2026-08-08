@@ -27,6 +27,7 @@ import { buildTextMenu } from '../formatter.js';
 import brand from '../../../config/brand.js';
 import { imageManager } from '../../images/imageManager.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
+import { baileysBridge } from '../../core/baileysBridge.js';
 import { config } from '../../../config/index.js';
 
 export const listFallbackMenu = {
@@ -76,17 +77,35 @@ export const listFallbackMenu = {
     const footer = `${brand.name} • ${brand.creator}`;
 
     // ── Tier 1: listMessage (legacy) ───────────────────────────────────────
+    // Route through baileysBridge.relayMessage for proper contextInfo handling.
+    // We build the listMessage proto directly (bypassing generateWAMessageContent's
+    // dispatch chain which first creates extendedTextMessage then overwrites it).
     try {
-      return await sock.sendMessage(m.from, {
-        text:       body,
-        footer,
-        title:      `${brand.name} Menu`,
-        buttonText: '📋 Browse Commands',
-        sections,
-        listType:   1,   // SINGLE_SELECT
+      return await baileysBridge.relayMessage(sock, m.from, {
+        listMessage: {
+          title:       `${brand.name} Menu`,
+          description: body,
+          footerText:  footer,
+          buttonText:  '📋 Browse Commands',
+          listType:    1,   // SINGLE_SELECT
+          sections,
+        },
       }, { quoted: m });
     } catch (err) {
-      console.warn('[MENU listFallback] listMessage failed, plain text:', err.message);
+      console.warn('[MENU listFallback] listMessage (relayMessage) failed, trying sock.sendMessage:', err.message);
+      // Fallback: try direct sock.sendMessage
+      try {
+        return await sock.sendMessage(m.from, {
+          text:       body,
+          footer,
+          title:      `${brand.name} Menu`,
+          buttonText: '📋 Browse Commands',
+          sections,
+          listType:   1,
+        }, { quoted: m });
+      } catch (err2) {
+        console.warn('[MENU listFallback] listMessage (sock.sendMessage) failed, plain text:', err2.message);
+      }
     }
 
     // ── Tier 2: guaranteed plain text + fake quote + banner ───────────────

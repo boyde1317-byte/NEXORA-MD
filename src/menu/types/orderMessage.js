@@ -95,7 +95,7 @@ export const orderMessageMenu = {
             buildNavigationButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: orderQuote });
+        }, { quoted: menuData.audioQuote || m });
       } catch (err) {
         console.warn('[MENU orderMessage] Tier 1 (sendButtonsCard + adReply + order) failed, trying image:', err.message);
       }
@@ -109,13 +109,13 @@ export const orderMessageMenu = {
           mimetype:    imgData.mimetype,
           caption:      bodyText,
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: orderQuote });
+        }, { quoted: menuData.audioQuote || m });
       } else if (imgData.source?.startsWith('http')) {
         return await sock.sendMessage(m.from, {
           image:       { url: imgData.source },
           caption:      bodyText,
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: orderQuote });
+        }, { quoted: menuData.audioQuote || m });
       }
     } catch (err) {
       console.warn('[MENU orderMessage] Tier 2 (image + order quote) failed, continuing to text:', err.message);
