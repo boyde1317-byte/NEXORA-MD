@@ -49,10 +49,7 @@ export default {
         const reply = await aiTextGenerator.generateText(prompt, { senderJid: m.sender });
         await progress.done();
 
-        // Send the AI response as a plain reply (preserves full text without truncation)
-        await m.reply(reply);
-
-        // ── Follow-up interactive card ──────────────────────────────────
+        // ── Single message: AI response + follow-up buttons in one card ──
         try {
           const shortPrompt = prompt.length > 80 ? prompt.slice(0, 77) + '…' : prompt;
 
@@ -62,7 +59,7 @@ export default {
             : `\n💡 No context yet — I'll remember what we discuss`;
           const depthBadge = info.turns >= 10 ? '🧠 Deep Thinker' : info.turns >= 5 ? '💭 In Conversation' : '✨ Fresh Start';
           await mixedCard(sock, m.from, {
-            text:   `🤖 *What next?*${ctxNote}\n📊 ${depthBadge}`,
+            text:   `${reply}\n\n---\n🤖 *What next?*${ctxNote}\n📊 ${depthBadge}`,
             footer: 'NEXORA • Gemini ✦',
           }, [
             { kind: 'action', label: '🔁 Ask Again',      cmd: `${p}ai ${shortPrompt}` },
@@ -72,7 +69,8 @@ export default {
           ], { quoted: m });
         } catch (_) {}
       } catch (err) {
-        await progress.fail(`AI error: ${err.message}`);
+        await m.reply.error(`AI error: ${err.message}`);
+        throw err;
       }
     });
   }

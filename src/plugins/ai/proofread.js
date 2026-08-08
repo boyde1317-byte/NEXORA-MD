@@ -40,7 +40,8 @@ export default {
           { kind: 'action', label: '🌐 Translate It',      cmd: `${p}translate` },
         ], { quoted: m });
       } catch (err) {
-        await progress.fail(`Failed to proofread: ${err.message}`);
+        await m.reply.error(`Failed to proofread: ${err.message}`);
+        throw err;
       }
     });
   }

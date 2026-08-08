@@ -40,7 +40,8 @@ export default {
           { kind: 'action', label: '📝 Proofread Text',   cmd: `${p}proofread` },
         ], { quoted: m });
       } catch (err) {
-        await progress.fail(`Failed to debug code: ${err.message}`);
+        await m.reply.error(`Failed to debug code: ${err.message}`);
+        throw err;
       }
     });
   }

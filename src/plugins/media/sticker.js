@@ -146,7 +146,7 @@ export default {
       } catch (_) {}
     } catch (err) {
       console.error('[PLUGIN ERROR] sticker conversion failed:', err);
-      await progress.fail(`Failed to create sticker: ${err.message}`);
+      await m.reply.error(`Failed to create sticker: ${err.message}`);
     }
   }
 };

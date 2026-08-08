@@ -373,6 +373,7 @@ export async function serialize(m, sock) {
   //   m.reply(text, { contextInfo: buildEnrichedContextInfo() })  // enriched
   const replyFn = async (text, options = {}) => {
     const { contextInfo, ...sendOptions } = options;
+    message._replyCount = (message._replyCount || 0) + 1;
     return await sock.sendMessage(
       message.from,
       { text, ...(contextInfo ? { contextInfo } : {}) },

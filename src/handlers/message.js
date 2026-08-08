@@ -444,6 +444,7 @@ try {
     await sock.sendPresenceUpdate('composing', jid).catch(() => {});
   } catch (_) {}
 
+  const _replyCountBefore = m._replyCount || 0;
   try {
     await command.execute(ctx);
     console.log(`[CMD] ${command.name} ← ${sender.split('@')[0]} in ${isGroupMsg ? jid : 'DM'}`);
@@ -460,11 +461,17 @@ try {
     } catch (_) {}
   } catch (execErr) {
     console.error(`[CMD ERROR] ${command.name} threw:`, execErr.message || execErr);
-    try {
-      const errText = getRandomResponse('exec_error', command.name, execErr.message || 'Unknown error');
-      const helpHint = `\n\n_Type \`${prefix}help ${command.name}\` for usage info, or try again._`;
-      await m.reply(errText + helpHint);
-    } catch (_) {}
+    // Only send an error reply if the plugin didn't already send one.
+    // This prevents double messages when a plugin catches an error,
+    // sends its own m.reply.error(...), then re-throws.
+    const _repliesAfter = m._replyCount || 0;
+    if (_repliesAfter <= _replyCountBefore) {
+      try {
+        const errText = getRandomResponse('exec_error', command.name, execErr.message || 'Unknown error');
+        const helpHint = `\n\n_Type \`${prefix}help ${command.name}\` for usage info, or try again._`;
+        await m.reply(errText + helpHint);
+      } catch (_) {}
+    }
   } finally {
     // Stop "composing" presence regardless of success/failure
     try { await sock.sendPresenceUpdate('paused', jid).catch(() => {}); } catch (_) {}

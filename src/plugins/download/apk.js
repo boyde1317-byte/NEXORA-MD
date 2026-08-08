@@ -46,7 +46,8 @@ export default {
           buttons: results.slice(0, 3).map(a => ({ kind: 'url', label: `⬇️ ${a.name}`.slice(0, 24), url: a.url })),
         }, { quoted: m });
       } catch (err) {
-        await progress.fail(`APK search failed: ${err.message}`);
+        await m.reply.error(`APK search failed: ${err.message}`);
+        throw err;
       }
     });
   }

@@ -58,7 +58,8 @@ export default {
           } catch (_) {}
         }
       } catch (err) {
-        await progress.fail(`TikTok download failed: ${err.message}`);
+        await m.reply.error(`TikTok download failed: ${err.message}`);
+        throw err;
       }
     });
   }

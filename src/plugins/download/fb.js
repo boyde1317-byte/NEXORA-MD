@@ -55,7 +55,8 @@ export default {
           } catch (_) {}
         }
       } catch (err) {
-        await progress.fail(`Facebook download failed: ${err.message}`);
+        await m.reply.error(`Facebook download failed: ${err.message}`);
+        throw err;
       }
     });
   }

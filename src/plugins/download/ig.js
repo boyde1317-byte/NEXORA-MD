@@ -71,7 +71,8 @@ export default {
           ], { quoted: m });
         } catch (_) {}
       } catch (err) {
-        await progress.fail(`Instagram download failed: ${err.message}`);
+        await m.reply.error(`Instagram download failed: ${err.message}`);
+        throw err;
       }
     });
   }

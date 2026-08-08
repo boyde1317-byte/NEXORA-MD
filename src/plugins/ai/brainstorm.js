@@ -36,7 +36,8 @@ export default {
           { kind: 'action', label: '🤖 Ask AI',         cmd: `${p}ai Tell me more about: ${topic}` },
         ], { quoted: m });
       } catch (err) {
-        await progress.fail(`Failed to brainstorm: ${err.message}`);
+        await m.reply.error(`Failed to brainstorm: ${err.message}`);
+        throw err;
       }
     });
   }

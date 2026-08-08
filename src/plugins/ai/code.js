@@ -43,17 +43,12 @@ export default {
         await progress.done();
         const { language, code, explanation } = parseCodeReply(reply);
 
-        await richCodeCard(sock, m.from, {
-          code,
-          language,
-          caption: explanation ? `✦ *Nexora Code*\n\n${explanation}` : '✦ *Nexora Code*',
-          footer: `Prompt: ${prompt}`.slice(0, 120),
-        }, { quoted: m });
-
-        // Follow-up card with copy + debug buttons
+        // ── Single message: code + explanation + buttons in one card ──
+        const codeBlock = `\`\`\`${language}\n${code}\n\`\`\``;
+        const cardText = (explanation ? `✦ *Nexora Code*\n\n${explanation}\n\n` : '✦ *Nexora Code*\n\n') + codeBlock;
         try {
           await mixedCard(sock, m.from, {
-            text: '✅ *Code generated!*\n\nWhat would you like to do next?',
+            text:   cardText,
             footer: 'NEXORA • Gemini ✦',
           }, [
             { kind: 'copy',   label: '📋 Copy Code',        value: code },
@@ -62,7 +57,8 @@ export default {
           ], { quoted: m });
         } catch (_) {}
       } catch (err) {
-        await progress.fail(`I couldn't generate that code: ${err.message}`);
+        await m.reply.error(`I couldn't generate that code: ${err.message}`);
+        throw err;
       }
     });
   }
