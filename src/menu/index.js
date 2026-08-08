@@ -1,11 +1,6 @@
 import { menuManager } from './manager.js';
 import { runWithFallback } from './fallback.js';
 import { collectMenuData } from './collector.js';
-import { mediaManager } from '../media/mediaManager.js';
-import { buildFakeLiveLocationQuote, buildMenuBanner, buildFakeImageQuote } from '../lib/waUtils.js';
-import { actionCard } from '../lib/interactiveKit.js';
-import { db } from '../database/db.js';
-import { imageManager } from '../images/imageManager.js';
 
 // Import all 15 menu types
 import documentInteractive from './types/documentInteractive.js';
@@ -47,90 +42,24 @@ menuManager.register(listFallback);
 
 /**
  * Compiles the statistics and renders the active menu (or custom specified menu style).
- * 
+ *
  * @param {object} sock - WASocket active connection
  * @param {object} m - Serialized message trigger context
  * @param {string|number} [customKey] - Optional override style key/id
  */
 export const showMenu = async (sock, m, customKey = null) => {
   const menuData = collectMenuData(sock);
-  
-  const menu = customKey 
-    ? menuManager.getMenu(customKey) 
+
+  const menu = customKey
+    ? menuManager.getMenu(customKey)
     : menuManager.getActiveMenu();
 
   if (!menu) {
     return await m.reply.error(`Menu style *"${customKey}"* not found. Type \`${menuData.prefix}menulist\` to see valid options.`);
   }
 
-  // Delegate rendering to the fallback engine
+  // Delegate rendering to the fallback engine — single message, no follow-ups
   await runWithFallback(menu.renderer, { sock, m, menuData });
-
-  // ── Follow-up: quick-access buttons after the menu card ──────────────
-  // Gives users a one-tap path to help, daily rewards, and ping from the
-  // menu — no need to type anything. Skipped when previewing a custom style
-  // (the style-preview buttons below are more relevant in that context).
-  if (!customKey) {
-    try {
-      const p = menuData.prefix || '.';
-      await actionCard(sock, m.from, {
-        text:   `That's the overview. Want to go deeper? Tap below \u2014 I've got you. \u2726`,
-        footer: `${menuData.botName} \u2502 ${menuData.totalCommands} commands`,
-      }, [
-        { label: '\u{1F4D6} Command Guide',   cmd: `${p}help` },
-        { label: '\u{1FA9} Claim Daily',     cmd: `${p}daily` },
-        { label: '\u{1F3D1} Ping Bot',        cmd: `${p}ping` },
-      ], { quoted: m });
-    } catch (_) {}
-  }
-
-  // If the user is previewing a non-default style, offer a one-tap button to
-  // set it as the default so they don't have to separately run .setmenu.
-  const activeMenu = menuManager.getActiveMenu();
-  if (customKey && activeMenu && String(activeMenu.id) !== String(menu.id)) {
-    try {
-      const p = menuData.prefix || '.';
-      let previewQuote = m, previewCtx = {};
-      try {
-        const imgData = await imageManager.getMenuImage(menu.id);
-        previewQuote = buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined });
-        previewCtx   = buildMenuBanner({ imgData, botName: menuData.botName, totalCommands: menuData.totalCommands }).contextInfo;
-      } catch (_) {}
-      await actionCard(sock, m.from, {
-        text:        `👁️ You're previewing *${menu.name}*.\nLike what you see? Make it permanent — one tap below.`,
-        footer:      `Currently active: ${activeMenu.name}`,
-        contextInfo: previewCtx,
-      }, [
-        { label: `✅ Set as Default`, cmd: `${p}setmenu ${menu.id}` },
-        { label: `👁️ View Another Style`, cmd: `${p}menulist` },
-      ], { quoted: previewQuote });
-    } catch (_) {}
-  }
-
-  // Send the actual audio as a real message after the menu card.
-  // Quote it with a fake order card showing bot name + command count so the
-  // audio message displays the product-catalog style header (\u{1F6D2} X items, bot name).
-  // Skip audio in group chats — it plays out loud for everyone and is intrusive.
-  // Users in DMs still get the full audio experience.
-  const isGroupChat = m.from?.endsWith('@g.us');
-  if (!isGroupChat) {
-    try {
-      let audioCtx = m;
-      try {
-        const activeId = menuManager.getActiveMenu()?.id || 1;
-        const imgData  = await imageManager.getMenuImage(activeId);
-        audioCtx = buildFakeLiveLocationQuote({
-          caption:       `${menuData.botName.toUpperCase()} \u2502 ${menuData.totalCommands} commands`,
-          jpegThumbnail: imgData.buffer,
-        });
-      } catch (qErr) {
-        console.warn('[MENU ENGINE] Could not build order quote for audio, using m:', qErr.message);
-      }
-      await mediaManager.sendMenuAudio(sock, m.from, audioCtx);
-    } catch (err) {
-      console.error('[MENU ENGINE] Failed to send menu audio:', err);
-    }
-  }
 };
 
 export { menuManager, collectMenuData, runWithFallback };

@@ -4,15 +4,14 @@
  * Shows connection health, message counts, plugin stats, memory usage,
  * uptime, and top commands — all in a rich ASCII dashboard.
  */
-import { client } from '../../core/client.js';
-import { db } from '../../database/db.js';
-import { asciiBuilder } from '../../ui/asciiBuilder.js';
-import { formatUptime, formatSize } from '../../lib/utils.js';
-import { config } from '../../../config/index.js';
+import { client} from '../../core/client.js';
+import { db} from '../../database/db.js';
+import { asciiBuilder} from '../../ui/asciiBuilder.js';
+import { formatUptime} from '../../lib/utils.js';
 import brand from '../../../config/brand.js';
-import { actionCard } from '../../lib/interactiveKit.js';
-import { toSmallcaps } from '../../lib/smallcaps.js';
-import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
+
+
+import { buildEnrichedContextInfo} from '../../lib/enrichContext.js';
 
 export default {
   name: 'stats',
@@ -107,17 +106,5 @@ export default {
     const text = asciiBuilder.sections(`${brand.name} Statistics`, sections);
 
     await m.reply(text, { contextInfo: buildEnrichedContextInfo() });
-
-    // Follow-up with quick action buttons
-    try {
-      await actionCard(sock, m.from, {
-        text:   `${toSmallcaps('Quick Actions')}`,
-        footer: `${toSmallcaps(brand.name)} • ${toSmallcaps('Stats Dashboard')}`,
-      }, [
-        { label: '🏓 Ping',       cmd: `${p}ping` },
-        { label: '📋 Command List', cmd: `${p}menu` },
-        { label: '🤖 AI Chat',     cmd: `${p}ai hello` },
-      ], { quoted: m });
-    } catch (_) {}
   },
 };

@@ -4,9 +4,9 @@
  * Sends the @-mention announcement, then a nativeFlow follow-up card
  * with group management quick_reply buttons so admins can take action fast.
  */
-import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
-import { withReactionStatus, getBrandThumbnail } from '../../lib/cosmetics.js';
-import { actionCardWithAd } from '../../lib/interactiveKit.js';
+import { buildEnrichedContextInfo} from '../../lib/enrichContext.js';
+import { withReactionStatus} from '../../lib/cosmetics.js';
+
 
 export default {
   name: 'tagall',
@@ -32,25 +32,7 @@ export default {
 
       // ── Single message: @-mention announcement + branded thumbnail +
       //    admin action buttons, all in one card ────────────────────────────
-      const thumbnailUrl = await getBrandThumbnail();
-      try {
-        await actionCardWithAd(sock, m.from, {
-          text:   `${tagText}\n\n✅ *${participants.length} members tagged.* That\'s a lot of notifications. 📣\n\nWhat\'s next?`,
-          footer: `${metadata.subject || 'Group'} Admin Tools`,
-        }, [
-          { label: '📢 Tag Again',  cmd: `${p}tagall ${customMessage}` },
-          { label: '📋 Group Info', cmd: `${p}groupinfo` },
-        ], {
-          title:        '📢 GROUP ANNOUNCEMENT',
-          body:         metadata.subject || 'Attention everyone!',
-          thumbnailUrl,
-          originalImageUrl: thumbnailUrl,
-          mentionedJid: mentions,
-        }, { mentions, quoted: m });
-      } catch (_) {
-        // Cosmetic card failed — the mentions must still go out.
-        await sock.sendMessage(m.from, { text: tagText, mentions, contextInfo: buildEnrichedContextInfo() }, {});
-      }
+            await sock.sendMessage(m.from, { text: tagText, mentions, contextInfo: buildEnrichedContextInfo() }, {});
     });
   },
 };

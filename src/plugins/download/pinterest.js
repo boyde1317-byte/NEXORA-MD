@@ -8,10 +8,10 @@
  *  - Configurable result count: .pinterest <query> <count> (default 6, max 10)
  *  - Carousel of images, with per-image "Open Pin" buttons
  */
-import { withReactionStatus } from '../../lib/cosmetics.js';
-import { mixedCard } from '../../lib/interactiveKit.js';
-import { pinterestSearch } from '../../lib/downloader.js';
-import { DownloadProgress } from '../../lib/progress.js';
+import { withReactionStatus} from '../../lib/cosmetics.js';
+
+import { pinterestSearch} from '../../lib/downloader.js';
+import { DownloadProgress} from '../../lib/progress.js';
 
 const DEFAULT_COUNT = 6;
 const MAX_COUNT = 10;
@@ -65,17 +65,6 @@ export default {
             console.warn('[pinterest] failed to send image:', imgErr.message);
           }
         }
-
-        // Follow-up card
-        try {
-          await mixedCard(sock, m.from, {
-            text: `✅ *Sent ${results.length} Pinterest images for "${query}"*`,
-            footer: 'NEXORA-MD • Pinterest',
-          }, [
-            { kind: 'action', label: '🔄 Search Again', cmd: `${p}pinterest ${query} ${count}` },
-            { kind: 'action', label: '📸 Instagram',    cmd: `${p}ig` },
-          ], { quoted: m });
-        } catch (_) {}
       } catch (err) {
         await m.reply.error(`Pinterest search failed: ${err.message}`);
         throw err;

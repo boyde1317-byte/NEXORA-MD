@@ -7,10 +7,10 @@
  *  - Quality label in caption
  *  - SD/HD follow-up card with both options
  */
-import { withReactionStatus } from '../../lib/cosmetics.js';
-import { mixedCard } from '../../lib/interactiveKit.js';
-import { facebookDownload, isUrl } from '../../lib/downloader.js';
-import { DownloadProgress } from '../../lib/progress.js';
+import { withReactionStatus} from '../../lib/cosmetics.js';
+
+import { facebookDownload, isUrl} from '../../lib/downloader.js';
+import { DownloadProgress} from '../../lib/progress.js';
 
 export default {
   name: 'fb',
@@ -43,16 +43,6 @@ export default {
         }, { quoted: m });
 
         if (data.hd && data.sd) {
-          try {
-            await mixedCard(sock, m.from, {
-              text: 'Prefer the standard-definition version instead?',
-              footer: 'NEXORA-MD • Facebook Downloader',
-            }, [
-              { kind: 'url',    label: '📉 SD Version',     url: data.sd },
-              { kind: 'url',    label: '📈 HD Version',     url: data.hd },
-              { kind: 'action', label: '🎵 YouTube Audio',  cmd: `${p}play` },
-            ], { quoted: m });
-          } catch (_) {}
         }
       } catch (err) {
         await m.reply.error(`Facebook download failed: ${err.message}`);

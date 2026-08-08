@@ -7,10 +7,10 @@
  *  - Author + duration metadata in caption
  *  - Follow-up card with audio download + other platform buttons
  */
-import { withReactionStatus } from '../../lib/cosmetics.js';
-import { mixedCard } from '../../lib/interactiveKit.js';
-import { tiktokDownload, isUrl } from '../../lib/downloader.js';
-import { DownloadProgress } from '../../lib/progress.js';
+import { withReactionStatus} from '../../lib/cosmetics.js';
+
+import { tiktokDownload, isUrl} from '../../lib/downloader.js';
+import { DownloadProgress} from '../../lib/progress.js';
 
 export default {
   name: 'tiktok',
@@ -46,16 +46,6 @@ export default {
         }, { quoted: m });
 
         if (data.audio) {
-          try {
-            await mixedCard(sock, m.from, {
-              text: '🎵 Want just the audio? I can pull that too. ✦',
-              footer: 'NEXORA-MD • TikTok Downloader',
-            }, [
-              { kind: 'url',    label: '🎵 Download Audio',    url: data.audio },
-              { kind: 'action', label: '🎵 YouTube Audio',     cmd: `${p}play` },
-              { kind: 'action', label: '📸 Instagram',        cmd: `${p}ig` },
-            ], { quoted: m });
-          } catch (_) {}
         }
       } catch (err) {
         await m.reply.error(`TikTok download failed: ${err.message}`);

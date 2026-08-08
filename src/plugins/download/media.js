@@ -11,10 +11,10 @@
  *   .media audio <url>     — force audio-only (for YouTube)
  *   .media video <url>     — force video (for YouTube)
  */
-import { withReactionStatus } from '../../lib/cosmetics.js';
-import { mixedCard } from '../../lib/interactiveKit.js';
-import { youtubeDownload, tiktokDownload, instagramDownload, facebookDownload, twitterDownload, spotifyDownload, isUrl } from '../../lib/downloader.js';
-import { DownloadProgress } from '../../lib/progress.js';
+import { withReactionStatus} from '../../lib/cosmetics.js';
+
+import { youtubeDownload, tiktokDownload, instagramDownload, facebookDownload, twitterDownload, spotifyDownload, isUrl} from '../../lib/downloader.js';
+import { DownloadProgress} from '../../lib/progress.js';
 
 function detectPlatform(url) {
   const lower = url.toLowerCase();
@@ -169,17 +169,6 @@ export default {
             break;
           }
         }
-
-        // Follow-up card
-        try {
-          await mixedCard(sock, m.from, {
-            text: `✅ *Downloaded from ${platform.charAt(0).toUpperCase() + platform.slice(1)}!*\n\nDetected platform automatically.`,
-            footer: 'NEXORA-MD • Smart Downloader',
-          }, [
-            { kind: 'action', label: '🔄 Download Another', cmd: `${p}media` },
-            { kind: 'action', label: '📋 Copy URL',         cmd: `${p}copy ${url}` },
-          ], { quoted: m });
-        } catch (_) {}
       } catch (err) {
         await progress.fail(`${platform} download failed: ${err.message}`);
       }

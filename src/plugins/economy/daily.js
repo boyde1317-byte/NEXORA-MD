@@ -4,13 +4,12 @@
  * After a successful claim, sends a richResponse table with the reward breakdown
  * + an actionCard with economy follow-up buttons (balance, leaderboard, shop).
  */
-import { withReactionStatus, getBrandThumbnail } from '../../lib/cosmetics.js';
-import { grantXp, getLevelProgress, progressBar, withUserLock } from '../../economy/leveling.js';
-import { richTableCard, actionCardWithAd } from '../../lib/interactiveKit.js';
-import { messageFormatter } from '../../ui/messageFormatter.js';
-import brand from '../../../config/brand.js';
-import { asciiBuilder } from '../../ui/asciiBuilder.js';
-import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
+import { withReactionStatus, getBrandThumbnail} from '../../lib/cosmetics.js';
+import { grantXp, getLevelProgress, progressBar, withUserLock} from '../../economy/leveling.js';
+import { richTableCard, actionCardWithAd} from '../../lib/interactiveKit.js';
+import { messageFormatter} from '../../ui/messageFormatter.js';
+import { asciiBuilder} from '../../ui/asciiBuilder.js';
+import { buildEnrichedContextInfo} from '../../lib/enrichContext.js';
 
 const COOLDOWN_MS  = 24 * 60 * 60 * 1000;
 const BASE_COINS   = 100;
@@ -92,22 +91,9 @@ export default {
           ],
           footer: `Same time tomorrow. Don't break the streak. 🔥`,
         }, { quoted: m });
-
-        const thumbnailUrl = await getBrandThumbnail();
-        return await actionCardWithAd(sock, m.from, {
-          text:   `Keep the streak alive — come back tomorrow for an even bigger haul. 🔥 Don\'t break the chain. ✦`,
-          footer: `${brand?.name ?? 'NEXORA'} • Daily Rewards`,
-        }, [
-          { label: 'Check Balance',     cmd: `${p}balance` },
-          { label: 'Leaderboard',       cmd: `${p}top` },
-        ], {
-          title: 'DAILY REWARD',
-          body:  `Streak: ${streak} day${streak !== 1 ? 's' : ''}`,
-          thumbnailUrl,
-          originalImageUrl: thumbnailUrl,
-        }, { quoted: m });
+        return;
       } catch (err) {
-        console.warn('[daily] Tier 1 (richTable + actionCard) failed:', err.message);
+        console.warn('[daily] Tier 1 (richTable) failed:', err.message);
       }
 
       // ── Tier 2: plain text fallback ───────────────────────────────────────

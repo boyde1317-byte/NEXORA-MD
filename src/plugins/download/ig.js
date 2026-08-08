@@ -7,10 +7,10 @@
  *  - Progress label shows "Item 2 of 5" during batch sends
  *  - Follow-up card with copy, open, and cross-platform buttons
  */
-import { withReactionStatus } from '../../lib/cosmetics.js';
-import { mixedCard } from '../../lib/interactiveKit.js';
-import { instagramDownload, isUrl } from '../../lib/downloader.js';
-import { DownloadProgress } from '../../lib/progress.js';
+import { withReactionStatus} from '../../lib/cosmetics.js';
+
+import { instagramDownload, isUrl} from '../../lib/downloader.js';
+import { DownloadProgress} from '../../lib/progress.js';
 
 export default {
   name: 'ig',
@@ -57,19 +57,6 @@ export default {
             }, { quoted: i === 0 ? m : undefined });
           }
         }
-
-        // Follow-up interactive card after all items
-        try {
-          await mixedCard(sock, m.from, {
-            text:   `✅ *Downloaded ${batch.length} item${batch.length !== 1 ? 's' : ''} from Instagram!* ${batch.length > 1 ? 'That\'s a whole carousel.' : ''} ✦`,
-            footer: 'NEXORA-MD • Instagram Downloader',
-          }, [
-            { kind: 'copy',   label: '📋 Copy Post URL',   value: url },
-            { kind: 'url',    label: '🔗 Open on Instagram', url:   url },
-            { kind: 'action', label: '🎬 Twitter/X Video',  cmd:   `${p}twitter` },
-            { kind: 'action', label: '🎵 TikTok Download',  cmd:   `${p}tiktok` },
-          ], { quoted: m });
-        } catch (_) {}
       } catch (err) {
         await m.reply.error(`Instagram download failed: ${err.message}`);
         throw err;

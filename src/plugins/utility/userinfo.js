@@ -4,14 +4,14 @@
  * Shows detailed user profile: name, number, level, XP, coins, rank,
  * warnings, premium status, ban status, and member since date.
  */
-import { db } from '../../database/db.js';
-import { asciiBuilder } from '../../ui/asciiBuilder.js';
-import { getLevelProgress, rankBadge, streakEmoji, progressBar } from '../../economy/leveling.js';
-import { getDisplayName } from '../../lib/displayName.js';
-import { toSmallcaps } from '../../lib/smallcaps.js';
-import { actionCard } from '../../lib/interactiveKit.js';
-import { formatDuration } from '../../lib/utils.js';
-import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
+import { db} from '../../database/db.js';
+import { asciiBuilder} from '../../ui/asciiBuilder.js';
+import { getLevelProgress, rankBadge, streakEmoji, progressBar} from '../../economy/leveling.js';
+import { getDisplayName} from '../../lib/displayName.js';
+import { toSmallcaps} from '../../lib/smallcaps.js';
+
+import { formatDuration} from '../../lib/utils.js';
+import { buildEnrichedContextInfo} from '../../lib/enrichContext.js';
 
 export default {
   name: 'userinfo',
@@ -82,21 +82,6 @@ export default {
 
     const text = asciiBuilder.box('User Info', lines);
     await m.reply(text, { contextInfo: buildEnrichedContextInfo() });
-
-    // Follow-up buttons
-    try {
-      const buttons = [
-        { label: '💰 Balance', cmd: `${p}balance` },
-        { label: '🏆 Leaderboard', cmd: `${p}leaderboard` },
-      ];
-      if (targetJid === m.sender) {
-        buttons.push({ label: '🎁 Daily Reward', cmd: `${p}daily` });
-      }
-      await actionCard(sock, m.from, {
-        text:   `${toSmallcaps('Quick Actions')}`,
-        footer: `${toSmallcaps(name)} • ${toSmallcaps('Profile')}`,
-      }, buttons, { quoted: m });
-    } catch (_) {}
   },
 };
 

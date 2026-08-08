@@ -7,10 +7,10 @@
  *  - Fixed cross-link button: only show YouTube Audio if track title exists
  *  - Album + duration metadata in follow-up card
  */
-import { withReactionStatus } from '../../lib/cosmetics.js';
-import { mixedCard } from '../../lib/interactiveKit.js';
-import { spotifyDownload, isUrl } from '../../lib/downloader.js';
-import { DownloadProgress } from '../../lib/progress.js';
+import { withReactionStatus} from '../../lib/cosmetics.js';
+
+import { spotifyDownload, isUrl} from '../../lib/downloader.js';
+import { DownloadProgress} from '../../lib/progress.js';
 
 export default {
   name: 'spotify',
@@ -39,31 +39,6 @@ export default {
           audio:    { url: data.url },
           mimetype: 'audio/mpeg',
         }, { quoted: m });
-
-        // Follow-up interactive card with track metadata + actions
-        try {
-          const trackInfo = [
-            data.title    ? `🎵 *${data.title}*`              : '🎵 Spotify Track',
-            data.artist   ? `👤 ${data.artist}`                : null,
-            data.album    ? `💿 ${data.album}`                 : null,
-            data.duration ? `⏱️ ${data.duration}`              : null,
-          ].filter(Boolean).join('\n');
-
-          // Build follow-up buttons — only include YouTube cross-link if we have a title
-          const buttons = [
-            { kind: 'copy',   label: '📋 Copy Track URL',     value: url },
-            { kind: 'url',    label: '🔗 Open on Spotify',     url:   url },
-          ];
-          if (data.title) {
-            buttons.push({ kind: 'action', label: '🎵 Find on YouTube',  cmd: `${p}play ${data.title}` });
-            buttons.push({ kind: 'action', label: '🎬 YouTube Video',    cmd: `${p}ytmp4 ${data.title}` });
-          }
-
-          await mixedCard(sock, m.from, {
-            text:   `✅ *Track downloaded!*\n\n${trackInfo}`,
-            footer: 'NEXORA-MD • Spotify Downloader',
-          }, buttons, { quoted: m });
-        } catch (_) {}
       } catch (err) {
         await m.reply.error(`Spotify download failed: ${err.message}`);
         throw err;

@@ -1,8 +1,8 @@
-import { Sticker, StickerTypes } from 'wa-sticker-formatter';
-import { config } from '../../../config/index.js';
+import { Sticker, StickerTypes} from 'wa-sticker-formatter';
+
 import brand from '../../../config/brand.js';
-import { DownloadProgress } from '../../lib/progress.js';
-import { mixedCard } from '../../lib/interactiveKit.js';
+import { DownloadProgress} from '../../lib/progress.js';
+import { mixedCard} from '../../lib/interactiveKit.js';
 
 /**
  * sticker.js — Convert images/videos into WhatsApp stickers.
@@ -124,26 +124,6 @@ export default {
       await progress.done('');
 
       await sock.sendMessage(m.from, { sticker: stickerBuffer }, { quoted: m });
-
-      // Follow-up with context about what was made
-      const cropLabel = parsed.cropMode === StickerTypes.CROPPED ? 'Circular crop' : 'Full';
-      const meta = [
-        `✅ Sticker created!`,
-        `📦 Pack: ${packName}`,
-        `✍️ Author: ${authorName}`,
-        `${parsed.emoji ? `🎭 Emoji: ${parsed.emoji}\n` : ''}🖼️ Mode: ${cropLabel}`,
-      ].join('\n');
-
-      try {
-        await mixedCard(sock, m.from, {
-          text: meta,
-          footer: 'NEXORA • Sticker Lab',
-        }, [
-          { kind: 'action', label: '🔄 Make Another', cmd: `${p}sticker` },
-          { kind: 'action', label: '⭕ Circle Crop', cmd: `${p}sticker crop` },
-          { kind: 'action', label: '📋 List Stickers', cmd: `${p}liststicker` },
-        ], { quoted: m });
-      } catch (_) {}
     } catch (err) {
       console.error('[PLUGIN ERROR] sticker conversion failed:', err);
       await m.reply.error(`Failed to create sticker: ${err.message}`);

@@ -4,9 +4,9 @@
  * Results are shown in a richResponse table with actionCard follow-up buttons
  * for related lookup and group management commands.
  */
-import { withReactionStatus } from '../../lib/cosmetics.js';
-import { richTableCard, actionCard, copyResultCard } from '../../lib/interactiveKit.js';
-import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { withReactionStatus} from '../../lib/cosmetics.js';
+import { richTableCard, actionCard} from '../../lib/interactiveKit.js';
+import { asciiBuilder} from '../../ui/asciiBuilder.js';
 
 const CHANNEL_RE = /(?:whatsapp\.com\/channel\/|newsletter\/)([\w-]+)/i;
 
@@ -46,16 +46,7 @@ export default {
             footer:  `JID: ${meta.id}`,
           }, { quoted: m });
 
-          return await copyResultCard(sock, m.from, {
-            text:       `📡 *${meta.name || 'Channel'}*\n\nChannel JID copied below:`,
-            footer:     `NEXORA • Channel Info`,
-            copyLabel:  '📋 Copy Channel JID',
-            copyValue:  meta.id || '',
-            extraButtons: [
-              { text: '📢 Follow Channel', id: `${p}newsletter follow ${meta.id}` },
-              { text: '🔁 Check Another', id: `${p}checkchid` },
-            ],
-          }, { quoted: m });
+                    return;
         } catch (err) {
           console.warn('[checkchid] Tier 1 (channel) failed:', err.message);
           const { replyTable } = await import('../lib/cosmetics.js');
@@ -106,17 +97,7 @@ export default {
           footer:  chatType,
         }, { quoted: m });
 
-        return await copyResultCard(sock, m.from, {
-          text:       `🆔 *${chatType}*\n\nChat JID copied below:`,
-          footer:     'NEXORA • Chat Info',
-          copyLabel:  '📋 Copy Chat JID',
-          copyValue:  jid,
-          extraButtons: [
-            { text: '👤 Lookup Sender',  id: `${p}whois ${senderNum}` },
-            { text: '📡 Check Channel',  id: `${p}checkchid` },
-            ...(jid.endsWith('@g.us') ? [{ text: '👥 Group Info', id: `${p}groupinfo` }] : []),
-          ],
-        }, { quoted: m });
+        return;
       } catch (err) {
         console.warn('[checkchid] Tier 1 failed:', err.message);
         const text = asciiBuilder.box('🆔 CHAT ID INFO', rows.map(([k, v]) => `${k.padEnd(12)}: ${v}`));

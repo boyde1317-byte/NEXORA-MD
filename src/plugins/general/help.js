@@ -9,11 +9,11 @@
  * UX: Upgraded from plain text to a selectMenu picker so users can tap
  * categories instead of typing — same pattern as `.menulist`.
  */
-import { client } from '../../core/client.js';
-import { asciiBuilder } from '../../ui/asciiBuilder.js';
-import { toSmallcaps } from '../../lib/smallcaps.js';
-import { selectMenu, actionCard } from '../../lib/interactiveKit.js';
-import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
+import { client} from '../../core/client.js';
+import { asciiBuilder} from '../../ui/asciiBuilder.js';
+import { toSmallcaps} from '../../lib/smallcaps.js';
+import { selectMenu} from '../../lib/interactiveKit.js';
+import { buildEnrichedContextInfo} from '../../lib/enrichContext.js';
 
 export default {
   name: 'help',
@@ -98,22 +98,7 @@ export default {
         `\n_Use \`${p}help <command>\` for detailed usage._`,
       ];
 
-      // Add interactive buttons for the first few commands in the category
-      try {
-        await m.reply(asciiBuilder.box(`${query} Commands`, lines), { contextInfo: buildEnrichedContextInfo() });
-        const quickButtons = cmds.slice(0, 4).map(c => ({
-          label: `▶️ ${p}${c}`,
-          cmd:   `${p}help ${c}`,
-        }));
-        if (quickButtons.length > 0) {
-          await actionCard(sock, m.from, {
-            text:   `${toSmallcaps('Tap a command for detailed usage')}:`,
-            footer: `${toSmallcaps(query)} • ${cmds.length} commands`,
-          }, quickButtons, { quoted: m });
-        }
-      } catch (_) {
-        await m.reply(asciiBuilder.box(`${query} Commands`, lines), { contextInfo: buildEnrichedContextInfo() });
-      }
+      await m.reply(asciiBuilder.box(`${query} Commands`, lines), { contextInfo: buildEnrichedContextInfo() });
       return;
     }
 

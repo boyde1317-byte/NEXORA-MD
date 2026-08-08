@@ -45,16 +45,7 @@ export default {
           ],
           footer: 'NEXORA • GitHub',
         }, { quoted: m });
-
-        return await mixedCard(sock, m.from, {
-          text:   `🔗 *${data.full_name}*`,
-          footer: `⭐ ${data.stargazers_count.toLocaleString()} stars`,
-        }, [
-          { kind: 'url',    label: '🔗 Open Repository',   url:   data.html_url },
-          { kind: 'copy',   label: '📋 Copy Repo URL',     value: data.html_url },
-          { kind: 'url',    label: '🐛 Open Issues',       url:   `${data.html_url}/issues` },
-          { kind: 'action', label: '🔍 GitHub Release',    cmd:   `${p}githubrelease ${repo}` },
-        ], { quoted: m });
+        return;
       } catch (err) {
         console.warn('[github] Tier 1 (richTableCard) failed, fallback:', err.message);
       }

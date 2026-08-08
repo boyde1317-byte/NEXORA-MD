@@ -5,9 +5,9 @@
  * Tier 2: adReply card (original behaviour).
  */
 import brand from '../../../config/brand.js';
-import { replyAdReply } from '../../lib/waUtils.js';
-import { getBrandThumbnail } from '../../lib/cosmetics.js';
-import { richTableCard, actionCardWithAd } from '../../lib/interactiveKit.js';
+
+
+import { richTableCard} from '../../lib/interactiveKit.js';
 import client from '../../core/client.js';
 
 export default {
@@ -37,26 +37,12 @@ export default {
         footer: `${brand.name} — Up to date`,
       }, { quoted: m });
 
-      const thumbnailUrl = await getBrandThumbnail();
-      return await actionCardWithAd(sock, m.from, {
-        text:   `ℹ️ *${brand.name} v${brand.version}*\nCore: ${brand.core}`,
-        footer: `${brand.name} • Framework Info`,
-      }, [
-        { label: '📊 Full System Stats', cmd: `${p}menu aiDynamic` },
-        { label: '📋 About & Credits',   cmd: `${p}about` },
-        { label: '🏓 Test Ping Speed',   cmd: `${p}ping` },
-      ], {
-        title: `${brand.name} v${brand.version}`,
-        body:  `Core: ${brand.core}`,
-        thumbnailUrl,
-        originalImageUrl: thumbnailUrl,
-        renderLargerThumbnail: true,
-      }, { quoted: m });
+      return;
     } catch (err) {
       console.warn('[version] Tier 1 failed:', err.message);
     }
 
-    // ── Tier 2: adReply fallback ───────────────────────────────────────────
+    // ── Tier 2: plain text fallback ───────────────────────────────────────
     const text = [
       `╭─ VERSION`,
       `│ Bot: ${brand.name}`,
@@ -66,13 +52,6 @@ export default {
       `╰─ ${brand.signature}`,
     ].join('\n');
 
-    const thumbnailUrl = await getBrandThumbnail();
-    await replyAdReply(m, sock, text, {
-      title: `${brand.name} v${brand.version}`,
-      body:  `Core: ${brand.core}`,
-      thumbnailUrl,
-        originalImageUrl: thumbnailUrl,
-        renderLargerThumbnail: true,
-    });
-  },
+    await m.reply(text);
+  }
 };

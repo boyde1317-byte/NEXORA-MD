@@ -4,10 +4,10 @@
  * Upgraded from copyResultCard → richTableCard for structured weather data
  * display, with mixedCard follow-up for map and refresh actions.
  */
-import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
-import { Providers } from '../../lib/webClient.js';
-import { richTableCard, mixedCard, actionCardWithAd } from '../../lib/interactiveKit.js';
-import { getBrandThumbnail } from '../../lib/cosmetics.js';
+import { buildEnrichedContextInfo} from '../../lib/enrichContext.js';
+import { Providers} from '../../lib/webClient.js';
+import { richTableCard, mixedCard} from '../../lib/interactiveKit.js';
+
 
 export default {
   name: 'weather',
@@ -51,28 +51,7 @@ export default {
           ].filter(([, v]) => v !== 'N/A'),
           footer: 'NEXORA • wttr.in',
         }, { quoted: m });
-
-        const mapsUrl = reqInfo
-          ? `https://maps.google.com/?q=${encodeURIComponent(locName)}`
-          : `https://maps.google.com/?q=${encodeURIComponent(location)}`;
-
-        const thumbnailUrl = await getBrandThumbnail();
-        return await actionCardWithAd(sock, m.from, {
-          text:   `📍 *${locName}*
-
-${current.weatherDesc[0].value} • ${current.temp_C}°C`,
-          footer: 'NEXORA • wttr.in',
-        }, [
-          { label: '🔄 Refresh Weather', cmd: `${p}weather ${location}` },
-          { label: '🕐 Check Time',      cmd: `${p}time ${location}` },
-        ], {
-          title:    `🌤️ ${locName.toUpperCase()}`,
-          body:     `${current.weatherDesc[0].value} • ${current.temp_C}°C`,
-          sourceUrl: mapsUrl,
-          thumbnailUrl,
-          originalImageUrl: thumbnailUrl,
-          renderLargerThumbnail: true,
-        }, { quoted: m });
+        return;
       } catch (err) {
         console.warn('[weather] Tier 1 (richTableCard) failed, plain-text fallback:', err.message);
       }
