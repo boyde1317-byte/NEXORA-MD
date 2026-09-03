@@ -99,6 +99,10 @@ export const richCardMenu = {
     }
 
     // ── Tier 2: Rich Response with native table ─────────────────────────
+    // GATE: richResponseMessage is unrenderable without a Meta-signed bot
+    // certificate (core/capabilities.js) — the send succeeds and clients show
+    // the "your version of WhatsApp" placeholder instead of the menu.
+    if (capabilities.richResponse) {
     try {
       const richContent = {
         headerText: `\u2726 ${toSmallcaps(menuData.botName + ' Command Matrix')} \u2726`,
@@ -110,6 +114,7 @@ export const richCardMenu = {
     } catch (err) {
       console.warn('[MENU richCard] Tier 2 (richResponse table) failed, trying interactive card:', err.message);
     }
+    } // end capabilities.richResponse gate
 
     // ── Tier 3: sendInteractive with image header + embedded externalAdReply ──
     const imagePayload = imgData.source?.startsWith('http')

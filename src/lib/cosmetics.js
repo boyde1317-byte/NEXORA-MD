@@ -19,6 +19,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { baileysBridge } from '../core/baileysBridge.js'
+import capabilities from '../core/capabilities.js'
 import { asciiBuilder } from '../ui/asciiBuilder.js'
 import { DEFAULT_PATHS } from '../assets/defaultAssets.js'
 
@@ -104,6 +105,12 @@ export async function withReactionStatus(m, task, opts = {}) {
  * }, { quoted: m })
  */
 export async function sendTable(sock, jid, { caption, rows = [], footer } = {}, options = {}) {
+  // GATE: richResponseMessage/botForwardedMessage requires a Meta-signed
+  // bot certificate (see core/capabilities.js). Without it the send itself
+  // SUCCEEDS and clients silently render the "your version of WhatsApp
+  // doesn't support it" placeholder — the catch below never fires. Skip
+  // straight to the ASCII box unless the capability is actually available.
+  if (capabilities.richResponse) {
   try {
     // Route through sendRichResponse which wraps richResponseMessage in the
     // required botForwardedMessage + botMetadata proof chain so WA clients
@@ -126,6 +133,11 @@ export async function sendTable(sock, jid, { caption, rows = [], footer } = {}, 
     }, options)
     return sent
   } catch (err) {
+    console.warn('[cosmetics.sendTable] richResponse tier failed, ASCII fallback:', err.message)
+  }
+  } // end capabilities.richResponse gate
+
+  {
     // Fallback tier — plain styled box, same rows rendered as "Label : Value"
     const lines = rows.map(([label, value]) => `${label} : ${value ?? ''}`)
     if (footer) lines.push('', footer)
