@@ -121,6 +121,20 @@ export async function connectToWhatsApp() {
 
   client.socket = sock;
 
+  // ── Stale pairing state cleanup ────────────────────────────────────────────
+  // requestPairingCode() sets creds.me (and persists it) the moment a code is
+  // requested, but creds.registered only becomes true after the full
+  // companion_finish handshake. If a link attempt fails or is abandoned, the
+  // session keeps a stale creds.me forever — and every later boot then looks
+  // "already paired" to the old creds.me-based gate, so NO fresh code is ever
+  // requested while the user keeps entering the original (dead) code.
+  if (config.pairing.enabled && !sock.authState.creds.registered && sock.authState.creds.me) {
+    console.log('[CONNECTION] Clearing stale pairing state from an earlier failed link attempt');
+    delete sock.authState.creds.me;
+    delete sock.authState.creds.pairingCode;
+    await saveCreds();
+  }
+
   // ── Pairing code request ──────────────────────────────────────────────────
   // NOTE: the code is requested in the connection.update handler below, ONLY
   // after the `qr` event proves the WebSocket session with WA servers is
@@ -131,7 +145,9 @@ export async function connectToWhatsApp() {
   // flag shared with the handler below — one code per socket lifetime
   let pairingCodeRequested = false;
   const requestPairingCodeOnce = async () => {
-    if (pairingCodeRequested || sock.authState.creds.me) return;
+    // Gate on `registered` — the ONLY signal that a link actually completed.
+    // creds.me is set by requestPairingCode itself and means nothing here.
+    if (pairingCodeRequested || sock.authState.creds.registered) return;
     pairingCodeRequested = true;
     try {
       const cleanPhone = config.pairing.phoneNumber.replace(/[^0-9]/g, '');
