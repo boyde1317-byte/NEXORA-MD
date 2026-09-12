@@ -19,7 +19,7 @@
  * Owner-only: Yes (only existing owners can manage sudo owners)
  */
 
-import { config } from '../../config/index.js';
+import { config } from '../../../config/index.js';
 import { db } from '../../database/db.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';

@@ -97,6 +97,16 @@ export const greetingRenderer = {
    * Renders the chosen greeting and delivers it securely
    */
   async renderAndSend({ sock, jid, userJid, isWelcome }) {
+    // group-participants.update can hand over participant entries that are
+    // objects ({ jid, ... }) or undefined on some event shapes — normalize
+    // here instead of letting userJid.split() crash mid-render.
+    if (userJid && typeof userJid === 'object') {
+      userJid = userJid.jid || userJid.id || userJid.lid || null;
+    }
+    if (typeof userJid !== 'string' || !userJid.includes('@')) {
+      console.warn('[GREETING RENDERER] Skipping render — invalid userJid:', JSON.stringify(userJid));
+      return;
+    }
     enqueueTask(async () => {
       try {
         // 1. Check if greeting is enabled for this group

@@ -313,6 +313,13 @@ export async function serialize(rawMessage, sock) {
 
     // ── Content ────────────────────────────────────────────────────────────
     type,
+    // Raw proto content (the WAMessage `message` field). MUST be exposed:
+    // the serialized object is passed as { quoted: m } in nearly every
+    // send path, and the fork's generateWAMessageFromContent reads
+    // quoted.message — without this, the quoted branch dereferences
+    // undefined[undefined] and every quoted send crashes with
+    // "Cannot read properties of undefined (reading 'undefined')".
+    message: rawMessage.message,
     msg: msgContent,
     body: '',
     hasMedia: false,
@@ -427,7 +434,7 @@ export async function serialize(rawMessage, sock) {
     return await sock.sendMessage(
       message.from,
       { text, ...(finalContextInfo ? { contextInfo: finalContextInfo } : {}) },
-      { quoted: m, ...sendOptions }
+      { quoted: message, ...sendOptions }
     );
   };
 
@@ -467,7 +474,7 @@ export async function serialize(rawMessage, sock) {
   // ── Media download helper ─────────────────────────────────────────────────
   message.download = async () => {
     if (!message.message) return null;
-    return await downloadMediaMessage(m, 'buffer', {});
+    return await downloadMediaMessage(message, 'buffer', {});
   };
 
   return message;

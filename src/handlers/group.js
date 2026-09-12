@@ -22,12 +22,23 @@ export async function handleGroupParticipantsUpdate(update, sock) {
     const { id: groupJid, participants, action } = update;
     if (!groupJid || !participants?.length) return;
 
+    // Normalize participant entries — some event shapes hand over objects
+    // ({ jid, lid }) instead of plain JID strings, which crashed the
+    // greeting renderer (userJid.split is not a function).
+    const normaliseP = (p) => typeof p === 'string'
+      ? p
+      : (p?.jid || p?.id || p?.lid || null);
+
     if (action === 'add') {
-      for (const participant of participants) {
+      for (const rawP of participants) {
+        const participant = normaliseP(rawP);
+        if (!participant) continue;
         await greetingManager.handleJoin(sock, groupJid, participant);
       }
     } else if (action === 'remove') {
-      for (const participant of participants) {
+      for (const rawP of participants) {
+        const participant = normaliseP(rawP);
+        if (!participant) continue;
         await greetingManager.handleLeave(sock, groupJid, participant);
       }
     } else if (action === 'promote') {
