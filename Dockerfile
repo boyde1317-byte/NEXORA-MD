@@ -8,7 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
     && rm -rf /var/lib/apt/lists/*
 
 # Copy package files first for better Docker layer caching
-COPY package.json package-lock.json ./
+# Wildcard: package-lock.json was removed from the repo (111f3ad),
+# so copy whichever package files exist — never error on a missing lock.
+COPY package*.json ./
 # git deps in the lock resolve over ssh by default — rewrite to https so
 # keyless CI builds can fetch them
 RUN git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
