@@ -122,26 +122,33 @@ export async function connectToWhatsApp() {
   client.socket = sock;
 
   // ── Pairing code request ──────────────────────────────────────────────────
-  if (config.pairing.enabled && !sock.authState.creds.me) {
-    if (!config.pairing.phoneNumber) {
-      console.error('[CONNECTION] Pairing mode enabled but no phoneNumber set in .env (PAIRING_PHONE)');
-    } else {
-      setTimeout(async () => {
-        try {
-          const cleanPhone = config.pairing.phoneNumber.replace(/[^0-9]/g, '');
-          console.log(`[CONNECTION] Requesting pairing code for: ${cleanPhone}`);
-          const code = await sock.requestPairingCode(cleanPhone);
-          console.log(`\n${'='.repeat(50)}`);
-          console.log(`🔑 WHATSAPP PAIRING CODE: ${code}`);
-          console.log(`👉 Go to WhatsApp → Settings → Linked Devices → Link a Device`);
-          console.log(`   Then tap "Link with phone number instead" and enter the code above.`);
-          console.log(`${'='.repeat(50)}\n`);
-        } catch (err) {
-          console.error('[CONNECTION] Failed to request pairing code:', err.message || err);
-        }
-      }, 5000);
+  // NOTE: the code is requested in the connection.update handler below, ONLY
+  // after the `qr` event proves the WebSocket session with WA servers is
+  // established. Requesting earlier (blind setTimeout after makeWASocket)
+  // races the cold-start: on slow hosts the request fires before the WS is
+  // ready and WhatsApp issues a code that fails at entry with no error here.
+
+  // flag shared with the handler below — one code per socket lifetime
+  let pairingCodeRequested = false;
+  const requestPairingCodeOnce = async () => {
+    if (pairingCodeRequested || sock.authState.creds.me) return;
+    pairingCodeRequested = true;
+    try {
+      const cleanPhone = config.pairing.phoneNumber.replace(/[^0-9]/g, '');
+      console.log(`[CONNECTION] Requesting pairing code for: ${cleanPhone}`);
+      const code = await sock.requestPairingCode(cleanPhone);
+      console.log(`\n${'='.repeat(60)}`);
+      console.log(`🔑 WHATSAPP PAIRING CODE: ${code}`);
+      console.log(`👉 WhatsApp → Settings → Linked Devices → Link a Device`);
+      console.log(`   Then "Link with phone number instead".`);
+      console.log(`⏱️  Codes expire in a couple of minutes — enter it right away,`);
+      console.log(`   digits only (WhatsApp adds the dash itself).`);
+      console.log(`${'='.repeat(60)}\n`);
+    } catch (err) {
+      pairingCodeRequested = false;
+      console.error('[CONNECTION] Failed to request pairing code:', err.message || err);
     }
-  }
+  };
 
   // ── Auth credentials persistence ──────────────────────────────────────────
   sock.ev.on('creds.update', saveCreds);
@@ -153,6 +160,17 @@ export async function connectToWhatsApp() {
     if (qr && !config.pairing.enabled) {
       console.log('[CONNECTION] Scan this QR code to authenticate:');
       qrcode.generate(qr, { small: true });
+    }
+
+    // Pairing mode: the qr event means the WS session is live and ready for
+    // auth — this is the earliest safe point to request a pairing code.
+    // Fires once per socket; every reconnect creates a new socket and a NEW
+    // code (all previously printed codes are invalidated by WhatsApp).
+    if (qr && config.pairing.enabled && config.pairing.phoneNumber) {
+      if (!pairingCodeRequested) {
+        console.log('[CONNECTION] New pairing code below — any older code is now INVALID.');
+        await requestPairingCodeOnce();
+      }
     }
 
     if (connection === 'connecting') {
