@@ -22,16 +22,23 @@ const hasAlbum        = true;   // albumMessage — fork's multi-image/video car
 const hasStickerPack  = true;   // stickerPackMessage
 const hasLottieStick  = true;   // lottieStickerMessage
 const hasQuizPoll     = true;   // pollCreationMessage.isQuiz
-// richResponseMessage/botForwardedMessage requires a real Meta AI-bot
-// verification certificate (signed by Meta) inside messageContextInfo.botMetadata.
-// baileysBridge._buildBotForwardedMessage fabricates that cert with random
-// bytes because there is no way to obtain a genuine one — WhatsApp clients
-// reject the forged signature and fall back to the "your version of
-// WhatsApp doesn't support it" placeholder (see .wiki / .search / .code).
-// This is not fixable without a real Meta certificate, so the capability
-// is reported as unsupported and callers (richTableCard/richCodeCard) skip
-// straight to their reliable ASCII/plain-text fallback paths instead.
-const hasRichResp     = false;  // richResponseMessage / botForwardedMessage — forged cert, unrenderable
+// richResponseMessage / botForwardedMessage.
+//
+// ⚠️ SUPERSEDED VERDICT — the 2026-07-15 audit (fork commit 472c9252,
+// PRE-hardening) found rich responses unrenderable. Two root causes were
+// identified and fixed in the hardened fork (v0.3.18-r4+):
+//   1. base64 encoding of unifiedResponse.data was broken — the primary
+//      cause of blank rendering, not the cert;
+//   2. the bot metadata proof chain used random bytes instead of the
+//      itsliaaa static proof — restored in the hardening.
+// Moonson renders this exact envelope in production (NIXCODE 4.5 +
+// itsliaaa baileys), and the fork's generators were structurally verified
+// 44/44 against v0.3.18-r4 and main (see richTestKit). The remaining step
+// is real-device confirmation via the .testrich owner kit — until that
+// passes, hasRichResp stays false in production. Set NEXORA_RICH_RESPONSE=1
+// to opt in for on-device A/B testing (interactiveKit cards then take the
+// rich path; baileysScanner inherits the override).
+const hasRichResp     = process.env.NEXORA_RICH_RESPONSE === '1';  // richResponseMessage / botForwardedMessage — re-verify on device, opt-in until proven
 const hasSpoiler      = true;   // spoilerMessage
 const hasGroupStatus  = true;   // groupStatusMessageV2
 
