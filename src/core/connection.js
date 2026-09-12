@@ -78,6 +78,23 @@ export async function connectToWhatsApp() {
     fs.mkdirSync(sessionDir, { recursive: true });
   }
 
+  // Session persistence diagnostics — answers, from the very first log line,
+  // WHY the bot re-pairs: if creds.json is missing here but the bot was paired
+  // on the previous boot, the session dir is not on the persistent volume and
+  // every redeploy starts from scratch.
+  {
+    const hasCreds = fs.existsSync(path.join(sessionDir, 'creds.json'));
+    const fileCount = fs.readdirSync(sessionDir).length;
+    console.log(
+      `[CONNECTION] Session dir: ${sessionDir} — creds.json ${hasCreds ? 'FOUND (session will be reused)' : 'MISSING (fresh pairing required)'} — ${fileCount} file${fileCount === 1 ? '' : 's'}`
+    );
+    if (!hasCreds) {
+      console.warn(
+        `[CONNECTION] Pairing again? creds.json should exist after a successful pair. If the bot was paired before this boot, point SESSION_PATH at the volume mount (got: '${config.sessionPath}')`
+      );
+    }
+  }
+
   // Fetch the current WAWeb version so the socket presents as up-to-date.
   // On failure pass NO version — baileys then uses its own bundled default,
   // the exact path Moonson (proven linking on this account) runs on. The old
