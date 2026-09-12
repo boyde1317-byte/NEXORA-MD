@@ -2,7 +2,8 @@ import makeWASocket, {
   useMultiFileAuthState,
   DisconnectReason,
   makeCacheableSignalKeyStore,
-  fetchLatestBaileysVersion
+  fetchLatestBaileysVersion,
+  Browsers
 } from 'baileys';
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
@@ -77,16 +78,20 @@ export async function connectToWhatsApp() {
     fs.mkdirSync(sessionDir, { recursive: true });
   }
 
-  // Fetch latest Baileys protocol version for compatibility
+  // Fetch the current WAWeb version so the socket presents as up-to-date.
+  // On failure pass NO version — baileys then uses its own bundled default,
+  // the exact path Moonson (proven linking on this account) runs on. The old
+  // hardcoded fallback [2,3000,1044479778] is a stale 2024 WAWeb version and
+  // presenting it can make WhatsApp reject the device link outright
+  // ("couldn't link device" at code entry).
   let version;
   try {
     const { version: v } = await fetchLatestBaileysVersion();
     version = v;
     console.log(`[CONNECTION] Using WA version: ${v.join('.')}`);
   } catch {
-    // Updated fallback to match fork's bundled version
-    version = [2, 3000, 1044479778];
-    console.warn('[CONNECTION] Could not fetch latest version — using bundled fallback.');
+    version = undefined;
+    console.warn('[CONNECTION] Could not fetch latest WA version — letting baileys use its default.');
   }
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
@@ -99,7 +104,12 @@ export async function connectToWhatsApp() {
     },
     logger,
     printQRInTerminal: !config.pairing.enabled,
-    browser: ['Ubuntu', 'Chrome', '20.0.0'],
+    // Platform identity is sent INSIDE the link_code_companion_reg pairing
+    // request (companion_platform_id / companion_platform_display). The old
+    // ['Ubuntu','Chrome','20.0.0'] tuple claims an ancient Chrome build;
+    // Browsers.macOS('Safari') is the tuple Moonson links with in
+    // production on this same account — align to the proven presentation.
+    browser: Browsers.macOS('Safari'),
     markOnlineOnConnect: true,
     syncFullHistory: false,
     connectTimeoutMs: config.connectTimeoutMs || 60000,
