@@ -4,6 +4,9 @@ WORKDIR /app
 
 # Copy package files first for better Docker layer caching
 COPY package.json package-lock.json ./
+# git deps in the lock resolve over ssh by default — rewrite to https so
+# keyless CI builds can fetch them
+RUN git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" 
 COPY scripts/patch-libsignal.js ./scripts/
 
 # Install dependencies
