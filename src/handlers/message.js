@@ -321,6 +321,10 @@ try {
   }
 
   // ── Permission flags ────────────────────────────────────────────────────
+  // Diagnostics: sender jid form + fromMe + owner result. Critical for
+  // diagnosing LID-vs-PN owner mismatches on fresh links (see resolveIsOwner).
+  console.log(`[CMD] ${prefix}${resolvedName} ← ${sender}${m.fromMe ? ' (fromMe)' : ''}${isGroupMsg ? ' [group]' : ' [dm]'}`);
+
   const perms = command.permissions || {};
   const ownerOnly = perms.owner ?? command.ownerOnly ?? false;
   const groupOnly = perms.groupOnly ?? command.groupOnly ?? false;
@@ -335,6 +339,7 @@ try {
 
   // 1. Owner-only guard
   if (ownerOnly && !ownerCheck) {
+    console.warn(`[CMD-DENY] ${resolvedName}: owner_only — sender ${sender} not in OWNER_NUMBERS (bot id: ${sock.user?.id})`);
     await m.reply(getRandomResponse('owner_only'));
     return;
   }
@@ -343,6 +348,7 @@ try {
   // and is persisted in the database, so it must win over the static config default.
   const publicMode = db.getSettings().publicMode ?? config.publicMode;
   if (!publicMode && !ownerCheck) {
+    console.warn(`[CMD-DENY] ${resolvedName}: private_mode — sender ${sender} is not owner`);
     await m.reply.warn('This bot is running in private mode. Only the owner can use commands.');
     return;
   }

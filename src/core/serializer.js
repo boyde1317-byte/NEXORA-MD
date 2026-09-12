@@ -227,6 +227,18 @@ async function resolveIsOwner(sock, senderJid, fromMe, groupJid) {
   const botIsOwner = !!(botNumber && config.owner.includes(botNumber));
   if (fromMe && botIsOwner) return true;
 
+  // fromMe ⇒ the message came from the linked account itself. On fresh
+  // pairing-code links sock.user.id can present as an opaque LID, so the
+  // check above silently fails and the owner gets denied on their OWN
+  // commands ("Bot responds" with owner_only/private_mode canned text,
+  // commands never run). But the linked account is by definition the
+  // PAIRING_PHONE account — pairing requires it to be in OWNER_NUMBERS —
+  // so anchor the fromMe check on the pairing number instead.
+  if (fromMe && config.pairing?.phoneNumber) {
+    const pairNum = config.pairing.phoneNumber.replace(/[^0-9]/g, '');
+    if (pairNum && config.owner.includes(pairNum)) return true;
+  }
+
   const norm = normaliseJid(senderJid);
   const rawNumber = norm.split('@')[0];
   if (config.owner.includes(rawNumber)) return true;
