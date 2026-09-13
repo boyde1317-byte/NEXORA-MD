@@ -736,6 +736,17 @@ export async function dynamicTableCard(sock, jid, content, opts = {}) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NEW BUTTON TYPE HELPERS (v0.3.18-r4 — full fork button API)
+//
+// ⚠️ DEVICE AUDIT 2026-09-13 (.testmessage all, real device): the CTA types
+// below render as PLAIN TEXT — the client paints no native button for them:
+//   flow*, subscribe, reminder, schedule, openChat, payment,
+//   reviewAndPay, location, signIn, signUp, amazonLink, custom.
+// (*flow is protocol-supported but requires a Meta-registered flow token.)
+// Only phoneRequestCard (standalone requestPhoneNumberMessage) renders
+// natively on current clients. Builders are kept for API compatibility but
+// should NOT be used in production until a device test proves them.
+// Proven-rendering CTAs: quick_reply, cta_url, cta_copy, single_select,
+// bottom_sheet (optionText/Title), limited_time_offer, requestPhoneNumber.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
