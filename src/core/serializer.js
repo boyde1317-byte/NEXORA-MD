@@ -115,7 +115,7 @@ function normaliseJid(raw) {
  * @param {object} sock  Baileys socket (needs `signalRepository.lidMapping`)
  * @param {string} jid   JID or LID to resolve
  */
-async function resolvePhoneJid(sock, jid) {
+export async function resolvePhoneJid(sock, jid) {
   const norm = normaliseJid(jid);
   if (!norm || !norm.endsWith('@lid')) return norm;
   try {

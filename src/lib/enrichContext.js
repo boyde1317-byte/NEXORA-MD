@@ -100,6 +100,7 @@ export async function buildEnrichedContextInfo({
   adBody,
   sourceUrl,
   thumbnailUrl,
+  thumbnail,
   renderLargerThumbnail,
 } = {}) {
   let contextInfo = {};
@@ -144,8 +145,11 @@ export async function buildEnrichedContextInfo({
     // Embed the thumbnail as raw bytes — WhatsApp renders this directly
     // without needing to fetch a URL (which frequently fails and leaves a
     // broken link placeholder).  Keep thumbnailUrl as a fallback pointer.
-    if (_thumbnailBuffer) {
-      adReply.thumbnail = _thumbnailBuffer;
+    // A per-call `thumbnail` buffer (e.g. a user's profile picture for
+    // .me/.userinfo) takes priority over the cached default logo.
+    const thumbBuf = thumbnail || _thumbnailBuffer;
+    if (thumbBuf) {
+      adReply.thumbnail = thumbBuf;
       // Still include thumbnailUrl so the card has a clickable link target
       adReply.thumbnailUrl = finalThumbnailUrl;
     } else {
