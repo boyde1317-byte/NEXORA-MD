@@ -296,6 +296,77 @@ export const Providers = {
     );
     return data;
   },
+
+  // ── NPM registry (free, no key) ──────────────────────────────────────────
+  // Returns the full registry document: name, description, dist-tags,
+  // versions, author, repository. Scoped names are percent-encoded the
+  // same way the npm CLI does it — the registry decodes %2F back to '/'.
+  npm: async (pkg) => {
+    const { data } = await webClient.fetch(
+      `https://registry.npmjs.org/${encodeURIComponent(pkg)}`,
+      { useCache: true, cacheTtl: 300000 }
+    );
+    return data;
+  },
+
+  // ── MDN docs search (free, no key) ────────────────────────────────────────
+  // Returns { documents: [{ title, summary, mdn_url, ... }] }.
+  docs: async (query) => {
+    const { data } = await webClient.fetch(
+      `https://developer.mozilla.org/api/v1/search?q=${encodeURIComponent(query)}&locale=en-US`,
+      { useCache: true }
+    );
+    return data;
+  },
+
+  // ── World time (computed locally via Intl — no network, no key) ────────────
+  // Returns { timezone, datetime, utc_offset, abbreviation } for any IANA
+  // timezone (e.g. 'Africa/Accra', 'America/New_York', 'UTC').
+  // worldtimeapi.org was unreachable too often, so this is computed from
+  // the runtime's own tz database instead — offline, unlimited, instant.
+  // Invalid zones throw RangeError from Intl → normalized below.
+  time: async (timezone) => {
+    try {
+      const now = new Date();
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hourCycle: 'h23',
+        timeZoneName: 'short'
+      }).formatToParts(now);
+      const get = (type) => parts.find(p => p.type === type)?.value || '';
+
+      // Offset (e.g. 'GMT+00:00' → '+00:00') via a second format call
+      const longOffset = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone, timeZoneName: 'longOffset'
+      }).formatToParts(now).find(p => p.type === 'timeZoneName')?.value || 'GMT';
+      const utcOffset = longOffset === 'GMT'
+        ? '+00:00'
+        : longOffset.replace('GMT', '').replace(/^([+-])(\d{2}):(\d{2}).*$/, '$1$2:$3') || '+00:00';
+
+      return {
+        timezone,
+        // Offset appended so Date parses it absolutely, not server-local
+        datetime: `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}${utcOffset}`,
+        utc_offset: utcOffset,
+        abbreviation: get('timeZoneName') || 'UTC'
+      };
+    } catch (_) {
+      throw new Error(`Invalid or unknown timezone: ${timezone}`);
+    }
+  },
+
+  // ── Screenshot (WordPress mShots — free, no key) ──────────────────────────
+  // Returns an image Buffer. Prepends https:// when the caller omitted it.
+  screenshot: async (url) => {
+    const target = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+    const { data } = await webClient.fetch(
+      `https://s.wordpress.com/mshots/v1/${encodeURIComponent(target)}?w=1280&h=800`,
+      { useCache: true, cacheTtl: 600000 }
+    );
+    return data; // Buffer (image)
+  },
 };
 
 export default { webClient, Providers };
