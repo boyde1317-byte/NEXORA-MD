@@ -1,4 +1,4 @@
-import { downloadMediaMessage } from 'baileys';
+import { downloadMediaMessage, getContentType } from 'baileys';
 import baileysBridge from './baileysBridge.js';
 import { config } from '../../config/index.js';
 import { messageFormatter } from '../ui/messageFormatter.js';
@@ -296,7 +296,21 @@ async function resolveIsOwner(sock, senderJid, fromMe, groupJid) {
 export async function serialize(rawMessage, sock) {
   if (!rawMessage?.message || !rawMessage?.key?.remoteJid) return null;
 
-  const type = Object.keys(rawMessage.message)[0] || '';
+  // ── Content-type resolution ──────────────────────────────────────────────
+  // MUST use the fork's getContentType (same as Moonson's reference
+  // handler), NOT Object.keys(message)[0]. Native-flow responses — e.g.
+  // tapping a single_select pill — arrive as:
+  //
+  //   { messageContextInfo: {...}, interactiveResponseMessage: {...} }
+  //
+  // where messageContextInfo is often the FIRST key. Taking the raw first
+  // key typed the message as 'messageContextInfo', extractBody found no
+  // case for it, the body came back empty — and selected pills never
+  // triggered their command. getContentType skips protocol keys and
+  // returns the real content type ('interactiveResponseMessage').
+  // Fallback to the first key keeps behavior identical for every other
+  // message shape.
+  const type = getContentType(rawMessage.message) || Object.keys(rawMessage.message)[0] || '';
   const msgContent = rawMessage.message[type];
   const jid = rawMessage.key.remoteJid;
 
