@@ -33,12 +33,16 @@ const hasQuizPoll     = true;   // pollCreationMessage.isQuiz
 //      itsliaaa static proof — restored in the hardening.
 // Moonson renders this exact envelope in production (NIXCODE 4.5 +
 // itsliaaa baileys), and the fork's generators were structurally verified
-// 44/44 against v0.3.18-r4 and main (see richTestKit). The remaining step
-// is real-device confirmation via the .testrich owner kit — until that
-// passes, hasRichResp stays false in production. Set NEXORA_RICH_RESPONSE=1
-// to opt in for on-device A/B testing (interactiveKit cards then take the
-// rich path; baileysScanner inherits the override).
-const hasRichResp     = process.env.NEXORA_RICH_RESPONSE === '1';  // richResponseMessage / botForwardedMessage — re-verify on device, opt-in until proven
+// 44/44 against v0.3.18-r4 and main (see richTestKit).
+//
+// ✅ VERDICT (2026-09-13, fork tag v0.3.18-r5): PROVEN — the .testrich /
+// .testmessage device audit passed (15 message types incl. single_select
+// pill dispatch, media combos, tables, code cards; Moonson msping/msfb
+// replicas rendered natively). Rich responses are now LIVE BY DEFAULT.
+// Every consumer keeps an ASCII/plain-text fallback on failure.
+// Rollback: set NEXORA_RICH_RESPONSE=0 (opt-OUT). Setting =1 still works
+// and is a no-op. baileysScanner inherits this value.
+const hasRichResp     = process.env.NEXORA_RICH_RESPONSE !== '0';  // richResponseMessage / botForwardedMessage — device-proven 2026-09-13, default ON, opt-out via =0
 const hasSpoiler      = true;   // spoilerMessage
 const hasGroupStatus  = true;   // groupStatusMessageV2
 
