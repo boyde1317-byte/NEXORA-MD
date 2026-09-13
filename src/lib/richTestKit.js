@@ -14,6 +14,7 @@
 import {
   generateWAMessageFromContent,
 } from 'baileys';
+import { AIRich } from './NIXCODE.js';
 
 // ── V1 + V2 generators (imported from the fork's rich-message-utils.js) ─────
 import {
@@ -1231,6 +1232,78 @@ export async function testV2DynamicWithTable(sock, jid, quoted) {
 // Master test registry
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─── Moonson-proven AIRich combos (vendored NIXCODE builder) ─────────────────
+// These replicate the exact multi-section payload composition Moonson ships in
+// production: .ping (addProduct banner → addText × N → addTip → addSuggest)
+// and .facebookdl (addVideo → addText → addTip → setFooter). Unlike the
+// single-primitive generators above, AIRich stacks several primitives in ONE
+// unifiedResponse message. Device-proven by Moonson + NIXCODE + itsliaaa.
+
+export async function testMoonsonPingCombo(sock, jid, quoted) {
+  const os = await import('node:os');
+  const start = performance.now();
+  await fetch('https://httpbin.org/get').catch(() => null);
+  const apiLatency = (performance.now() - start).toFixed(0);
+
+  const totalRam = os.totalmem();
+  const usedRam  = totalRam - os.freemem();
+  const ramPct   = ((usedRam / totalRam) * 100).toFixed(1);
+  const cores    = os.cpus().length;
+  const cpuModel = os.cpus()[0]?.model?.trim() || 'Unknown';
+
+  const fmtRam = (b) => { const mb = b / 1024 / 1024; return mb >= 1024 ? (mb / 1024).toFixed(2) + ' GB' : mb.toFixed(0) + ' MB'; };
+  const bar = (p, size = 10) => '█'.repeat(Math.round((p / 100) * size)) + '░'.repeat(size - Math.round((p / 100) * size));
+
+  const thumb = 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png';
+
+  await new AIRich(sock)
+    .addProduct({
+      title:      'NEXORA-MD',
+      brand:      'System Monitor',
+      price:      apiLatency + ' ms',
+      sale_price: 'Excellent',
+      product_url: 'https://github.com/boyde1317-byte/NEXORA-MD',
+      image_url:  thumb,
+      icon_url:   thumb,
+    })
+    .addText(
+      '## ◈ Latency\n\n' +
+      '› API Ping : **' + apiLatency + ' ms**\n' +
+      '› Uptime   : device-proven combo from Moonson .ping'
+    )
+    .addText(
+      '## ◈ Memory\n\n' +
+      '› Used : **' + fmtRam(usedRam) + '** / ' + fmtRam(totalRam) + '\n' +
+      '› Load : `' + bar(ramPct) + '` ' + ramPct + '%'
+    )
+    .addText(
+      '## ◈ Processor\n\n' +
+      '› Model : ' + cpuModel + '\n' +
+      '› Cores : ' + cores + ' core'
+    )
+    .addTip('Platform : ' + os.type() + ' ' + os.arch() + ' · Node.js : ' + process.version)
+    .addSuggest(['.menu', '.ping', '.stats'])
+    .send(jid, { quoted });
+  return 'Moonson ping combo ✓';
+}
+
+/**
+ * Moonson .facebookdl combo — addVideo + addText + addTip + setFooter.
+ * addVideo emits a GenAIImaginePrimitive (ANIMATE) like Moonson ships.
+ */
+export async function testMoonsonFbCombo(sock, jid, quoted) {
+  await new AIRich(sock)
+    .addVideo('https://download.samplelib.com/mp4/sample-5s.mp4|5')
+    .addText(
+      '📝 **Description:**\nNEXORA test video — Moonson .facebookdl combo\n\n' +
+      '🔗 **Link:** https://download.samplelib.com/mp4/sample-5s.mp4'
+    )
+    .addTip('_Tap the video to play_')
+    .setFooter('© NEXORA-MD by Aizen')
+    .send(jid, { quoted });
+  return 'Moonson fb combo ✓';
+}
+
 export const RICH_TESTS = [
   // V1 generators (submessage-based)
   { id: 'v1table',    label: '📊 V1 Table',           fn: testV1Table,         group: 'V1' },
@@ -1285,6 +1358,9 @@ export const RICH_TESTS = [
   { id: 'v2multiimg',   label: '🖼️ V2 Multi-Images',  fn: testV2MultiImages,      group: 'Combos V2' },
   { id: 'v2gridtable',  label: '🖼️ V2 Grid+Table',    fn: testV2GridWithTable,     group: 'Combos V2' },
   { id: 'v2dyntable',   label: '🎞️ V2 Dynamic+Table', fn: testV2DynamicWithTable,  group: 'Combos V2' },
+  // Moonson-proven AIRich combos (multi-primitive unifiedResponse)
+  { id: 'msping',      label: '🏓 Moonson Ping Combo', fn: testMoonsonPingCombo, group: 'Moonson' },
+  { id: 'msfb',        label: '📘 Moonson FB Combo',    fn: testMoonsonFbCombo,   group: 'Moonson' },
 ];
 
 export async function runRichTest(sock, jid, testId, quoted) {
