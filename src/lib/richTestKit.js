@@ -488,7 +488,7 @@ export async function testReelContent(sock, jid, quoted) {
       videoUrl:       'https://www.w3schools.com/html/mov_bbb.mp4',
     },
   ];
-  const generated = generateReelContentV2(reels, quoted, {
+  const generated = generateReelContentV2(reels, quoted, { primitiveStyle: 'nixcode',
     headerText: '🧪 Reel Content Test — Video Carousel',
     footer: 'NEXORA-MD • contentItemsMetadata (type 9)',
   });
@@ -522,7 +522,7 @@ export async function testReelWithStats(sock, jid, quoted) {
       ['Quality',   'HD (720p)'],
     ],
   };
-  const generated = generateReelWithStatsV2(params, quoted, {
+  const generated = generateReelWithStatsV2(params, quoted, { primitiveStyle: 'nixcode',
     headerText: '🧪 Reel + Stats Table — TikTok Download Pattern',
     footer: 'NEXORA-MD • contentItems (type 9) + table (type 4) combined',
   });
@@ -550,7 +550,7 @@ export async function testMapContent(sock, jid, quoted) {
     quoted,
     {
       headerText: '🧪 Location Card Test — Coffee shops near Accra',
-      footer: 'NEXORA-MD • mapMetadata (type 7)',
+      footer: 'NEXORA-MD • mapMetadata (type 7) — EXPERIMENTAL: maps render caption-only on current clients',
     }
   );
   await _relayGenerated(sock, jid, generated, { quoted });
@@ -584,7 +584,7 @@ export async function testInlineVideoWithStats(sock, jid, quoted) {
       ],
     },
     quoted,
-    {
+    { primitiveStyle: 'nixcode',
       headerText: '\ud83e\uddea Inline Video + Table \u2014 Meta AI layout (V2)',
       footer: 'NEXORA-MD \u2022 contentItems (V2) + table (V2)',
     }
@@ -620,7 +620,7 @@ export async function testInlineImageWithTable(sock, jid, quoted) {
       ],
     },
     quoted,
-    {
+    { primitiveStyle: 'nixcode',
       headerText: '🧪 Inline Image + Table — search result card layout',
       footer: 'NEXORA-MD • inlineImage (type 3) + table (type 4)',
     }
@@ -689,7 +689,7 @@ export async function testV2Map(sock, jid, quoted) {
     quoted,
     {
       headerText: '🧪 V2 Location Card — Accra',
-      footer: 'NEXORA-MD • base64 unifiedResponse',
+      footer: 'NEXORA-MD • base64 unifiedResponse — EXPERIMENTAL: maps render caption-only on current clients',
     },
   );
   await _relayGenerated(sock, jid, generated, { quoted });
@@ -714,7 +714,7 @@ export async function testV2Reel(sock, jid, quoted) {
       videoUrl:       'https://www.w3schools.com/html/mov_bbb.mp4',
     },
   ];
-  const generated = generateReelContentV2(reels, quoted, {
+  const generated = generateReelContentV2(reels, quoted, { primitiveStyle: 'nixcode',
     headerText: '🧪 V2 Reel Content — Video Carousel',
     footer: 'NEXORA-MD • base64 unifiedResponse',
     contentType: 'CAROUSEL',
@@ -749,10 +749,12 @@ export async function testV2ReelWithStats(sock, jid, quoted) {
     },
     quoted,
     {
+      primitiveStyle: 'nixcode',
       headerText: '🧪 V2 Reel + Stats — TikTok Download',
       footer: 'NEXORA-MD • base64 unifiedResponse',
     },
   );
+
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V2 reel + stats ✓';
 }
@@ -783,10 +785,12 @@ export async function testV2InlineImageWithTable(sock, jid, quoted) {
     },
     quoted,
     {
+      primitiveStyle: 'nixcode',
       headerText: '🧪 V2 Inline Image + Table',
       footer: 'NEXORA-MD • base64 unifiedResponse',
     },
   );
+
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V2 inline image + table ✓';
 }
@@ -815,10 +819,12 @@ export async function testV2InlineVideoWithStats(sock, jid, quoted) {
     },
     quoted,
     {
+      primitiveStyle: 'nixcode',
       headerText: '🧪 V2 Inline Video + Stats',
       footer: 'NEXORA-MD • base64 unifiedResponse',
     },
   );
+
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V2 inline video + stats ✓';
 }
@@ -848,10 +854,12 @@ export async function testV1GridImage(sock, jid, quoted) {
     },
     quoted,
     {
+      primitiveStyle: 'nixcode',
       headerText: '🧪 V1 Grid Image — Photo Gallery',
       footer: 'NEXORA-MD • gridImageMetadata (type 1)',
     },
   );
+
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V1 grid image ✓';
 }
@@ -864,10 +872,12 @@ export async function testV1Dynamic(sock, jid, quoted) {
     { type: 'gif', url: 'https://media.giphy.com/media/3oEjI6SIIHBdIwqEoI/giphy.gif', loopCount: 3, version: 1 },
     quoted,
     {
+      primitiveStyle: 'nixcode',
       headerText: '🧪 V1 Dynamic — Animated GIF',
       footer: 'NEXORA-MD • dynamicMetadata (type 6, GIF)',
     },
   );
+
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V1 dynamic ✓';
 }
@@ -890,10 +900,12 @@ export async function testV2GridImage(sock, jid, quoted) {
     },
     quoted,
     {
+      primitiveStyle: 'nixcode',
       headerText: '🧪 V2 Grid Image — Photo Gallery',
       footer: 'NEXORA-MD • base64 unifiedResponse',
     },
   );
+
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V2 grid image ✓';
 }
@@ -906,10 +918,12 @@ export async function testV2Dynamic(sock, jid, quoted) {
     { type: 'image', url: 'https://picsum.photos/id/300/400/300', loopCount: 0, version: 1 },
     quoted,
     {
+      primitiveStyle: 'nixcode',
       headerText: '🧪 V2 Dynamic — Animated Image',
       footer: 'NEXORA-MD • base64 unifiedResponse',
     },
   );
+
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V2 dynamic ✓';
 }
@@ -1023,7 +1037,7 @@ export async function testV1MapWithTable(sock, jid, quoted) {
     tableRows: [['2.5M', '225 km²', 'GMT+0']],
   }, quoted, {
     headerText: '🧪 V1 Map+Table Combo',
-    footer: 'NEXORA-MD • Accra, Ghana',
+    footer: 'NEXORA-MD • Accra, Ghana — EXPERIMENTAL: maps render caption-only on current clients',
   });
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V1 map+table ✓';
@@ -1037,8 +1051,10 @@ export async function testV1TextWithImage(sock, jid, quoted) {
     'Here is an inline image rendered natively:',
     { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'NEXORA Test Image', tapLinkUrl: 'https://github.com/boyde1317-byte' },
     quoted,
-    { headerText: '🧪 V1 Text+Image Combo', footer: 'NEXORA-MD' },
+    {
+      primitiveStyle: 'nixcode', headerText: '🧪 V1 Text+Image Combo', footer: 'NEXORA-MD' },
   );
+
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V1 text+image ✓';
 }
@@ -1050,7 +1066,7 @@ export async function testV1MultiImages(sock, jid, quoted) {
   const generated = generateMultiInlineImages([
     { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'Image 1' },
     { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'Image 2' },
-  ], quoted, {
+  ], quoted, { primitiveStyle: 'nixcode',
     headerText: '🧪 V1 Multi-Image Gallery',
     footer: 'NEXORA-MD • stacked inline images',
   });
@@ -1070,7 +1086,7 @@ export async function testV1GridWithTable(sock, jid, quoted) {
     tableTitle: 'Gallery Stats',
     tableHeaders: ['Count', 'Resolution'],
     tableRows: [['1', '1080p']],
-  }, quoted, {
+  }, quoted, { primitiveStyle: 'nixcode',
     headerText: '🧪 V1 Grid+Table Combo',
     footer: 'NEXORA-MD',
   });
@@ -1087,7 +1103,7 @@ export async function testV1DynamicWithTable(sock, jid, quoted) {
     tableTitle: 'GIF Info',
     tableHeaders: ['Type', 'Loop'],
     tableRows: [['GIF', 'Infinite']],
-  }, quoted, {
+  }, quoted, { primitiveStyle: 'nixcode',
     headerText: '🧪 V1 Dynamic+Table Combo',
     footer: 'NEXORA-MD',
   });
@@ -1138,7 +1154,7 @@ export async function testV2MapWithTable(sock, jid, quoted) {
     tableRows: [['Accra', 'Ghana']],
   }, quoted, {
     headerText: '🧪 V2 Map+Table Combo',
-    footer: 'NEXORA-MD • base64',
+    footer: 'NEXORA-MD • base64 — EXPERIMENTAL: maps render caption-only on current clients',
   });
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V2 map+table ✓';
@@ -1152,8 +1168,10 @@ export async function testV2TextWithImage(sock, jid, quoted) {
     'V2 text+image combo — base64 unifiedResponse:',
     { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'V2 Test Image' },
     quoted,
-    { headerText: '🧪 V2 Text+Image Combo', footer: 'NEXORA-MD' },
+    {
+      primitiveStyle: 'nixcode', headerText: '🧪 V2 Text+Image Combo', footer: 'NEXORA-MD' },
   );
+
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V2 text+image ✓';
 }
@@ -1165,7 +1183,7 @@ export async function testV2MultiImages(sock, jid, quoted) {
   const generated = generateMultiInlineImagesV2([
     { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'V2 Image 1' },
     { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'V2 Image 2' },
-  ], quoted, {
+  ], quoted, { primitiveStyle: 'nixcode',
     headerText: '🧪 V2 Multi-Image Gallery',
     footer: 'NEXORA-MD • base64',
   });
@@ -1185,7 +1203,7 @@ export async function testV2GridWithTable(sock, jid, quoted) {
     tableTitle: 'V2 Grid Stats',
     tableHeaders: ['Images', 'Format'],
     tableRows: [['1', 'base64']],
-  }, quoted, {
+  }, quoted, { primitiveStyle: 'nixcode',
     headerText: '🧪 V2 Grid+Table Combo',
     footer: 'NEXORA-MD',
   });
@@ -1202,7 +1220,7 @@ export async function testV2DynamicWithTable(sock, jid, quoted) {
     tableTitle: 'V2 Dynamic Info',
     tableHeaders: ['Type', 'Format'],
     tableRows: [['GIF', 'base64']],
-  }, quoted, {
+  }, quoted, { primitiveStyle: 'nixcode',
     headerText: '🧪 V2 Dynamic+Table Combo',
     footer: 'NEXORA-MD',
   });
