@@ -200,7 +200,7 @@ async function runMapTable(sock, m) {
     rows: [['2.5M', '225 km²', 'GMT+0']],
     tableTitle: 'City Stats',
     headerText: '🧪 *MAP+TABLE TEST*',
-    footer: 'Map card + stats table combo',
+    footer: 'Map card + stats table combo — EXPERIMENTAL: maps render caption-only on current clients',
   }, { quoted: m });
   return 'map+table ✓';
 }
@@ -213,6 +213,7 @@ async function runTextImage(sock, m) {
     tapLinkUrl: 'https://github.com/boyde1317-byte',
     headerText: '🧪 *TEXT+IMAGE TEST*',
     footer: 'Text + inline image combo',
+    primitiveStyle: 'nixcode',
   }, { quoted: m });
   return 'text+image ✓';
 }
@@ -225,6 +226,7 @@ async function runMultiImages(sock, m) {
     ],
     headerText: '🧪 *MULTI-IMAGE TEST*',
     footer: 'Stacked inline image gallery',
+    primitiveStyle: 'nixcode',
   }, { quoted: m });
   return 'multi-images ✓';
 }
@@ -238,6 +240,7 @@ async function runGridTable(sock, m) {
     tableTitle: 'Gallery Stats',
     headerText: '🧪 *GRID+TABLE TEST*',
     footer: 'Image grid + data table combo',
+    primitiveStyle: 'nixcode',
   }, { quoted: m });
   return 'grid+table ✓';
 }
@@ -251,6 +254,7 @@ async function runDynamicTable(sock, m) {
     tableTitle: 'GIF Info',
     headerText: '🧪 *DYNAMIC+TABLE TEST*',
     footer: 'Animated content + table combo',
+    primitiveStyle: 'nixcode',
   }, { quoted: m });
   return 'dynamic+table ✓';
 }

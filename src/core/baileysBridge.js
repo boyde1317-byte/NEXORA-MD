@@ -1497,7 +1497,7 @@ export const baileysBridge = {
       const generated = generateMapWithTableV2(
         { map: { centerLatitude: content.latitude, centerLongitude: content.longitude, annotations: content.annotations || [] }, tableTitle: content.tableTitle, tableHeaders: content.headers, tableRows: content.rows },
         opts.quoted,
-        { headerText: content.headerText, footer: content.footer }
+        { headerText: content.headerText, footer: content.footer, primitiveStyle: content.primitiveStyle || opts.primitiveStyle }
       );
       return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
     } catch (err) {
@@ -1517,7 +1517,7 @@ export const baileysBridge = {
         content.text,
         { imageUrl: content.imageUrl, imageText: content.caption || '', tapLinkUrl: content.tapLinkUrl || '' },
         opts.quoted,
-        { headerText: content.headerText, footer: content.footer }
+        { headerText: content.headerText, footer: content.footer, primitiveStyle: content.primitiveStyle || opts.primitiveStyle }
       );
       return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
     } catch (err) {
@@ -1535,7 +1535,7 @@ export const baileysBridge = {
       const generated = generateMultiInlineImagesV2(
         content.images,
         opts.quoted,
-        { headerText: content.headerText, footer: content.footer }
+        { headerText: content.headerText, footer: content.footer, primitiveStyle: content.primitiveStyle || opts.primitiveStyle }
       );
       return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
     } catch (err) {
@@ -1554,7 +1554,7 @@ export const baileysBridge = {
       const generated = generateGridImageWithTableV2(
         { gridImage: { gridImageUrl: content.gridImageUrl, imageUrls: content.imageUrls || [] }, tableTitle: content.tableTitle, tableHeaders: content.headers, tableRows: content.rows },
         opts.quoted,
-        { headerText: content.headerText, footer: content.footer }
+        { headerText: content.headerText, footer: content.footer, primitiveStyle: content.primitiveStyle || opts.primitiveStyle }
       );
       return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
     } catch (err) {
@@ -1572,7 +1572,7 @@ export const baileysBridge = {
       const generated = generateDynamicWithTableV2(
         { dynamic: { type: content.dynamicType || 'GIF', url: content.dynamicUrl, version: content.dynamicVersion || 1, loopCount: content.loopCount || 0 }, tableTitle: content.tableTitle, tableHeaders: content.headers, tableRows: content.rows },
         opts.quoted,
-        { headerText: content.headerText, footer: content.footer }
+        { headerText: content.headerText, footer: content.footer, primitiveStyle: content.primitiveStyle || opts.primitiveStyle }
       );
       return await sock.relayMessage(jid, generated.message, { messageId: generated.messageId });
     } catch (err) {
