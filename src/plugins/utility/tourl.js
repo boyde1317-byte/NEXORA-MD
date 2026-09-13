@@ -17,6 +17,7 @@
 import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { selectMenu } from '../../lib/interactiveKit.js';
 
 const SUPPORTED = ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage', 'stickerMessage'];
 
@@ -125,6 +126,80 @@ const HOSTS = {
 // temporary CDNs, tmpfiles last (shortest-lived).
 const HOST_ORDER = ['catbox', 'litterbox', 'cdn', 'uguu', 'tmpfiles'];
 
+// ── Pending-media store ─────────────────────────────────────────────────────
+// When `.tourl` is sent on media WITHOUT a host, we show a provider picker.
+// Tapping a pill dispatches `.tourl <host>` as a NEW message — which no longer
+// quotes the media. So we stash the serialized media target (small: media
+// protos hold a URL + keys, not bytes) against (chat, sender) with a TTL, and
+// the follow-up `.tourl <host>` pulls it back out.
+const PENDING_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const pendingMedia = new Map(); // `${from}:${sender}` → { target, ts }
+
+function pendingKey(m) {
+  return `${m.from}:${m.sender}`;
+}
+
+function stashPending(m, target) {
+  // Prune stale entries so the Map never grows unbounded.
+  const now = Date.now();
+  for (const [k, v] of pendingMedia) {
+    if (now - v.ts > PENDING_TTL_MS) pendingMedia.delete(k);
+  }
+  pendingMedia.set(pendingKey(m), { target, ts: now });
+}
+
+function takePending(m) {
+  const entry = pendingMedia.get(pendingKey(m));
+  if (!entry) return null;
+  pendingMedia.delete(pendingKey(m));
+  if (Date.now() - entry.ts > PENDING_TTL_MS) return null;
+  return entry.target;
+}
+
+/**
+ * Send the provider picker (proven single_select via selectMenu).
+ * Each row id IS the command the pill tap dispatches.
+ */
+async function sendProviderPicker(sock, m) {
+  await selectMenu(
+    sock,
+    m.from,
+    {
+      text:  '☁️ *Choose an upload provider*',
+      footer: 'Pick a host — upload starts instantly.',
+    },
+    '📦 Select Provider',
+    [
+      {
+        title: '♾️ Permanent',
+        rows: [
+          { id: '.tourl catbox', title: 'Catbox', description: 'Permanent — never expires' },
+        ],
+      },
+      {
+        title: '⏳ Temporary',
+        rows: [
+          { id: '.tourl litterbox 1h',  title: 'Litterbox · 1h',  description: 'Catbox temp CDN — 1 hour' },
+          { id: '.tourl litterbox 24h', title: 'Litterbox · 24h', description: 'Catbox temp CDN — 24 hours' },
+          { id: '.tourl uguu',          title: 'Uguu',            description: 'Temp CDN — ~48 hours' },
+          { id: '.tourl tmpfiles',      title: 'tmpfiles.org',    description: 'Temp — ~60 minutes' },
+        ],
+      },
+      {
+        title: '⚡ CDN',
+        rows: [
+          { id: '.tourl cdn', title: '0x0.st', description: 'Minimalist CDN — retention varies' },
+        ],
+      },
+    ],
+    [
+      { kind: 'action', label: '🚀 Auto (best first)', cmd: '.tourl auto' },
+      { kind: 'action', label: '❌ Cancel',           cmd: '.tourl cancel' },
+    ],
+    { quoted: m }
+  );
+}
+
 export default {
   name: 'tourl',
   aliases: ['geturl', 'mediaurl', 'uploadmedia', 'fileurl'],
@@ -133,28 +208,62 @@ export default {
   cooldown: 8000,
   execute: async ({ m, sock, args, prefix }) => {
     const p = prefix || '.';
-    const target = SUPPORTED.includes(m.quoted?.type) ? m.quoted
-                 : SUPPORTED.includes(m.type)         ? m
-                 : null;
+    let target = SUPPORTED.includes(m.quoted?.type) ? m.quoted
+               : SUPPORTED.includes(m.type)         ? m
+               : null;
 
+    // ── Argument handling ───────────────────────────────────────────────────
+    // Special args (dispatched by picker taps or power users):
+    //   auto   → upload now, trying hosts in default order (no picker)
+    //   cancel → drop the stashed media, abort
+    // A known host name forces that host directly.
     const hostArg = args[0]?.toLowerCase();
+    const special = hostArg === 'auto' || hostArg === 'cancel';
+
+    if (hostArg === 'cancel') {
+      const had = pendingMedia.delete(pendingKey(m));
+      return await m.reply.info(
+        had ? '🗑️ Pending upload cancelled — stashed media dropped.'
+            : 'Nothing to cancel — no pending media.',
+        'TOURL'
+      );
+    }
+
     const forcedHost = hostArg && HOSTS[hostArg] ? hostArg : null;
-    if (hostArg && !forcedHost) {
+    if (hostArg && !forcedHost && !special) {
       return await m.reply.error(
         `Unknown host "${hostArg}".\n\nAvailable: ${Object.keys(HOSTS).join(', ')}`
       );
     }
     const litterboxTime = forcedHost === 'litterbox' ? args[1]?.toLowerCase() : undefined;
 
+    // ── Media resolution ───────────────────────────────────────────────────
+    // Fresh media in the reply wins; otherwise fall back to media stashed by
+    // a previous picker flow (tap dispatches a new message that doesn't
+    // quote the media).
+    if (!target) {
+      target = takePending(m) || null;
+    }
+
     if (!target) {
       return await m.reply.info(
-        `Reply to or send any media with \`${p}tourl\` to get a direct download link.\n\n` +
+        `Reply to or send any media with \`${p}tourl\` — you'll get a provider picker.\n\n` +
         `Supported media: image, video, audio, sticker, document.\n\n` +
-        `Hosts (tried in this order by default): ${HOST_ORDER.map(h => HOSTS[h].label).join(' → ')}\n` +
-        `Force a specific host: \`${p}tourl <host>\` (${Object.keys(HOSTS).join(', ')})\n` +
-        `Litterbox expiry: \`${p}tourl litterbox <1h|12h|24h|72h>\``,
+        `Skip the picker:\n` +
+        `• \`${p}tourl auto\` — tries hosts in default order (${HOST_ORDER.map(h => HOSTS[h].label).join(' → ')})\n` +
+        `• \`${p}tourl <host>\` — force a host (${Object.keys(HOSTS).join(', ')})\n` +
+        `• \`${p}tourl litterbox <1h|12h|24h|72h>\` — temp host with expiry`,
         'MEDIA → URL'
       );
+    }
+
+    // ── Picker flow ─────────────────────────────────────────────────────────
+    // Media present + no host/auto arg → show the provider picker and stash
+    // the media for the follow-up command.
+    if (!forcedHost && !special) {
+      stashPending(m, target);
+      await sendProviderPicker(sock, m);
+      return;
     }
 
     await withReactionStatus(m, async () => {
