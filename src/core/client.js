@@ -113,6 +113,15 @@ export const client = {
         }
 
         const cmdName = plugin.name.toLowerCase();
+        // Last registration wins — that silently shadowed the good
+        // translate plugin for weeks (web/translate.js overwrote
+        // ai/translate.js). Warn so duplicate names are loud, not silent.
+        if (this.commands.has(cmdName)) {
+          const prev = loadedPlugins.get(cmdName);
+          console.warn(
+            `[PLUGIN WARN] Duplicate command "${cmdName}": ${filePath} overwrites ${prev?.filePath || '(unknown)'}`
+          );
+        }
         this.commands.set(cmdName, plugin);
         loadedPlugins.set(cmdName, { plugin, filePath });
 
