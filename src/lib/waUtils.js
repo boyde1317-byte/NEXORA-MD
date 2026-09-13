@@ -16,8 +16,20 @@
  *   import { replyFakeQuote, replyAdReply, sendStatus } from '../lib/waUtils.js'
  */
 
-/** WhatsApp's own server JID — renders as "WhatsApp" in quoted headers */
+/**
+ * WhatsApp's own server JID — kept for proto fields that expect a business
+ * server JID (orderMessage.sellerJid etc.). NOTE: as the `participant` of a
+ * fake status quote, some clients resolve 0@s.whatsapp.net to the bot's own
+ * profile, so quote builders use META_AI_JID instead.
+ */
 export const WA_JID = '0@s.whatsapp.net'
+
+/**
+ * Meta AI's official WhatsApp account (+1 313 555 0002 — wa.me/13135550002).
+ * Used as the `participant` on every fake status quote, so the reply bar
+ * renders "Meta AI" as the status author instead of the bot itself.
+ */
+export const META_AI_JID = '13135550002@s.whatsapp.net'
 
 /** Status broadcast pseudo-JID */
 export const STATUS_JID = 'status@broadcast'
@@ -61,8 +73,9 @@ function fakeStanzaId() {
 //     message — the type you choose determines what the card looks like:
 //       buildFakeOrderQuote   → business order card  (thumbnail + item count + title)
 //       buildFakeContactQuote → contact card          (name + contact icon)
-//     Both use 0@s.whatsapp.net as participant (renders as "WhatsApp") and
-//     status@broadcast as remoteJid (prevents WA trying to load the original).
+//     Both use Meta AI's JID as participant (renders as "Meta AI" as the
+//     quoted/status author) and status@broadcast as remoteJid (prevents WA
+//     trying to load the original).
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -83,7 +96,7 @@ export function buildFakeOrderQuote({ title, thumbnail, itemCount = 1, orderId, 
   return {
     key: {
       fromMe:      false,
-      participant: WA_JID,
+      participant: META_AI_JID,
       remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
@@ -132,7 +145,7 @@ export function buildFakeContactQuote({ displayName, phoneNumber, vcard } = {}) 
   return {
     key: {
       fromMe:      false,
-      participant: WA_JID,
+      participant: META_AI_JID,
       remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
@@ -180,7 +193,7 @@ export function buildFakeAudioQuote({ audioMessage, seconds = 9999999, ptt = tru
   return {
     key: {
       fromMe:      false,
-      participant: WA_JID,
+      participant: META_AI_JID,
       remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
@@ -230,7 +243,7 @@ export function buildFakeLocationQuote({
   return {
     key: {
       fromMe:      false,
-      participant: WA_JID,
+      participant: META_AI_JID,
       remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
@@ -273,7 +286,7 @@ export function buildFakeLiveLocationQuote({
   return {
     key: {
       fromMe:      false,
-      participant: WA_JID,
+      participant: META_AI_JID,
       remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
@@ -307,7 +320,7 @@ export function buildFakeTextQuote({ text, title, jpegThumbnail } = {}) {
   return {
     key: {
       fromMe:      false,
-      participant: WA_JID,
+      participant: META_AI_JID,
       remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
@@ -335,7 +348,7 @@ export function buildFakeDocumentQuote({ title, fileName, mimetype, jpegThumbnai
   return {
     key: {
       fromMe:      false,
-      participant: WA_JID,
+      participant: META_AI_JID,
       remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
@@ -367,7 +380,7 @@ export function buildFakeImageQuote({ url, jpegThumbnail, viewOnce = false, heig
   return {
     key: {
       fromMe:      false,
-      participant: WA_JID,
+      participant: META_AI_JID,
       remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
@@ -402,7 +415,7 @@ export function buildFakeGifQuote({ caption, jpegThumbnail, seconds = 999999999,
   return {
     key: {
       fromMe:      false,
-      participant: WA_JID,
+      participant: META_AI_JID,
       remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
@@ -445,7 +458,7 @@ export function buildFakeProductQuote({
   return {
     key: {
       fromMe:      false,
-      participant: WA_JID,
+      participant: META_AI_JID,
       remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
@@ -483,7 +496,7 @@ export function buildFakeGroupInviteQuote({ groupJid, inviteCode = 'null', group
   return {
     key: {
       fromMe:      false,
-      participant: WA_JID,
+      participant: META_AI_JID,
       remoteJid:   WA_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
@@ -518,7 +531,7 @@ export function buildFakePaymentQuote({ currencyCode = 'USD', amount1000 = 1000,
   return {
     key: {
       fromMe:      false,
-      participant: WA_JID,
+      participant: META_AI_JID,
       remoteJid:   WA_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
@@ -561,7 +574,7 @@ export function buildFakeNewsletterQuote({ newsletterJid, newsletterName, captio
   return {
     key: {
       fromMe:      false,
-      participant: WA_JID,
+      participant: META_AI_JID,
       remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
@@ -612,7 +625,7 @@ export async function sendFakeQuote(sock, jid, text, fakeText = '\u200e', opts =
     contextInfo: {
       stanzaId:      fakeStanzaId(),   // required for reliable reply-bar rendering
       quotedMessage: { conversation: fakeText },
-      participant:   WA_JID,           // "WhatsApp" shown as the quoted sender
+      participant:   META_AI_JID,      // "Meta AI" shown as the quoted sender
       remoteJid:     jid,              // must be the actual destination chat, not WA_JID
     },
   }, opts)
