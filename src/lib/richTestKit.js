@@ -76,6 +76,11 @@ import {
 // so the raw botForwardedMessage structure reaches WA servers untouched).
 // ─────────────────────────────────────────────────────────────────────────────
 
+// LaTeX primitives don't typeset client-side — the device paints the
+// latex_image.url. Pre-render via codecogs (no local deps needed).
+const _codecogsUrl = (expr) =>
+  'https://latex.codecogs.com/png.image?\\dpi{150}%20' + encodeURIComponent(expr);
+
 async function _relayGenerated(sock, jid, generated, options = {}) {
   // Generators embed quoted context via buildRichContextInfo / buildV2ContextInfo.
   // Do NOT pass quoted here — it would double-set contextInfo at the wrong level
@@ -194,13 +199,13 @@ export async function testV1Latex(sock, jid, quoted) {
     expressions: [
       {
         latexExpression: 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}',
-        url: '',
+        url: _codecogsUrl('x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}'),
         width: 200,
         height: 60,
       },
     ],
     headerText: 'LaTeX Expression',
-    footer: 'NEXORA-MD • requires client-side LaTeX rendering',
+    footer: 'NEXORA-MD • codecogs pre-rendered image',
   });
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V1 latex ✓';
@@ -662,10 +667,10 @@ export async function testV2Latex(sock, jid, quoted) {
   const generated = generateLatexContentV2(quoted, {
     text: '🧪 V2 LaTeX Test — Euler identity:',
     expressions: [
-      { latexExpression: 'e^{i\\pi} + 1 = 0', url: '', width: 180, height: 50 },
+      { latexExpression: 'e^{i\\pi} + 1 = 0', url: _codecogsUrl('e^{i\\pi} + 1 = 0'), width: 180, height: 50 },
     ],
     headerText: 'LaTeX V2',
-    footer: 'NEXORA-MD • base64 unifiedResponse',
+    footer: 'NEXORA-MD • base64 unifiedResponse • codecogs pre-rendered image',
   });
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V2 latex ✓';
@@ -957,10 +962,18 @@ export async function testV1LatexImage(sock, jid, quoted) {
     await _relayGenerated(sock, jid, generated, { quoted });
     return 'V1 latex image ✓';
   } catch (err) {
-    await sock.sendMessage(jid, {
-      text: '🧪 *V1 LaTeX Image Test*\n\n❌ ' + err.message + '\n\n_Install mathjax-node: npm install mathjax-node_',
-    }, { quoted });
-    return 'V1 latex image — ' + err.message;
+    // mathjax-node not installed — fall back to the codecogs pre-rendered URL
+    const expr = '\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}';
+    const generated = generateLatexContent(quoted, {
+      text: '🧪 V1 LaTeX Image Test — codecogs fallback (mathjax-node unavailable):',
+      expressions: [
+        { latexExpression: expr, url: _codecogsUrl(expr), width: 300, height: 50 },
+      ],
+      headerText: 'LaTeX Image (fallback)',
+      footer: 'NEXORA-MD • codecogs pre-rendered image',
+    });
+    await _relayGenerated(sock, jid, generated, { quoted });
+    return 'V1 latex image — codecogs fallback (mathjax-node: ' + err.message + ')';
   }
 }
 
@@ -985,10 +998,18 @@ export async function testV2LatexImage(sock, jid, quoted) {
     await _relayGenerated(sock, jid, generated, { quoted });
     return 'V2 latex image ✓';
   } catch (err) {
-    await sock.sendMessage(jid, {
-      text: '🧪 *V2 LaTeX Image Test*\n\n❌ ' + err.message + '\n\n_Install mathjax-node: npm install mathjax-node_',
-    }, { quoted });
-    return 'V2 latex image — ' + err.message;
+    // mathjax-node not installed — fall back to the codecogs pre-rendered URL
+    const expr = 'e^{i\\pi} + 1 = 0';
+    const generated = generateLatexContentV2(quoted, {
+      text: '🧪 V2 LaTeX Image Test — codecogs fallback (mathjax-node unavailable):',
+      expressions: [
+        { latexExpression: expr, url: _codecogsUrl(expr), width: 180, height: 50 },
+      ],
+      headerText: 'LaTeX V2 Image (fallback)',
+      footer: 'NEXORA-MD • base64 unifiedResponse • codecogs pre-rendered image',
+    });
+    await _relayGenerated(sock, jid, generated, { quoted });
+    return 'V2 latex image — codecogs fallback (mathjax-node: ' + err.message + ')';
   }
 }
 
