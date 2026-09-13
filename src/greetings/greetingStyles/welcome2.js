@@ -15,18 +15,18 @@ export const welcome2 = {
     const payload = {
       document: { url: imageUrl },
       mimetype: 'application/pdf',
-      fileName: isWelcome ? '⚡_WELCOME_CARD.pdf' : '👋_GOODBYE_CARD.pdf',
+      fileName: isWelcome ? 'Welcome.pdf' : 'Goodbye.pdf',
       caption: caption,
       mentions: [userJid],
       contextInfo: {
         mentionedJid: [userJid],
         externalAdReply: {
-          title: isWelcome ? '📁 SECURE DIGITAL ENTRY PASS' : '📁 GROUP EXIT DEPARTURE LOG',
+          title: isWelcome ? 'Welcome' : 'Farewell',
           body: variables.groupName,
           mediaType: 1,
           thumbnailUrl: thumbnailPic,
           originalImageUrl: imageUrl,
-          renderLargerThumbnail: true,
+          renderLargerThumbnail: false,
           sourceUrl: 'https://github.com/boyde1317-byte'
         }
       }

@@ -7,7 +7,7 @@ const GREETING_DB_PATH = path.join(process.cwd(), 'database', 'greeting.json');
 const defaultGreetingConfig = {
   enabled: true,
   goodbyeEnabled: true,
-  style: 1,
+  style: 4,
   welcomeText: "👋 Welcome {user} to *{group}*!\n\nWe are glad to have you here. You are our {memberCount}th member! ✨",
   goodbyeText: "😢 Goodbye {user}! We will miss you.",
   welcomeImage: "https://media.base44.com/images/public/6a6ffc9ec8a196324ba9ee95/6e8441439_generated_image.png",
@@ -74,7 +74,7 @@ export const greetingConfig = {
   setStyle(styleId) {
     const data = this.load();
     const styleNum = parseInt(styleId, 10);
-    if ([1, 2, 3].includes(styleNum)) {
+    if ([1, 2, 3, 4].includes(styleNum)) {
       data.style = styleNum;
       this.save(data);
       return true;

@@ -16,10 +16,10 @@ export const welcome1 = {
     const contextInfo = {
       mentionedJid: [userJid],
       externalAdReply: {
-        title: isWelcome ? '🌟 NEW PARTICIPANT JOINED 🌟' : '👋 MEMBER LEFT GROUP 👋',
+        title: isWelcome ? 'New member joined' : 'Member left',
         body: isWelcome ? `Welcome ${variables.userNumber} to ${variables.groupName}!` : `Goodbye from ${variables.groupName}`,
         mediaType: 1,
-        renderLargerThumbnail: true,
+        renderLargerThumbnail: false,
         originalImageUrl: imageUrl,
         sourceUrl: 'https://github.com/boyde1317-byte'
       }

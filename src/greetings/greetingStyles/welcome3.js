@@ -18,10 +18,10 @@ export const welcome3 = {
       contextInfo: {
         mentionedJid: [userJid],
         externalAdReply: {
-          title: isWelcome ? '⚡ INTERACTIVE GATEWAY PORTAL' : '👋 SECURITY CHECKPOINT DISMISSAL',
-          body: `Click to enter checkpoint • ${variables.groupName}`,
+          title: isWelcome ? `Welcome to ${variables.groupName}` : `A member left ${variables.groupName}`,
+          body: 'NEXORA-MD',
           mediaType: 1,
-          renderLargerThumbnail: true,
+          renderLargerThumbnail: false,
           thumbnailUrl: thumbnailPic,
           originalImageUrl: imageUrl,
           sourceUrl: 'https://github.com/boyde1317-byte'
