@@ -740,13 +740,15 @@ export async function dynamicTableCard(sock, jid, content, opts = {}) {
 // ⚠️ DEVICE AUDIT 2026-09-13 (.testmessage all, real device): the CTA types
 // below render as PLAIN TEXT — the client paints no native button for them:
 //   flow*, subscribe, reminder, schedule, openChat, payment,
-//   reviewAndPay, location, signIn, signUp, amazonLink, custom.
+//   reviewAndPay, location, signIn, signUp, amazonLink, custom,
+//   phone (requestPhoneNumberMessage — renders only an inert 'requested
+//   phone number' system line with NO tappable action; also not shipped
+//   by the Moonson/NIXCODE/itsliaaa proven reference).
 // (*flow is protocol-supported but requires a Meta-registered flow token.)
-// Only phoneRequestCard (standalone requestPhoneNumberMessage) renders
-// natively on current clients. Builders are kept for API compatibility but
-// should NOT be used in production until a device test proves them.
+// Builders are kept for API compatibility but should NOT be used in
+// production until a device test proves them.
 // Proven-rendering CTAs: quick_reply, cta_url, cta_copy, single_select,
-// bottom_sheet (optionText/Title), limited_time_offer, requestPhoneNumber.
+// bottom_sheet (optionText/Title), limited_time_offer.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -850,8 +852,10 @@ export async function locationRequestCard(sock, jid, content, opts = {}) {
  */
 export async function phoneRequestCard(sock, jid, content, opts = {}) {
   // requestPhoneNumberMessage is a standalone proto message type — it does NOT
-  // need nativeFlowMessage. It renders a native "Share Phone Number" button on
-  // ALL WhatsApp clients, regardless of nativeFlow support.
+  // need nativeFlowMessage. DEVICE AUDIT 2026-09-13: it renders only an inert
+  // 'requested phone number' system line — no tappable share action for a
+  // peer/bot sender, and nothing at all fires in self-chat. Not shipped by
+  // Moonson/NIXCODE/itsliaaa. Do not use in production.
   // The fork handles it: sock.sendMessage(jid, { requestPhoneNumber: true })
   // → m.requestPhoneNumberMessage = {}
   try {

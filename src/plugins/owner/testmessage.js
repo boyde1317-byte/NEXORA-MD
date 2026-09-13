@@ -12,11 +12,14 @@
  * non-working (all rendered plain text, no native button):
  *   flow (needs a real Meta-registered flow token to render),
  *   subscribe, reminder, schedule, openchat, payment, reviewpay,
- *   location, address, signin, signup, amazon, custom, newsletter.
+ *   location, address, signin, signup, amazon, custom, newsletter,
+ *   phone (requestPhoneNumberMessage — renders only an inert 'requested
+ *   phone number' system line; no tappable action, not shipped by
+ *   Moonson/NIXCODE/itsliaaa either).
  * Proven working: quickreply, url, copy, select, bottomsheet, offer,
- *   table, code, codetable, phone (standalone requestPhoneNumber),
- *   maptable (experimental: caption-only), and the media combos
- *   (textimage/multiimages/gridtable/dynamictable — nixcode primitives).
+ *   table, code, codetable, maptable (experimental: caption-only), and
+ *   the media combos (textimage/multiimages/gridtable/dynamictable —
+ *   nixcode primitives).
  */
 import { baileysBridge } from '../../core/baileysBridge.js';
 import capabilities from '../../core/capabilities.js';
@@ -26,7 +29,6 @@ import {
   richTableCard, richCodeCard,
   codeTableCard, mapTableCard, textImageCard,
   multiImageCard, gridTableCard, dynamicTableCard,
-  phoneRequestCard,
 } from '../../lib/interactiveKit.js';
 
 // ─── Test runners ─────────────────────────────────────────────────────────────
@@ -254,15 +256,6 @@ async function runDynamicTable(sock, m) {
 // ─── New button type test runners (v0.3.18-r4) ──────────────────────────────
 
 
-async function runPhoneRequest(sock, m) {
-  await phoneRequestCard(sock, m.from, {
-    text: '📱 *PHONE REQUEST TEST*\n\nTap to share your phone number.',
-    footer: 'cta_request_phone',
-  }, { quoted: m });
-  return 'phone_request ✓';
-}
-
-
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 export default {
@@ -281,8 +274,6 @@ export default {
       'quickreply', 'url', 'copy', 'select', 'bottomsheet',
       'offer', 'table', 'code',
       'codetable', 'maptable', 'textimage', 'multiimages', 'gridtable', 'dynamictable',
-      // Device-proven native request (v0.3.18-r4)
-      'phone',
       'all',
     ];
 
@@ -312,8 +303,7 @@ export default {
           { id: `${p}testmessage gridtable`,    title: '🖼️ Grid+Table',     description: 'Image grid + data table combo' },
           { id: `${p}testmessage dynamictable`, title: '🎞️ Dynamic+Table',  description: 'Animated content + table combo' },
         ]},
-        { title: 'Native Requests (device-proven)', rows: [
-          { id: `${p}testmessage phone`,        title: '📱 Request Phone',    description: 'Request user phone number (standalone requestPhoneNumberMessage)' },
+        { title: 'Run', rows: [
           { id: `${p}testmessage all`,          title: '🚀 Run All Tests',   description: 'Execute every test in sequence' },
         ]},
       ], [], { quoted: m });
@@ -343,8 +333,6 @@ export default {
       await run(() => runMultiImages(sock, m));
       await run(() => runGridTable(sock, m));
       await run(() => runDynamicTable(sock, m));
-      // Device-proven native request (v0.3.18-r4)
-      await run(() => runPhoneRequest(sock, m));
       return await m.reply(`✅ *All tests complete!*\n\n${results.join('\n')}`);
     }
 
@@ -363,8 +351,6 @@ export default {
       multiimages:  () => runMultiImages(sock, m),
       gridtable:    () => runGridTable(sock, m),
       dynamictable: () => runDynamicTable(sock, m),
-      // Device-proven native request (v0.3.18-r4)
-      phone:        () => runPhoneRequest(sock, m),
     };
 
     const result = await runners[type]();
