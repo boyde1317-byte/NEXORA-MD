@@ -12,7 +12,7 @@ export default {
   execute: async ({ m, sock, args, prefix }) => {
     const p = prefix || '.';
     if (!aiTextGenerator.isEnabled()) {
-      return await m.reply.error('AI is not configured. Set GEMINI_API_KEY (or NEXORA_AI_KEY) in .env.');
+      return await m.reply.error('AI is not configured. Set GEMINI_API_KEY / NEXORA_API_KEY (Google) or GROQ_API_KEY (free, console.groq.com) in .env.');
     }
     
     let text = args.join(' ').trim();
