@@ -84,7 +84,10 @@ export async function youtubeSearch(query) {
     url: v.url || (v.videoId ? `https://youtube.com/watch?v=${v.videoId}` : undefined),
     title: v.title,
     thumbnail: v.thumbnail,
-    duration: v.duration || v.timestamp,
+    // yt-search returns duration as {seconds, timestamp} — surface the
+    // display string ("3:16"), never the raw object ([object Object]
+    // leaked into every .play/.ytmp4 picker row + card header).
+    duration: v.duration?.timestamp || v.duration || v.timestamp,
     views: v.views,
     author: v.author?.name || v.author,
   })).filter(v => v.url);

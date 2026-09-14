@@ -60,7 +60,16 @@ export default {
       try {
         const results = (await youtubeSearch(query)).slice(0, MAX_RESULTS);
 
-        return await selectMenu(sock, m.from, { text: `🔎 Results for "${query}":` }, '🎵 Pick a track', [
+        // High-quality display image: first result's YouTube thumbnail
+        // (hq720) as the card header, with its title as the header caption.
+        // If it's missing, selectMenu falls back to the menu brand image.
+        const top = results[0] || {};
+        return await selectMenu(sock, m.from, {
+          text: `🔎 Results for "${query}":`,
+          title: (top.title || '').slice(0, 60) || 'YouTube Search',
+          subtitle: [top.author, top.duration].filter(Boolean).join(' • '),
+          thumbnail: top.thumbnail,
+        }, '🎵 Pick a track', [
           {
             title: '🎵 Download Audio',
             rows: results.map((v, idx) => ({

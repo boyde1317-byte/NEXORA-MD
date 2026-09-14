@@ -85,7 +85,16 @@ export default {
         // sendCarousel never actually catches the failure (it shows up as
         // "your version of WhatsApp doesn't support it" on their screen).
         // selectMenu (buttonsMessage + single_select) is the reliable path.
-        await selectMenu(sock, m.from, { text: `🔎 Results for "${query}":` }, '🎬 Pick a video', [
+        // High-quality display image: first result's YouTube thumbnail
+        // (hq720) as the card header, with its title as the header caption.
+        // If it's missing, selectMenu falls back to the menu brand image.
+        const top = results[0] || {};
+        await selectMenu(sock, m.from, {
+          text: `🔎 Results for "${query}":`,
+          title: (top.title || '').slice(0, 60) || 'YouTube Search',
+          subtitle: [top.author, top.duration].filter(Boolean).join(' • '),
+          thumbnail: top.thumbnail,
+        }, '🎬 Pick a video', [
           {
             title: '🎬 Download Video',
             rows: results.map((v, idx) => ({
