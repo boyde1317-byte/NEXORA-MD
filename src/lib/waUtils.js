@@ -60,6 +60,31 @@ export function pickAiJid() {
   return AI_JIDS[Math.floor(Math.random() * AI_JIDS.length)]
 }
 
+/**
+ * Pick a complete random AI contact for a message.
+ *
+ * Returns everything a builder/call site needs to attribute a message to a
+ * real AI account — jid for participants/mentions, bare number for vcard
+ * waids, display name for cards and headers. Consecutive calls rotate
+ * randomly so back-to-back messages attribute to different AIs.
+ *
+ * @returns {{ jid: string, number: string, name: string }}
+ *
+ * @example
+ * const ai = pickAiContact()
+ * // ai.jid     → '13135550002@s.whatsapp.net' (Meta AI)
+ * // ai.number  → '13135550002'
+ * // ai.name    → 'Meta AI'
+ */
+export function pickAiContact() {
+  const jid = pickAiJid()
+  return {
+    jid,
+    number: jid.split('@')[0],
+    name:   AI_NAMES[jid] || 'Meta AI',
+  }
+}
+
 /** Status broadcast pseudo-JID */
 export const STATUS_JID = 'status@broadcast'
 
@@ -179,9 +204,7 @@ export function buildFakeContactQuote({ displayName, phoneNumber, vcard } = {}) 
   // the real AI accounts (Meta AI / ChatGPT / Perplexity), so WhatsApp
   // resolves that account's official name + profile picture as the quoted
   // contact — the number is real, the profile fetch just works.
-  const aiJid    = pickAiJid()
-  const aiNumber = aiJid.split('@')[0]
-  const aiName   = AI_NAMES[aiJid] || 'Meta AI'
+  const { number: aiNumber, name: aiName } = pickAiContact()
 
   const vcardStr = vcard || [
     'BEGIN:VCARD',
