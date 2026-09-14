@@ -439,6 +439,12 @@ export function addPairRequest(rawPhone, { dmJid, chatJid, name }) {
   if (pairRequests.size >= MAX_PAIR_REQUESTS) {
     throw new Error('Too many pending pairing requests — wait for the owner to clear the queue (.pairrequests).');
   }
+  // One pending request per REQUESTER: a user can't queue several numbers
+  // at once — the super owner handles one decision at a time.
+  const mine = [...pairRequests.values()].find(r => r.dmJid === dmJid);
+  if (mine) {
+    throw new Error(`You already have a pending request for +${mine.phone} — wait for it to be approved, denied, or expire (~15 min) before requesting another.`);
+  }
   pairRequests.set(phone, { phone, dmJid, chatJid, name, ts: Date.now() });
   return { phone, duplicate: false };
 }
