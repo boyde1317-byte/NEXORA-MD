@@ -352,7 +352,10 @@ try {
   // 2. Private mode guard — publicMode can be toggled at runtime via .self/.public
   // and is persisted in the database, so it must win over the static config default.
   const publicMode = db.getSettings().publicMode ?? config.publicMode;
-  if (!publicMode && !ownerCheck) {
+  // requestable commands are exempt from private mode: they only FILE a
+  // request (e.g. .pair) that the super owner must still approve — the
+  // approval commands themselves stay owner-gated.
+  if (!publicMode && !ownerCheck && !command.requestable) {
     console.warn(`[CMD-DENY] ${resolvedName}: private_mode — sender ${sender} is not owner`);
     await m.reply.warn('This bot is running in private mode. Only the owner can use commands.');
     return;

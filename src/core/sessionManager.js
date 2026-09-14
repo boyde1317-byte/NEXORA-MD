@@ -403,6 +403,63 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
  * as a follow-up message to `notifyJid` once WA issues it, because the code
  * only exists after the socket's WS session is live.
  */
+// ── Pairing requests (interactive approval flow) ─────────────────────────────
+// .pair by anyone EXCEPT the super owner files a request here; the super
+// owner gets an interactive Approve/Deny card in their DM (.pairapprove /
+// .pairdeny / .pairrequests). In-memory by design — requests live for
+// minutes, not across restarts.
+const pairRequests = new Map(); // phone → { phone, dmJid, chatJid, name, ts }
+const PAIR_REQUEST_TTL_MS = 15 * 60 * 1000;
+const MAX_PAIR_REQUESTS = 10;
+
+function prunePairRequests() {
+  const now = Date.now();
+  for (const [phone, req] of pairRequests) {
+    if (now - req.ts > PAIR_REQUEST_TTL_MS) pairRequests.delete(phone);
+  }
+}
+
+/**
+ * File a pairing request from a non-super-owner user. Throws with a plain
+ * message on validation failure; returns { phone, duplicate } otherwise.
+ */
+export function addPairRequest(rawPhone, { dmJid, chatJid, name }) {
+  prunePairRequests();
+  const phone = normalizePhone(rawPhone);
+  if (phone.length < 7) {
+    throw new Error('That does not look like a valid phone number — include the country code, e.g. `.pair 2335XXXXXXXX`.');
+  }
+  if (sessions.has(phone)) {
+    throw new Error(`+${phone} is already paired — remove it first with .delsession ${phone}.`);
+  }
+  if (sessions.size >= MAX_EXTRA_SESSIONS) {
+    throw new Error(`Session limit reached (${MAX_EXTRA_SESSIONS}) — no new pairing requests accepted.`);
+  }
+  if (pairRequests.has(phone)) return { phone, duplicate: true };
+  if (pairRequests.size >= MAX_PAIR_REQUESTS) {
+    throw new Error('Too many pending pairing requests — wait for the owner to clear the queue (.pairrequests).');
+  }
+  pairRequests.set(phone, { phone, dmJid, chatJid, name, ts: Date.now() });
+  return { phone, duplicate: false };
+}
+
+/** Pending requests (TTL-pruned, newest first). */
+export function getPairRequests() {
+  prunePairRequests();
+  return [...pairRequests.values()].sort((a, b) => b.ts - a.ts);
+}
+
+/** Look up a pending request by id/phone WITHOUT consuming it. */
+export function peekPairRequest(idOrPhone) {
+  prunePairRequests();
+  return pairRequests.get(normalizePhone(idOrPhone)) || null;
+}
+
+/** Consume (remove) a pending request — only after it was acted on. */
+export function removePairRequest(idOrPhone) {
+  return pairRequests.delete(normalizePhone(idOrPhone));
+}
+
 export async function pairSession(rawPhone, { notifyJid } = {}) {
   const phone = normalizePhone(rawPhone);
   if (phone.length < 7) {
