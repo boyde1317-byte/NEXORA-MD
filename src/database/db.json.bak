@@ -8,7 +8,8 @@
       3,
       4,
       5,
-      6
+      6,
+      7
     ],
     "menuStyle": 1,
     "theme": "modern",
@@ -22,6 +23,7 @@
       "lastConnected": null,
       "lastDisconnected": null,
       "uptime": 0
-    }
+    },
+    "sudoOwners": []
   }
 }
