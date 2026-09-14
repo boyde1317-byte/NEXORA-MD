@@ -278,6 +278,14 @@ httpServer = app.listen(PORT, HOST, async () => {
     await initThumbnail();
     await client.loadPlugins();
     await connectToWhatsApp();
+
+    // Reconnect any saved extra sessions (.pair-linked numbers)
+    try {
+      const { resumeExtraSessions } = await import('./src/core/sessionManager.js');
+      await resumeExtraSessions();
+    } catch (err) {
+      console.warn('[STARTUP] Extra-session resume failed:', err.message || err);
+    }
   } catch (err) {
     console.error('[CRITICAL] Startup failed:', err);
     process.exit(1);

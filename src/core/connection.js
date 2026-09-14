@@ -256,7 +256,13 @@ export async function connectToWhatsApp() {
         db.saveSync();
         try {
           const files = fs.readdirSync(sessionDir);
-          for (const f of files) fs.rmSync(path.join(sessionDir, f), { force: true });
+          // Skip directories (session/extras holds additional linked sessions
+          // managed by sessionManager.js — they share this persistent volume).
+          for (const f of files) {
+            const p = path.join(sessionDir, f);
+            if (fs.statSync(p).isDirectory()) continue;
+            fs.rmSync(p, { force: true });
+          }
           console.log('[CONNECTION] Session cleared. Will attempt re-pair in 30 seconds...');
         } catch (e) {
           console.error('[CONNECTION] Failed to clear session:', e.message);

@@ -1,6 +1,17 @@
 {
   "users": {},
-  "groups": {},
+  "groups": {
+    "2335@g.us": {
+      "jid": "2335@g.us",
+      "antilink": false,
+      "antitag": false,
+      "mute": false,
+      "warnings": {},
+      "createdAt": 1789384533849,
+      "welcome": false,
+      "goodbye": true
+    }
+  },
   "settings": {
     "_migrations": [
       1,
