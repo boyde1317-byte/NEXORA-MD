@@ -1,6 +1,7 @@
 import { aiTextGenerator } from '../../assets/aiTextGenerator.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
+import { sendAIRichReply } from '../../lib/aiRichReply.js';
 import { DownloadProgress } from '../../lib/progress.js';
 
 export default {
@@ -26,6 +27,15 @@ export default {
       try {
         const reply = await aiTextGenerator.brainstormIdeas(topic);
         await progress.done();
+
+        // ── Rich tier: native markdown rendering of the idea list ──
+        const richSent = await sendAIRichReply(sock, m.from, m, {
+          markdown: `## 💡 BRAINSTORM: ${topic.toUpperCase()}\n\n${reply}\n\n_Need more? Tap a suggestion below for another round._`,
+          tips:    ['NEXORA • Think Tank'],
+          suggest: [`${p}brainstorm ${topic}`, `${p}ai Tell me more about: ${topic}`],
+          footer:  'NEXORA • Think Tank',
+        });
+        if (richSent) return;
 
         await mixedCard(sock, m.from, {
           text: `💡 *BRAINSTORM: ${topic.toUpperCase()}*\n\n${reply}\n\n_Need more? Hit 'More Ideas' for another round._`,

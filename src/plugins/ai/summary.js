@@ -14,6 +14,7 @@
 import { aiTextGenerator } from '../../assets/aiTextGenerator.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
+import { sendAIRichReply } from '../../lib/aiRichReply.js';
 import { DownloadProgress } from '../../lib/progress.js';
 import { isUrl } from '../../lib/downloader.js';
 
@@ -102,6 +103,16 @@ export default {
         await progress.done();
 
         const styleLabel = style === 'default' ? 'Summary' : style === 'short' ? 'TL;DR' : 'Key Points';
+
+        // ── Rich tier: native markdown rendering of the summary ──
+        const richSent = await sendAIRichReply(sock, m.from, m, {
+          markdown: `## 📝 ${styleLabel.toUpperCase()}\n\n${reply}`,
+          tips:    ['NEXORA • Summarizer'],
+          suggest: [`${p}summary`, '.menu'],
+          footer:  'NEXORA • Summarizer',
+        });
+        if (richSent) return;
+
         await mixedCard(sock, m.from, {
           text: `📝 *${styleLabel.toUpperCase()}*\n\n${reply}`,
           footer: 'NEXORA • Summarizer',

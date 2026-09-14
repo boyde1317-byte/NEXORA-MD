@@ -43,19 +43,24 @@ export default {
         await progress.done();
         const { language, code, explanation } = parseCodeReply(reply);
 
-        // ── Single message: code + explanation + buttons in one card ──
-        const codeBlock = `\`\`\`${language}\n${code}\n\`\`\``;
-        const cardText = (explanation ? `✦ *Nexora Code*\n\n${explanation}\n\n` : '✦ *Nexora Code*\n\n') + codeBlock;
+        // ── Rich tier: native code card (proven v1code/v2code) + copy CTA ──
+        // Falls back internally to a monospace card with a copy button.
         try {
+          const caption = (explanation ? `${explanation}\n\n` : '') +
+            `_Bugs? Reply to your prompt with_ \`.debug\` _to fix them._`;
+          await richCodeCard(sock, m.from, {
+            code, language, caption,
+            footer: 'NEXORA • Gemini ✦',
+          }, { quoted: m });
+        } catch (_) {
           await mixedCard(sock, m.from, {
-            text:   cardText,
+            text:   (explanation ? `✦ *Nexora Code*\n\n${explanation}\n\n` : '✦ *Nexora Code*\n\n') + `\`\`\`${language}\n${code}\n\`\`\``,
             footer: 'NEXORA • Gemini ✦',
           }, [
-            { kind: 'copy',   label: '📋 Copy Code',        value: code },
-            { kind: 'action', label: '🐛 Debug This Code',  cmd: `${p}debug ${code.slice(0, 100)}` },
-            { kind: 'action', label: '✏️ Generate Another',  cmd: `${p}code` },
+            { kind: 'copy',   label: '📋 Copy Code',       value: code },
+            { kind: 'action', label: '✏️ Generate Another', cmd: `${p}code` },
           ], { quoted: m });
-        } catch (_) {}
+        }
       } catch (err) {
         await m.reply.error(`I couldn't generate that code: ${err.message}`);
         throw err;

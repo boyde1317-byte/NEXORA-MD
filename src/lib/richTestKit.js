@@ -205,7 +205,7 @@ export async function testV1Latex(sock, jid, quoted) {
       },
     ],
     headerText: 'LaTeX Expression',
-    footer: 'NEXORA-MD • codecogs pre-rendered image',
+    footer: 'NEXORA-MD • codecogs PNG — FIXED 2026-09-14: GenAILatexItem inline entities, re-verify',
   });
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V1 latex ✓';
@@ -556,7 +556,7 @@ export async function testMapContent(sock, jid, quoted) {
     quoted,
     {
       headerText: '🧪 Location Card Test — Coffee shops near Accra',
-      footer: 'NEXORA-MD • mapMetadata (type 7) — EXPERIMENTAL: maps render caption-only on current clients',
+      footer: 'NEXORA-MD • FIXED 2026-09-14: OSM tile (ImaginePrimitive) + info text — re-verify on device',
     }
   );
   await _relayGenerated(sock, jid, generated, { quoted });
@@ -670,7 +670,7 @@ export async function testV2Latex(sock, jid, quoted) {
       { latexExpression: 'e^{i\\pi} + 1 = 0', url: _codecogsUrl('e^{i\\pi} + 1 = 0'), width: 180, height: 50 },
     ],
     headerText: 'LaTeX V2',
-    footer: 'NEXORA-MD • base64 unifiedResponse • codecogs pre-rendered image',
+    footer: 'NEXORA-MD • base64 unifiedResponse • codecogs PNG — FIXED 2026-09-14: GenAILatexItem inline entities, re-verify',
   });
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V2 latex ✓';
@@ -695,7 +695,7 @@ export async function testV2Map(sock, jid, quoted) {
     quoted,
     {
       headerText: '🧪 V2 Location Card — Accra',
-      footer: 'NEXORA-MD • base64 unifiedResponse — EXPERIMENTAL: maps render caption-only on current clients',
+      footer: 'NEXORA-MD • FIXED 2026-09-14: OSM tile + info text (base64) — re-verify on device',
     },
   );
   await _relayGenerated(sock, jid, generated, { quoted });
@@ -970,7 +970,7 @@ export async function testV1LatexImage(sock, jid, quoted) {
         { latexExpression: expr, url: _codecogsUrl(expr), width: 300, height: 50 },
       ],
       headerText: 'LaTeX Image (fallback)',
-      footer: 'NEXORA-MD • codecogs pre-rendered image',
+      footer: 'NEXORA-MD • codecogs PNG — FIXED 2026-09-14: GenAILatexItem inline entities, re-verify',
     });
     await _relayGenerated(sock, jid, generated, { quoted });
     return 'V1 latex image — codecogs fallback (mathjax-node: ' + err.message + ')';
@@ -1006,7 +1006,7 @@ export async function testV2LatexImage(sock, jid, quoted) {
         { latexExpression: expr, url: _codecogsUrl(expr), width: 180, height: 50 },
       ],
       headerText: 'LaTeX V2 Image (fallback)',
-      footer: 'NEXORA-MD • base64 unifiedResponse • codecogs pre-rendered image',
+      footer: 'NEXORA-MD • base64 unifiedResponse • codecogs PNG — FIXED 2026-09-14: GenAILatexItem inline entities, re-verify',
     });
     await _relayGenerated(sock, jid, generated, { quoted });
     return 'V2 latex image — codecogs fallback (mathjax-node: ' + err.message + ')';
@@ -1059,7 +1059,7 @@ export async function testV1MapWithTable(sock, jid, quoted) {
     tableRows: [['2.5M', '225 km²', 'GMT+0']],
   }, quoted, {
     headerText: '🧪 V1 Map+Table Combo',
-    footer: 'NEXORA-MD • Accra, Ghana — EXPERIMENTAL: maps render caption-only on current clients',
+    footer: 'NEXORA-MD • FIXED 2026-09-14: OSM tile + info + table — re-verify on device',
   });
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V1 map+table ✓';
@@ -1176,7 +1176,7 @@ export async function testV2MapWithTable(sock, jid, quoted) {
     tableRows: [['Accra', 'Ghana']],
   }, quoted, {
     headerText: '🧪 V2 Map+Table Combo',
-    footer: 'NEXORA-MD • base64 — EXPERIMENTAL: maps render caption-only on current clients',
+    footer: 'NEXORA-MD • FIXED 2026-09-14: OSM tile + info + table (base64) — re-verify on device',
   });
   await _relayGenerated(sock, jid, generated, { quoted });
   return 'V2 map+table ✓';
