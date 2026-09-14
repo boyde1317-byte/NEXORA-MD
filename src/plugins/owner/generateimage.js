@@ -13,7 +13,7 @@ export default {
   cooldown: 5000,
   execute: async ({ m, sock, args }) => {
     if (!aiAssetGenerator.isEnabled()) {
-      return await m.reply.error('Gemini is not fully configured. Set GEMINI_API_KEY and GENERATE_ASSETS=true.');
+      return await m.reply.error('Gemini is not fully configured. Set GEMINI_API_KEY (or NEXORA_AI_KEY) and GENERATE_ASSETS=true.');
     }
 
     const prompt = args.join(' ').trim();

@@ -14,16 +14,20 @@ dotenv.config();
 
 let aiClient = null;
 
+// Key resolution: GEMINI_API_KEY (canonical) with NEXORA_AI_KEY as the
+// platform-managed alias. Either name powers every AI feature.
+const resolveApiKey = () => process.env.GEMINI_API_KEY || process.env.NEXORA_AI_KEY || '';
+
 export function hasApiKey() {
-  return !!process.env.GEMINI_API_KEY;
+  return !!resolveApiKey();
 }
 
 export function getAiClient() {
   if (aiClient) return aiClient;
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = resolveApiKey();
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not defined in the environment');
+    throw new Error('AI key is not defined in the environment. Set GEMINI_API_KEY (or NEXORA_AI_KEY) in .env');
   }
 
   aiClient = new GoogleGenAI({

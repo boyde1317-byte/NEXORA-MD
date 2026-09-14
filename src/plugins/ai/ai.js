@@ -23,7 +23,7 @@ export default {
 
     if (!aiTextGenerator.isEnabled()) {
       return await m.reply.error(
-        'AI is not configured. Set GEMINI_API_KEY in .env to enable this command.'
+        'AI is not configured. Set GEMINI_API_KEY (or NEXORA_AI_KEY) in .env to enable this command.'
       );
     }
 
