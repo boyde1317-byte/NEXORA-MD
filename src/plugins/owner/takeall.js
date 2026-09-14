@@ -58,13 +58,35 @@ export default {
     }
 
     // 1. Collect unique sticker messages from the group's cached history
+    //
+    // Stickers from OTHER users frequently arrive wrapped in
+    // ephemeralMessage / viewOnceMessage(V2) / editedMessage envelopes
+    // (especially in groups with disappearing messages on), while the
+    // bot's own sends usually land as plain top-level stickerMessage —
+    // which is why the old top-level-only scan behaved as if it could
+    // "only see the bot's stickers". Unwrap before matching.
+    const unwrapSticker = (message) => {
+      let current = message;
+      for (let hop = 0; hop < 4 && current; hop++) {
+        if (current.stickerMessage) return current.stickerMessage;
+        const next =
+          current.ephemeralMessage?.message ??
+          current.viewOnceMessage?.message ??
+          current.viewOnceMessageV2?.message ??
+          current.viewOnceMessageV2Extension?.message ??
+          current.documentWithCaptionMessage?.message ??
+          current.editedMessage?.message ??
+          null;
+        if (!next) break;
+        current = next;
+      }
+      return null;
+    };
+
     const seen = new Set();
     const stickerMessages = [];
     for (const msg of chatMsgs.values()) {
-      const stickerMsg =
-        msg?.message?.stickerMessage ??
-        msg?.message?.documentWithCaptionMessage?.message?.stickerMessage ??
-        null;
+      const stickerMsg = unwrapSticker(msg?.message);
       if (!stickerMsg) continue;
 
       const hash = stickerHash(stickerMsg);
@@ -77,7 +99,7 @@ export default {
 
     if (stickerMessages.length === 0) {
       return await m.reply.info(
-        'No stickers found in the cached history of this group (last ~500 messages).',
+        `No stickers found \u2014 scanned ${chatMsgs.size} cached messages. Note: stickers sent before the bot (re)started or older than the last ~500 messages aren't in the live cache; ask the group to re-send them, then try again.`,
         '.TAKEALL'
       );
     }
@@ -93,9 +115,12 @@ export default {
     // 2. Download each sticker
     const buffers = [];
     let failed = 0;
-    for (const { msg } of toFetch) {
+    for (const { msg, stickerMsg } of toFetch) {
       try {
-        const buffer = await downloadMediaMessage(msg, 'buffer', {}, {
+        // Re-wrap the unwrapped sticker at top level so downloadMediaMessage
+        // resolves it regardless of the envelope it originally arrived in.
+        const dlMsg = { key: msg.key, message: { stickerMessage: stickerMsg } };
+        const buffer = await downloadMediaMessage(dlMsg, 'buffer', {}, {
           logger: () => {},
           reuploadRequest: sock.updateMediaMessage,
         });
@@ -127,7 +152,10 @@ export default {
         await sock.sendMessage(m.from, { delete: status.key });
       }
 
+      const fromOthers = toFetch.filter(({ msg }) => !msg?.key?.fromMe).length;
+      const fromBot = toFetch.length - fromOthers;
       let summary = `Sticker pack *${toSmallcaps('nexora')}* sent with ${buffers.length} sticker${buffers.length > 1 ? 's' : ''} \u2713`;
+      summary += `\n\u2022 ${fromOthers} from the group, ${fromBot} from the bot`;
       if (failed > 0) summary += `\n\u26a0\ufe0f ${failed} sticker${failed > 1 ? 's' : ''} could not be downloaded (expired media)`;
       if (truncated) summary += `\n\u26a0\ufe0f Capped at ${MAX_PACK} (WhatsApp pack limit) \u2014 ${stickerMessages.length} unique stickers were found`;
       summary += `\n_Tap the pack card and hit *Add to favorites* to save it._`;
