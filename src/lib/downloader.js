@@ -316,3 +316,34 @@ export default {
   wikiSearch,
   getLyrics,
 };
+
+/**
+ * Fetch a media URL into a buffer, following redirects.
+ *
+ * Why: downloader backends (e.g. c.ymcdn.org) hand out short-lived,
+ * single-token stream URLs. Handing the raw URL to baileys means the fetch
+ * happens later — by which time the token can already be 410 Gone
+ * ("Failed to fetch stream from ..."). Buffering immediately, right after
+ * the backend response, decouples the send from the token's lifetime.
+ *
+ * @returns {Promise<{ buffer: Buffer, mimetype: string }>}
+ */
+export async function downloadMediaBuffer(url, { timeoutMs = 60000, maxBytes = 100 * 1024 * 1024 } = {}) {
+  const response = await fetch(url, {
+    redirect: 'follow',
+    signal: AbortSignal.timeout(timeoutMs),
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+  });
+  if (!response.ok) {
+    throw new Error(`stream fetch failed (HTTP ${response.status})`);
+  }
+  const len = Number(response.headers.get('content-length') || 0);
+  if (len && len > maxBytes) {
+    throw new Error(`file too large (${(len / 1024 / 1024).toFixed(1)} MB, limit ${(maxBytes / 1024 / 1024)} MB)`);
+  }
+  const mimetype = (response.headers.get('content-type') || '').split(';')[0].trim() || 'application/octet-stream';
+  const buffer = Buffer.from(await response.arrayBuffer());
+  if (!buffer.length) throw new Error('empty stream');
+  if (buffer.length > maxBytes) throw new Error(`file too large (${(buffer.length / 1024 / 1024).toFixed(1)} MB)`);
+  return { buffer, mimetype };
+}

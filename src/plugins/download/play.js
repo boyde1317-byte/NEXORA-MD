@@ -1,6 +1,6 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard, selectMenu } from '../../lib/interactiveKit.js';
-import { youtubeSearch, youtubeDownload, isUrl } from '../../lib/downloader.js';
+import { youtubeSearch, youtubeDownload, isUrl, downloadMediaBuffer } from '../../lib/downloader.js';
 
 const MAX_RESULTS = 5;
 
@@ -36,9 +36,25 @@ export default {
           // Send audio first, then a single metadata card with buttons.
           // WhatsApp can't combine audio + buttons in one message, so this
           // is the minimum: 2 messages (audio + card).
+          //
+          // The backend's mp3 URL is a short-lived token (c.ymcdn.org links
+          // go 410 Gone quickly) — buffer it immediately, and if the token
+          // already died, grab a fresh backend link and try once more.
+          let audio;
+          const grab = async (d) => {
+            const { buffer, mimetype } = await downloadMediaBuffer(d.mp3, { timeoutMs: 90000 });
+            return { buffer, mimetype: mimetype.startsWith('audio/') ? mimetype : 'audio/mpeg' };
+          };
+          try {
+            audio = await grab(data);
+          } catch (err) {
+            console.warn('[play] stream token expired, refetching link:', err.message);
+            audio = await grab(await youtubeDownload(query));
+          }
+
           await sock.sendMessage(m.from, {
-            audio: { url: data.mp3 },
-            mimetype: 'audio/mpeg',
+            audio: audio.buffer,
+            mimetype: audio.mimetype,
             ptt: false,
           }, { quoted: m });
 
