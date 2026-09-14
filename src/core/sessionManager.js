@@ -113,6 +113,24 @@ async function notifyMain(notifyJid, text) {
   } catch (_) {}
 }
 
+/** JID of the first super owner — paired-session lifecycle DMs target them. */
+function superOwnerJid() {
+  const num = config.superOwner?.[0];
+  return num ? `${num}@s.whatsapp.net` : null;
+}
+
+/**
+ * Send a paired-session STATUS message to the super owner's DM, plus the
+ * chat the .pair command ran in (deduped when they're the same chat). The
+ * pairing CODE itself must never go through here — it stays in the
+ * command chat via notifyMain (secrets don't get duplicated around).
+ */
+export async function notifyStatus(notifyJid, text) {
+  const sj = superOwnerJid();
+  if (notifyJid && notifyJid !== sj) await notifyMain(notifyJid, text);
+  if (sj) await notifyMain(sj, text);
+}
+
 /**
  * Phone numbers of every linked bot socket (main + extras), excluding the
  * given one — used by both this module and the main connection to skip
@@ -260,6 +278,7 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
 
     if (connection === 'open') {
       if (pairingTimer) clearTimeout(pairingTimer);
+      const wasReconnecting = entry.status === 'reconnecting';
       entry.status = 'online';
       entry.jid = sock.user?.id || `${phone}@s.whatsapp.net`;
       entry.name = sock.user?.name || null;
@@ -267,9 +286,13 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
       entry.reconnectAttempts = 0;
       if (phase === 'pairing') {
         console.log(`[SESSION] +${phone} linked — online as ${entry.name || phone}`);
-        await notifyMain(notifyJid, `🎉 +${phone} is now linked and online${entry.name ? ` as *${entry.name}*` : ''} — it now runs as its own NEXORA bot: commands its owner types in groups or their self-chat get full bot replies (owner-only and private-mode gates apply to that owner's number).`);
+        await notifyStatus(notifyJid, `🎉 +${phone} is now linked and online${entry.name ? ` as *${entry.name}*` : ''} — it now runs as its own NEXORA bot: commands its owner types in groups or their self-chat get full bot replies (owner-only and private-mode gates apply to that owner's number).`);
       } else {
         console.log(`[SESSION] +${phone} reconnected`);
+        // Only after an actual drop — a routine resume stays silent.
+        if (wasReconnecting) {
+          await notifyStatus(notifyJid, `🟢 +${phone} is back online.`);
+        }
       }
       return;
     }
@@ -285,7 +308,7 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
         wipeDir(dir);
         sessions.delete(phone);
         console.log(`[SESSION] +${phone} logged out by WhatsApp — session removed`);
-        await notifyMain(notifyJid, `🚫 +${phone} was logged out (device removed on that phone or by WhatsApp) — session files cleaned.`);
+        await notifyStatus(notifyJid, `🚫 +${phone} was logged out (device removed on that phone or by WhatsApp) — session files cleaned. Re-link with .pair ${phone}.`);
         return;
       }
 
@@ -302,7 +325,7 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
       entry.reconnectAttempts = attempts;
       if (attempts > RECONNECT_MAX_ATTEMPTS) {
         sessions.delete(phone);
-        await notifyMain(notifyJid, `⚠️ +${phone} failed to reconnect ${RECONNECT_MAX_ATTEMPTS} times — session dropped. Run .pair ${phone} to re-link it.`);
+        await notifyStatus(notifyJid, `⚠️ +${phone} failed to reconnect ${RECONNECT_MAX_ATTEMPTS} times — session dropped. Re-link with .pair ${phone}.`);
         return;
       }
       const delay = Math.min(RECONNECT_BASE_MS * Math.pow(2, attempts - 1), RECONNECT_MAX_MS);
