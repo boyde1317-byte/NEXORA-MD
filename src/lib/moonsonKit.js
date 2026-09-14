@@ -423,13 +423,27 @@ class ButtonV2 extends BaseBuilder {
   }
 
   async buildContent() {
-    let _thumbnail = this._image
-      ? await BaseBuilder.resize(
-          Buffer.isBuffer(this._image) ? this._image : await BaseBuilder.fetchBuffer(this._image, {}, { silent: true }),
-          300,
-          300,
-        )
-      : null;
+    // NEXORA patch: a buttonsMessage location header without a
+    // jpegThumbnail renders blank. Default to the same brand image the
+    // menu uses (unless .image() was called). Any fetch/resize failure
+    // falls back to the pre-patch behavior (no thumbnail) — a failed
+    // header image must never break the card send.
+    let _thumbSrc = this._image;
+    if (!_thumbSrc) {
+      try {
+        const { ASSET_URLS } = await import('../assets/assetUrls.js');
+        _thumbSrc = ASSET_URLS.thumbnail || null;
+      } catch (_) {}
+    }
+    let _thumbnail = null;
+    if (_thumbSrc) {
+      try {
+        const buf = Buffer.isBuffer(_thumbSrc)
+          ? _thumbSrc
+          : await BaseBuilder.fetchBuffer(_thumbSrc, {}, { silent: true });
+        if (buf && buf.length) _thumbnail = await BaseBuilder.resize(buf, 300, 300);
+      } catch (_) { _thumbnail = null; }
+    }
 
     return {
       ...this._extraPayload,

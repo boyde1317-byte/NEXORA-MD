@@ -141,7 +141,9 @@ export async function actionCard(sock, jid, content, actions, opts = {}) {
 /**
  * @param {object} sock
  * @param {string} jid
- * @param {{ text: string, footer?: string, title?: string }} content
+ * @param {{ text: string, footer?: string, title?: string, thumbnail?: * }} content
+ *          thumbnail: optional per-card header image (Buffer/{url}/URL string);
+ *          defaults to the same high-quality brand image the menu uses.
  * @param {Array<{ label: string, cmd: string }>} actions
  * @param {import('./waUtils.js').AdReplyOpts} ad   externalAdReply card (title/body/thumbnail)
  * @param {object} [opts]
@@ -186,7 +188,9 @@ export async function actionCardWithAd(sock, jid, content, actions, ad, opts = {
 /**
  * @param {object} sock
  * @param {string} jid
- * @param {{ text: string, footer?: string, title?: string }} content
+ * @param {{ text: string, footer?: string, title?: string, thumbnail?: * }} content
+ *          thumbnail: optional per-card header image (Buffer/{url}/URL string);
+ *          defaults to the same high-quality brand image the menu uses.
  * @param {Array<{ label: string, url: string }>} links
  * @param {object} [opts]
  */
@@ -298,7 +302,9 @@ export async function mixedCard(sock, jid, content, specs, opts = {}) {
 /**
  * @param {object} sock
  * @param {string} jid
- * @param {{ text: string, footer?: string, title?: string }} content
+ * @param {{ text: string, footer?: string, title?: string, thumbnail?: * }} content
+ *          thumbnail: optional per-card header image (Buffer/{url}/URL string);
+ *          defaults to the same high-quality brand image the menu uses.
  * @param {string} pickerLabel           Label on the list-opener button
  * @param {Array<{
  *   title: string,
@@ -365,12 +371,35 @@ export async function selectMenu(sock, jid, content, pickerLabel, sections, side
 
   const buttons = cap([pickerButton, ...sideBtns]);
 
+  // ── Header thumbnail ──────────────────────────────────────────────────
+  // The single_select card renders as a buttonsMessage with a location
+  // header (headerType 6). Without a jpegThumbnail that header renders
+  // blank — the exact same use case as the menu, so it gets the exact
+  // same brand image (imageManager style 5), unless the caller passes
+  // their own thumbnail (e.g. a song cover for .play pickers).
+  let thumbnail = content.thumbnail || opts.thumbnail || null;
+  if (!thumbnail) {
+    try {
+      const { imageManager } = await import('../images/imageManager.js');
+      const imgData = await imageManager.getMenuImage(5);
+      if (imgData?.buffer) thumbnail = imgData.buffer;
+      else if (imgData?.source?.startsWith?.('http')) thumbnail = imgData.source;
+    } catch (_) { /* fall through to static asset */ }
+    if (!thumbnail) {
+      const { ASSET_URLS } = await import('../assets/assetUrls.js');
+      thumbnail = ASSET_URLS.thumbnail;
+    }
+  }
+  const { thumbnail: _ignored, ...relayOpts } = opts;
+
   return await baileysBridge.sendButtonsCard(sock, jid, {
     body:    content.text,
     footer:  content.footer || '',
     title:   content.title,
+    subtitle: content.subtitle,
+    thumbnail,
     buttons,
-  }, opts);
+  }, relayOpts);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
