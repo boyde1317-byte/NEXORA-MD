@@ -29,7 +29,7 @@ export default {
     }
     if (!args.length) {
       return await m.reply.info(
-        `*LINK ANOTHER WHATSAPP NUMBER*\n\n\`${p}pair <number with country code>\` — issues a pairing code. The other phone enters it in WhatsApp → Settings → Linked Devices → Link a Device → *Link with phone number instead*.\n\nThat number then comes online as a full second NEXORA instance (max ${MAX_EXTRA_SESSIONS}).\n\n\`${p}sessions\` — list linked sessions\n\`${p}delsession <number>\` — remove one`,
+        `*LINK ANOTHER WHATSAPP NUMBER*\n\n\`${p}pair <number with country code>\` — issues a pairing code. The other phone enters it in WhatsApp → Settings → Linked Devices → Link a Device → *Link with phone number instead*.\n\nThat number then comes online as a full second NEXORA instance (max ${MAX_EXTRA_SESSIONS}): its owner types commands in groups or their self-chat and gets full bot replies — including owner-only commands, since the paired number is the owner of its own session. Bot replies never leak into that owner's private chats with other people.\n\n\`${p}sessions\` — list linked sessions\n\`${p}delsession <number>\` — remove one`,
         'PAIR SESSION'
       );
     }

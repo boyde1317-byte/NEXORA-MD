@@ -104,6 +104,11 @@ try {
   if (rawMessage.message.protocolMessage) return;
   if (rawMessage.message.senderKeyDistributionMessage) return;
 
+  // Broadcast surfaces (statuses, channels) are never command surfaces —
+  // critical now that extra sessions process their own account's messages.
+  const entryJid = rawMessage.key?.remoteJid;
+  if (entryJid === 'status@broadcast' || entryJid?.endsWith('@newsletter')) return;
+
   // Build the rich serialized message object
   const m = await serialize(rawMessage, sock);
   if (!m) return;

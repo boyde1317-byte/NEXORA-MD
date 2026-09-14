@@ -1,5 +1,19 @@
 {
-  "users": {},
+  "users": {
+    "15550100000@s.whatsapp.net": {
+      "jid": "15550100000@s.whatsapp.net",
+      "banned": false,
+      "premium": false,
+      "warnings": 0,
+      "hasOnboarded": false,
+      "createdAt": 1789387146207,
+      "xp": 0,
+      "coins": 0,
+      "level": 0,
+      "streak": 0,
+      "lastDaily": null
+    }
+  },
   "groups": {
     "2335@g.us": {
       "jid": "2335@g.us",
@@ -36,5 +50,10 @@
       "uptime": 0
     },
     "sudoOwners": []
+  },
+  "stats": {
+    "commandsUsed": {
+      "checkchid": 1
+    }
   }
 }

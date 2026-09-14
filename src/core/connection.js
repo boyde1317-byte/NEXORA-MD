@@ -19,6 +19,7 @@ import { restoreReminders } from '../plugins/utility/remind.js';
 import { handleGroupParticipantsUpdate } from '../handlers/group.js';
 import { client } from './client.js';
 import { connectionMonitor } from './connectionMonitor.js';
+import { getLinkedBotPhones } from './sessionManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -311,6 +312,19 @@ export async function connectToWhatsApp() {
 
     for (const rawMessage of chatUpdate.messages) {
       connectionMonitor.recordIncomingMessage(rawMessage);
+
+      // Loop guard: skip messages authored by .pair-linked extra sessions —
+      // the main bot never reacts to another linked bot's replies, and the
+      // extras skip the main bot's (see sessionManager.js).
+      try {
+        const rkey = rawMessage?.key;
+        if (rkey && (!rkey.remoteJid?.endsWith('@g.us') || rkey.participant)) {
+          const authorJid  = rkey.participant || rkey.remoteJid;
+          const authorPhone = String(authorJid).split('@')[0].split(':')[0];
+          const mainPhone   = sock.user?.id?.split(':')[0]?.split('@')[0];
+          if (authorPhone !== mainPhone && getLinkedBotPhones(mainPhone).includes(authorPhone)) continue;
+        }
+      } catch (_) {}
 
       // Cache message for getMessage retries
       try {

@@ -21,6 +21,17 @@
  *  - Extra session dirs live under <sessionPath>/extras/<phone>/ so they
  *    inherit the same persistent volume as the main session on every
  *    deployment; the main connection's logged-out wipe skips directories.
+ *
+ * FULL-BOT MODE (2026-09-14): an extra session is an independent bot for its
+ * own account. Everything the paired number's owner types arrives with
+ * key.fromMe on their companion socket, so unlike the main connection these
+ * sessions PROCESS fromMe — but only in groups and their self-chat, never in
+ * their private DMs with other people (no leaking bot replies into the
+ * owner's personal conversations). serializer.resolveIsOwner treats the
+ * session's own account as that session's owner. Echo and cross-bot loops
+ * are blocked by tracking outgoing message ids and skipping messages
+ * authored by other linked bots (the main connection does the same for
+ * messages authored by extras).
  */
 import makeWASocket, {
   useMultiFileAuthState,
@@ -96,6 +107,20 @@ async function notifyMain(notifyJid, text) {
   } catch (_) {}
 }
 
+/**
+ * Phone numbers of every linked bot socket (main + extras), excluding the
+ * given one — used by both this module and the main connection to skip
+ * messages authored by other linked bots (loop guard).
+ */
+export function getLinkedBotPhones(excludePhone) {
+  const phones = new Set();
+  const main = client.socket?.user?.id?.split(':')[0]?.split('@')[0];
+  if (main) phones.add(main);
+  for (const p of sessions.keys()) phones.add(p);
+  phones.delete(excludePhone);
+  return [...phones];
+}
+
 /** List every extra session, active or on-disk. */
 export function listSessions() {
   const out = [];
@@ -160,6 +185,27 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
   entry.sock = sock;
   entry.reconnectAttempts = entry.reconnectAttempts || 0;
 
+  // ── Full-bot mode markers ────────────────────────────────────────────────
+  // serializer.resolveIsOwner and handleMessage's guards key off these.
+  sock._nexoraExtraSession = true;
+  sock._nexoraSessionPhone = phone;
+
+  // Echo guard: this session processes fromMe, so its own outgoing sends
+  // must never re-enter handleMessage (the bot would answer itself).
+  const sentIds = new Set();
+  const origSendMessage = sock.sendMessage.bind(sock);
+  sock.sendMessage = async (...args) => {
+    const result = await origSendMessage(...args);
+    try {
+      const id = result?.key?.id;
+      if (id) {
+        sentIds.add(id);
+        if (sentIds.size > 3000) sentIds.delete(sentIds.values().next().value);
+      }
+    } catch (_) {}
+    return result;
+  };
+
   sock.ev.on('creds.update', saveCreds);
 
   let codeRequested = false;
@@ -215,7 +261,7 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
       entry.reconnectAttempts = 0;
       if (phase === 'pairing') {
         console.log(`[SESSION] +${phone} linked — online as ${entry.name || phone}`);
-        await notifyMain(notifyJid, `🎉 +${phone} is now linked and online${entry.name ? ` as *${entry.name}*` : ''} — the full NEXORA command set is live on that number.`);
+        await notifyMain(notifyJid, `🎉 +${phone} is now linked and online${entry.name ? ` as *${entry.name}*` : ''} — it now runs as its own NEXORA bot: commands its owner types in groups or their self-chat get full bot replies (owner-only and private-mode gates apply to that owner's number).`);
       } else {
         console.log(`[SESSION] +${phone} reconnected`);
       }
@@ -267,6 +313,31 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     if (chatUpdate.type !== 'notify') return;
     for (const rawMessage of chatUpdate.messages) {
+      const key = rawMessage?.key;
+      if (!key?.remoteJid) continue;
+
+      // Never re-process our own outgoing sends (echo guard, see header).
+      if (sentIds.has(key.id)) continue;
+
+      // fromMe here = the paired account's own messages. Full-bot mode runs
+      // their commands in groups and their self-chat ONLY — never in their
+      // private chats with other people, where a bot reply would leak into
+      // the owner's personal conversations.
+      if (key.fromMe) {
+        const isGroup  = key.remoteJid.endsWith('@g.us');
+        const selfChat = key.remoteJid.split('@')[0].split(':')[0] === phone;
+        if (!isGroup && !selfChat) continue;
+      }
+
+      // Cross-bot guard: skip messages authored by the main bot or another
+      // linked session, so paired bots never react to each other's replies
+      // (and cannot be chained into loops in shared groups).
+      if (!key.remoteJid.endsWith('@g.us') || key.participant) {
+        const authorJid = key.participant || key.remoteJid;
+        const authorPhone = String(authorJid).split('@')[0].split(':')[0];
+        if (authorPhone !== phone && getLinkedBotPhones(phone).includes(authorPhone)) continue;
+      }
+
       // Cache for getMessage retries (bounded like the main store)
       try {
         const chat = rawMessage?.key?.remoteJid;

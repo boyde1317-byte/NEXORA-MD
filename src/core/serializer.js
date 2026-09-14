@@ -223,6 +223,11 @@ async function findParticipant(participants, targetJid, sock) {
  * phone-number JID (common with privacy settings on newer accounts).
  */
 async function resolveIsOwner(sock, senderJid, fromMe, groupJid) {
+  // Extra linked sessions (.pair, see sessionManager.js): the session's OWN
+  // account is that session's owner — everything the paired number's owner
+  // types arrives fromMe on its companion socket, so fromMe ⇒ owner there.
+  if (fromMe && sock?._nexoraExtraSession) return true;
+
   const botNumber = sock?.user?.id?.split('@')[0]?.split(':')[0];
   const botIsOwner = !!(botNumber && config.owner.includes(botNumber));
   if (fromMe && botIsOwner) return true;
