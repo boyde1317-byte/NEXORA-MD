@@ -40,6 +40,25 @@ export default {
           data.author   ? `👤 ${data.author}`             : null,
         ].filter(Boolean).join('\n');
 
+        // ── Rich tier: native reel player + stats card (TikTok-style) ──
+        const reelSent = await sendReelWithStatsCard(sock, m.from, m, {
+          reel: {
+            title: data.title || 'TikTok Video',
+            profileIconUrl: data.thumbnail,
+            thumbnailUrl: data.thumbnail,
+            videoUrl: data.video,
+          },
+          tableHeaders: ['Metric', 'Value'],
+          tableRows: [
+            ['Author', (data.author || 'Unknown').slice(0, 40)],
+            ['Quality', 'No watermark'],
+            ['Source', 'TikTok'],
+          ],
+          headerText: `🎬 ${data.title || 'TikTok Video'}`.slice(0, 60),
+          footer: '© NEXORA-MD by Aizen',
+        });
+        if (reelSent) return;
+
         await sock.sendMessage(m.from, {
           video: { url: data.video },
           caption: `${meta}\n_No watermark_`,

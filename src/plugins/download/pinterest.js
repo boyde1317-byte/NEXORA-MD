@@ -12,6 +12,7 @@ import { withReactionStatus} from '../../lib/cosmetics.js';
 
 import { pinterestSearch} from '../../lib/downloader.js';
 import { DownloadProgress} from '../../lib/progress.js';
+import { sendGridCard } from '../../lib/richContent.js';
 
 const DEFAULT_COUNT = 6;
 const MAX_COUNT = 10;
@@ -55,6 +56,18 @@ export default {
         // sendCarousel never actually catches the failure. Sending each
         // image as a plain image message is the reliable path — every
         // WhatsApp client renders those.
+        // ── Rich tier: native image grid (main pin + thumbnail strip) ──
+        const gridSent = await sendGridCard(sock, m.from, m, {
+          images: results.map((pin) => ({
+            preview: pin.image,
+            highRes: pin.image,
+            source: pin.link || pin.image,
+          })),
+          headerText: `📌 Pinterest — ${query}`.slice(0, 60),
+          footer: 'NEXORA • Pinterest',
+        });
+        if (gridSent) return;
+
         for (const pin of results) {
           try {
             await sock.sendMessage(m.from, {

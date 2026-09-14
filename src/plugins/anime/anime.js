@@ -12,18 +12,23 @@
  * "🔄 next neko" is a plain `.anime neko` command disguised as a chip.
  */
 import { AIRich } from '../../lib/NIXCODE.js';
+import { sendGifCard, sendMultiImageGallery } from '../../lib/richContent.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 
 export default {
   name: 'anime',
   aliases: ['waifu', 'neko', 'wallpaper'],
   category: 'anime',
-  description: 'Fetch random anime pictures. Usage: .anime [waifu/neko/wallpaper]',
+  description: 'Anime pics + GIF cards. Usage: .anime [waifu/neko/wallpaper/hug/pat/kiss/cuddle]',
   cooldown: 5000,
   execute: async ({ sock, m, args, prefix, commandName }) => {
     const p = prefix || '.';
     let type = (args[0] || commandName).toLowerCase();
-    if (!['waifu', 'neko', 'wallpaper'].includes(type)) {
+    // Action-GIF types from the same nekos.life API render as native
+    // animated dynamic cards; static types stay on the classic card.
+    // GIF endpoints verified live on nekos.life (others 500 as of 2026-09-14)
+    const GIF_TYPES = ['hug', 'pat', 'kiss', 'cuddle'];
+    if (!['waifu', 'neko', 'wallpaper', ...GIF_TYPES].includes(type)) {
       type = 'waifu';
     }
 
@@ -35,6 +40,34 @@ export default {
 
         const title = type.toUpperCase();
         const others = ['waifu', 'neko', 'wallpaper'].filter(t => t !== type);
+
+        // ── GIF tier: native animated dynamic card ──
+        if (String(data.url).endsWith('.gif')) {
+          const gifSent = await sendGifCard(sock, m.from, m, {
+            gifUrl: data.url,
+            headerText: `✧ ${title}`,
+            footer: 'NEXORA • Anime • nekos.life',
+          });
+          if (gifSent) return;
+        }
+
+        // ── Wallpaper tier: stacked multi-image gallery (3 walls, one card) ──
+        if (type === 'wallpaper') {
+          try {
+            const walls = await Promise.all(
+              [0, 1, 2].map(() => fetch('https://nekos.life/api/v2/img/wallpaper').then(r => r.json()).catch(() => null))
+            );
+            const urls = walls.map(w => w?.url).filter(Boolean);
+            if (urls.length) {
+              const gallerySent = await sendMultiImageGallery(sock, m.from, m, {
+                images: urls.map((u, i) => ({ imageUrl: u, imageText: `${title} #${i + 1}` })),
+                headerText: `✧ ${title} ×${urls.length}`,
+                footer: 'NEXORA • Anime • nekos.life',
+              });
+              if (gallerySent) return;
+            }
+          } catch (_) { /* fall through to classic card */ }
+        }
 
         await new AIRich(sock)
           .addImage(data.url)

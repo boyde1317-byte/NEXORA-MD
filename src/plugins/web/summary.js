@@ -1,6 +1,7 @@
 import { Providers } from '../../lib/webClient.js';
 import { copyResultCard } from '../../lib/interactiveKit.js';
-import { getAiClient } from '../../assets/aiClient.js';
+import { getAiClient, hasApiKey } from '../../assets/aiClient.js';
+import { sendLinkCard } from '../../lib/richContent.js';
 
 export default {
   name: 'summary',
@@ -19,7 +20,7 @@ export default {
     try {
       let resultText = '';
       
-      if (process.env.GEMINI_API_KEY) {
+      if (hasApiKey()) {
         // Just fetch raw HTML
         const html = await fetch(url).then(r => r.text());
         const cleanText = html.replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, '')
@@ -39,8 +40,18 @@ export default {
         if (data.sm_api_error) throw new Error(data.sm_api_message);
         resultText = `*${data.sm_api_title}*\n\n${data.sm_api_content}`;
       } else {
-        return await m.reply.error('No summarization service configured. Please set GEMINI_API_KEY or SMMRY_API_KEY.');
+        return await m.reply.error('No summarization service configured. Set GEMINI_API_KEY / GROQ_API_KEY (AI) or SMMRY_API_KEY.');
       }
+
+      // ── Rich tier: native link card with source citations ──
+      const pageTitle = (cleanText.slice(0, 60) || url).trim() || 'Source page';
+      const linkSent = await sendLinkCard(sock, m.from, m, {
+        text: resultText.replace(/\*+/g, '').slice(0, 3800),
+        links: [{ url, displayName: 'Open source page' }],
+        citations: [{ sourceTitle: pageTitle, sourceQuery: 'webpage summary', citationNumber: 1 }],
+        footer: 'NEXORA • Summarizer',
+      });
+      if (linkSent) return;
 
       await copyResultCard(sock, m.from, {
         text: `📝 *SUMMARY*\n🔗 ${url}\n\n${resultText}`,
