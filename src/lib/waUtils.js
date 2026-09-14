@@ -94,8 +94,16 @@ function fakeStanzaId() {
 //       buildFakeContactQuote → contact card          (name + contact icon)
 //     The quote participant rotates through AI_JIDS (Meta AI / ChatGPT /
 //     Perplexity — all real verified accounts, so the client renders each
-//     one's official name + picture). remoteJid stays status@broadcast
-//     (prevents WA trying to load the original).
+//     one's official name + picture).
+//
+//     remoteJid is intentionally ABSENT. The earlier status@broadcast value
+//     made clients treat the quote as a STATUS quote — they then tried to
+//     resolve the author among real status senders, found no status from
+//     Meta AI/ChatGPT, and fell back to the OUTER sender, rendering
+//     "[You . Status]" for the owner and "[bot . Status]" for everyone
+//     else. With remoteJid absent, the client resolves the quote in the
+//     current chat and attributes it to contextInfo.participant — the
+//     same pattern that sendFakeQuote verified on device.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -117,7 +125,7 @@ export function buildFakeOrderQuote({ title, thumbnail, itemCount = 1, orderId, 
     key: {
       fromMe:      false,
       participant: pickAiJid(),
-      remoteJid:   STATUS_JID,
+      remoteJid:   undefined,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -166,7 +174,7 @@ export function buildFakeContactQuote({ displayName, phoneNumber, vcard } = {}) 
     key: {
       fromMe:      false,
       participant: pickAiJid(),
-      remoteJid:   STATUS_JID,
+      remoteJid:   undefined,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -214,7 +222,7 @@ export function buildFakeAudioQuote({ audioMessage, seconds = 9999999, ptt = tru
     key: {
       fromMe:      false,
       participant: pickAiJid(),
-      remoteJid:   STATUS_JID,
+      remoteJid:   undefined,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -264,7 +272,7 @@ export function buildFakeLocationQuote({
     key: {
       fromMe:      false,
       participant: pickAiJid(),
-      remoteJid:   STATUS_JID,
+      remoteJid:   undefined,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -307,7 +315,7 @@ export function buildFakeLiveLocationQuote({
     key: {
       fromMe:      false,
       participant: pickAiJid(),
-      remoteJid:   STATUS_JID,
+      remoteJid:   undefined,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -341,7 +349,7 @@ export function buildFakeTextQuote({ text, title, jpegThumbnail } = {}) {
     key: {
       fromMe:      false,
       participant: pickAiJid(),
-      remoteJid:   STATUS_JID,
+      remoteJid:   undefined,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -369,7 +377,7 @@ export function buildFakeDocumentQuote({ title, fileName, mimetype, jpegThumbnai
     key: {
       fromMe:      false,
       participant: pickAiJid(),
-      remoteJid:   STATUS_JID,
+      remoteJid:   undefined,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -401,7 +409,7 @@ export function buildFakeImageQuote({ url, jpegThumbnail, viewOnce = false, heig
     key: {
       fromMe:      false,
       participant: pickAiJid(),
-      remoteJid:   STATUS_JID,
+      remoteJid:   undefined,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -436,7 +444,7 @@ export function buildFakeGifQuote({ caption, jpegThumbnail, seconds = 999999999,
     key: {
       fromMe:      false,
       participant: pickAiJid(),
-      remoteJid:   STATUS_JID,
+      remoteJid:   undefined,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -479,7 +487,7 @@ export function buildFakeProductQuote({
     key: {
       fromMe:      false,
       participant: pickAiJid(),
-      remoteJid:   STATUS_JID,
+      remoteJid:   undefined,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -517,7 +525,7 @@ export function buildFakeGroupInviteQuote({ groupJid, inviteCode = 'null', group
     key: {
       fromMe:      false,
       participant: pickAiJid(),
-      remoteJid:   WA_JID,
+      remoteJid:   undefined,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -552,7 +560,7 @@ export function buildFakePaymentQuote({ currencyCode = 'USD', amount1000 = 1000,
     key: {
       fromMe:      false,
       participant: pickAiJid(),
-      remoteJid:   WA_JID,
+      remoteJid:   undefined,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -595,7 +603,7 @@ export function buildFakeNewsletterQuote({ newsletterJid, newsletterName, captio
     key: {
       fromMe:      false,
       participant: pickAiJid(),
-      remoteJid:   STATUS_JID,
+      remoteJid:   undefined,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
