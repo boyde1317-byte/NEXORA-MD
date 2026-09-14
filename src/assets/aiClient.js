@@ -9,12 +9,16 @@ dotenv.config();
  * module — never instantiate a separate client or call another AI provider
  * directly. This keeps API-key sourcing in exactly one place.
  *
- * Providers, in priority order:
+ * Providers, tried in priority order with automatic fallback on failure:
  *   1. Gemini      — GEMINI_API_KEY / NEXORA_AI_KEY (native SDK, also
  *                    the ONLY provider that can generate images)
  *   2. Groq        — GROQ_API_KEY       (free tier, console.groq.com)
  *   3. Mistral     — MISTRAL_API_KEY    (free tier, console.mistral.ai)
  *   4. OpenRouter  — OPENROUTER_API_KEY (:free models)
+ *
+ * A stale/invalid key in a higher-priority provider no longer shadows a
+ * working lower-priority one: each request walks down the list until a
+ * provider answers, then that provider is memoized for subsequent calls.
  *
  * Providers 2-4 are OpenAI-compatible and served through one adapter that
  * exposes the Gemini call surface (models.generateContent), so consumers
@@ -23,6 +27,7 @@ dotenv.config();
  */
 
 let aiClient = null;
+let workingProvider = null; // memoized after the first successful call
 
 const resolveGeminiKey = () => process.env.GEMINI_API_KEY || process.env.NEXORA_AI_KEY || '';
 
@@ -37,8 +42,8 @@ const PROVIDERS = [
     kind: 'openai-compat',
     baseUrl: 'https://api.groq.com/openai/v1',
     resolveKey: () => process.env.GROQ_API_KEY || '',
-    textModel: () => process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-    visionModel: () => process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct',
+    textModel: () => process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+    visionModel: () => process.env.GROQ_VISION_MODEL || 'openai/gpt-oss-120b',
   },
   {
     name: 'mistral',
@@ -58,14 +63,13 @@ const PROVIDERS = [
   },
 ];
 
-const activeProvider = () => PROVIDERS.find((p) => (p.kind === 'gemini' ? p.hasKey() : !!p.resolveKey())) || null;
-
 export function hasApiKey() {
-  return !!activeProvider();
+  return PROVIDERS.some((p) => (p.kind === 'gemini' ? p.hasKey() : !!p.resolveKey()));
 }
 
 export function getActiveProviderName() {
-  return activeProvider()?.name || null;
+  if (workingProvider) return workingProvider.name;
+  return PROVIDERS.find((p) => (p.kind === 'gemini' ? p.hasKey() : !!p.resolveKey()))?.name || null;
 }
 
 /* ---------- Gemini-shape normalization (shared helpers) ---------- */
@@ -139,17 +143,25 @@ function toGeminiShape(openaiResponse) {
   };
 }
 
-/* ---------- OpenAI-compatible adapter ---------- */
+/* ---------- per-provider clients ---------- */
+
+const providerClients = new Map();
+
+function buildGeminiClient() {
+  return new GoogleGenAI({
+    apiKey: resolveGeminiKey(),
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      },
+    },
+  });
+}
 
 function buildOpenAiCompatClient(provider) {
   return {
     models: {
       async generateContent({ model, contents, config }) {
-        // Image GENERATION is Gemini-only (no open provider ships it).
-        if (config?.imageConfig || (model || '').includes('image')) {
-          throw new Error('Image generation requires GEMINI_API_KEY (Google AI Studio). Text providers (Groq/Mistral/OpenRouter) cannot generate images.');
-        }
-
         const { messages, hasImage } = toOpenAiMessages(contents, config?.systemInstruction);
         // Gemini-* model names map to this provider's default (vision
         // variant when the request carries an image); explicit foreign
@@ -181,26 +193,62 @@ function buildOpenAiCompatClient(provider) {
   };
 }
 
+function clientFor(provider) {
+  if (!providerClients.has(provider.name)) {
+    providerClients.set(
+      provider.name,
+      provider.kind === 'gemini' ? buildGeminiClient() : buildOpenAiCompatClient(provider)
+    );
+  }
+  return providerClients.get(provider.name);
+}
+
+const IMAGE_ONLY_MSG = 'Image generation requires GEMINI_API_KEY (Google AI Studio). Text providers (Groq/Mistral/OpenRouter) cannot generate images.';
+
 export function getAiClient() {
   if (aiClient) return aiClient;
 
-  const provider = activeProvider();
-  if (!provider) {
-    throw new Error('No AI provider configured. Set GEMINI_API_KEY / NEXORA_AI_KEY (Google AI Studio) — or GROQ_API_KEY (free key at console.groq.com) / MISTRAL_API_KEY / OPENROUTER_API_KEY — in .env');
-  }
+  aiClient = {
+    models: {
+      async generateContent(args) {
+        const isImageGen = !!args?.config?.imageConfig || (args?.model || '').includes('image');
 
-  if (provider.kind === 'gemini') {
-    aiClient = new GoogleGenAI({
-      apiKey: resolveGeminiKey(),
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
+        // Image GENERATION is Gemini-only — never fall back to text providers.
+        if (isImageGen) {
+          if (!PROVIDERS[0].hasKey()) throw new Error(IMAGE_ONLY_MSG);
+          try {
+            return await clientFor(PROVIDERS[0]).models.generateContent(args);
+          } catch (e) {
+            e.message = `Gemini image generation failed: ${e.message}`;
+            throw e;
+          }
+        }
+
+        // Walk providers in priority order (memoized winner first).
+        const order = workingProvider
+          ? [workingProvider, ...PROVIDERS.filter((p) => p !== workingProvider)]
+          : PROVIDERS;
+        let lastErr = null;
+        for (const p of order) {
+          const has = p.kind === 'gemini' ? p.hasKey() : !!p.resolveKey();
+          if (!has) continue;
+          try {
+            const res = await clientFor(p).models.generateContent(args);
+            if (workingProvider !== p) {
+              workingProvider = p;
+              console.log(`[AI CLIENT] Provider active: ${p.name}`);
+            }
+            return res;
+          } catch (e) {
+            if (p === workingProvider) workingProvider = null;
+            lastErr = e;
+            console.warn(`[AI CLIENT] ${p.name} failed (${String(e.message).slice(0, 100)}) — trying next provider…`);
+          }
+        }
+        throw lastErr || new Error('No AI provider configured. Set GEMINI_API_KEY / NEXORA_AI_KEY (Google AI Studio) — or GROQ_API_KEY (free key at console.groq.com) / MISTRAL_API_KEY / OPENROUTER_API_KEY — in .env');
       },
-    });
-  } else {
-    aiClient = buildOpenAiCompatClient(provider);
-  }
+    },
+  };
 
   return aiClient;
 }
