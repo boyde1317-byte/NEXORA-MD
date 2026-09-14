@@ -17,9 +17,10 @@ import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCo
  *   { text, id }    → quick_reply
  *   { text, copy }  → cta_copy
  *
- * The contact quote uses buildFakeContactQuote (quote author resolves to a
- * real AI account; remoteJid absent so the client resolves it in the current
- * chat — never in chat history, no ghost thread).
+ * The contact quote uses buildFakeContactQuote — Moonson-proven key shape
+ * (0@s.whatsapp.net participant + status@broadcast remoteJid), AI attribution
+ * carried in the vcard's waid. WA never looks up the original message in
+ * chat history — no ghost thread.
  *
  * Image strategy:
  *   imgData.buffer is passed as `image:` on the Tier 1 nativeFlow card.

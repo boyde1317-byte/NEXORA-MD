@@ -43,6 +43,16 @@ export const AI_JIDS = [
 ]
 
 /**
+ * Display names for the AI accounts above — used when a fake contact quote
+ * defaults to an AI author (vcard FN + contactMessage.displayName).
+ */
+export const AI_NAMES = {
+  [META_AI_JID]:                 'Meta AI',
+  '18002428478@s.whatsapp.net':  'ChatGPT',
+  '18334363285@s.whatsapp.net':  'Perplexity',
+}
+
+/**
  * Pick the fake-quote author. Rotates randomly per quote so consecutive
  * messages attribute to different AIs.
  */
@@ -96,14 +106,15 @@ function fakeStanzaId() {
 //     Perplexity — all real verified accounts, so the client renders each
 //     one's official name + picture).
 //
-//     remoteJid is intentionally ABSENT. The earlier status@broadcast value
-//     made clients treat the quote as a STATUS quote — they then tried to
-//     resolve the author among real status senders, found no status from
-//     Meta AI/ChatGPT, and fell back to the OUTER sender, rendering
-//     "[You . Status]" for the owner and "[bot . Status]" for everyone
-//     else. With remoteJid absent, the client resolves the quote in the
-//     current chat and attributes it to contextInfo.participant — the
-//     same pattern that sendFakeQuote verified on device.
+//     KEY SHAPE (Moonson-proven, what their .brand ships): participant
+//     0@s.whatsapp.net + remoteJid status@broadcast. The AI attribution
+//     does NOT live on contextInfo.participant — clients resolve a status
+//     quote's author among REAL status senders, AI accounts post no
+//     statuses, so an AI participant falls back to the outer sender
+//     ("[You . Status]"). The AI identity lives in the vcard's waid for
+//     contact quotes (buildFakeContactQuote): the real AI number makes
+//     WhatsApp resolve that account's official name + profile picture
+//     as the quoted contact.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -124,8 +135,8 @@ export function buildFakeOrderQuote({ title, thumbnail, itemCount = 1, orderId, 
   return {
     key: {
       fromMe:      false,
-      participant: pickAiJid(),
-      remoteJid:   undefined,
+      participant: WA_JID,
+      remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -162,27 +173,40 @@ export function buildFakeOrderQuote({ title, thumbnail, itemCount = 1, orderId, 
  */
 export function buildFakeContactQuote({ displayName, phoneNumber, vcard } = {}) {
   const cleanNumber = (phoneNumber || '').replace(/[^\d]/g, '')
+
+  // AI attribution lives in the vcard's waid, not on the quote participant:
+  // when the caller doesn't pin a phoneNumber, the contact defaults to one of
+  // the real AI accounts (Meta AI / ChatGPT / Perplexity), so WhatsApp
+  // resolves that account's official name + profile picture as the quoted
+  // contact — the number is real, the profile fetch just works.
+  const aiJid    = pickAiJid()
+  const aiNumber = aiJid.split('@')[0]
+  const aiName   = AI_NAMES[aiJid] || 'Meta AI'
+
   const vcardStr = vcard || [
     'BEGIN:VCARD',
     'VERSION:3.0',
-    `FN:${displayName || 'NEXORA'}`,
-    cleanNumber ? `TEL;type=CELL;waid=${cleanNumber}:+${cleanNumber}` : '',
+    `FN:${displayName || aiName}`,
+    cleanNumber
+      ? `TEL;type=CELL;waid=${cleanNumber}:+${cleanNumber}`
+      : `TEL;type=CELL;waid=${aiNumber}:+${aiNumber}`,
     'END:VCARD',
   ].filter(Boolean).join('\r\n')
 
   return {
     key: {
       fromMe:      false,
-      participant: pickAiJid(),
-      remoteJid:   undefined,
+      participant: WA_JID,
+      remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
       // ContactMessage proto (verified): only displayName, vcard, contextInfo.
       // No jpegThumbnail or thumbnail field exists — WA derives the avatar
-      // from the contact's actual profile picture, not from the message proto.
+      // from the contact's actual profile picture (via the vcard waid),
+      // not from the message proto.
       contactMessage: {
-        displayName: displayName || 'NEXORA',
+        displayName: displayName || aiName,
         vcard:       vcardStr,
       }
     }
@@ -221,8 +245,8 @@ export function buildFakeAudioQuote({ audioMessage, seconds = 9999999, ptt = tru
   return {
     key: {
       fromMe:      false,
-      participant: pickAiJid(),
-      remoteJid:   undefined,
+      participant: WA_JID,
+      remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -271,8 +295,8 @@ export function buildFakeLocationQuote({
   return {
     key: {
       fromMe:      false,
-      participant: pickAiJid(),
-      remoteJid:   undefined,
+      participant: WA_JID,
+      remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -314,8 +338,8 @@ export function buildFakeLiveLocationQuote({
   return {
     key: {
       fromMe:      false,
-      participant: pickAiJid(),
-      remoteJid:   undefined,
+      participant: WA_JID,
+      remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -348,8 +372,8 @@ export function buildFakeTextQuote({ text, title, jpegThumbnail } = {}) {
   return {
     key: {
       fromMe:      false,
-      participant: pickAiJid(),
-      remoteJid:   undefined,
+      participant: WA_JID,
+      remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -376,8 +400,8 @@ export function buildFakeDocumentQuote({ title, fileName, mimetype, jpegThumbnai
   return {
     key: {
       fromMe:      false,
-      participant: pickAiJid(),
-      remoteJid:   undefined,
+      participant: WA_JID,
+      remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -408,8 +432,8 @@ export function buildFakeImageQuote({ url, jpegThumbnail, viewOnce = false, heig
   return {
     key: {
       fromMe:      false,
-      participant: pickAiJid(),
-      remoteJid:   undefined,
+      participant: WA_JID,
+      remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -443,8 +467,8 @@ export function buildFakeGifQuote({ caption, jpegThumbnail, seconds = 999999999,
   return {
     key: {
       fromMe:      false,
-      participant: pickAiJid(),
-      remoteJid:   undefined,
+      participant: WA_JID,
+      remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -486,8 +510,8 @@ export function buildFakeProductQuote({
   return {
     key: {
       fromMe:      false,
-      participant: pickAiJid(),
-      remoteJid:   undefined,
+      participant: WA_JID,
+      remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -524,8 +548,8 @@ export function buildFakeGroupInviteQuote({ groupJid, inviteCode = 'null', group
   return {
     key: {
       fromMe:      false,
-      participant: pickAiJid(),
-      remoteJid:   undefined,
+      participant: WA_JID,
+      remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -559,8 +583,8 @@ export function buildFakePaymentQuote({ currencyCode = 'USD', amount1000 = 1000,
   return {
     key: {
       fromMe:      false,
-      participant: pickAiJid(),
-      remoteJid:   undefined,
+      participant: WA_JID,
+      remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
@@ -602,8 +626,8 @@ export function buildFakeNewsletterQuote({ newsletterJid, newsletterName, captio
   return {
     key: {
       fromMe:      false,
-      participant: pickAiJid(),
-      remoteJid:   undefined,
+      participant: WA_JID,
+      remoteJid:   STATUS_JID,
       id:          'BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase(),
     },
     message: {
