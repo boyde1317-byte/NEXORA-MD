@@ -6,7 +6,14 @@ import { richTableCard } from '../../lib/interactiveKit.js';
 import { listSessions, MAX_EXTRA_SESSIONS } from '../../core/sessionManager.js';
 
 export async function listAndSend(sock, m, prefix) {
-  const list = listSessions();
+  let list = listSessions();
+
+  // Privacy: a paired session's owner only sees their own session — the
+  // full roster (every paired number) is for main-socket owners and the
+  // super owner.
+  if (sock._nexoraExtraSession && !(await m.isSuperOwner)) {
+    list = list.filter(s2 => s2.phone === sock._nexoraSessionPhone);
+  }
   if (!list.length) {
     return await m.reply.info(
       `*No extra sessions yet.*\n\nLink one with \`${prefix || '.'}pair <number with country code>\`.`,

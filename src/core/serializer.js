@@ -244,49 +244,63 @@ async function resolveIsOwner(sock, senderJid, fromMe, groupJid) {
     if (pairNum && config.owner.includes(pairNum)) return true;
   }
 
+  const num = await resolveSenderNumber(sock, senderJid, groupJid);
+  if (num && config.owner.includes(num)) return true;
+
+  return false;
+}
+
+/**
+ * Resolve the best-known phone number for a sender JID, shared by the owner
+ * and super-owner checks:
+ *  1. non-LID jids carry the number directly;
+ *  2. group metadata bridge — WhatsApp sends phone_number/lid attrs directly
+ *     on each participant node (see groups.js), so the sender's real number
+ *     resolves even when NO Signal session exists yet for their LID. This is
+ *     the failure mode that broke owner checks: a fresh/newly-active group
+ *     presents the sender as an opaque LID with no signalRepository mapping.
+ *     Group metadata doesn't need a session — it's always there.
+ *  3. LID → phone via signalRepository (authoritative) as the last resort.
+ * Returns null when the number cannot be determined yet.
+ */
+async function resolveSenderNumber(sock, senderJid, groupJid) {
   const norm = normaliseJid(senderJid);
   const rawNumber = norm.split('@')[0];
-  if (config.owner.includes(rawNumber)) return true;
+  if (!norm.endsWith('@lid')) return rawNumber;
 
-  // Group metadata bridge — WhatsApp sends phone_number/lid attrs directly on
-  // each participant node (see groups.js), so this resolves the owner's real
-  // number even when NO Signal session exists yet for their LID. This is the
-  // failure mode that broke owner checks: a fresh/newly-active group presents
-  // the sender as an opaque LID, signalRepository.lidMapping has no entry for
-  // it yet (no session established), so the old code fell through and denied
-  // the real owner. Group metadata doesn't need a session — it's always there.
   if (groupJid) {
     try {
       const meta = await sock.groupMetadata(groupJid);
       const p = meta?.participants?.find(part => normaliseJid(part.id) === norm);
-      if (p?.phoneNumber) {
-        const ownerNum = p.phoneNumber.replace(/[^0-9]/g, '');
-        if (config.owner.includes(ownerNum)) return true;
-      }
-      if (p?.lid) {
-        const lidNorm = normaliseJid(p.lid);
-        if (lidNorm !== norm) {
-          const viaRepo = await resolvePhoneJid(sock, lidNorm);
-          if (viaRepo !== lidNorm) {
-            const ownerNum = viaRepo.split('@')[0];
-            if (config.owner.includes(ownerNum)) return true;
-          }
-        }
-      }
+      if (p?.phoneNumber) return p.phoneNumber.replace(/[^0-9]/g, '');
     } catch (_) {
       // groupMetadata can fail if the bot isn't in the group or is rate-limited
     }
   }
 
-  // LID → phone resolution via signalRepository (authoritative)
-  if (norm.endsWith('@lid')) {
-    const phoneJid = await resolvePhoneJid(sock, norm);
-    if (phoneJid !== norm) {
-      const phoneNum = phoneJid.split('@')[0];
-      if (config.owner.includes(phoneNum)) return true;
+  const phoneJid = await resolvePhoneJid(sock, norm);
+  if (phoneJid !== norm) return phoneJid.split('@')[0];
+  return null;
+}
+
+/**
+ * Super owner check (see config SUPER_OWNER_NUMBERS). The super owner can log
+ * out every paired session (.logoutall) and unpair any session individually.
+ * fromMe counts ONLY on the main socket — on an extra session fromMe is that
+ * session's own owner, who is NOT the super owner by definition.
+ */
+async function resolveIsSuperOwner(sock, senderJid, fromMe, groupJid) {
+  if (fromMe && !sock?._nexoraExtraSession) {
+    const botNumber = sock?.user?.id?.split('@')[0]?.split(':')[0];
+    if (botNumber && config.superOwner.includes(botNumber)) return true;
+    if (config.pairing?.phoneNumber) {
+      const pairNum = config.pairing.phoneNumber.replace(/[^0-9]/g, '');
+      if (pairNum && config.superOwner.includes(pairNum)) return true;
     }
   }
 
+  const num = await resolveSenderNumber(sock, senderJid, groupJid);
+  if (num && config.superOwner.includes(num)) return true;
   return false;
 }
 
@@ -369,6 +383,18 @@ export async function serialize(rawMessage, sock) {
       if (message._isOwner !== undefined) return Promise.resolve(message._isOwner);
       return resolveIsOwner(sock, message.sender, message.fromMe, message.isGroup ? jid : null).then(result => {
         message._isOwner = result;
+        return result;
+      });
+    },
+  });
+
+  // Super owner tier (.logoutall / unpair-any powers) — see resolveIsSuperOwner.
+  message._isSuperOwner = undefined;
+  Object.defineProperty(message, 'isSuperOwner', {
+    get() {
+      if (message._isSuperOwner !== undefined) return Promise.resolve(message._isSuperOwner);
+      return resolveIsSuperOwner(sock, message.sender, message.fromMe, message.isGroup ? jid : null).then(result => {
+        message._isSuperOwner = result;
         return result;
       });
     },

@@ -36,6 +36,15 @@ export default {
 
     const raw = args[0];
 
+    // Tiered power: a paired session's owner cannot spawn MORE sessions
+    // (lateral escalation); the super owner can pair from any session.
+    if (sock._nexoraExtraSession && !(await m.isSuperOwner)) {
+      console.warn(`[CMD-DENY] pair: paired-session owner tried to pair +${raw}`);
+      return await m.reply.error(
+        `*Not allowed.* Pairing new sessions is reserved for the super owner — use the main bot.`
+      );
+    }
+
     return await withReactionStatus(m, async () => {
       try {
         await pairSession(raw, { notifyJid: m.from });

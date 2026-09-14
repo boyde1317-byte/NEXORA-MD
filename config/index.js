@@ -23,6 +23,19 @@ function parseOwnerNumbers() {
   return [];
 }
 
+// ── Super owner tier ────────────────────────────────────────────────────────
+// SUPER_OWNER_NUMBERS (comma-separated) can log out every paired session at
+// once (.logoutall) and unpair any session individually — powers regular
+// owners and paired-session owners don't have. Defaults to the FIRST
+// OWNER_NUMBERS entry when not set.
+function parseSuperOwnerNumbers(ownerList) {
+  const raw = process.env.SUPER_OWNER_NUMBERS;
+  if (raw && raw.trim()) {
+    return raw.split(',').map(n => n.trim().replace(/[^0-9]/g, '')).filter(Boolean);
+  }
+  return ownerList.length ? [ownerList[0]] : [];
+}
+
 // ── Helper: parse boolean env vars ──────────────────────────────────────────
 function parseBool(val, defaultVal = false) {
   if (val === undefined || val === null || val === '') return defaultVal;
@@ -90,6 +103,7 @@ const rawConfig = {
 
   // ── Owner / identity ──────────────────────────────────────────────────────
   owner: parseOwnerNumbers(),
+  superOwner: parseSuperOwnerNumbers(parseOwnerNumbers()),
 
   // ── Command prefix ────────────────────────────────────────────────────────
   prefix: ["!", ".", "/"],

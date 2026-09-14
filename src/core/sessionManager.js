@@ -71,6 +71,12 @@ function extrasRoot() {
 const sessions = new Map(); // phone → entry
 let resuming = false;
 
+/** Normalize user input to plain digits (accepts +, spaces, JIDs). Exported
+ *  for the session plugins' super-owner guards. */
+export function normalizeSessionPhone(raw) {
+  return normalizePhone(raw);
+}
+
 function sessionDir(phone) {
   return path.join(extrasRoot(), phone);
 }
@@ -457,6 +463,37 @@ export async function resumeExtraSessions() {
   } finally {
     resuming = false;
   }
+}
+
+/**
+ * Super owner power: log out and remove EVERY paired session at once —
+ * both live registry entries and any leftover registered dirs on disk
+ * (e.g. a session that failed to resume at boot).
+ */
+export async function removeAllSessions() {
+  const results = [];
+
+  const target = new Set(sessions.keys());
+
+  // Catch saved-but-not-resumed sessions on disk too
+  try {
+    const root = extrasRoot();
+    if (fs.existsSync(root)) {
+      for (const d of fs.readdirSync(root)) {
+        if (fs.existsSync(path.join(root, d, 'creds.json'))) target.add(normalizePhone(d));
+      }
+    }
+  } catch (_) {}
+
+  for (const phone of target) {
+    try {
+      await removeSession(phone);
+      results.push({ phone, ok: true });
+    } catch (err) {
+      results.push({ phone, ok: false, error: err.message || String(err) });
+    }
+  }
+  return results;
 }
 
 /**

@@ -1,5 +1,45 @@
 {
-  "users": {},
+  "users": {
+    "15550100000@s.whatsapp.net": {
+      "jid": "15550100000@s.whatsapp.net",
+      "banned": false,
+      "premium": false,
+      "warnings": 0,
+      "hasOnboarded": false,
+      "createdAt": 1789387146207,
+      "xp": 0,
+      "coins": 0,
+      "level": 0,
+      "streak": 0,
+      "lastDaily": null
+    },
+    "233533416608@s.whatsapp.net": {
+      "jid": "233533416608@s.whatsapp.net",
+      "banned": false,
+      "premium": false,
+      "warnings": 0,
+      "hasOnboarded": false,
+      "createdAt": 1789387655056,
+      "xp": 44,
+      "coins": 0,
+      "level": 0,
+      "streak": 0,
+      "lastDaily": null
+    },
+    "155509990000@s.whatsapp.net": {
+      "jid": "155509990000@s.whatsapp.net",
+      "banned": false,
+      "premium": false,
+      "warnings": 0,
+      "hasOnboarded": false,
+      "createdAt": 1789387655140,
+      "xp": 40,
+      "coins": 0,
+      "level": 0,
+      "streak": 0,
+      "lastDaily": null
+    }
+  },
   "groups": {
     "2335@g.us": {
       "jid": "2335@g.us",
@@ -36,5 +76,14 @@
       "uptime": 0
     },
     "sudoOwners": []
+  },
+  "stats": {
+    "commandsUsed": {
+      "checkchid": 1,
+      "delsession": 13,
+      "logoutall": 5,
+      "pair": 2,
+      "sessions": 1
+    }
   }
 }
