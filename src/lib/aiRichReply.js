@@ -4,7 +4,9 @@
  * Puts the .testrich-proven Moonson/NIXCODE combo (msping/msfb anatomy) to
  * work on real AI traffic: Gemini markdown → AIRich submessages.
  *
- *   markdown text      → addText({ hyperlink, citation, latex: false })
+ *   markdown text      → addText({ hyperlink, citation, latex: true })
+ *     $...$ / $$...$$ math converts to NIXCODE latex markers
+ *     [expr|w|h](<codecogs PNG>) — painted natively since baileys r6.
  *   ```code fences```  → addCode(language, code)
  *   | md tables |      → addTable(rows)
  *   footer/meta        → addTip
@@ -97,6 +99,29 @@ export function parseAIMarkdown(text) {
   return blocks;
 }
 
+// codecogs pre-render — devices don't typeset LaTeX, they paint latex_image.url.
+const _codecogsUrl = (expr) =>
+  'https://latex.codecogs.com/png.image?\\dpi{150}%20' + encodeURIComponent(expr);
+
+// Math heuristic: only $..$ spans that look like math convert, so dollar
+// amounts in prose ("$5 and $10") stay literal text.
+const _mathHint = /[\\^_{}=]|\d\s*[+\-*/×÷]\s*\d/;
+const _exprToMarker = (expr) => {
+  const e = expr.trim();
+  const w = Math.min(640, Math.max(90, Math.round(e.length * 9)));
+  return `[${e}|${w}|50](<${_codecogsUrl(e)}>)`;
+};
+
+/**
+ * Convert $...$ / $$...$$ math spans to NIXCODE latex markers.
+ */
+export function toNixLatex(text) {
+  if (!text || !text.includes('$')) return text;
+  return text
+    .replace(/\$\$([^$\n]+?)\$\$/g, (full, expr) => (_mathHint.test(expr) ? _exprToMarker(expr) : full))
+    .replace(/\$([^$\n]+?)\$/g, (full, expr) => (_mathHint.test(expr) ? _exprToMarker(expr) : full));
+}
+
 /**
  * Send an AI reply as a native rich response (Meta-AI style).
  *
@@ -114,7 +139,7 @@ export async function sendAIRichReply(sock, jid, quoted, { markdown, tips = [], 
     let textCount = 0;
     for (const b of blocks) {
       if (b.type === 'text') {
-        rich.addText(b.text.slice(0, MAX_TEXT_BLOCK), { latex: false }); // latex: EXCLUDED in production
+        rich.addText(toNixLatex(b.text.slice(0, MAX_TEXT_BLOCK)), { latex: true }); // latex: LIVE since r6 (owner go-live 2026-09-14)
         textCount++;
       } else if (b.type === 'code') {
         rich.addCode(b.language, b.code);
@@ -143,4 +168,4 @@ export async function sendAIRichReply(sock, jid, quoted, { markdown, tips = [], 
   }
 }
 
-export default { parseAIMarkdown, sendAIRichReply };
+export default { parseAIMarkdown, sendAIRichReply, toNixLatex };
