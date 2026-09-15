@@ -5,6 +5,7 @@ import { serialize } from '../core/serializer.js';
 import { checkStickerCommand } from '../lib/stickerCommand.js';
 import { MASS_MENTION_THRESHOLD } from '../plugins/group/antitag.js';
 import { formatDuration } from '../lib/utils.js';
+import { trackActivity } from '../lib/heatmap.js';
 import {
   grantXp,
   canGainMessageXp,
@@ -42,6 +43,9 @@ export async function awardMessageXp(m, sock) {
     const userData = db.getUser(m.sender);
     if (userData?.banned) return;
     if (!canGainMessageXp(client, m.sender, m.from)) return;
+
+    // Heatmap tally — same "real message" definition as passive XP
+    trackActivity(m.from, m.sender);
 
     const result = grantXp(db, m.sender, { xp: randomMessageXp() });
     if (!result.leveledUp || !config.xp.levelUpAnnounce) return;

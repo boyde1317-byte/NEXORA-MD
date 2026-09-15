@@ -75,7 +75,7 @@ export default {
         `» Dedicated IP\n` +
         `» One-Click Apps\n` +
         `» Instant Setup\n\n` +
-        `💡 *Upgrade anytime!* Contact the owner for custom plans.\n\n` +
+        `💡 *Tap a plan below to order it* — the owner approves, you get a DM. Custom plans? Message the owner.\n\n` +
         `_Your server, your rules._ ♥︎`;
 
       const card = new Button(sock)
@@ -84,15 +84,16 @@ export default {
         .setBody(bodyText)
         .setFooter(brand.copyright || `© ${brand.name}`);
 
-      // ── Plan picker — tapping a plan opens .owner to place an order ──
-      card.addSelection(toSmallcaps('Select Plan'));
+      // ── Plan picker — tapping a plan files an order (.order approval
+      //    flow) instead of dumping the buyer into a bare .owner DM ──
+      card.addSelection(toSmallcaps('Order a Plan'));
       card.makeSection(toSmallcaps('Server Plans'));
       for (const plan of plans) {
         card.makeRow(
           '',
           `${plan.ram} RAM Server`,
-          `${plan.price} GHS · Pterodactyl`,
-          `${p}owner`,
+          `${plan.price} GHS · Tap to order`,
+          `${p}order ${String(plan.ram).toLowerCase()}`,
         );
       }
 
