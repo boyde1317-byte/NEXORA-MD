@@ -4,23 +4,23 @@
 ╭─────────────────────────────────────────────────────╮
 │                                                     │
 │          ███╗   ██╗███████╗██╗  ██╗ ██████╗ ██████╗ █████╗         │
-│          ████╗  ██║██╔════╝╚██╗██╔╝██╔═══██╗██╔══██╗██╔══██╗        │
+│          ████╗  ██║██╔════╝╚██╗ ██╔╝██╔═══██╗██╔══██╗██╔══██╗        │
 │          ██╔██╗ ██║█████╗   ╚███╔╝ ██║   ██║██████╔╝███████║        │
 │          ██║╚██╗██║██╔══╝   ██╔██╗ ██║   ██║██╔══██║██╔══██║        │
 │          ██║ ╚████║███████╗██╔╝ ██╗╚██████╔╝██║  ██║██║  ██║        │
 │          ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝        │
 │                                                     │
-│          Next Generation WhatsApp Multi-Device Framework            │
-│                       By Aizen • v1.1.0                             │
+│        Rich-native WhatsApp bot platform            │
+│              By Aizen • v2.0.0                      │
 │                                                     │
 ╰─────────────────────────────────────────────────────╯
 ```
 
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![WhatsApp](https://img.shields.io/badge/WhatsApp-Multi--Device-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://www.whatsapp.com)
-[![Baileys](https://img.shields.io/badge/Baileys-Fork-FF6B35?style=for-the-badge)](https://github.com/boyde1317-byte/baileys)
+[![Baileys](https://img.shields.io/badge/Baileys-v0.3.18--r6-FF6B35?style=for-the-badge)](https://github.com/boyde1317-byte/baileys)
+[![Commands](https://img.shields.io/badge/Commands-181+-purple?style=for-the-badge)](#-command-reference)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.1.0-purple?style=for-the-badge)](package.json)
 
 </div>
 
@@ -28,171 +28,312 @@
 
 ## ✨ What is NEXORA MD?
 
-**NEXORA MD** is a premium, production-grade WhatsApp Multi-Device bot framework built on a custom Baileys fork. It combines a robust plugin architecture, 13 interactive menu presentation styles, AI-powered asset generation, advanced group management, and a fully modular design — deployable across Replit, Railway, Render, Pterodactyl, VPS, and Termux with zero code changes.
+**NEXORA MD** is a production WhatsApp multi-device bot platform — **181 commands** across 15 categories, with a rich-message engine that makes the bot *feel native*: tappable pickers, copy-code buttons, interactive approval cards, image headers, voice synthesis, and full-text fallbacks everywhere.
 
-> **"Next Generation WhatsApp Multi-Device Framework"** — engineered for reliability, extensibility, and a polished user experience.
+Built on a **pinned private Baileys fork** ([`boyde1317-byte/baileys#v0.3.18-r6`](https://github.com/boyde1317-byte/baileys)) whose rich-message generators are lineage-verified against **Moonson + NIXCODE + itsliaaa** — the reference for what actually renders on real devices. Every rich surface ships with a plain-text fallback, so nothing breaks when WhatsApp changes things underneath you.
 
 ---
 
 ## 🚀 Feature Highlights
 
-### 🧠 Nexora Core Engine
-- **Multi-device Baileys** via a custom private fork with extended proto support
-- **ESM-native** codebase (Node.js `import/export` throughout)
-- **Plugin hot-reload** — reload all commands at runtime without restarting the process
-- **Exponential reconnect backoff** — 5s → 10s → 20s → 40s → 60s cap, with smart detection of fatal vs. recoverable disconnects
-- **Graceful shutdown** — SIGTERM/SIGINT save the database, drain the HTTP server, and close the WA socket cleanly before exit
-- **Auto-save safety net** — database flushes every 60s even without explicit saves, preventing data loss on hard kills
-- **Pairing code & QR code** — configurable per deployment; no phone scan required in headless environments
-- **Bounded message cache** — max 500 messages per chat, max 2,000 tracked chats, preventing unbounded memory growth
+### 🎨 Rich-Native Messaging (default ON)
+- **Proven native-flow primitives only**: `quick_reply`, `cta_url`, `cta_copy`, `cta_call`, `single_select`, `cta_reminder`, `cta_cancel_reminder`, `send_location`, `address_message` — button taps dispatch their commands automatically
+- **Tappable command directory**: `.menu` → category picker → `.help <category>` → command picker → detail card with a copy-command button
+- **Media pickers with thumbnails**: `.play` / `.ytmp4` single-selects show the YouTube thumbnail as the card header
+- **Interactive approval cards**: pairing requests and server orders land in the super owner's DM with native Approve / Deny buttons
+- **LaTeX, maps, tables, galleries** as native cards (`.math`, `.locate`, `.weather`, `.pin`)
+- Rollback to plain-text mode with `NEXORA_RICH_RESPONSE=0`; audit any device with `.testrich` (15 message types) or `.testmessage`
+- **Sticker → command mapping**: tap a sticker and it runs its mapped command
 
-### 🎨 Nexora Flow — Interactive Menu System
-15 fully distinct menu presentation styles, auto-selected based on what the receiving WhatsApp client supports:
+### 👥 Multi-Session Pairing
+- Link up to **5 additional WhatsApp numbers**, each running as its own NEXORA bot (`.pair`)
+- **Super-owner tier** (`SUPER_OWNER_NUMBERS`): the super owner pairs directly and manages every session; everyone else files a *request* — an Approve/Deny card lands in the super owner's DM (`.pairapprove` / `.pairdeny` / `.pairrequests`), codes always DM'd, never posted to groups
+- Session lifecycle alerts to the super owner's DM; `.logoutall` wipes every paired session at once
+- Auto-resume on restart, auto-retry for transient pairing drops, 515-status resumption on socket loss
 
-| # | Style | Description |
-|---|-------|-------------|
-| 1 | **Document Interactive** | Interactive card with image header + subtitle + embedded adReply + action buttons |
-| 2 | **Payment** | Request Payment invoice card (business-account feature; auto-degrades on personal accounts) |
-| 3 | **Event Message** | Native WA event invitation card with dynamic start time |
-| 4 | **Native Flow** | Advanced interactive card with embedded ad-reply, URL links, clipboard copy, quick-reply |
-| 5 | **Product** | Offer overlay card — limited_time_offer banner + image header + action buttons |
-| 6 | **Carousel** | Swipeable category cards with emoji icons, command previews, and multi-button actions |
-| 7 | **Newsletter** | Channel/newsletter-style broadcast card |
-| 8 | **Location** | Interactive card with live location badge in reply bar |
-| 9 | **Contact** | Interactive card with owner vCard contact badge in reply bar |
-| 10 | **Media** | Rich media showcase with interactive card + embedded ad-reply + stat dashboard |
-| 11 | **Reaction** | Emoji reaction showcase with live-edited inline menu |
-| 12 | **AI Dynamic** | AI-generated dynamic dashboard with progress bars, command rankings, multi-section panels |
-| 13 | **Bottom Sheet** | Bottom sheet modal with optionText + rich stat rows + embedded ad-reply fallback |
-| 14 | **Order Message** | Interactive card + embedded ad-reply quoted inside a business order card |
-| 15 | **Rich Card** | Rich response table grid + interactive card with embedded ad-reply overlay |
+### 🧠 Multi-Provider AI
+- **Provider walk with call-time fallback**: Gemini (image generation) → Groq (text + vision, free tier) → Mistral → OpenRouter — the first working provider is memoized
+- Chat, code, proofread, translate, brainstorm, vision, step-by-step math with native LaTeX
+- **`.remix`** — reply to a voice note: whisper-large-v3 transcription → style rewrite (corporate, Shakespeare, Gen Z, pirate, Yoda, Gordon Ramsay) → synthesized back **as a voice note**
+- AI auto-reply mode (`.chatbot`) for non-command messages
 
-#### ✨ Rich-Messages Enhancement (v1.2.0+)
-- **Full submessage support**: All 10 V1 submessage types (TEXT, TABLE, CODE, INLINE_IMAGE, GRID_IMAGE, DYNAMIC, MAP, LATEX, CONTENT_ITEMS) + structured metadata types (products, posts, suggested)
-- **V2 generators**: 9 base64 unifiedResponse generators matching Meta AI's native format
-- **LaTeX image rendering**: Default `mathjax-node` renderer (optional peer dep) for LaTeX→PNG
-- **Rich message consumption**: `parseRichMessage()` decodes inbound V1 + V2 rich messages into readable text + structured sections
-- **sendInteractive upgrades**: Menu types 1, 4, 10, 12, 13, 14 now use `sendInteractive` (full proto control) as their primary tier, enabling:
-  - Image headers with **title AND subtitle** (not available in simple nativeFlow)
-  - **Embedded externalAdReply** inside the interactive message — double visual: interactive card + ad banner in one message
-  - Full nativeFlow buttons with `display_text` formatting
-- **New menu style (15)**: Rich Card — uses the fork's `sendRichResponse` API for native WA table bubbles with aligned columns
-- **Enhanced visual system**: Upgraded `asciiBuilder` with progress bars, stat rows, multi-section panels, dividers, and badges
-- **Richer text menus**: Enhanced `menuTemplate` with per-category command counts, numbered sections, and themed footer
-- **Enhanced system/profile templates**: Visual stat rows, health bars, and status badges
-- **AI-Dynamic dashboard**: ASCII progress bars for system health/memory, multi-section box-drawing panels, 5 random themes, top-5 command rankings with visual bars
-- **`baileysBridge.sendRichCard`**: New premium card builder combining image header + subtitle + embedded adReply + business badge + AI message support in one call
-- **`!testrich` command**: 32-test interactive registry covering all V1/V2 generators, unit validation, and capture round-trips
+### 💰 Economy & Engagement
+- Coins, XP, levels, streaks, daily rewards (`.daily`), leaderboards, gambling and trivia games
+- `.shop` — native tappable picker; buy custom titles, menu themes, sticker slots, XP boosts
+- Passive XP from real chat activity
 
-- Automatic **capability detection** on startup — unsupported message types fall back gracefully to a styled text menu
-- **Per-style image/audio** — custom background images and menu audio configurable per style
-- **3 visual themes** — `modern`, `classic`, `minimal` with distinct border characters and layouts
-- Persistent **active menu** and **active theme** stored in the database
-
-### 🤖 Nexora Intelligence — AI Asset Generation
-- Integrates with **Google Gemini** for on-demand image generation
-- Generates bot assets (menu banners, welcome/goodbye cards) automatically on first boot
-- `!generateimage <prompt>` lets the owner create custom images on the fly
-- `!generateassets` regenerates all system assets without restarting
+### 🖥️ Built-In Storefront
+- `.store` — interactive plan picker; tapping a plan **files an order** (`.order`), the super owner approves from their DM, and the buyer gets a payment link automatically
 
 ### 👥 Group Management
-- **Welcome & Goodbye cards** with 3 selectable styles:
-  - *Style 1* — Full-bleed image with externalAdReply banner and profile picture overlay
-  - *Style 2* — Document card with virtual PDF header
-  - *Style 3* — Interactive message card
-- Custom welcome/goodbye text with live placeholders (`{user}`, `{group}`, `{memberCount}`)
-- Custom welcome/goodbye background images (local path or URL)
-- **Milestone alerts** — automatic congratulations when a group hits 10, 50, 100, 500 members
-- One-command group admin promotion/demotion
-- Tag all group members with a single command
-- Sequential join/leave queue prevents race conditions during rapid mass joins
+- `.heatchart` — a heatmap of when your group is actually alive: 24-hour activity chart, peak/dead hours, top talkers
+- Welcome/goodbye cards (`.welcome`, `.goodbye`, `.greetings`), anti-link, anti-tag-spam, warns, timeouts, hidetag, sticker-pack theft (`.takeall`), Group Stories, polls, and events
 
-### 🗃️ Nexora Guard — Data & Permissions
-- **Flat-file JSON database** — zero external dependencies; persists users, groups, and settings
-- **Atomic writes** — temp-file + rename ensures no partial writes corrupt the database
-- **Automatic backup** — `.bak` file maintained alongside the primary database
-- **Auto-save safety net** — flushes to disk every 60s even without explicit triggers
-- **Ban system** — banned users are silently blocked from all commands
-- **Owner-only mode / public mode** — toggle with a single config flag
-- **Per-command permission levels**: `owner`, `groupOnly`, `admin` (sender), `botAdmin` (bot itself)
-- **Cooldown enforcement** — per-user, per-command; configurable globally and per plugin
-- Crash-safe: `uncaughtException` saves the database before exiting
+### 📥 Downloaders
+- YouTube (audio + video, with thumbnail pickers), TikTok, Facebook, Instagram, X, Spotify, Pinterest, APKs — plus `.media`, a smart auto-detecting downloader that routes any pasted URL to the right handler
 
-### 🎛️ Customisation
-- 3 built-in themes; owners can create and register fully custom border themes
-- 5 footer styles (`clean`, `minimal`, `professional`, `ornate`, `default`)
-- Menu audio enable/disable; custom audio file per deployment
-- Asset image mode: `static`, `random`, or `rotate`
-- All settings persisted in the database and changeable at runtime — no restarts needed
+### ⚙️ Ops & Reliability
+- Pairing-code auth for headless deploys; graceful SIGTERM shutdown; 60s auto-save; bounded message cache; exponential reconnect backoff; `.connection` health dashboard; hot-reload without restart; per-plugin error tracking (`.stats`)
 
 ---
 
 ## 📋 Command Reference
 
-Commands work with any of the configured prefixes: `!`, `.`, `/`
+Commands work with any configured prefix (`.` is the default). **181 commands** across 15 categories:
 
-### 🌐 General Commands
+> `.menu` opens the native tappable directory — the fastest way to browse. `.help <category>` drills into any category, `.help <command>` shows a detail card with a copy button.
 
-| Command | Aliases | Description |
-|---------|---------|-------------|
-| `!menu` | — | Open the premium interactive command console in your active style |
-| `!menulist` | — | List all available menu styles with compatibility status |
-| `!ping` | — | Check bot response latency |
-| `!about` | — | Bot branding, credits, and system info |
-| `!version` | — | Bot, core, and Node.js runtime versions |
-| `!poll <question> / opt1, opt2` | — | Create an interactive WhatsApp poll |
-| `!event <name>` | — | Generate a WhatsApp event invite card |
-| `!channel` | — | View or manage newsletter/channel info |
-
-### 👑 Owner Commands
-
-| Command | Description |
-|---------|-------------|
-| `!setmenu <1–13>` | Switch the active menu presentation style |
-| `!settheme <modern\|classic\|minimal>` | Switch the global UI theme |
-| `!createtheme <name>` | Register a new custom border theme |
-| `!setfooter <style>` | Change the message footer style |
-| `!setmenuimage` | Save a replied image as the current menu's background |
-| `!setmenuaudio <on\|off>` | Toggle menu background audio |
-| `!setthumbnail <on\|off>` | Toggle menu thumbnail images |
-| `!setmenumedia` | Ingest audio/image/thumbnail files into the menu system |
-| `!setimagemode <static\|random\|rotate>` | Control how menu images are selected |
-| `!welcome <on\|off>` | Toggle global welcome messages |
-| `!goodbye <on\|off>` | Toggle global goodbye messages |
-| `!setwelcome <1\|2\|3>` | Set welcome card presentation style |
-| `!setwelcometext <text>` | Set custom welcome text (supports `{user}`, `{group}`, `{memberCount}`) |
-| `!setgoodbyetext <text>` | Set custom goodbye text |
-| `!setwelcomeimage` | Set custom welcome card background (reply to image or send URL) |
-| `!setchannel <jid>` | Set the bot's official WhatsApp channel JID |
-| `!generateimage <prompt>` | Generate an AI image via Gemini |
-| `!generateassets` | Regenerate all AI bot assets |
-| `!restart` | Hot-reload all plugins (or `!restart hard` for full process restart) |
-| `!testmessage` | Test experimental UI message types with capability feedback |
-| `!eval <code>` | Execute arbitrary JavaScript on the bot process (owner only) |
-
-### 👥 Group Commands
+#### 🌐 General
 
 | Command | Aliases | Description |
 |---------|---------|-------------|
-| `!tagall [message]` | `!everyone`, `!all`, `!announce` | Mention all group members |
-| `!kick @user` | — | Remove a participant from the group |
-| `!promote @user` | — | Promote a member to group admin |
-| `!demote @user` | — | Demote an admin to regular member |
+| `.about` | info, botinfo | Shows detailed bot and system information |
+| `.brand` | brandcard | Interactive brand card with a full-screen brand details sheet (Moonson-style) |
+| `.credits` | credit, dev | Shows bot developer, framework, and version credits |
+| `.event` | createevent, meet | Generates a WhatsApp native event card in the chat |
+| `.help` | categories, modules | Browse command categories |
+| `.locate` | map, where | Pin any place on a live map card |
+| `.menu` | ? | Shows the interactive command menu in your active presentation style |
+| `.menulist` | styles, menus | Lists all available menu presentation styles — tap to switch instantly |
+| `.channel` | newsletter, ch | Full WhatsApp Channel/Newsletter Manager — create, follow, info, and more |
+| `.order` | orders, buyserver | Order a server plan |
+| `.owner` | creator, dev, developer | Shows the bot owner's contact card |
+| `.ping` | p, speed | Measures the response speed of the bot |
+| `.poll` | vote, survey | Creates a custom interactive poll in the chat |
+| `.stats` | botstats, sysstats, health | Shows comprehensive bot statistics — uptime, memory, commands, and health |
+| `.store` | servers, hosting | Server hosting plans with an interactive plan picker (Moonson-style card) |
+| `.version` | v, ver | Displays current bot, developer, core, and runtime version details |
 
-### 🎬 Media Commands
+#### 📥 Downloaders
 
 | Command | Aliases | Description |
 |---------|---------|-------------|
-| `!sticker` | `!s`, `!wm`, `!pack` | Convert a replied/sent image or video into a WhatsApp sticker |
-| `!download` | — | Download and re-send media from a replied message; bypasses view-once |
+| `.apk` | apkdl | Searches for Android APKs |
+| `.fb` | facebook, fbdl | Downloads a Facebook video |
+| `.githubrelease` | ghrelease, release | Get the latest release of a GitHub repository |
+| `.ig` | instagram, igdl | Downloads Instagram posts, reels, and stories |
+| `.media` | dl, download, autodl | Smart downloader — paste any URL and it auto-detects the platform |
+| `.pinterest` | pin, pindl | Searches Pinterest and sends images directly |
+| `.play` | yta, ytmp3 | Search & download YouTube audio |
+| `.spotify` | sp, spdl | Downloads a Spotify track as mp3 |
+| `.tiktok` | tt, ttdl | Downloads a TikTok video without the watermark |
+| `.twitter` | x, twdl, xdl | Downloads a video from an X/Twitter post |
+| `.ytmp4` | ytv, youtube | Search & download YouTube video |
+
+#### 🎬 Media
+
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `.artist` | singer, band | Search for an artist on iTunes |
+| `.download` | dl, save, get | Downloads and returns media from a replied message, effectively bypassing View Once limits |
+| `.movie` | imdb, omdb | Lookup movie or series information |
+| `.podcast` | podcasts | Search for a podcast on iTunes |
+| `.remix` | style, redub | Reply to a voice note to get it back rewritten in a style, as a new voice note |
+| `.sticker` | s, wm, pack | Convert image/video to sticker |
+
+#### 👥 Group
+
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `.antilink` | antilinks, nolink | Toggle anti-link protection |
+| `.antitag` | antimention, notag | Toggle protection against mass-mention ("tag everyone") spam by non-admins |
+| `.copylink` | gcl | Get the current group's invite link with a copy button |
+| `.demote` | unadmin, dm | Demotes a group admin back to regular participant |
+| `.gcstory` | groupstory, swgc, gstatus | Sends a Group Story (status) to the current group |
+| `.groupinfo` | ginfo, gcinfo, groupdetails | Shows detailed metadata for the current group |
+| `.grouplink` | invitelink, invite | Gets or resets the group invite link |
+| `.groupsettings` | gset, open, close | Change group settings |
+| `.heatchart` | heat, activity | When this group is actually alive — hourly activity chart, peak hours, and top talkers |
+| `.hidetag` | htag, stag, silentall | Mentions all group members silently — no @names shown in the message |
+| `.kick` | remove, k | Removes a participant from the group |
+| `.mute` | closegroup | Mutes the group so only admins can send messages |
+| `.promote` | admin, pm | Promotes a group participant to Group Admin |
+| `.purge` | prune, delmsg | Delete multiple messages |
+| `.revoke` | resetlink | Revokes the current group invite link and generates a new one |
+| `.setdesc` | - | Changes the group description |
+| `.setgcpp` | gcpp, grouppp, setgroupicon | Sets or removes the group profile picture |
+| `.setname` | - | Changes the group subject/name |
+| `.tagall` | everyone, all, announce | Mentions all participants in the group with an optional message |
+| `.taginfo` | whois, userinfo2, checkuser | Show info about a user |
+| `.timeout` | muteuser, tempmute, shh | Temporarily mute a user |
+| `.unmute` | opengroup | Unmutes the group so all participants can send messages |
+| `.warn` | warning | Warn a user |
+
+#### 🧠 AI & Tools
+
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `.ai` | gpt, ask, chat | Chat with Nexora AI |
+| `.brainstorm` | ideas, ideate | Generates creative ideas on a topic |
+| `.chatbot` | autoreply, aireply | Toggle AI auto-reply for non-command messages |
+| `.code` | codegen, coder | Generate code with Nexora AI |
+| `.debug` | fixcode | Analyzes code for bugs and provides a fix |
+| `.math` | solve, calc | Step-by-step math solver with native LaTeX |
+| `.proofread` | grammar, fixtext | Proofreads and corrects grammar/spelling |
+| `.translate` | tr, trans, translator | Translate text |
+| `.vision` | analyze, imageai | Analyzes an image using AI |
+
+#### 🪙 Economy
+
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `.balance` | bal, wallet, coins | Quick check of your coin balance, XP, and level |
+| `.daily` | claim, dailyreward, checkin | Claim your daily reward |
+| `.leaderboard` | lb, top, topusers | Shows top users by XP |
+| `.profile` | prof, stats, rank | Shows your profile — level, XP, coins, streak and rank |
+| `.settitle` | title, mytitle | Set a custom title on your profile (requires shop purchase) |
+| `.shop` | buy | Spend your coins on perks |
+
+#### 🎮 Games
+
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `.bet` | gamble, casino | Gamble coins |
+| `.rps` | rockpaperscissors | Play Rock Paper Scissors |
+| `.trivia` | quiz, question | Answer a trivia question for coins and XP |
+| `.wordchain` | wc, chain, shiritori | Word chain game for groups |
+
+#### 🎲 Fun
+
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `.advice` | tip | Get random life advice |
+| `.cat` | cats, meow | Get a random cat picture |
+| `.choose` | pick, decide | Choose between options |
+| `.dare` | dares | Get a random dare challenge |
+| `.darkweb` | tor, onion | A purely-for-fun "dark web terminal" roleplay |
+| `.dog` | dogs, woof | Get a random dog picture |
+| `.eightball` | 8ball, 8b | Ask the magic 8-ball a yes/no question |
+| `.fact` | facts, trivia | Get a random interesting fact |
+| `.flip` | coinflip, coin | Flip a coin |
+| `.joke` | jokes, funny, lol | Fetches a random safe-mode joke from JokeAPI |
+| `.love` | ship, lovemeter, compatibility | Checks love compatibility between two names or two mentions |
+| `.quote` | inspire, qotd | Get a random inspirational quote |
+| `.quoter` | quote, inspire, wisdom | Fetches a random inspirational quote with one-tap copy and author lookup |
+| `.roll` | dice, rolldice | Roll a dice |
+| `.truth` | truths | Get a random truth question |
+| `.wouldyourather` | wyr, thisorthat | Get a random "Would You Rather" question to spark group discussion |
+
+#### 🕸️ Web
+
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `.summary` | summarize | Summarize a webpage using AI or SMMRY |
+| `.weather` | - | Get the current weather for a location |
+| `.calculator` | calc, math | Evaluates a math expression |
+| `.convert` | conv, unit, convertor | Convert units and currencies |
+| `.crypto` | price, coin, coinprice | Get cryptocurrency prices |
+| `.currency` | - | Convert currency |
+| `.define` | dict, dictionary | Get the dictionary definition of a word |
+| `.dns` | - | Look up DNS records for a domain |
+| `.docs` | mdn | Search MDN Web Docs |
+| `.github` | repo | Get information about a GitHub repository |
+| `.headers` | - | Get HTTP headers for a URL |
+| `.news` | - | Get the latest news articles |
+| `.npm` | - | Search for an NPM package |
+| `.screenshot` | ssweb, webshot | Takes a screenshot of any website |
+| `.search` | - | Search the web using DuckDuckGo |
+| `.time` | - | Get current time for a timezone |
+| `.whois` | - | Lookup WHOIS information for a domain |
+
+#### 🔧 Utility
+
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `.addsticker` | setsticker | Map a sticker to a bot command |
+| `.afk` | away | Set yourself as AFK |
+| `.base64` | b64, encode, decode | Encodes or decodes base64 |
+| `.calc` | calculate, math, maths | Quick calculator |
+| `.checkchid` | channelid, chid, chatid | Get JID and metadata for current chat or a WhatsApp Channel link |
+| `.delsticker` | removesticker, unsticker | Remove a sticker → command mapping |
+| `.get` | fetchhtml, html | Fetch a website and return its raw HTML |
+| `.ip` | ipinfo, iplookup, geoip | Looks up info for an IP address or domain |
+| `.liststicker` | stickerlist, stickercmds | Show all registered sticker to command mappings |
+| `.lyrics` | lyric | Fetch song lyrics |
+| `.ocr` | readtext, textfromimage, extract | Extracts text from an image |
+| `.password` | genpass, pwgen | Generates a secure random password |
+| `.paste` | pastebin, hastebin, upload | Uploads text to paste |
+| `.qr` | qrcode, makeqr, genqr | Generates a QR code image from any text or URL |
+| `.remind` | reminder, remindme, timer | Sets a personal reminder |
+| `.rich` | richresponse | Test the new rich response components and combo generators |
+| `.tinyurl` | shorten, short, shorturl | Shortens a long URL using TinyURL |
+| `.tourl` | geturl, mediaurl, uploadmedia | Uploads any media (image, video, audio, sticker, document) to a public host and returns a direc |
+| `.userinfo` | whoami, me, profile2 | Shows your detailed user profile with stats and account info |
+| `.wiki` | wikipedia | Look up a Wikipedia summary |
+
+#### 🧰 Developer
+
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `.hash` | md5, sha1, sha256 | Generates a hash for the given text |
+| `.jsonformat` | json, prettyjson | Formats and validates JSON string |
+| `.jwt` | jwtdecode | Decodes a JSON Web Token (JWT) payload |
+| `.uuid` | guid | Generates random UUID(s) |
+
+#### 🌸 Anime
+
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `.anime` | waifu, neko, wallpaper | Anime pics + GIF cards |
+
+#### 👑 Owner & Sessions
+
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `.anticall` | blockcalls | Toggle automatic rejection of incoming calls to the bot |
+| `.ban` | banuser | Ban a user from using the bot |
+| `.checkwa` | checkban, wacheck, iswabanned | Check if a phone number is on WhatsApp and whether it has been banned |
+| `.connection` | health, conn | Shows WhatsApp connection health, metrics, and reconnect diagnostics |
+| `.create` | newgroup, creategroup, gc | Creates a new WhatsApp group with optional picture and description |
+| `.createtheme` | - | Create and register a custom border theme (Owner Only) |
+| `.delsession` | removesession, unpair | Log out and remove an extra session |
+| `.eval` | > | Executes JavaScript expressions in a sandboxed context |
+| `.generateassets` | genassets, makeassets | Regenerates all AI-powered bot assets using Gemini |
+| `.generateimage` | genimage, imagine | Generates a custom image based on the prompt using Gemini |
+| `.goodbye` | gb | Toggle goodbye messages on or off (per-group or global) |
+| `.greetings` | greeting, greets | Toggle welcome AND goodbye messages at once (per-group or global) |
+| `.logoutall` | unpairall, killsessions, sessionpurge | SUPER OWNER ONLY — log out and remove every paired session at once |
+| `.middleware` | mw, pipeline | Shows registered middleware pipeline and rate-limiter status |
+| `.pair` | addsession, linksession | Link another number as a bot session |
+| `.pairapprove` | papprove, approvepair | SUPER OWNER — approve a pending  |
+| `.pairdeny` | pdeny, denypair | SUPER OWNER — deny a pending  |
+| `.pairrequests` | pairlist, pairqueue | SUPER OWNER — list pending pairing requests |
+| `.public` | - | Allows everyone to use the bot (public mode) |
+| `.reload` | rl, hotreload | Hot-reload plugins without restarting the bot |
+| `.restart` | reload, reboot | Hot-reloads all plugin files, or restarts the container process |
+| `.self` | private | Restricts the bot to owner-only use (private mode) |
+| `.sessions` | listsessions | List extra linked bot sessions |
+| `.setchannel` | setch, setdefaultchannel | Sets the default official WhatsApp broadcast channel JID for the framework |
+| `.setfooter` | footerstyle, footer | Changes the global active bot message footer style (Owner Only) |
+| `.setgoodbyetext` | setgbtext, gbtext | Set custom text for goodbye notifications |
+| `.setimagemode` | imgmode, imode | Configure the dynamic image selection mode (static, random, or rotate) |
+| `.setmenu` | changestyle, setmenustyle | Changes the global active menu presentation style (Owner Only) |
+| `.setmenuaudio` | menuaudio, maudio | Enable or disable the background menu audio message playback |
+| `.setmenuimage` | setimage, setimg | Saves the replied image as background/banner for the currently active menu style |
+| `.setmenumedia` | media | Ingest or update background media files (audio, image, thumbnail) for the menu system |
+| `.setprefix` | prefix | Set custom command prefix(es) |
+| `.settheme` | theme, style | Changes the global active bot design theme (Owner Only) |
+| `.setthumbnail` | thumbnail, thumb | Enable/disable menu thumbnails or save the replied image as the menu thumbnail |
+| `.setwelcome` | stylewelcome, wcstyle | Set greeting layout style (1 = Image, 2 = Document Card, 3 = Interactive, 4 = Minimal) |
+| `.setwelcomeimage` | setwcimg, wcimg | Set custom background image for welcome cards (image or URL) |
+| `.setwelcometext` | setwctext, wctext | Set custom text for welcome notifications |
+| `.status` | story, sendstatus, broadcaststatus | Sends a WhatsApp Status (Story) to contacts or groups |
+| `.statusprivacy` | sp | Controls who can see your WhatsApp Status |
+| `.sudo` | addowner, delowner, rmowner | Manage sudo owners |
+| `.takeall` | packall, stealpack | Bundle all stickers in this group into a sticker pack named nexora (styled font) |
+| `.testmessage` | testmsg, msgdebug | Test all interactive message types via a native WA list picker |
+| `.testrich` | testrichmsg, richdebug | 🧪 Test party for OURIN-baileys rich message generators (V1 + V2) |
+| `.unban` | pardon | Unban a user |
+| `.viewstatus` | vs, statuslist, fetchstatus | Views WhatsApp Status updates from contacts |
+| `.welcome` | wc | Toggle welcome messages on or off (per-group or global) |
+
 
 ---
 
 ## 🛠️ Installation
 
 ### Prerequisites
-- **Node.js 20+** (check: `node --version`)
-- **npm 8+** (check: `npm --version`)
+- **Node.js 20+** and **npm 8+**
 - A **WhatsApp account** to link as the bot number
 
 ### Clone & Install
@@ -203,42 +344,30 @@ cd NEXORA-MD
 npm install
 ```
 
-> **Note:** `npm install` runs a `postinstall` script (`scripts/patch-libsignal.js`) that patches `@adiwajshing/libsignal` for multi-device compatibility. This is automatic.
-
 ### Configure
-
-All sensitive configuration is done via environment variables. Copy the example file and fill in your values:
 
 ```bash
 cp .env.example .env
 ```
 
-Then edit `.env`:
+The essentials in `.env`:
 
 ```env
 # Your phone number(s) — comma-separated, country code, no + or spaces
-OWNER_NUMBERS="447911123456"
-PAIRING_PHONE="447911123456"
+OWNER_NUMBERS="233XXXXXXXXX"
 
-# Bot owner display name
-OWNER_NAME="YourName"
+# Super owner: full session control (defaults to first OWNER_NUMBERS entry)
+SUPER_OWNER_NUMBERS="233XXXXXXXXX"
 
-# AI (optional — enables image generation)
-GEMINI_API_KEY="your_gemini_api_key"
+# AI — free key from console.groq.com (enables chat, remix, summary, math AI)
+GROQ_API_KEY="gsk_..."
+
+# Optional — image generation (Google AI Studio)
+GEMINI_API_KEY="AIza..."
+
+# Optional — server plans shown by .store / .order
+# STORE_PLANS='[{"ram":"1GB","price":10},{"ram":"4GB","price":40}]'
 ```
-
-Configure your bot identity in `config/brand.js`:
-
-```js
-export default {
-  name: "NEXORA MD",
-  creator: "YourName",
-  version: "1.1.0",
-  description: "Your bot description",
-};
-```
-
-Adjust command settings in `config/index.js` (prefix, mode, etc.).
 
 ### Start
 
@@ -246,179 +375,27 @@ Adjust command settings in `config/index.js` (prefix, mode, etc.).
 npm start
 ```
 
-On first run the bot will print a **pairing code** to the console:
-
-```
-🔑 WHATSAPP PAIRING CODE: XXXXXXXX
-👉 Go to WhatsApp → Settings → Linked Devices → Link a Device
-   Then tap "Link with phone number instead" and enter the code above.
-```
-
-Once linked, the session is saved to `./session/` and the bot reconnects automatically on restart.
+On first run the console prints a **pairing code** — enter it on the bot's phone under WhatsApp → Settings → Linked Devices → Link a Device → *Link with phone number instead*. The session persists to `./session/` and reconnects automatically on every restart.
 
 ---
 
-## ☁️ Deployment Guides
+## ☁️ Deployment
 
-### Replit
-
-1. Fork or import this repo into your Replit workspace.
-2. Add `GEMINI_API_KEY`, `OWNER_NUMBERS`, and `PAIRING_PHONE` to **Secrets**.
-3. The configured workflow (`node server.js`) starts automatically.
-4. The web preview serves a status page at `/`; health endpoint at `/api/health`.
-
-### Railway / Render
-
-1. Connect your GitHub repo.
-2. Set the start command to `npm start`.
-3. Add environment variables: `OWNER_NUMBERS`, `PAIRING_PHONE`, `GEMINI_API_KEY` (optional), `GENERATE_ASSETS=false`.
-4. Set `NODE_ENV=production` for optimized caching.
-5. **Session note:** Railway/Render use ephemeral filesystems — the `session/` directory is wiped on every redeploy. Re-pair after each deploy, or mount a persistent disk and point `sessionPath` in `config/index.js` to it.
+### Railway (recommended)
+1. Fork/push this repo to GitHub
+2. New project → **Deploy from GitHub repo**
+3. Add the env vars above in *Variables* (at minimum `OWNER_NUMBERS` and `GROQ_API_KEY`)
+4. Deploy — the build installs pinned git dependencies keylessly (Dockerfile includes git for the lockfile)
+5. Open the deploy logs for the pairing code on first boot
 
 ### Docker
-
 ```bash
-# Copy and configure environment
-cp .env.example .env
-# Edit .env with your OWNER_NUMBERS, PAIRING_PHONE, etc.
-
-# Build and run
-docker compose up -d
-
-# Check health
-curl http://localhost:3000/api/health
-
-# View logs
-docker compose logs -f nexora-md
+docker build -t nexora-md .
+docker run -d --env-file .env -v nexora-session:/app/session nexora-md
 ```
 
-The Dockerfile runs as a non-root user with a built-in health check. Session data and database are persisted via Docker volumes.
-
-### Pterodactyl
-
-1. Use a **Node.js egg** with startup command `npm start`.
-2. Set the install command to `npm install`.
-3. The bot handles SIGTERM gracefully — server restarts won't corrupt the database.
-4. Allocate at least **512 MB RAM** and **1 CPU** for stable operation.
-
-### VPS (Ubuntu/Debian)
-
-```bash
-# Install Node.js 20 via NVM
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-source ~/.bashrc
-nvm install 20 && nvm use 20
-
-# Install PM2 for process management
-npm install -g pm2
-
-# Start the bot
-cd NEXORA-MD
-npm install
-pm2 start server.js --name nexora-md
-pm2 save
-pm2 startup
-```
-
-### Termux (Android)
-
-```bash
-pkg update && pkg upgrade
-pkg install nodejs git
-git clone https://github.com/boyde1317-byte/NEXORA-MD.git
-cd NEXORA-MD
-npm install
-npm start
-```
-
-> Keep the Termux session alive with `termux-wake-lock` or run inside `screen`/`tmux`.
-
----
-
-## ⚙️ Environment Variables
-
-Create a `.env` file in the root directory (see `.env.example`):
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `OWNER_NUMBERS` | **Yes** | — | Comma-separated owner phone numbers (country code, no +) |
-| `PAIRING_PHONE` | **Yes** | — | Phone number for WhatsApp pairing code |
-| `OWNER_NAME` | Optional | `Bot Owner` | Owner display name |
-| `GEMINI_API_KEY` | Optional | — | Enables AI image generation and asset creation |
-| `GENERATE_ASSETS` | Optional | `false` | Set to `true` to generate AI assets on startup |
-| `CHANNEL_JID` | Optional | — | WhatsApp channel JID for newsletter menu type |
-| `PORT` | Optional | `3000` | Web server port (auto-set on Railway/Render/Replit) |
-| `NODE_ENV` | Optional | — | Set to `production` for optimized caching |
-
----
-
-## 🏗️ Project Architecture
-
-```
-NEXORA-MD/
-├── config/
-│   ├── index.js         # Core settings (owner, prefix, pairing, mode)
-│   ├── brand.js         # Bot identity (name, creator, version)
-│   ├── owner.js         # Extended owner settings
-│   └── layout.js        # Theme border configurations
-│
-├── src/
-│   ├── core/
-│   │   ├── connection.js      # Baileys socket, pairing, reconnect logic
-│   │   ├── client.js          # Plugin loader with diagnostics
-│   │   ├── serializer.js      # Raw Baileys → rich message object
-│   │   ├── baileysBridge.js   # Interactive messages, rich message gen + consumption
-│   │   ├── capabilities.js    # Proto feature detection at startup
-│   │   ├── footer.js          # Footer style manager
-│   │   └── credits.js         # Credit/brand helpers
-│   │
-│   ├── handlers/
-│   │   ├── message.js         # Full command dispatch pipeline
-│   │   └── group.js           # Welcome/goodbye event handler
-│   │
-│   ├── plugins/               # 35+ command modules (one file per command)
-│   │
-│   ├── menu/
-│   │   ├── index.js           # Registers all 13 menu renderers
-│   │   ├── manager.js         # Active menu persistence
-│   │   ├── collector.js       # Gathers live bot stats for menus
-│   │   ├── formatter.js       # Text/compact menu builders
-│   │   ├── fallback.js        # Renderer error → text fallback
-│   │   └── types/             # 13 individual menu type renderers
-│   │
-│   ├── greetings/
-│   │   ├── greetingManager.js   # Join/leave/promo/demotion entry points
-│   │   ├── greetingRenderer.js  # Sequential queue renderer
-│   │   ├── greetingConfig.js    # Greeting settings (DB-backed)
-│   │   ├── greetingBuilder.js   # Text template engine
-│   │   ├── messageCapability.js # Message type feature flags
-│   │   └── greetingStyles/      # welcome1.js, welcome2.js, welcome3.js
-│   │
-│   ├── assets/
-│   │   ├── assetManager.js      # Priority resolver (manual→AI→default→URL)
-│   │   ├── aiAssetGenerator.js  # Gemini image generation
-│   │   ├── defaultAssets.js     # BMP fallback generation
-│   │   └── assetValidator.js    # Magic-byte image validation
-│   │
-│   ├── database/
-│   │   └── db.js                # Synchronous JSON flat-file database
-│   │
-│   ├── ui/
-│   │   ├── messageFormatter.js  # success/error/warn/info/loading templates
-│   │   ├── themeManager.js      # Active theme read/write
-│   │   ├── asciiBuilder.js      # Box/list/card ASCII builders
-│   │   └── templates/           # Per-context message templates
-│   │
-│   └── media/
-│       ├── mediaManager.js      # Async outbound media queue
-│       ├── mediaBuilder.js      # File → Baileys payload builders
-│       └── mediaConfig.js       # Media settings (DB-backed)
-│
-├── server.js            # Express entry point, graceful shutdown, startup
-├── package.json
-├── .env.example
-└── session/             # Baileys auth state (gitignored)
-```
+### VPS / Pterodactyl / Termux
+Node 20 + `npm install` + `npm start` — same steps as above; use PM2 (`pm2 start server.js`) on VPS. Session state lives in `./session/`.
 
 ---
 
@@ -429,8 +406,8 @@ Every command is a single `.js` file in `src/plugins/`. The minimum shape:
 ```js
 // src/plugins/greet.js
 export default {
-  name: 'greet',                    // trigger: !greet
-  aliases: ['hello', 'hi'],         // also: !hello, !hi
+  name: 'greet',                    // trigger: .greet
+  aliases: ['hello', 'hi'],        // also: .hello, .hi
   category: 'general',
   description: 'Sends a greeting.',
   cooldown: 2000,                   // ms; overrides global default
@@ -448,188 +425,44 @@ export default {
 };
 ```
 
-Drop the file into `src/plugins/` and run `!restart` — no process restart needed. The plugin loader validates `name` and `execute` and reports failures in the startup summary.
-
-### Context object
-
-The `execute` function receives:
-
-| Key | Type | Description |
-|-----|------|-------------|
-| `m` | Object | Serialized message with `.reply()`, `.react()`, `.edit()`, `.delete()`, `.download()` |
-| `m.reply` | Function | Sends a quoted text reply; also `.reply.success/error/warn/info/loading()` |
-| `m.quoted` | Object | Quoted message (if any) with its own `.download()` |
-| `args` | `string[]` | Command arguments split by whitespace |
-| `prefix` | `string` | The prefix character that triggered this command |
-| `sock` | Object | Raw Baileys socket for advanced send operations |
-| `db` | Object | Database (`getUser`, `setUser`, `getGroup`, `setGroup`) |
-| `config` | Object | Bot configuration |
-| `client` | Object | Plugin registry and `client.socket` |
-| `isOwner` | `boolean` | Whether the sender is the bot owner |
-| `isGroup` | `boolean` | Whether the message is from a group |
+For rich cards, import the builders from `src/lib/interactiveKit.js` (`selectMenu`, `actionCard`, `copyResultCard`) — every consumer keeps a plain fallback if the rich send fails. Load a plugin at runtime with `.reload`.
 
 ---
 
-## 🎨 Customising Welcome Messages
+## 🧩 Rich Message System
 
-```
-# Enable welcomes globally
-!welcome on
-
-# Choose the card style
-!setwelcome 1    ← Image card with banner
-!setwelcome 2    ← Document PDF card
-!setwelcome 3    ← Interactive button card
-
-# Set custom text (placeholders: {user}, {group}, {memberCount})
-!setwelcometext Welcome {user} to *{group}*! You are member #{memberCount} 🎉
-
-# Set a custom background (reply to an image, or send a URL)
-!setwelcomeimage
-```
-
----
-
-## 🧩 Supported Message Types (Serializer)
-
-The serializer correctly extracts command text from:
-
-| Type | Source |
-|------|--------|
-| `conversation` | Plain text messages |
-| `extendedTextMessage` | Formatted text, links, mentions |
-| `imageMessage` | Image captions |
-| `videoMessage` | Video captions |
-| `documentMessage` | Document captions |
-| `documentWithCaptionMessage` | Captioned document wrapper |
-| `ephemeralMessage` | Disappearing messages (unwrapped) |
-| `viewOnceMessage` / `v2` | View-once messages (unwrapped) |
-| `buttonsResponseMessage` | Button tap responses |
-| `listResponseMessage` | List row selections |
-| `templateButtonReplyMessage` | Template button replies |
-| `interactiveResponseMessage` | Native-flow button responses |
-| `botForwardedMessage` | Rich messages from Meta AI / NEXORA generators (V1 + V2 parsed) |
-| `stickerPackMessage` | Sticker pack name (fork addition) |
-| `lottieStickerMessage` | Animated stickers (fork addition) |
-| `pollResultSnapshotMessage` | Poll result question text (fork addition) |
-| `groupStatusMessageV2` | Group status wrapper (unwrapped, fork addition) |
-| `spoilerMessage` | Spoiler wrapper (unwrapped, fork addition) |
-
----
-
-## 🎨 Rich Message System
-
-NEXORA-MD fully supports the Baileys fork's rich message system — both
-**generating** outbound rich messages and **consuming** inbound ones.
-
-### Generation (Outbound)
-
-`baileysBridge.sendRichResponse()` sends rich content via the fork's
-`prepareRichResponseMessage` pipeline. All submessage types are supported:
-
-| Submessage | Key | Example |
-|------------|-----|---------|
-| Text | `{ text: '...' }` | Plain text bubble |
-| Table | `{ table: { title, rows: [{ items: [...] }] } }` | Aligned-column table |
-| Code | `{ code: [{ codeContent: '...' }], language: 'js' }` | Syntax code block |
-| Inline Image | `{ inlineImage: { imageHighResUrl, ... }, imageText: '...' }` | Image with caption |
-| Grid Image | `{ gridImage: { gridImageUrl, imageUrls: [...] } }` | Image gallery grid |
-| Dynamic | `{ dynamic: { type: 2, url: '...' } }` | Animated GIF/image |
-| Map | `{ map: { centerLatitude, centerLongitude, annotations } }` | Location card |
-| LaTeX | `{ latex: { text, expressions: [{ latexExpression }] } }` | LaTeX rendering |
-| Reel | `{ reels: [{ title, videoUrl, ... }] }` | Video carousel |
-| Links | `{ links: [{ title, url }], text: '...' }` | Citation link collection |
-| Products | `{ products: { title, items: [{ title, price }] } }` | Product metadata |
-| Posts | `{ posts: { items: [{ title, url }] } }` | Social post metadata |
-| Suggested | `{ suggested: { items: [{ title }] } }` | Suggested prompt metadata |
-
-If the proto relay fails, `sendRichResponse` falls back to formatted plain text
-for every submessage type listed above.
-
-### Consumption (Inbound)
-
-`baileysBridge.parseRichMessage()` decodes incoming `botForwardedMessage`
-rich messages into a structured `{ isRich, text, type, sections }` result:
-
-- **V1 submessages**: iterates `richResponseMessage.submessages` and formats
-  each by `messageType` (GRID_IMAGE=1, TEXT=2, INLINE_IMAGE=3, TABLE=4,
-  CODE=5, DYNAMIC=6, MAP=7, LATEX=8, CONTENT_ITEMS=9)
-- **V2 unifiedResponse**: decodes the base64 `unifiedResponse.data` JSON
-  and formats each `view_model.primitive` by `__typename`
-
-The serializer's `extractBody` calls `parseRichMessage` for
-`botForwardedMessage` types, so incoming rich messages are available as
-`message.body` just like any other message type.
-
-### Test Suite
-
-Run `!testrich` (owner-only) to access the interactive rich message test
-registry — 32 tests across 10 groups covering V1, V2, links, unit
-validation, and capture round-trips for every submessage type.
-
----
-
-## 📡 Health & Status
-
-The bot exposes two HTTP endpoints:
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /` | HTML status page with bot branding |
-| `GET /api/health` | JSON: `{ status, uptime, botActive, botConnected, memory, pluginsLoaded }` |
-
-The health endpoint includes memory usage (RSS, heap used, heap total) and plugin count for monitoring — useful for spotting memory leaks and misconfigured deployments.
+- **Outbound**: the pinned Baileys fork exposes V1/V2 generators — text, tables, LaTeX, maps, image grids, content items. `src/lib/interactiveKit.js` wraps the proven subset (native flow CTAs, single-select, buttons, carousels) that renders on real devices
+- **Inbound**: `parseRichMessage()` decodes inbound rich messages into readable text
+- **Testing**: `.testrich` runs the full generator audit; `.testmessage` tests all interactive message types via a native picker. Anything experimental is gated behind `experimentalCta: true` until device-verified
+- **Rollback**: `NEXORA_RICH_RESPONSE=0` disables every rich surface in one env var
 
 ---
 
 ## 🛡️ Security Notes
 
-- **Owner numbers are env-only** — `OWNER_NUMBERS` must be set in `.env`. No hardcoded phone numbers in source code.
-- **Sandboxed eval** — the `!eval` command runs in a `vm.Context` with a 10s timeout and only non-secret env vars exposed. It is hard-restricted to the owner number(s).
-- **Session files** in `session/` contain your WhatsApp credentials. Keep them private — `session/` is in `.gitignore`.
-- **API keys** (`GEMINI_API_KEY`) should always be set as environment variables — never hardcoded in config files.
-- **SSRF protection** — all outbound HTTP requests (downloader, web plugins) block private/loopback/metadata IPs.
-- **Rate limiting** — the Express server applies rate limits to all API routes and a stricter limit to the health endpoint.
+- Pairing codes are always DM'd — never printed to groups
+- `.order`, `.pair` and other request-style commands only *file* a request; nothing executes without super-owner approval
+- `.eval` is owner-only and sandboxed; ban/warn/mute are permission-gated
+- Session files in `./session/` are the bot's identity — never commit them
 
 ---
 
 ## 📦 Key Dependencies
 
-| Package | Purpose |
-|---------|---------|
-| `baileys` (fork) | WhatsApp Multi-Device protocol |
-| `express` | Web server / health endpoint |
-| `helmet` | HTTP security headers |
-| `express-rate-limit` | API rate limiting |
-| `dotenv` | Environment variable loading |
-| `wa-sticker-formatter` | Sticker creation from image/video |
-| `qrcode-terminal` | QR code display in headless terminals |
-| `pino` | Silent structured logger for Baileys |
-| `sharp` | Image processing |
-| `@google/genai` | Gemini AI image generation |
+| Package | Why |
+|---------|-----|
+| `baileys` (pinned fork `#v0.3.18-r6`) | WhatsApp multi-device socket + rich message generators (keyless git install via Dockerfile `insteadOf`) |
+| NIXCODE rich-message builder | Native cards, buttons, carousels (vendored `src/lib/NIXCODE.js`, attribution preserved) |
+| `qrcode-terminal` | Headless pairing |
+| `sharp` | Image processing for thumbnails and stickers |
 
 ---
 
-## 🤝 Credits
+## 🤝 Credits & Lineage
 
-```
-╭─────────────────────────────────╮
-│          NEXORA MD              │
-│                                 │
-│  Developer  : Aizen             │
-│  Framework  : Nexora Core       │
-│  Engine     : Nexora Engine     │
-│  UI Layer   : Nexora Flow       │
-│  Plugins    : Nexora Modules    │
-│  Security   : Nexora Guard      │
-│  AI Layer   : Nexora Intelligence│
-│                                 │
-│  Version    : 1.1.0             │
-│  Signature  : By Aizen          │
-╰─────────────────────────────────╯
-```
-
-Built on top of the [Baileys](https://github.com/WhiskeySockets/Baileys) WhatsApp Web API library.
+- **Moonson** ([boyde1317-byte/moonson](https://github.com/boyde1317-byte/moonson)) and **itsliaaa/baileys** — the proven rich-message primitives this project's fork is verified against
+- **NIXCODE** rich-message builder — vendored with its original attribution header intact
+- **Baileys** ([WhiskeySockets](https://github.com/WhiskeySockets/Baileys)) — the WhatsApp Web API this is all built on
 
 ---
 
@@ -645,7 +478,7 @@ Built on top of the [Baileys](https://github.com/WhiskeySockets/Baileys) WhatsAp
 | ✈️ Telegram | [@DeathCore_Xr](https://t.me/DeathCore_Xr) |
 | 📢 WhatsApp Channel | [Join for updates & announcements](https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326) |
 
-> Star ⭐ the repo if you find it useful. For bugs, feature requests, or forks — reach out via WhatsApp or Telegram.
+> Star ⭐ the repo if you find it useful.
 
 </div>
 
@@ -654,10 +487,6 @@ Built on top of the [Baileys](https://github.com/WhiskeySockets/Baileys) WhatsAp
 <div align="center">
 
 **© NEXORA MD — By Aizen**
-
-[![WhatsApp](https://img.shields.io/badge/WhatsApp-Contact-25D366?style=flat-square&logo=whatsapp&logoColor=white)](https://wa.me/233533416608)
-[![Telegram](https://img.shields.io/badge/Telegram-@DeathCore__Xr-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/DeathCore_Xr)
-[![Channel](https://img.shields.io/badge/WA%20Channel-Updates-25D366?style=flat-square&logo=whatsapp&logoColor=white)](https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326)
 
 *Use responsibly. This project is not affiliated with or endorsed by WhatsApp Inc.*
 
