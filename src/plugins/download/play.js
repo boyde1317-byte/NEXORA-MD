@@ -1,6 +1,6 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard, selectMenu } from '../../lib/interactiveKit.js';
-import { youtubeSearch, youtubeDownload, isUrl, downloadMediaBuffer } from '../../lib/downloader.js';
+import { youtubeSearch, youtubeDownload, isUrl, downloadMediaBuffer, isPlausibleMedia } from '../../lib/downloader.js';
 
 const MAX_RESULTS = 5;
 
@@ -43,12 +43,23 @@ export default {
           let audio;
           const grab = async (d) => {
             const { buffer, mimetype } = await downloadMediaBuffer(d.mp3, { timeoutMs: 90000 });
+            // The CDN's content-type is sometimes missing/generic even on a
+            // genuine audio stream, so we still fall back to audio/mpeg for
+            // those — but never for a buffer that doesn't actually look like
+            // media. That guard is what stops a "soft" error response (a 200
+            // with an HTML/JSON body instead of real bytes) from being
+            // shipped to WhatsApp as fake audio, which is what previously
+            // showed up on-device as "this audio is not available because
+            // something is wrong with the audio file".
+            if (!isPlausibleMedia(buffer)) {
+              throw new Error('the source returned something that is not audio — likely a dead or expired link');
+            }
             return { buffer, mimetype: mimetype.startsWith('audio/') ? mimetype : 'audio/mpeg' };
           };
           try {
             audio = await grab(data);
           } catch (err) {
-            console.warn('[play] stream token expired, refetching link:', err.message);
+            console.warn('[play] stream token expired/invalid, refetching link:', err.message);
             audio = await grab(await youtubeDownload(query));
           }
 

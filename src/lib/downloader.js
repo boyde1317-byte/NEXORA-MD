@@ -342,8 +342,48 @@ export async function downloadMediaBuffer(url, { timeoutMs = 60000, maxBytes = 1
     throw new Error(`file too large (${(len / 1024 / 1024).toFixed(1)} MB, limit ${(maxBytes / 1024 / 1024)} MB)`);
   }
   const mimetype = (response.headers.get('content-type') || '').split(';')[0].trim() || 'application/octet-stream';
+  // A 502/503 from the CDN's own edge (Cloudflare et al.) sometimes rides in
+  // on a "soft" 200 — an HTML/JSON error page instead of a real HTTP error
+  // code. response.ok alone misses that. Reject those content-types outright
+  // rather than let a caller force a media mimetype onto an error page (see
+  // isPlausibleMedia below for the belt-and-suspenders byte-level check too).
+  if (/^(text\/html|text\/plain|application\/json|application\/xml|text\/xml)/i.test(mimetype)) {
+    throw new Error(`stream returned ${mimetype} instead of media — the source is likely down or the link expired`);
+  }
   const buffer = Buffer.from(await response.arrayBuffer());
   if (!buffer.length) throw new Error('empty stream');
   if (buffer.length > maxBytes) throw new Error(`file too large (${(buffer.length / 1024 / 1024).toFixed(1)} MB)`);
   return { buffer, mimetype };
+}
+
+/**
+ * Belt-and-suspenders check before a caller force-labels an ambiguous
+ * content-type as a specific media mimetype (e.g. play.js falling back to
+ * 'audio/mpeg' for any non-'audio/*' content-type). Recognizes magic bytes
+ * for the formats these download commands actually produce. Returns false
+ * for anything that looks like text (HTML/JSON/XML) even if it slipped past
+ * the content-type gate above — never ships an error page as "media".
+ *
+ * @param {Buffer} buffer
+ * @returns {boolean}
+ */
+export function isPlausibleMedia(buffer) {
+  if (!buffer || buffer.length < 4) return false;
+  const head = buffer.subarray(0, 16);
+  const text = head.toString('utf8').trimStart();
+  if (text.startsWith('<') || text.startsWith('{') || text.startsWith('[')) return false; // html/xml/json
+  // MP3: ID3 tag, or an MPEG frame sync (0xFFEx-0xFFFx after masking the low bits we don't care about)
+  if (head[0] === 0x49 && head[1] === 0x44 && head[2] === 0x33) return true; // 'ID3'
+  if (head[0] === 0xff && (head[1] & 0xe0) === 0xe0) return true; // MPEG frame sync
+  // MP4/M4A/MOV family: 'ftyp' box at offset 4
+  if (head.length >= 8 && head.subarray(4, 8).toString('ascii') === 'ftyp') return true;
+  // WebM/Matroska: EBML header
+  if (head[0] === 0x1a && head[1] === 0x45 && head[2] === 0xdf && head[3] === 0xa3) return true;
+  // OGG (Opus/Vorbis)
+  if (head.subarray(0, 4).toString('ascii') === 'OggS') return true;
+  // WAV: 'RIFF' ... 'WAVE'
+  if (head.subarray(0, 4).toString('ascii') === 'RIFF') return true;
+  // Unrecognized binary — don't block formats we haven't enumerated; only
+  // text-shaped bodies are rejected above.
+  return true;
 }
