@@ -102,3 +102,32 @@ export async function sendMapWithTable(sock, jid, quoted, {
 }
 
 export default { relayGenerated, sendLocationCard, sendMapWithTable };
+
+/**
+ * REAL location card — a native WhatsApp locationMessage.
+ *
+ * The generateMapContent / generateMapWithTable helpers above embed a
+ * static OSM tile PNG (an image of a map). A locationMessage is the
+ * genuine article: the interactive map card WhatsApp renders itself,
+ * tappable, opens in the maps app, pin at the exact coordinates.
+ * Production commands (.locate / .weather / .airquality) ship this;
+ * the tile generators stay only for .testrich primitive audits.
+ *
+ * Returns true on success. Callers fall back to their own text path.
+ */
+export async function sendRealLocationCard(sock, jid, quoted, { name, address, latitude, longitude }) {
+  try {
+    await sock.sendMessage(jid, {
+      location: {
+        degreesLatitude: Number(latitude),
+        degreesLongitude: Number(longitude),
+        name: String(name || '').slice(0, 60),
+        address: String(address || '').slice(0, 70),
+      },
+    }, quoted ? { quoted } : {});
+    return true;
+  } catch (err) {
+    console.warn('[richMap] real location card failed:', err.message);
+    return false;
+  }
+}

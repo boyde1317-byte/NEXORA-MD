@@ -5,13 +5,13 @@
  * Data: open-meteo (keyless) — geocoding + current European and US
  * AQI with the full pollutant panel.
  *
- * Card: map+table combo (the same richMap primitive as .weather):
- * one native rich message with the location map and the pollutant
- * table, followed by a verdict card with a refresh button.
+ * Card: real native map card (locationMessage — the same primitive
+ * as .weather), then the pollutant table, then a verdict card with
+ * a refresh button. No static tile images — a REAL tappable map.
  */
 import { richTableCard, mixedCard } from '../../lib/interactiveKit.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
-import { sendMapWithTable } from '../../lib/richMap.js';
+import { sendRealLocationCard } from '../../lib/richMap.js';
 
 /** US EPA AQI categories — the verdict emoji/text comes from here. */
 function aqiVerdict(usAqi) {
@@ -74,31 +74,24 @@ export default {
           ['Carbon Monoxide', fmt(cur.carbon_monoxide, 'µg/m³')],
         ];
 
-        // Tier 1: map + table in one native rich message
-        const sent = await sendMapWithTable(sock, m.from, m, {
-          name: locName,
+        // Real native map card, then the pollutant table
+        const sent = await sendRealLocationCard(sock, m.from, m, {
+          name: `${verdict.emoji} ${place.name}`,
+          address: `AQI ${cur.us_aqi ?? '—'} — ${verdict.label}`,
           latitude: place.latitude,
           longitude: place.longitude,
-          tableTitle: `🌫️ AIR QUALITY — ${locName.toUpperCase()}`,
-          tableHeaders: ['Pollutant', 'Now'],
-          tableRows,
-          headerText: `${verdict.emoji} AQI ${cur.us_aqi ?? '—'} — ${verdict.label}`,
-          footer: 'NEXORA • open-meteo',
         });
-        if (!sent) {
-          // Tier 2: table only
-          try {
-            await richTableCard(sock, m.from, {
-              title: `🌫️ AIR QUALITY — ${locName.toUpperCase()}`,
-              headers: ['Pollutant', 'Now'],
-              rows: tableRows,
-              footer: 'NEXORA • open-meteo',
-            }, { quoted: m });
-          } catch {
-            await sock.sendMessage(m.from, {
-              text: `🌫️ *AIR QUALITY — ${locName}*\n\n` + tableRows.map(([k, v]) => `• *${k}:* ${v}`).join('\n'),
-            }, { quoted: m });
-          }
+        try {
+          await richTableCard(sock, m.from, {
+            title: `🌫️ AIR QUALITY — ${locName.toUpperCase()}`,
+            headers: ['Pollutant', 'Now'],
+            rows: tableRows,
+            footer: 'NEXORA • open-meteo',
+          }, { quoted: m });
+        } catch {
+          await sock.sendMessage(m.from, {
+            text: `🌫️ *AIR QUALITY — ${locName}*\n\n` + tableRows.map(([k, v]) => `• *${k}:* ${v}`).join('\n'),
+          }, { quoted: m });
         }
 
         // Verdict card + refresh

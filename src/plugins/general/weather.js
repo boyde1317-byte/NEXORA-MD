@@ -8,7 +8,7 @@
  */
 
 import { geocodeFrom } from './locate.js';
-import { sendMapWithTable } from '../../lib/richMap.js';
+import { sendRealLocationCard } from '../../lib/richMap.js';
 import { sendAIRichReply } from '../../lib/aiRichReply.js';
 
 // Open-Meteo — free, no key: https://open-meteo.com
@@ -82,16 +82,24 @@ export default {
         ];
       });
 
-      const sent = await sendMapWithTable(sock, m.from, m, {
-        name: city,
+      // Real native map card, then the forecast table
+      const sent = await sendRealLocationCard(sock, m.from, m, {
+        name: `${curEmoji} ${city}`,
+        address: `${curLabel} • ${Math.round(cur.temperature_2m)}°C (feels ${Math.round(cur.apparent_temperature)}°)`,
         latitude: lat,
         longitude: lon,
-        tableTitle: `${city} — 4-day forecast`,
-        tableHeaders: ['Day', 'Condition', 'Min/Max', 'Rain'],
-        tableRows: rows,
-        headerText: `${curEmoji} ${city} — ${Math.round(cur.temperature_2m)}°C (feels ${Math.round(cur.apparent_temperature)}°)`,
-        footer: 'NEXORA • Open-Meteo',
       });
+      try {
+        const { richTableCard } = await import('../../lib/interactiveKit.js');
+        await richTableCard(sock, m.from, {
+          title: `${curEmoji} ${city.toUpperCase()} — 4-DAY FORECAST`,
+          headers: ['Day', 'Condition', 'Min/Max', 'Rain'],
+          rows,
+          footer: 'NEXORA • Open-Meteo',
+        }, { quoted: m });
+      } catch {
+        /* table tier falls through to AIRich/plain below */
+      }
       if (sent) return;
 
       // ── Tier 2: AIRich markdown (text + native table) ──
