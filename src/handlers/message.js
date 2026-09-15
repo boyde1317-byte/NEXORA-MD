@@ -3,7 +3,6 @@ import { client } from '../core/client.js';
 import { db } from '../database/db.js';
 import { serialize } from '../core/serializer.js';
 import { checkStickerCommand } from '../lib/stickerCommand.js';
-import { asciiBuilder } from '../ui/asciiBuilder.js';
 import { MASS_MENTION_THRESHOLD } from '../plugins/group/antitag.js';
 import { formatDuration } from '../lib/utils.js';
 import {
@@ -11,7 +10,6 @@ import {
   canGainMessageXp,
   randomMessageXp,
   rankBadge,
-  streakEmoji,
   progressBar,
   getLevelProgress,
 } from '../economy/leveling.js';
@@ -19,7 +17,7 @@ import { getDisplayName } from '../lib/displayName.js';
 import { getRandomResponse } from '../nexora-messages.js';
 import { suggestCommand } from '../lib/fuzzyMatch.js';
 import { toSmallcaps } from '../lib/smallcaps.js';
-import { actionCard } from '../lib/interactiveKit.js';
+import { actionCard, mixedCard } from '../lib/interactiveKit.js';
 import { connectionMonitor } from '../core/connectionMonitor.js';
 
 // ── Hoisted regexes (compiled once, not on every message) ─────────────────────
@@ -38,7 +36,7 @@ const LINK_RE = /https?:\/\/\S+|www\.\S+|\b[a-z0-9-]+\.(?:com|net|org|io|gg|me|b
 * message (including ones that also happen to be commands) since the
 * user is still "active" either way.
 */
-async function awardMessageXp(m, sock) {
+export async function awardMessageXp(m, sock) {
   try {
     if (m.fromMe || m.from === 'status@broadcast') return;
     const userData = db.getUser(m.sender);
@@ -54,38 +52,57 @@ async function awardMessageXp(m, sock) {
     const bonusResult = coinBonus > 0 ? grantXp(db, m.sender, { coins: coinBonus }) : result;
 
     const progress = getLevelProgress(bonusResult.after.xp);
-    const bar = progressBar(progress.xpIntoLevel, progress.nextLevelXp - progress.currentLevelXp);
-    const streak = userData.streak ?? 0;
+    const bar = progressBar(progress.xpIntoLevel, progress.nextLevelXp - progress.currentLevelXp, 10);
     const name = await getDisplayName(sock, m.sender);
-    const number = m.sender.split('@')[0].split(':')[0];
+    const level = bonusResult.after.level;
+    const badge = rankBadge(bonusResult.after.level);
 
-    const lines = [
-      `🎊 @${number} (${name}) just leveled up!`,
-      ``,
-      `🏅 New Level : ${bonusResult.after.level}`,
-      `🎖️  Rank      : ${rankBadge(bonusResult.after.level)}`,
-      `✨ Total XP  : ${bonusResult.after.xp.toLocaleString()}`,
-      `📊 Progress  : ${bar}`,
-      `   Next lvl : ${progress.xpToNextLevel.toLocaleString()} XP away`,
-      `🪙 Coins     : ${coinBonus > 0 ? `+${coinBonus} bonus → Total ${bonusResult.after.coins.toLocaleString()}` : bonusResult.after.coins.toLocaleString()}`,
-      `${streakEmoji(streak)} Streak    : ${streak} day${streak !== 1 ? 's' : ''}`,
-    ];
-
-    const text = asciiBuilder.box('🎉 LEVEL UP', lines);
-
+    // ── Level-up card — compact native celebration, not an ASCII wall ──
+    // Group feedback on the old box announcement was that it looked like
+    // spam ("trash"). This is now one small card: the user's own profile
+    // picture as the header image, four short lines, one button. Plain
+    // fallback is 2 lines with a real mention.
     let ppUrl = null;
     try { ppUrl = await sock.profilePictureUrl(m.sender, 'image'); } catch (_) {}
 
-    if (ppUrl) {
-      const res = await fetch(ppUrl, { signal: AbortSignal.timeout(8000) }).catch(() => null);
-      if (res?.ok) {
-        const buffer = Buffer.from(await res.arrayBuffer());
-        await sock.sendMessage(m.from, { image: buffer, caption: text, mentions: [m.sender] }, { quoted: m });
-        return;
-      }
+    const bodyLines = [
+      `✨ *${name}* just reached *Level ${level}*`,
+      '',
+      `${badge}`,
+      `${bar}`,
+      `${progress.xpToNextLevel.toLocaleString()} XP to the next level${coinBonus > 0 ? ` · 🪙 +${coinBonus.toLocaleString()} coins` : ''}`,
+    ];
+    // Fork quirk: the native-flow header title only renders when header media
+    // is attached. Without a profile picture the 🎉 line must live in the body.
+    if (!ppUrl) bodyLines.unshift(`🎉 *LEVEL UP*`, '');
+
+    try {
+      const { default: capabilities } = await import('../core/capabilities.js');
+      if (!capabilities.nativeFlow) throw new Error('native flow disabled');
+      const sent = await mixedCard(sock, m.from, {
+        text:     bodyLines.join('\n'),
+        // title renders above the header image — only meaningful with media
+        ...(ppUrl ? {
+          title: `🎉 ${toSmallcaps('LEVEL UP')}`,
+          image: { url: ppUrl },
+        } : {}),
+        footer: `${toSmallcaps('tap to view the full profile')} • © NEXORA-MD`,
+      }, [
+        { kind: 'action', label: `👤 ${toSmallcaps('View Profile')}`, cmd: '.profile' },
+      ], { quoted: m });
+      if (sent) return;
+    } catch (err) {
+      console.warn('[XP] level-up card failed, plain fallback:', err.message);
     }
 
-    await m.reply(text, { mentions: [m.sender] });
+    const number = m.sender.split('@')[0].split(':')[0];
+    await m.reply(
+      [
+        `🎉 @${number} hit *Level ${level}*! ${badge}`,
+        `${bar}${coinBonus > 0 ? ` · 🪙 +${coinBonus.toLocaleString()} coins` : ''}`,
+      ].join('\n'),
+      { mentions: [m.sender] }
+    );
   } catch (err) {
     console.error('[XP] Failed to award message xp:', err.message || err);
   }

@@ -20,7 +20,7 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789387655056,
-      "xp": 44,
+      "xp": 50,
       "coins": 0,
       "level": 0,
       "streak": 0,
@@ -34,6 +34,19 @@
       "hasOnboarded": false,
       "createdAt": 1789387655140,
       "xp": 40,
+      "coins": 0,
+      "level": 0,
+      "streak": 0,
+      "lastDaily": null
+    },
+    "9990001111@s.whatsapp.net": {
+      "jid": "9990001111@s.whatsapp.net",
+      "banned": false,
+      "premium": false,
+      "warnings": 0,
+      "hasOnboarded": false,
+      "createdAt": 1789476711556,
+      "xp": 99,
       "coins": 0,
       "level": 0,
       "streak": 0,
@@ -80,7 +93,7 @@
   "stats": {
     "commandsUsed": {
       "checkchid": 1,
-      "delsession": 13,
+      "delsession": 14,
       "logoutall": 5,
       "pair": 2,
       "sessions": 1
