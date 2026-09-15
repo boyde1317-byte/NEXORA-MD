@@ -47,7 +47,7 @@ function loadPlans() {
 
 export default {
   name: 'store',
-  aliases: ['shop', 'servers', 'hosting'],
+  aliases: ['servers', 'hosting'],
   category: 'general',
   description: 'Server hosting plans with an interactive plan picker (Moonson-style card).',
   cooldown: 5000,
@@ -56,7 +56,6 @@ export default {
     try {
       const plans = loadPlans();
       const phone = (owner.ownerNumber || '').replace(/[^0-9]/g, '');
-      const top = plans[0];
       const cheapest = plans.reduce((a, b) => (a.price <= b.price ? a : b));
       const priciest = plans.reduce((a, b) => (a.price >= b.price ? a : b));
 

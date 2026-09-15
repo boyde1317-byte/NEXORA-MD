@@ -1,5 +1,5 @@
 /**
- * shop.js — Spend coins on perks and customizations.
+ * shop.js — Spend coins on perks and customizations (.shop / .buy).
  *
  * Economy sink so coins have actual value. Currently offers:
  *  - Custom title (sets a display title on your profile)
@@ -13,7 +13,7 @@
  *  .shop theme <modern|classic|minimal> — set theme after purchasing
  */
 import { withReactionStatus } from '../../lib/cosmetics.js';
-import { richTableCard, selectMenu } from '../../lib/interactiveKit.js';
+import { selectMenu } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { grantXp, withUserLock } from '../../economy/leveling.js';
 import { themeManager } from '../../ui/themeManager.js';
@@ -31,7 +31,7 @@ const THEMES = ['modern', 'classic', 'minimal'];
 
 export default {
   name: 'shop',
-  aliases: ['store', 'buy'],
+  aliases: ['buy'],
   category: 'economy',
   description: 'Spend your coins on perks. Usage: .shop to browse, .shop buy <id> to purchase.',
   cooldown: 3000,
@@ -145,27 +145,39 @@ export default {
       const userData = db.getUser(m.sender);
       const coins = userData.coins ?? 0;
 
+      // ── Native picker: tap an item to buy it (pill dispatch runs the
+      //    command — same proven flow as the .play/.menulist pickers).
+      //    Replaces the old 4-column table card, which read as a cramped
+      //    wall of text on device.
       try {
-        await richTableCard(sock, m.from, {
-          title:   '🛒 NEXORA SHOP',
-          headers: ['ID', 'Item', 'Price', 'Description'],
-          rows: SHOP_ITEMS.map(i => [
-            i.id,
-            i.name,
-            `${i.price} 🪙`,
-            i.desc,
-          ]),
-          footer: `Your balance: ${coins.toLocaleString()} 🪙 • Use \`${p}shop buy <id>\` to purchase`,
-        }, { quoted: m });
+        const sent = await selectMenu(sock, m.from, {
+          text:   `🛒 *COIN SHOP*\n\nYour balance: *${coins.toLocaleString()} 🪙*\n\nTap an item below to buy it:`,
+          footer: `${p}daily for free coins • ${p}shop theme <name> after unlocking`,
+        }, '🛍️ Shop Items', [
+          { title: 'Perks', rows: [
+            { id: `${p}shop buy title`,    title: '✏️ Custom Title',    description: '500 🪙 · Title shown on your profile' },
+            { id: `${p}shop buy theme`,    title: '🎨 Custom Theme',    description: '1,000 🪙 · Unlock modern/classic/minimal menus' },
+            { id: `${p}shop buy stickers`, title: '🗂️ +5 Sticker Slots', description: '750 🪙 · More custom sticker capacity' },
+          ]},
+          { title: 'XP Boosts', rows: [
+            { id: `${p}shop buy xp500`,    title: '⚡ 500 XP',    description: '300 🪙 · Instant XP boost' },
+            { id: `${p}shop buy xp2000`,   title: '🚀 2,000 XP', description: '1,000 🪙 · Instant XP boost' },
+          ]},
+        ], [
+          { label: `🎁 ${p}daily`,  cmd: `${p}daily` },
+          { label: `👤 ${p}profile`, cmd: `${p}profile` },
+        ], { quoted: m });
+        if (sent) return;
       } catch (err) {
-        console.warn('[shop] richTableCard failed, ASCII fallback:', err.message);
-        const lines = SHOP_ITEMS.map(i =>
-          `• \`${i.id}\` — ${i.name} (${i.price} 🪙)\n  ${i.desc}`
-        );
-        lines.push('', `_Your balance: ${coins.toLocaleString()} 🪙_`);
-        lines.push('', `Use \`${p}shop buy <id>\` to purchase.`);
-        await m.reply(asciiBuilder.box('🛒 COIN SHOP', lines), { contextInfo: buildEnrichedContextInfo() });
+        console.warn('[shop] picker failed, plain fallback:', err.message);
       }
+      // ── Plain fallback ──────────────────────────────────────────────
+      const lines = SHOP_ITEMS.map(i =>
+        `• \`${i.id}\` — ${i.name} (${i.price} 🪙)\n  ${i.desc}`
+      );
+      lines.push('', `_Your balance: ${coins.toLocaleString()} 🪙_`);
+      lines.push('', `Use \`${p}shop buy <id>\` to purchase.`);
+      await m.reply(asciiBuilder.box('🛒 COIN SHOP', lines), { contextInfo: buildEnrichedContextInfo() });
     });
   }
 };
