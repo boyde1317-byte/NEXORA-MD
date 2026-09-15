@@ -804,8 +804,8 @@ class AIRich extends BaseBuilder {
 					latex_expression: ie.text,
 					latex_image: {
 						url: ie.url,
-						width,
-						height,
+						width: Number(ie.width) || 100,
+						height: Number(ie.height) || 100,
 					},
 					font_height: Number(ie.font_height) || 83.333333333333,
 					padding: Number(ie.padding) || 15,

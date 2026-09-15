@@ -7,7 +7,7 @@ export default {
   category: 'developer',
   description: 'Generates random UUID(s). Usage: .uuid [count] — up to 10 at once.',
   cooldown: 2000,
-  execute: async ({ m, sock }) => {
+  execute: async ({ m, sock, args }) => {
     const count = Math.min(parseInt(args[0]) || 1, 10);
     const uuids = Array.from({ length: count }, () => crypto.randomUUID());
     const display = uuids.length === 1

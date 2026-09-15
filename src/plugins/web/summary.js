@@ -19,10 +19,14 @@ export default {
     await m.react('⏳');
     try {
       let resultText = '';
-      
+      let pageTitle = url; // source-page title for the citation card
+
       if (hasApiKey()) {
         // Just fetch raw HTML
         const html = await fetch(url).then(r => r.text());
+        // The real <title> beats slicing raw text as a citation label
+        const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+        if (titleMatch?.[1]) pageTitle = titleMatch[1].trim().slice(0, 60);
         const cleanText = html.replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, '')
                               .replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, '')
                               .replace(/<[^>]+>/g, ' ')
@@ -39,16 +43,17 @@ export default {
         const data = await Providers.summary(url);
         if (data.sm_api_error) throw new Error(data.sm_api_message);
         resultText = `*${data.sm_api_title}*\n\n${data.sm_api_content}`;
+        if (data.sm_api_title) pageTitle = String(data.sm_api_title).slice(0, 60);
       } else {
         return await m.reply.error('No summarization service configured. Set GEMINI_API_KEY / GROQ_API_KEY (AI) or SMMRY_API_KEY.');
       }
 
       // ── Rich tier: native link card with source citations ──
-      const pageTitle = (cleanText.slice(0, 60) || url).trim() || 'Source page';
+      const cleanPageTitle = (pageTitle || url).trim() || 'Source page';
       const linkSent = await sendLinkCard(sock, m.from, m, {
         text: resultText.replace(/\*+/g, '').slice(0, 3800),
         links: [{ url, displayName: 'Open source page' }],
-        citations: [{ sourceTitle: pageTitle, sourceQuery: 'webpage summary', citationNumber: 1 }],
+        citations: [{ sourceTitle: cleanPageTitle, sourceQuery: 'webpage summary', citationNumber: 1 }],
         footer: 'NEXORA • Summarizer',
       });
       if (linkSent) return;
