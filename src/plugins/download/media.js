@@ -7,7 +7,7 @@
  * Supported: YouTube, TikTok, Instagram, Facebook, Twitter/X, Spotify, Pinterest
  *
  * Usage:
- *   .media <url>           — auto-detect and download
+ *   .download <url>        — auto-detect and download
  *   .media audio <url>     — force audio-only (for YouTube)
  *   .media video <url>     — force video (for YouTube)
  */
@@ -29,10 +29,10 @@ function detectPlatform(url) {
 }
 
 export default {
-  name: 'media',
-  aliases: ['dl', 'download', 'autodl'],
+  name: 'download',
+  aliases: ['dl', 'autodl'],
   category: 'download',
-  description: 'Smart downloader — paste any URL and it auto-detects the platform. Usage: .media <url>',
+  description: 'Smart downloader — paste any URL and it auto-detects the platform. Usage: .download <url>',
   cooldown: 8000,
   execute: async ({ m, sock, args, prefix }) => {
     const p = prefix || '.';

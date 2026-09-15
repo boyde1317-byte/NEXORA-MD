@@ -98,7 +98,7 @@ async function fetchProfilePicture(sock, jid) {
 
 export default {
   name: 'userinfo',
-  aliases: ['whoami', 'me', 'profile2'],
+  aliases: ['whoami', 'profile2'],
   category: 'utility',
   description: 'Shows your detailed user profile with stats and account info.',
   cooldown: 2000,

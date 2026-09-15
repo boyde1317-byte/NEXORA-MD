@@ -3,7 +3,7 @@ import { withReactionStatus } from '../../lib/cosmetics.js';
 
 export default {
   name: 'fact',
-  aliases: ['facts', 'trivia'],
+  aliases: ['facts'],
   category: 'fun',
   description: 'Get a random interesting fact. Usage: .fact',
   cooldown: 5000,

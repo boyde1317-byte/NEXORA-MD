@@ -56,7 +56,7 @@ function safeEval(expr) {
 
 export default {
   name: 'calc',
-  aliases: ['calculate', 'math', 'maths'],
+  aliases: ['calculate'],
   category: 'utility',
   description: 'Quick calculator. Usage: .calc <expression> — supports +, -, *, /, %, sqrt, pow, parentheses',
   cooldown: 1000,

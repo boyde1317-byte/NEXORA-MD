@@ -1,8 +1,8 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
 
 export default {
-  name: 'download',
-  aliases: ['dl', 'save', 'get'],
+  name: 'save',
+  aliases: [],
   category: 'media',
   description: 'Downloads and returns media from a replied message, effectively bypassing View Once limits.',
   cooldown: 5000,

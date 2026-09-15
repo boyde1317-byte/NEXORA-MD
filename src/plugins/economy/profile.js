@@ -12,7 +12,7 @@ import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 export default {
   name: 'profile',
-  aliases: ['prof', 'stats', 'rank', 'level', 'me'],
+  aliases: ['prof', 'rank', 'level', 'me'],
   category: 'economy',
   description: 'Shows your profile — level, XP, coins, streak and rank. Reply to someone or @ them to view theirs.',
   cooldown: 4000,

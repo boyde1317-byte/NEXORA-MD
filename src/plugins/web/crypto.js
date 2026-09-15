@@ -36,7 +36,7 @@ const COIN_ALIASES = {
 
 export default {
   name: 'crypto',
-  aliases: ['price', 'coin', 'coinprice'],
+  aliases: ['price', 'coinprice'],
   category: 'web',
   description: 'Get cryptocurrency prices. Usage: .crypto <coin> (e.g. bitcoin, eth, sol)',
   cooldown: 5000,

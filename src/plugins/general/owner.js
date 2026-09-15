@@ -36,7 +36,7 @@ function buildCaption() {
 
 export default {
   name: 'owner',
-  aliases: ['creator', 'dev', 'developer'],
+  aliases: ['creator', 'developer'],
   category: 'general',
   description: "Shows the bot owner's contact card.",
   cooldown: 3000,

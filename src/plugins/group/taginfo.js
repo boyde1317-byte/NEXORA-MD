@@ -14,7 +14,7 @@ import { getLevelProgress, progressBar, rankBadge } from '../../economy/leveling
 
 export default {
   name: 'taginfo',
-  aliases: ['whois', 'userinfo2', 'checkuser'],
+  aliases: ['userinfo2', 'checkuser'],
   category: 'group',
   description: 'Show info about a user. Reply to their message or @mention them.',
   cooldown: 3000,

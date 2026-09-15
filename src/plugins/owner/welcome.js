@@ -3,7 +3,7 @@ import { db } from '../../database/db.js';
 
 export default {
   name: 'welcome',
-  aliases: ['wc'],
+  aliases: [],
   category: 'owner',
   description: 'Toggle welcome messages on or off (per-group or global).',
   permissions: {

@@ -15,7 +15,7 @@ import { buildEnrichedContextInfo} from '../../lib/enrichContext.js';
 
 export default {
   name: 'stats',
-  aliases: ['botstats', 'sysstats', 'health'],
+  aliases: ['botstats', 'sysstats'],
   category: 'general',
   description: 'Shows comprehensive bot statistics — uptime, memory, commands, and health.',
   cooldown: 3000,

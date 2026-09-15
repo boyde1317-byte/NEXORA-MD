@@ -2,7 +2,7 @@ import { themeManager } from '../../ui/themeManager.js';
 
 export default {
   name: 'settheme',
-  aliases: ['theme', 'style'],
+  aliases: ['theme'],
   category: 'owner',
   description: 'Changes the global active bot design theme (Owner Only).',
   permissions: {

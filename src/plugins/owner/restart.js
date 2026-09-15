@@ -5,7 +5,7 @@ import { withReactionStatus } from '../../lib/cosmetics.js';
 
 export default {
   name: 'restart',
-  aliases: ['reload', 'reboot'],
+  aliases: ['reboot'],
   category: 'owner',
   description: 'Hot-reloads all plugin files, or restarts the container process.',
   permissions: {

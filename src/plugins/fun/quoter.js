@@ -11,7 +11,7 @@ import { sendAdReply } from '../../lib/waUtils.js';
 
 export default {
   name: 'quoter',
-  aliases: ['quote', 'inspire', 'wisdom'],
+  aliases: ['quote', 'inspire', 'wisdom', 'qotd'],
   category: 'fun',
   description: 'Fetches a random inspirational quote with one-tap copy and author lookup.',
   cooldown: 3000,
@@ -27,7 +27,7 @@ export default {
       const res  = await fetch(url, { signal: AbortSignal.timeout(8000) });
       if (!res.ok) throw new Error('Quote service unavailable, try again.');
       const data = await res.json();
-      if (!data.content) throw new Error('No quote returned.');
+      if (!data.quote) throw new Error('No quote returned.');
 
       const quoteText  = `"${data.content}"`;
       const authorName = data.author || 'Unknown';

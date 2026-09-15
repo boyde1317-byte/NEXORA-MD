@@ -22,7 +22,7 @@ const MATH_SYSTEM_PROMPT =
 
 export default {
   name: 'math',
-  aliases: ['solve', 'calc'],
+  aliases: ['solve'],
   category: 'ai',
   description: 'Step-by-step math solver with native LaTeX. Usage: .math <problem>',
   cooldown: 6000,

@@ -6,13 +6,13 @@
  *   .statusprivacy contacts     — Only contacts
  *   .statusprivacy contacts_blacklist — All except blocked contacts
  *
- * Aliases: .statusprivacy, .sp
+ * Usage: .statusprivacy
  */
 import { withReactionStatus } from '../../lib/cosmetics.js';
 
 export default {
   name: 'statusprivacy',
-  aliases: ['sp'],
+  aliases: [],
   category: 'owner',
   description: 'Controls who can see your WhatsApp Status.',
   permissions: { owner: true },

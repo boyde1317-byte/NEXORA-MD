@@ -70,7 +70,7 @@ Built on a **pinned private Baileys fork** ([`boyde1317-byte/baileys#v0.3.18-r6`
 - Welcome/goodbye cards (`.welcome`, `.goodbye`, `.greetings`), anti-link, anti-tag-spam, warns, timeouts, hidetag, sticker-pack theft (`.takeall`), Group Stories, polls, and events
 
 ### 📥 Downloaders
-- YouTube (audio + video, with thumbnail pickers), TikTok, Facebook, Instagram, X, Spotify, Pinterest, APKs — plus `.media`, a smart auto-detecting downloader that routes any pasted URL to the right handler
+- YouTube (audio + video, with thumbnail pickers), TikTok, Facebook, Instagram, X, Spotify, Pinterest, APKs — plus `.download`, a smart auto-detecting downloader that routes any pasted URL to the right handler
 
 ### ⚙️ Ops & Reliability
 - Pairing-code auth for headless deploys; graceful SIGTERM shutdown; 60s auto-save; bounded message cache; exponential reconnect backoff; `.connection` health dashboard; hot-reload without restart; per-plugin error tracking (`.stats`)
@@ -100,7 +100,7 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.owner` | creator, dev, developer | Shows the bot owner's contact card |
 | `.ping` | p, speed | Measures the response speed of the bot |
 | `.poll` | vote, survey | Creates a custom interactive poll in the chat |
-| `.stats` | botstats, sysstats, health | Shows comprehensive bot statistics — uptime, memory, commands, and health |
+| `.stats` | botstats, sysstats | Shows comprehensive bot statistics — uptime, memory, commands, and health |
 | `.store` | servers, hosting | Server hosting plans with an interactive plan picker (Moonson-style card) |
 | `.version` | v, ver | Displays current bot, developer, core, and runtime version details |
 
@@ -112,7 +112,7 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.fb` | facebook, fbdl | Downloads a Facebook video |
 | `.githubrelease` | ghrelease, release | Get the latest release of a GitHub repository |
 | `.ig` | instagram, igdl | Downloads Instagram posts, reels, and stories |
-| `.media` | dl, download, autodl | Smart downloader — paste any URL and it auto-detects the platform |
+| `.download` | dl, autodl | Smart downloader — paste any URL and it auto-detects the platform |
 | `.pinterest` | pin, pindl | Searches Pinterest and sends images directly |
 | `.play` | yta, ytmp3 | Search & download YouTube audio |
 | `.spotify` | sp, spdl | Downloads a Spotify track as mp3 |
@@ -168,7 +168,8 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.chatbot` | autoreply, aireply | Toggle AI auto-reply for non-command messages |
 | `.code` | codegen, coder | Generate code with Nexora AI |
 | `.debug` | fixcode | Analyzes code for bugs and provides a fix |
-| `.math` | solve, calc | Step-by-step math solver with native LaTeX |
+| `.math` | solve | Step-by-step math solver with native LaTeX |
+| `.calc` | calculate | Quick calculator — +, -, *, /, %, sqrt and more |
 | `.proofread` | grammar, fixtext | Proofreads and corrects grammar/spelling |
 | `.translate` | tr, trans, translator | Translate text |
 | `.vision` | analyze, imageai | Analyzes an image using AI |
@@ -208,7 +209,7 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.flip` | coinflip, coin | Flip a coin |
 | `.joke` | jokes, funny, lol | Fetches a random safe-mode joke from JokeAPI |
 | `.love` | ship, lovemeter, compatibility | Checks love compatibility between two names or two mentions |
-| `.quote` | inspire, qotd | Get a random inspirational quote |
+| `.quote` | inspire, wisdom, qotd | Random inspirational quote with one-tap copy and author lookup |
 | `.quoter` | quote, inspire, wisdom | Fetches a random inspirational quote with one-tap copy and author lookup |
 | `.roll` | dice, rolldice | Roll a dice |
 | `.truth` | truths | Get a random truth question |
@@ -218,9 +219,9 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 
 | Command | Aliases | Description |
 |---------|---------|-------------|
-| `.summary` | summarize | Summarize a webpage using AI or SMMRY |
+| `.summary` | summarize, tldr | Summarize text, a quoted message, or a URL |
 | `.weather` | - | Get the current weather for a location |
-| `.calculator` | calc, math | Evaluates a math expression |
+| `.calc` | calculate | Quick calculator — +, -, *, /, %, sqrt and more |
 | `.convert` | conv, unit, convertor | Convert units and currencies |
 | `.crypto` | price, coin, coinprice | Get cryptocurrency prices |
 | `.currency` | - | Convert currency |
