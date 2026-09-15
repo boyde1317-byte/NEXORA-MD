@@ -30,7 +30,7 @@
 
 **NEXORA MD** is a production WhatsApp multi-device bot platform — **181 commands** across 15 categories, with a rich-message engine that makes the bot *feel native*: tappable pickers, copy-code buttons, interactive approval cards, image headers, voice synthesis, and full-text fallbacks everywhere.
 
-Built on a **pinned private Baileys fork** ([`boyde1317-byte/baileys#v0.3.18-r6`](https://github.com/boyde1317-byte/baileys)) whose rich-message generators are lineage-verified against **Moonson + NIXCODE + itsliaaa** — the reference for what actually renders on real devices. Every rich surface ships with a plain-text fallback, so nothing breaks when WhatsApp changes things underneath you.
+Built on a **pinned private Baileys fork** ([`boyde1317-byte/baileys#v0.3.18-r6`](https://github.com/boyde1317-byte/baileys)) with device-verified rich-message generators. Every rich surface ships with a plain-text fallback, so nothing breaks when WhatsApp changes things underneath you.
 
 ---
 
@@ -455,14 +455,6 @@ For rich cards, import the builders from `src/lib/interactiveKit.js` (`selectMen
 | NIXCODE rich-message builder | Native cards, buttons, carousels (vendored `src/lib/NIXCODE.js`, attribution preserved) |
 | `qrcode-terminal` | Headless pairing |
 | `sharp` | Image processing for thumbnails and stickers |
-
----
-
-## 🤝 Credits & Lineage
-
-- **Moonson** ([boyde1317-byte/moonson](https://github.com/boyde1317-byte/moonson)) and **itsliaaa/baileys** — the proven rich-message primitives this project's fork is verified against
-- **NIXCODE** rich-message builder — vendored with its original attribution header intact
-- **Baileys** ([WhiskeySockets](https://github.com/WhiskeySockets/Baileys)) — the WhatsApp Web API this is all built on
 
 ---
 
