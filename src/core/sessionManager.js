@@ -279,12 +279,17 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
     if (connection === 'open') {
       if (pairingTimer) clearTimeout(pairingTimer);
       const wasReconnecting = entry.status === 'reconnecting';
+      // First completed login? Covers both the direct path and the
+      // resume-after-515 path (linking socket closes right after the code
+      // is accepted; the RESUME socket completes the login).
+      const firstLink = !entry.everOnline;
       entry.status = 'online';
       entry.jid = sock.user?.id || `${phone}@s.whatsapp.net`;
       entry.name = sock.user?.name || null;
       entry.connectedAt = Date.now();
       entry.reconnectAttempts = 0;
-      if (phase === 'pairing') {
+      entry.everOnline = true;
+      if (phase === 'pairing' || firstLink) {
         console.log(`[SESSION] +${phone} linked — online as ${entry.name || phone}`);
         await notifyStatus(notifyJid, `🎉 +${phone} is now linked and online${entry.name ? ` as *${entry.name}*` : ''} — it now runs as its own NEXORA bot: commands its owner types in groups or their self-chat get full bot replies (owner-only and private-mode gates apply to that owner's number).`);
       } else {
@@ -313,6 +318,27 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
       }
 
       if (phase === 'pairing') {
+        // The phone may have ALREADY accepted the code when the socket
+        // closes — baileys sets creds.registered=true at the companion
+        // identity exchange (the moment the code is entered), and WhatsApp
+        // then closes the linking socket with a 515 "restart required" to
+        // finish the login. Tearing down there stranded the phone on
+        // "logging in…" forever. Registered creds → resume to completion.
+        const registered = sock.authState.creds.registered || isRegistered(dir);
+        if (registered) {
+          // (the loggedOut branch above already returned for 401)
+          console.log(`[SESSION] +${phone} pairing socket closed (status ${statusCode ?? 'unknown'}) after the code was accepted — resuming to complete the login`);
+          if (pairingTimer) clearTimeout(pairingTimer);
+          entry.status = 'reconnecting';
+          entry.sock = null;
+          try { sock.ev.removeAllListeners(); } catch (_) {}
+          setTimeout(() => {
+            spawnSessionSocket(phone, 'resume', notifyJid).catch((err) => {
+              console.error(`[SESSION] +${phone} post-pairing resume failed:`, err.message || err);
+            });
+          }, 3000);
+          return;
+        }
         // Socket closed before the code was entered — dead code, dead creds.
         await teardownPairing(`socket closed (status ${statusCode ?? 'unknown'}) before the code was entered`);
         return;
