@@ -12,7 +12,7 @@ import { withReactionStatus} from '../../lib/cosmetics.js';
 
 import { pinterestSearch} from '../../lib/downloader.js';
 import { DownloadProgress} from '../../lib/progress.js';
-import { sendGridCard } from '../../lib/richContent.js';
+import { sendMultiImageGallery } from '../../lib/richContent.js';
 
 const DEFAULT_COUNT = 6;
 const MAX_COUNT = 10;
@@ -56,19 +56,25 @@ export default {
         // sendCarousel never actually catches the failure. Sending each
         // image as a plain image message is the reliable path — every
         // WhatsApp client renders those.
-        // ── Rich tier: native image grid (main pin + thumbnail strip) ──
-        const gridSent = await sendGridCard(sock, m.from, m, {
+        // ── Rich tier: stacked multi-image gallery (the .testrich
+        //    v2multiimg primitive — generateMultiInlineImagesV2 with
+        //    primitiveStyle: 'nixcode', same gallery .anime uses). Takes
+        //    the first 4 pins; any pins beyond that are sent as plain
+        //    images below so a big count still delivers everything. ──
+        const GALLERY_LIMIT = 4;
+        const gallerySent = await sendMultiImageGallery(sock, m.from, m, {
           images: results.map((pin) => ({
-            preview: pin.image,
-            highRes: pin.image,
-            source: pin.link || pin.image,
+            imageUrl: pin.image,
+            imageText: pin.title || pin.image,
           })),
           headerText: `📌 Pinterest — ${query}`.slice(0, 60),
           footer: 'NEXORA • Pinterest',
         });
-        if (gridSent) return;
+        // Gallery shipped → deliver whatever it couldn't hold as plain
+        // images; gallery skipped/failed (rich off) → plain send ALL.
+        const remaining = gallerySent ? results.slice(GALLERY_LIMIT) : results;
 
-        for (const pin of results) {
+        for (const pin of remaining) {
           try {
             await sock.sendMessage(m.from, {
               image: { url: pin.image },

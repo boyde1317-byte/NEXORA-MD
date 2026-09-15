@@ -3,8 +3,8 @@
  * rich primitives from richTestKit (every one of .testrich's candidates
  * now has a live consumer):
  *
- *   generateGridImageContentV2   → .pinterest (image grid: main + strip)
- *   generateMultiInlineImagesV2  → .anime (stacked wallpaper gallery)
+ *   generateGridImageContentV2   → (reserve; grid: main + thumbnail strip)
+ *   generateMultiInlineImagesV2  → .pinterest + .anime (stacked image gallery)
  *   generateDynamicContentV2     → .anime gif types (inline animated GIF)
  *   generateReelWithStatsV2      → .tiktok (native reel player + stats)
  *   generateLinkContent          → .summary (source links + citations)
