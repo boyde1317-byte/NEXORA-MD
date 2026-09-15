@@ -22,9 +22,14 @@
 // ── Backend endpoints ─────────────────────────────────────────────────────────
 // Primary + fallback backends for download commands. If the primary goes down,
 // we automatically retry on the fallback before surfacing the error.
+// api.tioo.eu.org was REMOVED 2026-09-15: it stopped responding entirely
+// (every request times out), so it only added ~20s of dead wait to every
+// retry cycle. backend2/3/4 verified live (ttdl + fbdown both answer).
 const BACKENDS = [
   'https://backend1.tioo.eu.org',
-  'https://api.tioo.eu.org',
+  'https://backend2.tioo.eu.org',
+  'https://backend3.tioo.eu.org',
+  'https://backend4.tioo.eu.org',
 ];
 const DEFAULT_TIMEOUT = 20000;
 
@@ -48,8 +53,19 @@ export const isUrl = (s) => {
   return true;
 };
 
-async function getJson(path, { timeout = DEFAULT_TIMEOUT } = {}) {
-  const MAX_RETRIES = 2;  // try each backend up to 2 times (4 total attempts)
+/**
+ * getJson — fetch a downloader-API route with host failover.
+ *
+ * opts.validate: optional semantic validator. A 200 JSON body can still be
+ * a "dead" extraction — e.g. Facebook rate-limits repeat scrapes of the
+ * same URL and the backend answers { status: true, Normal_video: null }.
+ * Without the validator that empty result was returned as success and the
+ * caller threw a dead-end error while other hosts could still have the
+ * cached extraction. validate(body) → false now counts as a backend
+ * failure so the loop walks to the next host before giving up.
+ */
+async function getJson(path, { timeout = DEFAULT_TIMEOUT, validate } = {}) {
+  const MAX_RETRIES = 2;  // try each backend up to 2 times (2 × hosts attempts)
   const RETRY_DELAY = 1500;  // ms between retries
   let lastError;
 
@@ -60,7 +76,11 @@ async function getJson(path, { timeout = DEFAULT_TIMEOUT } = {}) {
         if (!res.ok) throw new Error(`Backend returned HTTP ${res.status}.`);
         const ct = res.headers.get('content-type') ?? '';
         if (!ct.includes('json')) throw new Error('Non-JSON response — the link may be invalid or unsupported.');
-        return await res.json();
+        const body = await res.json();
+        if (validate && !validate(body)) {
+          throw new Error('Backend returned an empty extraction result.');
+        }
+        return body;
       } catch (err) {
         lastError = err;
         // Try next backend immediately, then retry cycle after delay
@@ -108,11 +128,12 @@ export async function youtubeDownload(url) {
 
 /** TikTok video → direct (no-watermark) video/audio links. */
 export async function tiktokDownload(url) {
-  const data = await getJson(`/ttdl?url=${encodeURIComponent(url)}`);
-  if (!data?.status && !data?.video) throw new Error('Could not fetch that TikTok video. Check the link and try again.');
+  const data = await getJson(`/ttdl?url=${encodeURIComponent(url)}`, {
+    validate: (j) => !!((j?.status || j?.video) && (j.video?.length || j.audio?.length)),
+  });
   const videos = data.video || [];
   const audios = data.audio || [];
-  if (videos.length === 0) throw new Error('TikTok returned no downloadable video for that link.');
+  if (videos.length === 0) throw new Error('TikTok returned no downloadable video for that link — it may have been removed or is private.');
   return {
     title: data.title,
     author: data.title_audio,
@@ -136,8 +157,18 @@ export async function instagramDownload(url) {
 
 /** Facebook video → direct (SD + HD) links. */
 export async function facebookDownload(url) {
-  const data = await getJson(`/fbdown?url=${encodeURIComponent(url)}`);
-  if (!data?.status || (!data.Normal_video && !data.HD)) throw new Error('Could not fetch that Facebook video. Check the link and try again.');
+  // Facebook rate-limits repeat scrapes of the same URL — extraction
+  // intermittently comes back with status:true but null links. The
+  // validator makes those count as failures so the host-failover loop
+  // can pick up a cached extraction from a different backend.
+  const data = await getJson(`/fbdown?url=${encodeURIComponent(url)}`, {
+    validate: (j) => !!(j?.status && (j.Normal_video || j.HD || j.Hd_video)),
+  }).catch((err) => {
+    if (String(err.message).includes('empty extraction')) {
+      throw new Error('Facebook returned no video for that link — it may be private, deleted, or rate-limited. Try again in a moment.');
+    }
+    throw err;
+  });
   return {
     sd: data.Normal_video,
     hd: data.HD || data.Hd_video,

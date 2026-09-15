@@ -11,6 +11,7 @@ import { withReactionStatus} from '../../lib/cosmetics.js';
 
 import { tiktokDownload, isUrl} from '../../lib/downloader.js';
 import { DownloadProgress} from '../../lib/progress.js';
+import { sendReelWithStatsCard } from '../../lib/richContent.js';
 
 export default {
   name: 'tiktok',
