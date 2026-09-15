@@ -21,6 +21,7 @@ import richCard from './types/richCard.js';
 import buttonsCard from './types/buttonsCard.js';
 import listFallback from './types/listFallback.js';
 import moonsonCard from './types/moonsonCard.js';
+import commandDirectory from './types/commandDirectory.js';
 
 // Register them all statically in the manager
 menuManager.register(documentInteractive);
@@ -41,6 +42,7 @@ menuManager.register(richCard);
 menuManager.register(buttonsCard);
 menuManager.register(listFallback);
 menuManager.register(moonsonCard);
+menuManager.register(commandDirectory);
 
 /**
  * Compiles the statistics and renders the active menu (or custom specified menu style).

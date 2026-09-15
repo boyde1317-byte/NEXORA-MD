@@ -28,12 +28,14 @@ class MenuManager {
   }
 
   /**
-   * Get the active menu style. Defaults to style ID '1' (documentInteractive)
+   * Get the active menu style. Defaults to style ID '17' (commandDirectory —
+   * the native tappable category picker). A previously persisted
+   * settings.activeMenu still wins, so owners who deliberately picked a
+   * style keep it; `.setmenu 17` switches to the directory explicitly.
    */
   getActiveMenu() {
-    // Check persistent database settings, default to ID '1'
-    const activeId = db.data.settings?.activeMenu || '1';
-    return this.getMenu(activeId) || this.getMenu('1');
+    const activeId = db.data.settings?.activeMenu || '17';
+    return this.getMenu(activeId) || this.getMenu('17') || this.getMenu('1');
   }
 
   /**
