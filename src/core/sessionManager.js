@@ -339,8 +339,32 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
           }, 3000);
           return;
         }
-        // Socket closed before the code was entered — dead code, dead creds.
-        await teardownPairing(`socket closed (status ${statusCode ?? 'unknown'}) before the code was entered`);
+        // Closed BEFORE the code was entered. A transient drop here (515
+        // restart-required is the common one behind Railway's proxy) should
+        // not kill the whole pairing attempt — respawn fresh creds, request
+        // a NEW code automatically, and tell the requester to use that one.
+        const transient =
+          statusCode === 515 || statusCode === 428 || statusCode === undefined;
+        entry.pairingRetries = (entry.pairingRetries || 0) + 1;
+        if (transient && entry.pairingRetries <= 2) {
+          console.log(`[SESSION] +${phone} pairing socket dropped (status ${statusCode ?? 'unknown'}) before code entry — auto-retry ${entry.pairingRetries}/2 with a fresh code`);
+          if (pairingTimer) clearTimeout(pairingTimer);
+          entry.status = 'retrying';
+          entry.sock = null;
+          try { sock.ev.removeAllListeners(); } catch (_) {}
+          try { sock.end(undefined); } catch (_) {}
+          wipeDir(dir); // stale creds.me from the aborted code request
+          try {
+            await notifyStatus(notifyJid, `🔄 Connection hiccup while waiting for the code for +${phone} — generating a *fresh pairing code* now (any earlier code is invalid). It arrives next; enter the NEW one.`);
+          } catch (_) {}
+          setTimeout(() => {
+            spawnSessionSocket(phone, 'pairing', notifyJid).catch((err) => {
+              console.error(`[SESSION] +${phone} pairing auto-retry failed:`, err.message || err);
+            });
+          }, 3000);
+          return;
+        }
+        await teardownPairing(`socket closed (status ${statusCode ?? 'unknown'}) before the code was entered${entry.pairingRetries > 1 ? ` (after ${entry.pairingRetries - 1} auto-retr${entry.pairingRetries === 2 ? 'y' : 'ies'})` : ''}`);
         return;
       }
 
