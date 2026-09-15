@@ -5,7 +5,7 @@
  *  - DownloadProgress feedback (was silent for 5-15s)
  *  - Error handling with user-friendly message
  *  - Author + duration metadata in caption
- *  - Follow-up card with audio download + other platform buttons
+ *  - Rich tier: native reel player + stats card (falls back to classic video)
  */
 import { withReactionStatus} from '../../lib/cosmetics.js';
 
@@ -64,9 +64,6 @@ export default {
           video: { url: data.video },
           caption: `${meta}\n_No watermark_`,
         }, { quoted: m });
-
-        if (data.audio) {
-        }
       } catch (err) {
         await m.reply.error(`TikTok download failed: ${err.message}`);
         throw err;
