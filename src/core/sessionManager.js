@@ -46,6 +46,7 @@ import fs from 'fs';
 
 import { config } from '../../config/index.js';
 import { client } from './client.js';
+import { copyResultCard } from '../lib/interactiveKit.js';
 import { handleMessage } from '../handlers/message.js';
 import { handleGroupParticipantsUpdate } from '../handlers/group.js';
 
@@ -266,10 +267,24 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
             teardownPairing('code expired / not entered');
           }
         }, PAIRING_WINDOW_MS);
-        await notifyMain(
-          notifyJid,
-          `🔑 *Pairing code for +${phone}:* *${code}*\n\nOn that phone: WhatsApp → Settings → Linked Devices → Link a Device → *Link with phone number instead*, then enter the code.\nDigits only — WhatsApp adds the dash itself. Code expires in a couple of minutes; I'll confirm here when it links.`
-        );
+        // Send the code with a native 📋 Copy Code button (cta_copy) —
+        // mistyping 8 digits is the #1 way a pairing fails. copyResultCard
+        // falls back to plain text automatically when rich is off/failed.
+        const codeMsg = `🔑 *Pairing code for +${phone}:* *${code}*\n\nOn that phone: WhatsApp → Settings → Linked Devices → Link a Device → *Link with phone number instead*, then enter the code.\nDigits only — WhatsApp adds the dash itself. Code expires in a couple of minutes; I'll confirm here when it links.`;
+        try {
+          if (client.socket?.user) {
+            await copyResultCard(client.socket, notifyJid, {
+              text: codeMsg,
+              footer: 'NEXORA • PAIRING',
+              copyLabel: '📋 Copy Code',
+              copyValue: code
+            });
+          } else {
+            await notifyMain(notifyJid, codeMsg);
+          }
+        } catch (_) {
+          await notifyMain(notifyJid, codeMsg);
+        }
       } catch (err) {
         await teardownPairing(`code request failed: ${err.message || err}`);
       }
