@@ -48,12 +48,26 @@ export async function awardMessageXp(m, sock) {
     trackActivity(m.from, m.sender);
 
     const result = grantXp(db, m.sender, { xp: randomMessageXp() });
-    if (!result.leveledUp || !config.xp.levelUpAnnounce) return;
+    if (!result.leveledUp) return;
 
     // Celebratory coin bonus on top of the xp itself — leveling up from
     // chat activity should feel as rewarding as claiming `!daily`.
+    // Granted BEFORE the announcement gate: silencing the card never
+    // costs the user their coins.
     const coinBonus = result.levelsGained * config.xp.levelUpCoinBonus;
     const bonusResult = coinBonus > 0 ? grantXp(db, m.sender, { coins: coinBonus }) : result;
+
+    // Level-up ANNOUNCEMENT gate — only the card is suppressible.
+    // Precedence: per-group flag > global db flag > XP_ANNOUNCE env default.
+    const groupFlag = m.isGroup ? db.getGroup(m.from).levelUp : undefined;
+    const globalFlag = db.getSettings().levelUpAnnounce;
+    const announce =
+      groupFlag !== undefined
+        ? groupFlag
+        : globalFlag !== undefined
+          ? globalFlag
+          : config.xp.levelUpAnnounce;
+    if (!announce) return;
 
     const progress = getLevelProgress(bonusResult.after.xp);
     const bar = progressBar(progress.xpIntoLevel, progress.nextLevelXp - progress.currentLevelXp, 10);
