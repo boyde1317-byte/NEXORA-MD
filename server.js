@@ -292,6 +292,8 @@ httpServer = app.listen(PORT, HOST, async () => {
     try {
       const { initReminderService } = await import('./src/lib/reminderService.js');
       initReminderService();
+      const { initDigestService } = await import('./src/lib/digestService.js');
+      initDigestService();
     } catch (err) {
       console.warn('[STARTUP] Reminder service failed to start:', err.message || err);
     }

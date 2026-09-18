@@ -7,7 +7,7 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789769209559,
-      "xp": 279,
+      "xp": 315,
       "coins": 50,
       "level": 1,
       "streak": 0,
@@ -46,7 +46,7 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789773114116,
-      "xp": 13,
+      "xp": 37,
       "coins": 0,
       "level": 0,
       "streak": 0,
@@ -64,6 +64,19 @@
       "level": 0,
       "streak": 0,
       "lastDaily": null
+    },
+    "2347777777777@s.whatsapp.net": {
+      "jid": "2347777777777@s.whatsapp.net",
+      "banned": false,
+      "premium": false,
+      "warnings": 0,
+      "hasOnboarded": false,
+      "createdAt": 1789774423003,
+      "xp": 8,
+      "coins": 0,
+      "level": 0,
+      "streak": 0,
+      "lastDaily": null
     }
   },
   "groups": {
@@ -73,7 +86,14 @@
       "antitag": false,
       "mute": false,
       "warnings": {},
-      "createdAt": 1789773107212
+      "createdAt": 1789773107212,
+      "customCommands": {
+        "ping": {
+          "text": "mine now",
+          "createdBy": "admin",
+          "createdAt": 1789774305905
+        }
+      }
     }
   },
   "settings": {
@@ -114,8 +134,18 @@
       "warns": 4,
       "wordchain": 12,
       "del": 5,
-      "delall": 3
+      "delall": 3,
+      "setcmd": 6,
+      "subscribe": 4,
+      "broadcast": 2
     }
   },
-  "reminders": []
+  "reminders": [],
+  "digest": {
+    "subscribers": {
+      "233533416608@s.whatsapp.net": {
+        "lastSentDate": "2026-09-18"
+      }
+    }
+  }
 }

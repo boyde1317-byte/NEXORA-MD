@@ -15,7 +15,7 @@ export function validateSchema(data) {
     return false;
   }
 
-  const expectedKeys = ['users', 'groups', 'settings'];
+  const expectedKeys = ['users', 'groups', 'settings', 'stats', 'reminders', 'digest'];
   const actualKeys = Object.keys(data);
 
   // Check missing expected keys

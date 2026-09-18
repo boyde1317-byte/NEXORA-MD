@@ -1,5 +1,6 @@
 import { config } from '../../config/index.js';
 import { client } from '../core/client.js';
+import { findCustomCommand } from '../plugins/group/customcmd.js';
 import { db } from '../database/db.js';
 import { serialize } from '../core/serializer.js';
 import { checkStickerCommand } from '../lib/stickerCommand.js';
@@ -488,6 +489,28 @@ try {
   const resolvedName = client.aliases.get(commandName) || commandName;
   const command = client.commands.get(resolvedName);
   if (!command) {
+    // ── Group custom commands (.setcmd) ─────────────────────────────────
+    // Registry lookup missed — but a group admin may have DEFINED this
+    // name via .setcmd. Deliberate custom commands beat the fuzzy
+    // suggestion, and can never shadow built-ins (they only run here).
+    // Execution is open to everyone in the group that defined them.
+    if (isGroupMsg) {
+      try {
+        const custom = findCustomCommand(jid, commandName);
+        if (custom) {
+          const senderName = rawMessage.pushName || (sender || '').split('@')[0];
+          let chatName = 'this group';
+          try { chatName = (await sock.groupMetadata?.(jid))?.subject || chatName; } catch (_) {}
+          await m.reply(
+            custom.text
+              .replaceAll('{sender}', senderName)
+              .replaceAll('{chat}', chatName)
+          );
+          return;
+        }
+      } catch (_) { /* custom command failed — fall through to suggestion */ }
+    }
+
     // ── "Did you mean?" fuzzy suggestion ──────────────────────────────
     // Instead of silently ignoring, suggest the closest command match.
     // When a match is found, send an interactive button so the user can

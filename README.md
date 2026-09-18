@@ -175,6 +175,9 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.kick` | remove, k | Removes a participant from the group |
 | `.mute` | closegroup | Mutes the group so only admins can send messages |
 | `.promote` | admin, pm | Promotes a group participant to Group Admin |
+| `.setcmd` | | Group admins define custom text commands (.setcmd .name text, {sender}/{chat} placeholders, never shadow built-ins) |
+| `.broadcast` | | Owner announcement to every group the bot is in, paced (dry run: .broadcast count) |
+| `.subscribe` | | Daily fact digest at 08:00 for this chat (.subscribe status / .unsubscribe) |
 | `.del` | | Reply to any message and delete it for everyone — own messages anytime, members' messages when the bot is group admin |
 | `.delall` `.clearchat` | | Sweep every message the bot recently sent in this chat (paced deletes, tracks rich sends too) |
 | `.purge` | prune, delmsg | Delete multiple messages |
