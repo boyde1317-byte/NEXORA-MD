@@ -24,8 +24,8 @@ export default {
     const sub = args[0]?.toLowerCase();
 
     if (sub === 'off') {
-      db.setSettings({ channelId: undefined, channelName: undefined });
-      return await m.reply.success('Channel pill removed from menu cards.');
+      db.setSettings({ channelId: undefined, channelName: undefined, channelPillOff: true });
+      return await m.reply.success('Channel pill removed — no channel will be shown on cards or replies.');
     }
 
     if (!sub || !args.length) {
@@ -48,7 +48,7 @@ export default {
       return await m.reply.warn('That does not look like a channel JID. Expected something like `123456789@newsletter` — get it via `.channel info <link>`.');
     }
 
-    db.setSettings({ channelId: jid, channelName: name || jid.split('@')[0] });
+    db.setSettings({ channelId: jid, channelName: name || jid.split('@')[0], channelPillOff: false });
     await m.react('✅');
     return await m.reply.success(`Menu cards will now show the pill: *${name || jid.split('@')[0]}*`);
   },

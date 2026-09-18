@@ -18,6 +18,12 @@ import { db } from '../database/db.js';
 
 /** Newsletter JIDs look like 0029Vb7eSHf42Dcmdd3XA326@newsletter (alphanumeric). */
 const CHANNEL_JID_RE = /^[\w-]+@newsletter$/;
+
+// Default "view" channel pill — used when no channel has been configured
+// (.channel create / .setchannel). Override or clear via env:
+//   DEFAULT_CHANNEL_JID / DEFAULT_CHANNEL_NAME
+const DEFAULT_CHANNEL_JID  = process.env.DEFAULT_CHANNEL_JID  || '120363406397452589@newsletter';
+const DEFAULT_CHANNEL_NAME = process.env.DEFAULT_CHANNEL_NAME || 'NEXORA Updates';
 export const isChannelJid = (jid) => CHANNEL_JID_RE.test(String(jid || ''));
 
 /**
@@ -27,12 +33,20 @@ export const isChannelJid = (jid) => CHANNEL_JID_RE.test(String(jid || ''));
  */
 export function getChannelPill() {
   const s = db.getSettings?.() || {};
-  if (!isChannelJid(s.channelId) || !s.channelName) return null;
+
+  // .setchannel off disables the pill entirely (including the default)
+  if (s.channelPillOff) return null;
+
+  // Configured channel wins; otherwise fall back to the default
+  // view channel (DEFAULT_CHANNEL_JID), overridable via env.
+  const jid  = (isChannelJid(s.channelId) && s.channelId) || DEFAULT_CHANNEL_JID;
+  const name = (isChannelJid(s.channelId) ? s.channelName : null) || DEFAULT_CHANNEL_NAME;
+  if (!isChannelJid(jid)) return null;
   return {
     forwardedNewsletterMessageInfo: {
-      newsletterJid: s.channelId,
+      newsletterJid: jid,
       serverMessageId: 1,
-      newsletterName: s.channelName,
+      newsletterName: name,
     },
   };
 }

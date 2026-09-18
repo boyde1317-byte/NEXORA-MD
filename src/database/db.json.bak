@@ -7,7 +7,7 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789769209559,
-      "xp": 25,
+      "xp": 71,
       "coins": 0,
       "level": 0,
       "streak": 0,
@@ -52,13 +52,15 @@
       "uptime": 0
     },
     "sudoOwners": [],
-    "backupTest2": "before"
+    "backupTest2": "before",
+    "channelPillOff": false
   },
   "stats": {
     "commandsUsed": {
-      "backup": 4,
-      "menu": 4,
-      "setchannel": 8
+      "backup": 8,
+      "menu": 7,
+      "setchannel": 12,
+      "ping": 5
     }
   }
 }

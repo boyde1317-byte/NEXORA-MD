@@ -3,6 +3,7 @@ import baileysBridge from './baileysBridge.js';
 import { config } from '../../config/index.js';
 import { messageFormatter } from '../ui/messageFormatter.js';
 import { db } from '../database/db.js';
+import { withChannelPill } from '../lib/menuContext.js';
 import { buildEnrichedContextInfo } from '../lib/enrichContext.js';
 
 /**
@@ -460,7 +461,7 @@ export async function serialize(rawMessage, sock) {
   //   m.reply(text, { contextInfo: customContextInfo }) // uses caller's contextInfo
   //   m.reply(text, { skipAdReply: true })               // force-skip the card
   const replyFn = async (text, options = {}) => {
-    const { contextInfo, skipAdReply, ...sendOptions } = options;
+    const { contextInfo, skipAdReply, skipPill, ...sendOptions } = options;
     message._replyCount = (message._replyCount || 0) + 1;
 
     // Auto-attach externalAdReply card when:
@@ -473,6 +474,17 @@ export async function serialize(rawMessage, sock) {
         finalContextInfo = await buildEnrichedContextInfo();
       } catch (_) {
         // enrichContext build failed — send bare text, never break the reply
+      }
+    }
+
+    // Channel pill (forwardedNewsletterMessageInfo) stacks on plain,
+    // non-interactive replies too — same Yuzuki-style single message.
+    // Callers can opt out with { skipPill: true }.
+    if (!skipPill) {
+      try {
+        finalContextInfo = withChannelPill(finalContextInfo);
+      } catch (_) {
+        // pill helper failed — keep the reply alive
       }
     }
 

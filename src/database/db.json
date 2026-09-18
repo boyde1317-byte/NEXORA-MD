@@ -7,7 +7,7 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789769209559,
-      "xp": 39,
+      "xp": 71,
       "coins": 0,
       "level": 0,
       "streak": 0,
@@ -52,15 +52,14 @@
       "uptime": 0
     },
     "sudoOwners": [],
-    "backupTest2": "before",
-    "channelId": "0029Vb7eSHf42Dcmdd3XA326@newsletter",
-    "channelName": "NEXORA Updates"
+    "backupTest2": "before"
   },
   "stats": {
     "commandsUsed": {
-      "backup": 4,
-      "menu": 5,
-      "setchannel": 8
+      "backup": 8,
+      "menu": 7,
+      "setchannel": 12,
+      "ping": 5
     }
   }
 }
