@@ -52,8 +52,7 @@
       "uptime": 0
     },
     "sudoOwners": [],
-    "backupTest2": "before",
-    "channelPillOff": false
+    "backupTest2": "before"
   },
   "stats": {
     "commandsUsed": {
