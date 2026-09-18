@@ -21,11 +21,11 @@
  */
 
 // Identity: "bot" as a delimited word/suffix, or the classic "-MD" suffix
-// ("NEXORA-MD", "GFX-MD"). Delimiters keep humans safe: "Abbot",
+// ("-MD"-style suffixes like NEXORA-MD). Delimiters keep humans safe: "Abbot",
 // "Robotics", "Md Ali" (common Bangladeshi name prefix) all pass.
 const BOT_NAME_RE =
   /(?:^|[\s\-_.@])(?:bot|wa[\s_-]?bot|whatsapp[\s_-]?bot|whats[\s_-]?app[\s_-]?bot)(?:[\s\-_.@0-9]|$)/i;
-const BOT_MD_RE = /[-_]\s*x?md(?:[\s\-_0-9]|$)/i; // "NEXORA-MD", "SHADOW-XMD", "GFX_MD v3", "dark_md"
+const BOT_MD_RE = /[-_]\s*x?md(?:[\s\-_0-9]|$)/i; // "-MD" / "-XMD" / "_md"-style bot suffixes
 
 // Menu walls: baileys bots love ╭─╮ ━ ║ 『』 decorated output
 const BOX_CHARS = /[╭╮╰╯━║≡「」]/g;
