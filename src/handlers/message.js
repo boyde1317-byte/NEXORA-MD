@@ -531,7 +531,9 @@ try {
   // bridge (sock.signalRepository.lidMapping) — do not recompute it here with a
   // raw string comparison, which breaks whenever WhatsApp presents the sender as
   // an opaque LID instead of a phone-number JID.
-  const ownerCheck = m.isOwner;
+  // isOwner is an async getter (returns a Promise) — awaiting resolves and
+  // caches it. Bare truthiness would make every check pass for everyone.
+  const ownerCheck = await m.isOwner;
 
   // 1. Owner-only guard
   if (ownerOnly && !ownerCheck) {

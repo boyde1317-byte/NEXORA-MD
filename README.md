@@ -112,6 +112,8 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.fb` | facebook, fbdl | Downloads a Facebook video |
 | `.githubrelease` | ghrelease, release | Get the latest release of a GitHub repository |
 | `.ig` | instagram, igdl | Downloads Instagram posts, reels, and stories |
+| `.chanreact` | chreact, creact, chanreaction | React to a Channel post (owner) — \`.chanreact <post link> <emoji>\`, \`.chanreact off <link>\` removes it |
+| `.channels` | chan, chans, mychannels, newsletters | List the WhatsApp channels this bot follows (owner) |
 | `.download` | dl, autodl | Smart downloader — paste any URL and it auto-detects the platform |
 | `.pinterest` | pin, pindl | Searches Pinterest and sends images directly |
 | `.play` | yta, ytmp3 | Search & download YouTube audio |
@@ -151,6 +153,7 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.groupinfo` | ginfo, gcinfo, groupdetails | Shows detailed metadata for the current group |
 | `.grouplink` | invitelink, invite | Gets or resets the group invite link |
 | `.groupsettings` | gset, open, close | Change group settings |
+| `.joinreq` | joinrequests, jreq, jr, pending | Manage pending join requests — list, approve/reject one or all, toggle the join-approval gate |
 | `.heatchart` | heat, activity | When this group is actually alive — hourly activity chart, peak hours, and top talkers |
 | `.hidetag` | htag, stag, silentall | Mentions all group members silently — no @names shown in the message |
 | `.kick` | remove, k | Removes a participant from the group |

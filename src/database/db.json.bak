@@ -20,7 +20,7 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789387655056,
-      "xp": 60,
+      "xp": 99,
       "coins": 0,
       "level": 0,
       "streak": 0,
@@ -129,6 +129,32 @@
       "level": 0,
       "streak": 0,
       "lastDaily": null
+    },
+    "7778889999@s.whatsapp.net": {
+      "jid": "7778889999@s.whatsapp.net",
+      "banned": false,
+      "premium": false,
+      "warnings": 0,
+      "hasOnboarded": false,
+      "createdAt": 1789752512137,
+      "xp": 15,
+      "coins": 0,
+      "level": 0,
+      "streak": 0,
+      "lastDaily": null
+    },
+    "447700900123@s.whatsapp.net": {
+      "jid": "447700900123@s.whatsapp.net",
+      "banned": false,
+      "premium": false,
+      "warnings": 0,
+      "hasOnboarded": false,
+      "createdAt": 1789766715806,
+      "xp": 27,
+      "coins": 0,
+      "level": 0,
+      "streak": 0,
+      "lastDaily": null
     }
   },
   "groups": {
@@ -147,9 +173,11 @@
       "antilink": false,
       "antitag": false,
       "mute": false,
-      "warnings": {},
+      "warnings": {
+        "7778889999@s.whatsapp.net": 1
+      },
       "createdAt": 1789751530074,
-      "antisticker": false,
+      "antisticker": true,
       "antispam": false,
       "antiword": {
         "on": false,
@@ -164,7 +192,7 @@
         ]
       },
       "antibot": {
-        "on": false,
+        "on": true,
         "whitelist": []
       }
     }
@@ -200,7 +228,10 @@
       "delsession": 14,
       "logoutall": 5,
       "pair": 2,
-      "sessions": 1
+      "sessions": 1,
+      "channels": 1,
+      "joinreq": 3,
+      "chanreact": 3
     }
   }
 }
