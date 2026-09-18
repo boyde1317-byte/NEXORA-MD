@@ -279,6 +279,15 @@ httpServer = app.listen(PORT, HOST, async () => {
     await client.loadPlugins();
     await connectToWhatsApp();
 
+    // Automatic database backups — 24h snapshots, 7-day retention
+    try {
+      const { scheduleBackups } = await import('./src/lib/backupService.js');
+      const { db } = await import('./src/database/db.js');
+      scheduleBackups(db);
+    } catch (err) {
+      console.warn('[STARTUP] Backup scheduler failed to start:', err.message || err);
+    }
+
     // Reconnect any saved extra sessions (.pair-linked numbers)
     try {
       const { resumeExtraSessions } = await import('./src/core/sessionManager.js');

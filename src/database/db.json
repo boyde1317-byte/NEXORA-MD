@@ -1,143 +1,13 @@
 {
   "users": {
-    "15550100000@s.whatsapp.net": {
-      "jid": "15550100000@s.whatsapp.net",
-      "banned": false,
-      "premium": false,
-      "warnings": 0,
-      "hasOnboarded": false,
-      "createdAt": 1789387146207,
-      "xp": 0,
-      "coins": 0,
-      "level": 0,
-      "streak": 0,
-      "lastDaily": null
-    },
     "233533416608@s.whatsapp.net": {
       "jid": "233533416608@s.whatsapp.net",
       "banned": false,
       "premium": false,
       "warnings": 0,
       "hasOnboarded": false,
-      "createdAt": 1789387655056,
-      "xp": 157,
-      "coins": 50,
-      "level": 1,
-      "streak": 0,
-      "lastDaily": null
-    },
-    "155509990000@s.whatsapp.net": {
-      "jid": "155509990000@s.whatsapp.net",
-      "banned": false,
-      "premium": false,
-      "warnings": 0,
-      "hasOnboarded": false,
-      "createdAt": 1789387655140,
-      "xp": 40,
-      "coins": 0,
-      "level": 0,
-      "streak": 0,
-      "lastDaily": null
-    },
-    "5550001111@s.whatsapp.net": {
-      "jid": "5550001111@s.whatsapp.net",
-      "banned": false,
-      "premium": false,
-      "warnings": 0,
-      "hasOnboarded": false,
-      "createdAt": 1789751581803,
-      "xp": 65,
-      "coins": 0,
-      "level": 0,
-      "streak": 0,
-      "lastDaily": null
-    },
-    "5550002222@s.whatsapp.net": {
-      "jid": "5550002222@s.whatsapp.net",
-      "banned": false,
-      "premium": false,
-      "warnings": 0,
-      "hasOnboarded": false,
-      "createdAt": 1789751581804,
-      "xp": 33,
-      "coins": 0,
-      "level": 0,
-      "streak": 0,
-      "lastDaily": null
-    },
-    "5550003333@s.whatsapp.net": {
-      "jid": "5550003333@s.whatsapp.net",
-      "banned": false,
-      "premium": false,
-      "warnings": 0,
-      "hasOnboarded": false,
-      "createdAt": 1789751581804,
-      "xp": 32,
-      "coins": 0,
-      "level": 0,
-      "streak": 0,
-      "lastDaily": null
-    },
-    "5550004444@s.whatsapp.net": {
-      "jid": "5550004444@s.whatsapp.net",
-      "banned": false,
-      "premium": false,
-      "warnings": 0,
-      "hasOnboarded": false,
-      "createdAt": 1789751581805,
-      "xp": 27,
-      "coins": 0,
-      "level": 0,
-      "streak": 0,
-      "lastDaily": null
-    },
-    "4445556666@s.whatsapp.net": {
-      "jid": "4445556666@s.whatsapp.net",
-      "banned": false,
-      "premium": false,
-      "warnings": 0,
-      "hasOnboarded": false,
-      "createdAt": 1789752104496,
-      "xp": 48,
-      "coins": 0,
-      "level": 0,
-      "streak": 0,
-      "lastDaily": null
-    },
-    "2348081234567@s.whatsapp.net": {
-      "jid": "2348081234567@s.whatsapp.net",
-      "banned": false,
-      "premium": false,
-      "warnings": 0,
-      "hasOnboarded": false,
-      "createdAt": 1789752459998,
-      "xp": 14,
-      "coins": 0,
-      "level": 0,
-      "streak": 0,
-      "lastDaily": null
-    },
-    "233111222333@s.whatsapp.net": {
-      "jid": "233111222333@s.whatsapp.net",
-      "banned": false,
-      "premium": false,
-      "warnings": 0,
-      "hasOnboarded": false,
-      "createdAt": 1789752459999,
-      "xp": 14,
-      "coins": 0,
-      "level": 0,
-      "streak": 0,
-      "lastDaily": null
-    },
-    "7778889999@s.whatsapp.net": {
-      "jid": "7778889999@s.whatsapp.net",
-      "banned": false,
-      "premium": false,
-      "warnings": 0,
-      "hasOnboarded": false,
-      "createdAt": 1789752512137,
-      "xp": 15,
+      "createdAt": 1789769209559,
+      "xp": 9,
       "coins": 0,
       "level": 0,
       "streak": 0,
@@ -149,54 +19,15 @@
       "premium": false,
       "warnings": 0,
       "hasOnboarded": false,
-      "createdAt": 1789766715806,
-      "xp": 36,
+      "createdAt": 1789769230489,
+      "xp": 5,
       "coins": 0,
       "level": 0,
       "streak": 0,
       "lastDaily": null
     }
   },
-  "groups": {
-    "2335@g.us": {
-      "jid": "2335@g.us",
-      "antilink": false,
-      "antitag": false,
-      "mute": false,
-      "warnings": {},
-      "createdAt": 1789384533849,
-      "welcome": false,
-      "goodbye": true
-    },
-    "1203630250@g.us": {
-      "jid": "1203630250@g.us",
-      "antilink": false,
-      "antitag": false,
-      "mute": false,
-      "warnings": {
-        "7778889999@s.whatsapp.net": 1
-      },
-      "createdAt": 1789751530074,
-      "antisticker": true,
-      "antispam": false,
-      "antiword": {
-        "on": false,
-        "words": []
-      },
-      "antidelete": true,
-      "antiviewonce": true,
-      "antiforeign": {
-        "on": true,
-        "allow": [
-          "233"
-        ]
-      },
-      "antibot": {
-        "on": true,
-        "whitelist": []
-      }
-    }
-  },
+  "groups": {},
   "settings": {
     "_migrations": [
       1,
@@ -220,24 +51,12 @@
       "lastDisconnected": null,
       "uptime": 0
     },
-    "sudoOwners": []
+    "sudoOwners": [],
+    "backupTest2": "before"
   },
   "stats": {
     "commandsUsed": {
-      "checkchid": 1,
-      "delsession": 14,
-      "logoutall": 5,
-      "pair": 2,
-      "sessions": 1,
-      "channels": 1,
-      "joinreq": 3,
-      "chanreact": 4,
-      "logo": 6,
-      "neon": 1,
-      "metallic": 1,
-      "fire": 1,
-      "viewonce": 3,
-      "channel": 5
+      "backup": 4
     }
   }
 }

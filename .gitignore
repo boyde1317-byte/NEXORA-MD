@@ -9,3 +9,5 @@ coverage/
 
 # WhatsApp session credentials — NEVER commit these
 session/
+backups/
+src/database/db.json.pre-restore
