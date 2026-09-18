@@ -13,6 +13,7 @@ import { fileURLToPath } from 'url';
 
 import { config } from '../../config/index.js';
 import brand from '../../config/brand.js';
+import { attachOutgoingTracker } from '../lib/outgoingCache.js';
 import { db } from '../database/db.js';
 import { handleMessage } from '../handlers/message.js';
 import { restoreReminders } from '../plugins/utility/remind.js';
@@ -149,6 +150,10 @@ export async function connectToWhatsApp() {
   });
 
   client.socket = sock;
+
+  // ── Outgoing message tracking (powers .delall) ────────────────────────────
+  // Wraps sendMessage + relayMessage to record every outgoing id per chat.
+  attachOutgoingTracker(sock);
 
   // ── Stale pairing state cleanup ────────────────────────────────────────────
   // requestPairingCode() sets creds.me (and persists it) the moment a code is

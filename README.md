@@ -175,6 +175,8 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.kick` | remove, k | Removes a participant from the group |
 | `.mute` | closegroup | Mutes the group so only admins can send messages |
 | `.promote` | admin, pm | Promotes a group participant to Group Admin |
+| `.del` | | Reply to any message and delete it for everyone — own messages anytime, members' messages when the bot is group admin |
+| `.delall` | | Sweep every message the bot recently sent in this chat (paced deletes, tracks rich sends too) |
 | `.purge` | prune, delmsg | Delete multiple messages |
 | `.revoke` | resetlink | Revokes the current group invite link and generates a new one |
 | `.setdesc` | - | Changes the group description |

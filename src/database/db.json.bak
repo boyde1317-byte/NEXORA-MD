@@ -7,7 +7,7 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789769209559,
-      "xp": 206,
+      "xp": 264,
       "coins": 50,
       "level": 1,
       "streak": 0,
@@ -47,6 +47,19 @@
       "hasOnboarded": false,
       "createdAt": 1789773114116,
       "xp": 13,
+      "coins": 0,
+      "level": 0,
+      "streak": 0,
+      "lastDaily": null
+    },
+    "2348888888888@s.whatsapp.net": {
+      "jid": "2348888888888@s.whatsapp.net",
+      "banned": false,
+      "premium": false,
+      "warnings": 0,
+      "hasOnboarded": false,
+      "createdAt": 1789773854011,
+      "xp": 14,
       "coins": 0,
       "level": 0,
       "streak": 0,
@@ -92,14 +105,16 @@
   "stats": {
     "commandsUsed": {
       "backup": 8,
-      "menu": 8,
+      "menu": 9,
       "setchannel": 12,
       "ping": 5,
       "meme": 1,
       "remind": 16,
       "share": 1,
       "warns": 4,
-      "wordchain": 12
+      "wordchain": 12,
+      "del": 5,
+      "delall": 2
     }
   },
   "reminders": []

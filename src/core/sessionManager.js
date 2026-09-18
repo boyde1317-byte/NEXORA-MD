@@ -46,6 +46,7 @@ import fs from 'fs';
 
 import { config } from '../../config/index.js';
 import { client } from './client.js';
+import { attachOutgoingTracker } from '../lib/outgoingCache.js';
 import { copyResultCard } from '../lib/interactiveKit.js';
 import { handleMessage } from '../handlers/message.js';
 import { handleGroupParticipantsUpdate } from '../handlers/group.js';
@@ -208,6 +209,9 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
   });
 
   entry.sock = sock;
+
+  // ── Outgoing message tracking (powers .delall) ── same wrapper as main ──
+  attachOutgoingTracker(sock);
   entry.reconnectAttempts = entry.reconnectAttempts || 0;
 
   // ── Full-bot mode markers ────────────────────────────────────────────────
