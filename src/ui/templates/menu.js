@@ -7,12 +7,12 @@ import { toSmallcaps } from '../../lib/smallcaps.js';
 /**
  * Menu template builder.
  *
- * Design rule (2026-09 declutter pass): the menu lists command NAMES
- * only, inline and wrapped — no per-command borders, no per-command
- * descriptions, no per-command blank lines. The old layout rendered a
- * border line + a full smallcaps description for every one of ~150
- * commands, producing a 400-line ASCII wall. Detailed help lives in
- * `.help <command>`; the menu is a directory, not documentation.
+ * Design rule (2026-09-18 layout pass, owner-directed): command NAMES
+ * only, ONE COMMAND PER LINE, grouped by category with UPPERCASE
+ * category headers — no descriptions, no inline comma-wrapping. The
+ * inline `a, b, c` wrapping read as an unreadable blob on real
+ * devices; a per-line directory scans instantly. Detailed help lives
+ * in `.help <command>`; the menu is a directory, not documentation.
  *
  * Kept: themed borders, smallcaps typographic identity, per-category
  * section headers with counts, stat header, and the placeholder system.
@@ -43,26 +43,6 @@ export const menuTemplate = (menuData) => {
     return text;
   };
 
-  /**
-   * Wrap command names into compact inline rows.
-   * 'a, b, c' joined with ', ' and greedily broken at maxWidth so the
-   * left border rule stays aligned on narrow phone screens.
-   */
-  const wrapNames = (names, maxWidth = 38) => {
-    const rows = [];
-    let row = '';
-    for (const name of names) {
-      if (row && (row + ', ' + name).length > maxWidth) {
-        rows.push(row);
-        row = name;
-      } else {
-        row = row ? row + ', ' + name : name;
-      }
-    }
-    if (row) rows.push(row);
-    return rows;
-  };
-
   const formattedLines = [];
 
   // ── Header ───────────────────────────────────────────────────────────
@@ -89,19 +69,19 @@ export const menuTemplate = (menuData) => {
   for (const cat of sortedCategories) {
     catIndex++;
     const cmds = menuData.categories[cat];
-    const names = cmds.map(c => c.name);
-    const rows = wrapNames(names, styleName === 'minimal' ? 48 : 36);
+    const names = cmds.map(c => `${menuData.prefix || '.'}${c.name}`);
+    const header = cat.toUpperCase();
 
     if (styleName === 'minimal') {
       formattedLines.push('');
-      formattedLines.push(`── ${cat} (${cmds.length}) ──`);
-      rows.forEach(r => formattedLines.push(r));
+      formattedLines.push(`── ${header} (${cmds.length}) ──`);
+      names.forEach(n => formattedLines.push(n));
     } else if (styleName === 'classic') {
-      formattedLines.push(`┃  ✦ ${toSmallcaps(cat)} · ${cmds.length}`);
-      rows.forEach(r => formattedLines.push(`${borders.line} ${r}`));
+      formattedLines.push(`┃  ✦ ${header} · ${cmds.length}`);
+      names.forEach(n => formattedLines.push(`${borders.line} ${n}`));
     } else {
-      formattedLines.push(`${borders.divider}✦ ${String(catIndex).padStart(2, '0')} · ${toSmallcaps(cat)} · ${cmds.length}`);
-      rows.forEach(r => formattedLines.push(`${borders.line} ${r}`));
+      formattedLines.push(`${borders.divider}✦ ${String(catIndex).padStart(2, '0')} · ${header} · ${cmds.length}`);
+      names.forEach(n => formattedLines.push(`${borders.line} ${n}`));
     }
   }
 

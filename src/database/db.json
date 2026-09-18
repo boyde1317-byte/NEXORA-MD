@@ -7,7 +7,7 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789769209559,
-      "xp": 197,
+      "xp": 218,
       "coins": 50,
       "level": 1,
       "streak": 0,
@@ -92,7 +92,7 @@
   "stats": {
     "commandsUsed": {
       "backup": 8,
-      "menu": 7,
+      "menu": 9,
       "setchannel": 12,
       "ping": 5,
       "meme": 1,
