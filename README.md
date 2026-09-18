@@ -113,6 +113,14 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.githubrelease` | ghrelease, release | Get the latest release of a GitHub repository |
 | `.ig` | instagram, igdl | Downloads Instagram posts, reels, and stories |
 | `.chanreact` | chreact, creact, chanreaction | React to a Channel post (owner) — \`.chanreact <post link> <emoji>\`, \`.chanreact off <link>\` removes it |
+| `.logo` | logomaker, makelogo | AI logo maker — \`.logo <text> [style]\` (minimalist default), \`.logo styles\` lists all |
+| `.neon` | neonlogo | Neon sign logo — \`.neon <text>\` |
+| `.gaming` | esports, esportslogo | Esports mascot emblem logo |
+| `.fire` | firelogo | Blazing flame-text logo |
+| `.glass` | glasslogo | Glassmorphism badge logo |
+| `.metallic` | 3d, threed, chrome | 3D chrome/gold metallic logo |
+| `.mascot` | wolf, wolflogo | Wolf mascot badge logo |
+| `.retro` | vintage, retrologo | 70s vintage badge logo |
 | `.channels` | chan, chans, mychannels, newsletters | List the WhatsApp channels this bot follows (owner) |
 | `.download` | dl, autodl | Smart downloader — paste any URL and it auto-detects the platform |
 | `.pinterest` | pin, pindl | Searches Pinterest and sends images directly |
