@@ -16,7 +16,6 @@ import brand from '../../config/brand.js';
 import { attachOutgoingTracker } from '../lib/outgoingCache.js';
 import { db } from '../database/db.js';
 import { handleMessage } from '../handlers/message.js';
-import { restoreReminders } from '../plugins/utility/remind.js';
 import { handleGroupParticipantsUpdate } from '../handlers/group.js';
 import { snitchRecall } from '../lib/antiGuard.js';
 import { client } from './client.js';
@@ -243,8 +242,9 @@ export async function connectToWhatsApp() {
       console.log(`🤖 Logged in as: ${sock.user?.name || 'Bot'} (${sock.user?.id?.split(':')[0]})\n`);
       console.log(`[CONNECTION] Total connects: ${stats.successfulReconnects + 1}, Total disconnects: ${stats.failedReconnects}\n`);
 
-      // Restore any pending reminders from the database after reconnect
-      restoreReminders(sock);
+      // Reminder re-arming lives in src/lib/reminderService.js (boot hook
+      // in server.js). Its timers survive reconnects, and fire() re-queues
+      // on delivery failure for the next boot sweep — nothing to do here.
 
     } else if (connection === 'close') {
       const statusCode   = lastDisconnect?.error?.output?.statusCode;
