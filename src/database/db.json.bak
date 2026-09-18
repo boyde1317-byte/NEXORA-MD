@@ -7,9 +7,9 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789769209559,
-      "xp": 71,
-      "coins": 0,
-      "level": 0,
+      "xp": 129,
+      "coins": 50,
+      "level": 1,
       "streak": 0,
       "lastDaily": null
     },
@@ -59,7 +59,10 @@
       "backup": 8,
       "menu": 7,
       "setchannel": 12,
-      "ping": 5
+      "ping": 5,
+      "meme": 1,
+      "remind": 16
     }
-  }
+  },
+  "reminders": []
 }

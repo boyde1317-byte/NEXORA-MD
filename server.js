@@ -288,6 +288,14 @@ httpServer = app.listen(PORT, HOST, async () => {
       console.warn('[STARTUP] Backup scheduler failed to start:', err.message || err);
     }
 
+    // Reminders — re-arm timers for anything pending, deliver missed ones
+    try {
+      const { initReminderService } = await import('./src/lib/reminderService.js');
+      initReminderService();
+    } catch (err) {
+      console.warn('[STARTUP] Reminder service failed to start:', err.message || err);
+    }
+
     // Reconnect any saved extra sessions (.pair-linked numbers)
     try {
       const { resumeExtraSessions } = await import('./src/core/sessionManager.js');

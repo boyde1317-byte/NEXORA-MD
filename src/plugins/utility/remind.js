@@ -1,155 +1,117 @@
-import { asciiBuilder } from '../../ui/asciiBuilder.js';
-import { db } from '../../database/db.js';
-import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
-
-const MAX_MINUTES = 1440;
-const activeReminders = new Map();
-
-function parseTime(str) {
-  const m = str.match(/^(\d+(?:\.\d+)?)(m|min|h|hr|s|sec)?$/i);
-  if (!m) return null;
-  const val = parseFloat(m[1]);
-  const unit = (m[2] || 'm').toLowerCase();
-  if (unit.startsWith('h')) return val * 60;
-  if (unit.startsWith('s')) return val / 60;
-  return val;
-}
-
 /**
- * Persist active reminders to the database so they survive restarts.
- * Called after every add/cancel/fire operation.
+ * remind.js — persisted reminders with a rich confirmation card.
+ *
+ * .remind 30m Check the oven     → reminder in 30 minutes
+ * .remind 2h30m Call mom         → compound durations
+ * .remind list                   → richTableCard of pending reminders
+ * .remind cancel r1abc           → cancel by id
+ * .remind clear                  → drop all your reminders
+ *
+ * Reminders survive restarts (boot sweep delivers anything missed while
+ * offline, up to 24h late). The confirmation card carries a native
+ * cta_reminder CTA so the user can ALSO pin the reminder to their
+ * device clock — experimental, gated behind NEXORA_REMINDER_CTA=1
+ * (experimentalCta: true — device-test before enabling).
  */
-function syncRemindersToDb() {
-  try {
-    const serializable = {};
-    for (const [id, r] of activeReminders) {
-      serializable[id] = {
-        sender: r.sender,
-        message: r.message,
-        fireAt: r.fireAt,
-        jid: r.jid,
-      };
-    }
-    db.setSettings({ activeReminders: serializable });
-  } catch (err) {
-    console.error('[REMIND] Failed to persist reminders:', err.message);
+import { addReminder, listReminders, remove, clearReminders, formatDuration } from '../../lib/reminderService.js';
+import { richTableCard, mixedCard } from '../../lib/interactiveKit.js';
+
+// Compound duration: "2h30m", "1d", "45s", "10m"
+const DUR_RE = /^(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/i;
+const UNIT_MS = { d: 86400000, h: 3600000, m: 60000, s: 1000 };
+
+function parseDuration(str) {
+  const m = str.match(/^((?:\d+[dhms])+)$/i);
+  if (!m) return 0;
+  let ms = 0;
+  for (const part of str.toLowerCase().match(/\d+[dhms]/g) || []) {
+    ms += parseInt(part) * UNIT_MS[part.slice(-1)];
   }
-}
-
-/**
- * Restore reminders from the database on startup / after reconnect.
- * Only re-arms reminders that haven't fired yet (fireAt > now).
- */
-export function restoreReminders(sock) {
-  try {
-    const stored = db.getSettings().activeReminders;
-    if (!stored || typeof stored !== 'object') return;
-
-    const now = Date.now();
-    for (const [id, r] of Object.entries(stored)) {
-      const delay = r.fireAt - now;
-      if (delay <= 0) continue; // already expired — skip
-
-      const timeout = setTimeout(async () => {
-        activeReminders.delete(id);
-        syncRemindersToDb();
-        try {
-          await sock.sendMessage(r.jid, {
-            text: `⏰ *REMINDER* [${id}]\n\n${r.message}\n\n_Set by @${r.sender.split('@')[0]}_`,
-            mentions: [r.sender],
-          });
-        } catch (_) {}
-      }, delay);
-
-      activeReminders.set(id, { ...r, timeout });
-    }
-
-    if (activeReminders.size > 0) {
-      console.log(`[REMIND] Restored ${activeReminders.size} active reminder(s) from database.`);
-    }
-  } catch (err) {
-    console.error('[REMIND] Failed to restore reminders:', err.message);
-  }
+  return ms;
 }
 
 export default {
   name: 'remind',
-  aliases: ['reminder', 'remindme', 'timer'],
+  aliases: ['reminder', 'remindme'],
   category: 'utility',
-  description: 'Sets a personal reminder. Usage: .remind <time> <message>\nTime: 10m, 1h, 30s etc. Max 24h.',
-  cooldown: 2000,
-  execute: async ({ m, sock, args, sender, prefix }) => {
-    const p = prefix || '.';
-    if (args[0]?.toLowerCase() === 'list') {
-      const userReminders = [...activeReminders.entries()]
-        .filter(([, r]) => r.sender === sender)
-        .map(([id, r]) => {
-          const remaining = Math.ceil((r.fireAt - Date.now()) / 60000);
-          return `• [${id}] ${remaining}m left — ${r.message.slice(0, 40)}`;
-        });
+  description: 'Persistent reminders: .remind <30m|2h|1d> <text> • .remind list/cancel/clear',
+  cooldown: 3000,
+  execute: async ({ sock, m, args }) => {
+    const sub = args[0]?.toLowerCase();
 
-      if (!userReminders.length) {
-        return await m.reply.info('You have no active reminders.', 'REMINDERS');
-      }
-      return await m.reply(asciiBuilder.box('YOUR REMINDERS', userReminders), { contextInfo: buildEnrichedContextInfo() });
+    // ── list ────────────────────────────────────────────────────────────
+    if (sub === 'list') {
+      const list = listReminders(m.from);
+      if (!list.length) return await m.reply.info('No active reminders. Set one with `.remind 30m <text>`.', '⏰ REMINDERS');
+      await m.react('⏰');
+      return await richTableCard(sock, m.from, {
+        title: `⏰ YOUR REMINDERS (${list.length})`,
+        headers: ['#', 'Reminder', 'Fires in', 'ID'],
+        rows: list.map((r, i) => [String(i + 1), r.text.length > 40 ? r.text.slice(0, 37) + '…' : r.text, formatDuration(r.triggerAt - Date.now()), r.id]),
+        footer: 'Cancel with .remind cancel <ID>',
+      }, { quoted: m });
     }
 
-    if (args[0]?.toLowerCase() === 'cancel' && args[1]) {
-      const id = args[1].toUpperCase();
-      const r = activeReminders.get(id);
-      if (!r || r.sender !== sender) {
-        return await m.reply.error(`No reminder found with ID *${id}*.`);
-      }
-      clearTimeout(r.timeout);
-      activeReminders.delete(id);
-      syncRemindersToDb();
-      return await m.reply.success(`Reminder *${id}* cancelled.`);
+    // ── cancel / clear ──────────────────────────────────────────────────
+    if (sub === 'cancel') {
+      const id = args[1];
+      if (!id) return await m.reply.warn('Usage: `.remind cancel <ID>` — find IDs via `.remind list`.');
+      return remove(id, m.from)
+        ? await m.reply.success(`Reminder \`${id}\` cancelled.`)
+        : await m.reply.warn(`No reminder \`${id}\` under your name.`);
+    }
+    if (sub === 'clear') {
+      const n = clearReminders(m.from);
+      return n
+        ? await m.reply.success(`${n} reminder${n > 1 ? 's' : ''} cleared.`)
+        : await m.reply.info('You had no active reminders.');
     }
 
-    const timeStr = args[0];
-    const message = args.slice(1).join(' ').trim();
-
-    if (!timeStr || !message) {
+    // ── set ─────────────────────────────────────────────────────────────
+    if (!args.length) {
       return await m.reply.info(
-        `Usage: \`${p}remind <time> <message>\`\n\nExamples:\n• \`${p}remind 10m Take a break\`\n• \`${p}remind 1h Check the oven\`\n• \`${p}remind 30s Drink water\`\n\nCommands:\n• \`${p}remind list\` — see active reminders\n• \`${p}remind cancel <id>\` — cancel a reminder`,
-        'REMINDER'
+        '*Usage*\n' +
+        '• `.remind 30m Check the oven`\n' +
+        '• `.remind 2h30m Call mom`\n' +
+        '• `.remind 1d Submit the report`\n\n' +
+        '*Manage*\n' +
+        '• `.remind list` — pending reminders\n' +
+        '• `.remind cancel <ID>`\n' +
+        '• `.remind clear`\n\n' +
+        '_Reminders survive bot restarts; anything that comes due while I am offline is delivered up to 24h late._',
+        '⏰ REMIND',
       );
     }
 
-    const minutes = parseTime(timeStr);
-    if (minutes === null || minutes <= 0) {
-      return await m.reply.error('Invalid time format. Examples: `10m`, `1h`, `30s`');
+    const durStr = args[0];
+    const ms = parseDuration(durStr);
+    if (!ms) return await m.reply.warn('Start with a duration like `30m`, `2h`, `1d` — then the text. Example: `.remind 15m Stretch`.');
+    const text = args.slice(1).join(' ').trim();
+    if (!text) return await m.reply.warn('Add a message: `.remind 15m Stretch`.');
+
+    const res = addReminder({ jid: m.from, text, triggerAt: Date.now() + ms });
+    if (res.error) return await m.reply.warn(res.error);
+    const { reminder } = res;
+    await m.react('⏰');
+
+    // Rich confirmation card. The native cta_reminder CTA (pins the
+    // reminder to the user's device clock) is EXPERIMENTAL — gated behind
+    // NEXORA_REMINDER_CTA=1 until device-verified (experimentalCta: true).
+    const buttons = [
+      { kind: 'action', label: '📋 All reminders', cmd: '.remind list' },
+      { kind: 'action', label: '❌ Cancel this', cmd: `.remind cancel ${reminder.id}` },
+    ];
+    if (process.env.NEXORA_REMINDER_CTA === '1') {
+      buttons.push({ kind: 'reminder', label: '🔔 Also set on my device', reminder: { id: reminder.id, title: text.slice(0, 60), time: new Date(reminder.triggerAt).toISOString() } });
     }
-    if (minutes > MAX_MINUTES) {
-      return await m.reply.error(`Maximum reminder time is 24 hours (1440 minutes).`);
-    }
 
-    const id = Math.random().toString(36).slice(2, 7).toUpperCase();
-    const fireAt = Date.now() + minutes * 60000;
-    const displayTime = minutes >= 60
-      ? `${(minutes / 60).toFixed(1)}h`
-      : minutes < 1 ? `${Math.round(minutes * 60)}s` : `${Math.round(minutes)}m`;
+    const cardText =
+      `⏰ *REMINDER SET*\n\n` +
+      `❯ *Message:* ${text}\n` +
+      `❯ *Fires in:* ${formatDuration(ms)}\n` +
+      `❯ *ID:* \`${reminder.id}\`\n\n` +
+      `_I'll ping you here when it's time — even if I restart in between._`;
 
-    const timeout = setTimeout(async () => {
-      activeReminders.delete(id);
-      syncRemindersToDb();
-      try {
-        await sock.sendMessage(m.from, {
-          text: `⏰ *REMINDER* [${id}]\n\n${message}\n\n_Set by @${sender.split('@')[0]}_`,
-          mentions: [sender],
-        });
-      } catch (_) {}
-    }, minutes * 60000);
-
-    activeReminders.set(id, { sender, message, fireAt, timeout, jid: m.from });
-    syncRemindersToDb();
-
-    await m.reply(asciiBuilder.box('⏰ REMINDER SET', [
-      `🆔 ID      : ${id}`,
-      `⏱️  Time    : ${displayTime} from now`,
-      `📝 Message : ${message.length > 50 ? message.slice(0, 47) + '...' : message}`,
-      ``,
-      `Use \`${p}remind cancel ${id}\` to cancel.`,
-    ]), { contextInfo: buildEnrichedContextInfo() });
-  }
+    return await mixedCard(sock, m.from, { text: cardText, footer: 'NEXORA Reminders' }, buttons, { quoted: m });
+  },
 };
