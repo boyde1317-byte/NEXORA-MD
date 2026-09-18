@@ -117,6 +117,7 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.play` | yta, ytmp3 | Search & download YouTube audio |
 | `.spotify` | sp, spdl | Downloads a Spotify track as mp3 |
 | `.tiktok` | tt, ttdl | Downloads a TikTok video without the watermark |
+| `.ttmp3` | tmp3, ttaudio, tiktokmp3 | Download a TikTok as MP3 audio — playable audio message, document fallback over 16 MB, ffmpeg extraction fallback
 | `.twitter` | x, twdl, xdl | Downloads a video from an X/Twitter post |
 | `.ytmp4` | ytv, youtube | Search & download YouTube video |
 

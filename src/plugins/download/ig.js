@@ -10,6 +10,34 @@
 import { withReactionStatus} from '../../lib/cosmetics.js';
 
 import { instagramDownload, isUrl} from '../../lib/downloader.js';
+
+/**
+ * Sniff the real media type of a direct URL by fetching its first bytes.
+ * The API returns token links (d.rapidcdn.app/...) with no file extension
+ * and content-type application/octet-stream, so URL/extension heuristics
+ * are useless — magic numbers are the only reliable signal.
+ */
+async function sniffIsVideo(url) {
+  try {
+    const r = await fetch(url, { headers: { Range: 'bytes=0-15' }, signal: AbortSignal.timeout(12000) });
+    const ct = (r.headers.get('content-type') || '').toLowerCase();
+    if (ct.startsWith('video/')) return true;
+    if (ct.startsWith('image/')) return false;
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (buf.length < 12) return false;
+    // mp4/mov: 'ftyp' box at offset 4
+    if (buf.slice(4, 8).toString('ascii') === 'ftyp') return true;
+    // webm/avi etc. ship video/* content-type above; images: FF D8 FF (jpeg),
+    // 89 50 4E 47 (png), RIFF....WEBP (webp)
+    if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return false;
+    if (buf[0] === 0x89 && buf[1] === 0x50) return false;
+    if (buf.slice(0, 4).toString('ascii') === 'RIFF') return false;
+    return false;
+  } catch (_) {
+    // sniff failed — fall back to the legacy URL heuristic
+    return /\.mp4(\?|$)/i.test(url);
+  }
+}
 import { DownloadProgress} from '../../lib/progress.js';
 
 export default {
@@ -38,8 +66,7 @@ export default {
 
         for (let i = 0; i < batch.length; i++) {
           const item    = batch[i];
-          const isVideo = /\.mp4(\?|$)/i.test(item.url) ||
-                          (item.resolution || '').toLowerCase().includes('video');
+          const isVideo = await sniffIsVideo(item.url);
 
           const caption = i === 0
             ? `📥 *Instagram Download* (${batch.length} item${batch.length !== 1 ? 's' : ''})`
