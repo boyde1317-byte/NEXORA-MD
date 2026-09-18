@@ -2,6 +2,8 @@ import { greetingManager } from '../greetings/greetingManager.js';
 import { db } from '../database/db.js';
 import { getLinkedBotPhones } from '../core/sessionManager.js';
 import { isBotName } from '../lib/botDetector.js';
+import { mixedCard } from '../lib/interactiveKit.js';
+import capabilities from '../core/capabilities.js';
 
 /**
  * Routes group participant events to the canonical greeting pipeline.
@@ -36,6 +38,42 @@ export async function handleGroupParticipantsUpdate(update, sock) {
       for (const rawP of participants) {
         const participant = normaliseP(rawP);
         if (!participant) continue;
+
+        // ── Bot added to a new group: one-time intro card ────────────────
+        // Fires only for our own number(s) so it never spams member joins.
+        const pNum = participant.split('@')[0].split(':')[0];
+        const botSelf = sock.user?.id?.split('@')[0]?.split(':')[0];
+        const isBotSelf = pNum === botSelf
+          || getLinkedBotPhones().some((x) => String(x).split('@')[0].split(':')[0] === pNum);
+        if (isBotSelf && action === 'add') {
+          try {
+            let meta = null;
+            try { meta = await sock.groupMetadata(groupJid); } catch (_) { /* non-fatal */ }
+            const intro =
+              `✦ *I'm in.*\n\n` +
+              `Hey${meta?.subject ? ` *${meta.subject}*` : ' everyone'} — NEXORA-MD just landed in this group.\n\n` +
+              `Here's the 10-second tour:\n` +
+              `• \`.menu\` — every command, swipeable\n` +
+              `• \`.groupsettings\` — Protection Hub & group config\n` +
+              `• \`.remind 30m <text>\` — reminders that survive restarts\n\n` +
+              `_Group admins can tune everything with \`.groupsettings\`._`;
+            try {
+              if (capabilities.richResponse) {
+                await mixedCard(sock, groupJid, { text: intro, footer: 'NEXORA-MD' }, [
+                  { kind: 'action', label: '📖 Menu', cmd: '.menu' },
+                  { kind: 'action', label: '🛡️ Protection Hub', cmd: '.groupsettings' },
+                ]);
+              } else {
+                await sock.sendMessage(groupJid, { text: intro });
+              }
+            } catch (_) {
+              await sock.sendMessage(groupJid, { text: intro }).catch(() => {});
+            }
+          } catch (err) {
+            console.warn('[GROUP] bot intro card failed:', err.message || err);
+          }
+          continue; // no greeting/anti gates for our own join
+        }
 
         // ── Anti-foreign: remove numbers outside the allowed country codes ──
         // Exempts the bot's own numbers (main + paired sessions) and is

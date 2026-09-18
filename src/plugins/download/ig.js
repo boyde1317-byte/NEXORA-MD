@@ -8,6 +8,7 @@
  *  - Follow-up card with copy, open, and cross-platform buttons
  */
 import { withReactionStatus} from '../../lib/cosmetics.js';
+import { baileysBridge } from '../../core/baileysBridge.js';
 
 import { instagramDownload, isUrl} from '../../lib/downloader.js';
 
@@ -64,25 +65,51 @@ export default {
         const batch = items.slice(0, 10);
         await progress.done(`✅ Found ${batch.length} item${batch.length !== 1 ? 's' : ''}. Sending...`);
 
-        for (let i = 0; i < batch.length; i++) {
-          const item    = batch[i];
-          const isVideo = await sniffIsVideo(item.url);
+        // Sniff types up front so multi-image posts can ride one native
+        // carousel instead of N sequential sends. Videos stay sequential —
+        // carousel cards are image-only.
+        const typed = [];
+        for (const item of batch) {
+          typed.push({ ...item, isVideo: await sniffIsVideo(item.url) });
+        }
+        const images = typed.filter(t => !t.isVideo);
+        const videos = typed.filter(t => t.isVideo);
 
-          const caption = i === 0
-            ? `📥 *Instagram Download* (${batch.length} item${batch.length !== 1 ? 's' : ''})`
-            : `📥 Item ${i + 1} of ${batch.length}`;
-
-          if (isVideo) {
-            await sock.sendMessage(m.from, {
-              video:   { url: item.url },
-              caption,
-            }, { quoted: i === 0 ? m : undefined });
-          } else {
-            await sock.sendMessage(m.from, {
-              image:   { url: item.url },
-              caption,
-            }, { quoted: i === 0 ? m : undefined });
+        if (images.length >= 2) {
+          // ── Rich: swipeable carousel for the image items ──────────────
+          try {
+            await baileysBridge.sendCarousel(sock, m.from, {
+              text: `📥 *Instagram* — ${images.length} image${images.length !== 1 ? 's' : ''}${videos.length ? ` + ${videos.length} video${videos.length !== 1 ? 's' : ''} below` : ''}\n\n_Swipe through the cards._`,
+              cards: images.map((img, i) => ({
+                caption: `📸 Item ${i + 1} of ${images.length}`,
+                footer: `✦ ${images.length} image post`,
+                image: { url: img.url },
+              })),
+            }, { quoted: m });
+          } catch (err) {
+            console.warn('[ig] carousel failed, sequential fallback:', err.message);
+            for (const [i, img] of images.entries()) {
+              await sock.sendMessage(m.from, {
+                image: { url: img.url },
+                caption: `📥 *Instagram Download* — Item ${i + 1} of ${images.length}`,
+              }, { quoted: i === 0 ? m : undefined });
+            }
           }
+        } else {
+          for (const [i, img] of images.entries()) {
+            await sock.sendMessage(m.from, {
+              image: { url: img.url },
+              caption: '📥 *Instagram Download*',
+            }, { quoted: m });
+          }
+        }
+
+        // Videos can't ride the carousel — send them after it.
+        for (const [i, vid] of videos.entries()) {
+          await sock.sendMessage(m.from, {
+            video: { url: vid.url },
+            caption: `🎬 *Instagram Video* (${i + 1} of ${videos.length})`,
+          }, { quoted: (images.length < 2 && i === 0) ? m : undefined });
         }
       } catch (err) {
         await m.reply.error(`Instagram download failed: ${err.message}`);

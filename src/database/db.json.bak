@@ -7,7 +7,7 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789769209559,
-      "xp": 129,
+      "xp": 197,
       "coins": 50,
       "level": 1,
       "streak": 0,
@@ -25,9 +25,44 @@
       "level": 0,
       "streak": 0,
       "lastDaily": null
+    },
+    "120363012345678901@g.us": {
+      "jid": "120363012345678901@g.us",
+      "banned": false,
+      "premium": false,
+      "warnings": 0,
+      "hasOnboarded": false,
+      "createdAt": 1789772995627,
+      "xp": 10,
+      "coins": 0,
+      "level": 0,
+      "streak": 0,
+      "lastDaily": null
+    },
+    "2348012345678@s.whatsapp.net": {
+      "jid": "2348012345678@s.whatsapp.net",
+      "banned": false,
+      "premium": false,
+      "warnings": 0,
+      "hasOnboarded": false,
+      "createdAt": 1789773114116,
+      "xp": 13,
+      "coins": 0,
+      "level": 0,
+      "streak": 0,
+      "lastDaily": null
     }
   },
-  "groups": {},
+  "groups": {
+    "120363012345678901@g.us": {
+      "jid": "120363012345678901@g.us",
+      "antilink": false,
+      "antitag": false,
+      "mute": false,
+      "warnings": {},
+      "createdAt": 1789773107212
+    }
+  },
   "settings": {
     "_migrations": [
       1,
@@ -61,7 +96,10 @@
       "setchannel": 12,
       "ping": 5,
       "meme": 1,
-      "remind": 16
+      "remind": 16,
+      "share": 1,
+      "warns": 4,
+      "wordchain": 11
     }
   },
   "reminders": []

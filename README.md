@@ -119,6 +119,9 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.fire` | firelogo | Blazing flame-text logo |
 | `.glass` | glasslogo | Glassmorphism badge logo |
 | `.metallic` | 3d, threed, chrome | 3D chrome/gold metallic logo |
+| `.share` | copycard | Any text as a tappable copy-card (wallet addresses, WiFi passwords, links) with a native cta_copy button |
+| `.warns` | | View/forgive protection strikes: richTable overview, `.warns reset @user` — dispatched by the strike card's quick-replies |
+| `.wordchain scores` | | In-game scoreboard as richTableCard (per-player word attribution) |
 | `.remind` | reminder, remindme | Persistent reminders: `.remind 30m|2h30m|1d <text>`, list (rich table), cancel/clear. Survive restarts; missed ones delivered up to 24h late. Native device-clock CTA gated behind NEXORA_REMINDER_CTA=1 |
 | `.meme` | memes | Fresh memes in ONE stacked rich message — short title on top of each inline image. `.meme [1-5] [dank\|wholesome\|meirl\|programming]` |
 | `.setchannel` | — | Owner: sets/clears the channel pill on menu cards (`.setchannel <name> <...@newsletter>` / `off`). Auto-captured by `.channel create` |

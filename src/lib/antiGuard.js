@@ -16,6 +16,7 @@
  * the anti-spam flood tracker (sliding window).
  */
 import { db } from '../database/db.js';
+import { mixedCard } from './interactiveKit.js';
 
 const MAX_STRIKES = 3;
 
@@ -32,14 +33,31 @@ export async function strikeAndKick(sock, { jid, sender, key, reason, extra }) {
   warns[sender] = count;
   db.setGroup(jid, { warnings: warns });
 
-  await sock.sendMessage(jid, {
-    text:
-      `🚫 @${num} ${reason}\n` +
-      `⚠️ Warning ${count}/${MAX_STRIKES}` +
-      (count >= MAX_STRIKES ? ' — You have been removed.' : '') +
-      (extra ? `\n\n${extra}` : ''),
-    mentions: [sender],
-  }).catch(() => {});
+  // Rich strike card: offender, count, and admin quick-replies
+  // (.warns view / forgive, .kick). Plain-text fallback keeps the
+  // old message shape if the card relay fails.
+  // Rich cards can't carry mentions — +num renders plainly there;
+  // the text fallback keeps the real @mention ping.
+  const strikeText =
+    `🚫 +${num} ${reason}\n` +
+    `⚠️ *Strike ${count}/${MAX_STRIKES}*` +
+    (count >= MAX_STRIKES ? ' — removed from the group.' : '') +
+    (extra ? `\n\n${extra}` : '');
+  try {
+    await mixedCard(sock, jid, { text: strikeText, footer: 'Protection Suite — 3 strikes = removal' }, [
+      { kind: 'action', label: '📜 Strikes', cmd: `.warns @${num}` },
+      { kind: 'action', label: '🕊️ Forgive', cmd: `.warns reset @${num}` },
+      { kind: 'action', label: '👟 Kick now', cmd: `.kick @${num}` },
+    ]);
+  } catch (_) {
+    await sock.sendMessage(jid, {
+      text: `🚫 @${num} ${reason}\n` +
+        `⚠️ *Strike ${count}/${MAX_STRIKES}*` +
+        (count >= MAX_STRIKES ? ' — removed from the group.' : '') +
+        (extra ? `\n\n${extra}` : ''),
+      mentions: [sender],
+    }).catch(() => {});
+  }
 
   if (count >= MAX_STRIKES) {
     try {

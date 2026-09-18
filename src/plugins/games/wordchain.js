@@ -11,7 +11,7 @@
  *   .wordchain stop        — Stop the current game (owner/admin only)
  *   .wordchain <word>      — Submit your word when it's your turn
  */
-import { mixedCard } from '../../lib/interactiveKit.js';
+import { mixedCard, richTableCard } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { grantXp } from '../../economy/leveling.js';
 
@@ -55,6 +55,28 @@ export default {
     const p = prefix || '.';
     const subCmd = args[0]?.toLowerCase();
 
+    // ── Scores ──────────────────────────────────────────────────────────
+    if (subCmd === 'scores' || subCmd === 'score' || subCmd === 'top') {
+      const game = getGame(m.from);
+      if (!game) return await m.reply.info(`No active game — scores appear once a chain is running. Start with \`${p}wordchain start\`.`);
+      if (game.phase !== 'playing') return await m.reply.info(`The game is still in the lobby — \`${p}wordchain go\` to begin.`);
+      const log = game.log || [];
+      const rows = game.players.map(jid => ({ jid, n: log.filter(e => e.sender === jid).length }));
+      if (!log.length) return await m.reply.info('No words played yet — the table fills as the chain grows.');
+      await m.react('🏆');
+      return await richTableCard(sock, m.from, {
+        title: `🏆 WORD CHAIN — SCORES (${log.length} word${log.length !== 1 ? 's' : ''})`,
+        headers: ['#', 'Player', 'Words', 'Last word'],
+        rows: rows.sort((a, b) => b.n - a.n).map((r, i) => [
+          String(i + 1),
+          '+' + r.jid.split('@')[0].split(':')[0],
+          String(r.n),
+          (log.filter(e => e.sender === r.jid).slice(-1)[0]?.word || '—'),
+        ]),
+        footer: `Chain length: ${game.words.length} • Current streak letter: ${(game.lastWord?.slice(-1) || '?').toUpperCase()}`,
+      }, { quoted: m });
+    }
+
     // ── Start ──────────────────────────────────────────────────────────
     if (subCmd === 'start') {
       const existing = getGame(m.from);
@@ -70,6 +92,7 @@ export default {
         players: [m.sender],
         currentTurn: 0,
         words: [],
+        log: [],
         lastWord: null,
         timeout: null,
         startedAt: Date.now(),
@@ -183,6 +206,7 @@ export default {
 
       // Valid word — record it and pass the turn
       game.words.push(word);
+      (game.log ||= []).push({ word, sender: m.sender });
       game.lastWord = word;
       game.currentTurn = (game.currentTurn + 1) % game.players.length;
 
