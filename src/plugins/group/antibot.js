@@ -24,6 +24,7 @@
 import { selectMenu, actionCardWithAd, richTableCard } from '../../lib/interactiveKit.js';
 import { getBrandThumbnail } from '../../lib/cosmetics.js';
 import { isBotName } from '../../lib/botDetector.js';
+import { getLinkedBotPhones } from '../../core/sessionManager.js';
 
 const getWhitelist = (groupData) =>
   (Array.isArray(groupData.antibot?.whitelist) ? groupData.antibot.whitelist : []);
@@ -97,13 +98,18 @@ export default {
       const meta = await m.getGroupMetadata();
       const members = meta?.participants || [];
       const adminIds = new Set(members.filter((x) => x.admin).map((x) => x.id));
-      const botSelf  = sock.user?.id?.split('@')[0]?.split(':')[0];
+      // Never flag our own sessions — the main bot AND every paired
+      // session are "bot-named" by definition but obviously wanted.
+      const selfNums = new Set([
+        sock.user?.id?.split('@')[0]?.split(':')[0],
+        ...getLinkedBotPhones().map((x) => String(x).split('@')[0]),
+      ].filter(Boolean));
 
       const suspects = [];
       for (const part of members) {
         const jid = part.id;
-        const num = jid.split('@')[0];
-        if (adminIds.has(jid) || num === botSelf) continue;
+        const num = jid.split('@')[0].split(':')[0]; // strip the :N device suffix
+        if (adminIds.has(jid) || selfNums.has(num)) continue;
         try {
           const [info] = await sock.onWhatsApp(jid);
           const vName  = info?.verifiedName || info?.verifiedBizName || '';

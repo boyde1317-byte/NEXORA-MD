@@ -45,9 +45,10 @@ export async function handleGroupParticipantsUpdate(update, sock) {
         const antibot = db.getGroup(groupJid).antibot;
         if (antibot?.on) {
           const whitelist = Array.isArray(antibot.whitelist) ? antibot.whitelist : [];
+          const pNum      = participant.split('@')[0].split(':')[0]; // strip :N device suffix
           const botSelf   = sock.user?.id?.split('@')[0]?.split(':')[0];
-          const isBotSelf = participant.split('@')[0] === botSelf
-            || getLinkedBotPhones().some((x) => x.split('@')[0] === participant.split('@')[0]);
+          const isBotSelf = pNum === botSelf
+            || getLinkedBotPhones().some((x) => String(x).split('@')[0].split(':')[0] === pNum);
           if (!isBotSelf && !whitelist.includes(participant)) {
             try {
               const [info] = await sock.onWhatsApp(participant);
@@ -66,9 +67,9 @@ export async function handleGroupParticipantsUpdate(update, sock) {
 
         const foreign = db.getGroup(groupJid).antiforeign;
         if (foreign?.on && Array.isArray(foreign.allow) && participant.endsWith('@s.whatsapp.net')) {
-          const num = participant.split('@')[0];
-          const linked = getLinkedBotPhones().map((x) => String(x).split('@')[0]);
-          const isBot = sock.user?.id?.split('@')[0] === num || linked.includes(num);
+          const num = participant.split('@')[0].split(':')[0]; // strip :N device suffix
+          const linked = getLinkedBotPhones().map((x) => String(x).split('@')[0].split(':')[0]);
+          const isBot = sock.user?.id?.split('@')[0]?.split(':')[0] === num || linked.includes(num);
           const allowed = foreign.allow.some((cc) => num.startsWith(String(cc)));
           if (!isBot && !allowed) {
             try {
