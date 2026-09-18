@@ -18,7 +18,7 @@ const PACE_MS   = 180;
 
 export default {
   name: 'delall',
-  aliases: ['clearall', 'sweep'],
+  aliases: ['clearall', 'sweep', 'clearchat'],
   category: 'group',
   description: 'Delete every message the bot recently sent in this chat',
   cooldown: 10000,
