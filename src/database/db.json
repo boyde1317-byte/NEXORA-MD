@@ -20,7 +20,7 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789387655056,
-      "xp": 138,
+      "xp": 157,
       "coins": 50,
       "level": 1,
       "streak": 0,
@@ -150,7 +150,7 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789766715806,
-      "xp": 27,
+      "xp": 36,
       "coins": 0,
       "level": 0,
       "streak": 0,
@@ -235,7 +235,9 @@
       "logo": 6,
       "neon": 1,
       "metallic": 1,
-      "fire": 1
+      "fire": 1,
+      "viewonce": 3,
+      "channel": 5
     }
   }
 }

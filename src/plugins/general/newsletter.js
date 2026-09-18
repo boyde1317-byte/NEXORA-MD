@@ -17,6 +17,7 @@
  *   .channel subscribers <link|JID>             — Get subscriber count
  */
 import newsletterManager from '../../newsletter/newsletterManager.js';
+import { richTableCard } from '../../lib/interactiveKit.js';
 
 export default {
   name: 'channel',
@@ -31,7 +32,7 @@ export default {
 
     // ── No action: send invite card ──────────────────────────────────────────
     if (!action) {
-      await m.reply('⏳ _Generating and sending channel invitation card..._');
+      await m.react('⏳');
       try {
         await newsletterManager.sendNewsletterInvite(sock, m.from, { forwardingEnabled: true }, { quoted: m });
       } catch (err) {
@@ -119,21 +120,14 @@ export default {
             }
           }
 
-          await m.reply('⏳ _Sending creation request to WhatsApp MEX servers..._');
+          await m.react('⏳');
 
           const createOptions = pictureBuffer ? { picture: pictureBuffer } : {};
           const metadata = await sock.newsletterCreate(name, description, createOptions);
 
-          let successMsg = `✅ *Channel Created Successfully!*\n\n`;
-          successMsg += `• *Name:* ${metadata.name}\n`;
-          successMsg += `• *JID:* \`${metadata.id}\`\n`;
-          successMsg += `• *Subscribers:* ${metadata.subscribers || 0}\n`;
-          if (metadata.invite) successMsg += `• *Invite Code:* ${metadata.invite}\n`;
-          if (metadata.picture?.directPath) successMsg += `• *Picture:* ✅ Set\n`;
-          else if (pictureBuffer) successMsg += `• *Picture:* ⚠️ Processed (may take time to appear)\n`;
-          else successMsg += `• *Picture:* ❌ Not set\n`;
-          successMsg += `\n_Use \`${p}channel follow ${metadata.id}\` to subscribe._`;
-          await m.reply(successMsg.trim());
+          await m.react('✅');
+          const pic = metadata.picture?.directPath ? '✅' : (pictureBuffer ? '⏳' : '❌');
+          await m.reply.success(`*${metadata.name}* is live 🎉\n\n• Invite: \`${metadata.invite || '—'}\`\n• Picture: ${pic}\n\n_Subscribe:_ \`${p}channel follow ${metadata.id}\``);
           break;
         }
 
@@ -146,7 +140,7 @@ export default {
             return await m.reply.error(`Usage: \`${p}channel info <Channel Link or JID>\``);
           }
 
-          await m.reply('⏳ _Querying channel metadata..._');
+          await m.react('⏳');
           const resolved = await _resolveChannel(sock, targetKey);
 
           if (!resolved) {
@@ -154,7 +148,7 @@ export default {
           }
 
           const info = resolved.metadata;
-          let infoMsg = `📢 *CHANNEL METADATA RESULT*\n\n`;
+          let infoMsg = '';
           infoMsg += `• *Name:* ${info.name || info.thread_metadata?.name?.text || 'Unknown'}\n`;
           infoMsg += `• *JID:* \`${info.id}\`\n`;
           infoMsg += `• *Subscribers:* ${info.subscribers || info.thread_metadata?.subscribers_count || 0}\n`;
@@ -165,7 +159,7 @@ export default {
           infoMsg += `• *Muted:* ${info.mute_state || info.viewer_metadata?.mute ? 'Yes' : 'No'}\n`;
           infoMsg += `• *Description:* _${info.description || info.thread_metadata?.description?.text || 'None'}_\n`;
           infoMsg += `• *Verification:* ${info.verification || info.thread_metadata?.verification || 'Not verified'}\n`;
-          await m.reply(infoMsg.trim());
+          await m.reply.info(infoMsg.trim(), `📢 ${info.name || info.thread_metadata?.name?.text || 'CHANNEL'}`);
           break;
         }
 
@@ -179,7 +173,7 @@ export default {
             return await m.reply.error(`Usage: \`${p}channel follow <Channel Link or JID>\``);
           }
 
-          await m.reply('⏳ _Resolving and following channel..._');
+          await m.react('⏳');
           const resolved = await _resolveChannel(sock, targetKey);
 
           if (!resolved) {
@@ -187,7 +181,7 @@ export default {
           }
 
           await sock.newsletterFollow(resolved.jid);
-          await m.reply(`✅ Successfully subscribed/followed channel!\n\n*JID:* \`${resolved.jid}\`${resolved.metadata?.name ? `\n*Name:* ${resolved.metadata.name}` : ''}`);
+          await m.reply.success(`Now following ${resolved.metadata?.name ? `*${resolved.metadata.name}*` : 'the channel'} ✅`);
           break;
         }
 
@@ -201,7 +195,7 @@ export default {
             return await m.reply.error(`Usage: \`${p}channel unfollow <Channel Link or JID>\``);
           }
 
-          await m.reply('⏳ _Resolving and unfollowing channel..._');
+          await m.react('⏳');
           const resolved = await _resolveChannel(sock, targetKey);
 
           if (!resolved) {
@@ -209,7 +203,7 @@ export default {
           }
 
           await sock.newsletterUnfollow(resolved.jid);
-          await m.reply(`✅ Successfully unsubscribed/unfollowed channel.\n\n*JID:* \`${resolved.jid}\``);
+          await m.reply.success('Unfollowed the channel.');
           break;
         }
 
@@ -219,22 +213,22 @@ export default {
         case 'mute': {
           const targetKey = args[1];
           if (!targetKey) return await m.reply.error(`Usage: \`${p}channel mute <Channel Link or JID>\``);
-          await m.reply('⏳ _Muting channel..._');
+          await m.react('⏳');
           const resolved = await _resolveChannel(sock, targetKey);
           if (!resolved) return await m.reply.error('Failed to resolve channel.');
           await sock.newsletterMute(resolved.jid);
-          await m.reply(`✅ Channel muted.\n\n*JID:* \`${resolved.jid}\``);
+          await m.reply.success('Channel muted. 🔇');
           break;
         }
 
         case 'unmute': {
           const targetKey = args[1];
           if (!targetKey) return await m.reply.error(`Usage: \`${p}channel unmute <Channel Link or JID>\``);
-          await m.reply('⏳ _Unmuting channel..._');
+          await m.react('⏳');
           const resolved = await _resolveChannel(sock, targetKey);
           if (!resolved) return await m.reply.error('Failed to resolve channel.');
           await sock.newsletterUnmute(resolved.jid);
-          await m.reply(`✅ Channel unmuted.\n\n*JID:* \`${resolved.jid}\``);
+          await m.reply.success('Channel unmuted. 🔔');
           break;
         }
 
@@ -281,12 +275,12 @@ export default {
             return await m.reply.error('Invalid image source.');
           }
 
-          await m.reply('⏳ _Updating channel picture..._');
+          await m.react('⏳');
           const resolved = await _resolveChannel(sock, targetKey);
           if (!resolved) return await m.reply.error('Failed to resolve channel.');
 
           await sock.newsletterUpdatePicture(resolved.jid, pictureBuffer);
-          await m.reply(`✅ Channel picture updated!\n\n*JID:* \`${resolved.jid}\``);
+          await m.reply.success('Channel picture updated. 🖼️');
           break;
         }
 
@@ -300,11 +294,11 @@ export default {
           if (!targetKey || !newName) {
             return await m.reply.error(`Usage: \`${p}channel name <Link|JID> <New Name>\``);
           }
-          await m.reply('⏳ _Updating channel name..._');
+          await m.react('⏳');
           const resolved = await _resolveChannel(sock, targetKey);
           if (!resolved) return await m.reply.error('Failed to resolve channel.');
           await sock.newsletterUpdateName(resolved.jid, newName);
-          await m.reply(`✅ Channel name updated to *${newName}*!\n\n*JID:* \`${resolved.jid}\``);
+          await m.reply.success(`Channel renamed to *${newName}*.`);
           break;
         }
 
@@ -319,11 +313,11 @@ export default {
           if (!targetKey || !newDesc) {
             return await m.reply.error(`Usage: \`${p}channel desc <Link|JID> <New Description>\``);
           }
-          await m.reply('⏳ _Updating channel description..._');
+          await m.react('⏳');
           const resolved = await _resolveChannel(sock, targetKey);
           if (!resolved) return await m.reply.error('Failed to resolve channel.');
           await sock.newsletterUpdateDescription(resolved.jid, newDesc);
-          await m.reply(`✅ Channel description updated!\n\n*JID:* \`${resolved.jid}\``);
+          await m.reply.success('Channel description updated.');
           break;
         }
 
@@ -334,11 +328,11 @@ export default {
           if (!isOwner) return await m.reply.error('Only the bot owner can delete channels.');
           const targetKey = args[1];
           if (!targetKey) return await m.reply.error(`Usage: \`${p}channel delete <Link|JID>\``);
-          await m.reply('⏳ _Deleting channel..._');
+          await m.react('⏳');
           const resolved = await _resolveChannel(sock, targetKey);
           if (!resolved) return await m.reply.error('Failed to resolve channel.');
           await sock.newsletterDelete(resolved.jid);
-          await m.reply(`✅ Channel deleted.\n\n*JID:* \`${resolved.jid}\``);
+          await m.reply.success('Channel deleted.');
           break;
         }
 
@@ -347,21 +341,21 @@ export default {
         // ═══════════════════════════════════════════════════════════════════════
         case 'list':
         case 'subscribed': {
-          await m.reply('⏳ _Fetching subscribed channels..._');
+          await m.react('⏳');
           const result = await sock.newsletterSubscribed();
           if (!result || !result.length) {
-            return await m.reply('📭 You are not subscribed to any channels.');
+            return await m.reply.info('No subscribed channels yet.', 'CHANNELS');
           }
-          let listMsg = `📋 *SUBSCRIBED CHANNELS*\n\n`;
-          result.forEach((ch, i) => {
-            listMsg += `${i + 1}. *${ch.name || ch.thread_metadata?.name?.text || 'Unknown'}*\n`;
-            listMsg += `   \`${ch.id}\`\n`;
-            if (ch.subscribers || ch.thread_metadata?.subscribers_count) {
-              listMsg += `   👥 ${ch.subscribers || ch.thread_metadata.subscribers_count} subscribers\n`;
-            }
-            listMsg += `\n`;
-          });
-          await m.reply(listMsg.trim());
+          await richTableCard(sock, m.from, {
+            title: `📋 SUBSCRIBED CHANNELS (${result.length})`,
+            headers: ['Channel', 'ID', 'Subs'],
+            rows: result.slice(0, 20).map((ch) => [
+              String(ch.name || ch.thread_metadata?.name?.text || 'Unknown').slice(0, 28),
+              String(ch.id || '').split('@')[0].slice(0, 18),
+              String(ch.subscribers || ch.thread_metadata?.subscribers_count || '-'),
+            ]),
+            footer: `${p}channel info <Link|JID> for details`,
+          }, { quoted: m });
           break;
         }
 
@@ -372,12 +366,12 @@ export default {
         case 'subs': {
           const targetKey = args[1];
           if (!targetKey) return await m.reply.error(`Usage: \`${p}channel subscribers <Link|JID>\``);
-          await m.reply('⏳ _Fetching subscriber count..._');
+          await m.react('⏳');
           const resolved = await _resolveChannel(sock, targetKey);
           if (!resolved) return await m.reply.error('Failed to resolve channel.');
           const result = await sock.newsletterSubscribers(resolved.jid);
           const count = result?.subscribers_count || result?.subscribers || 'Unknown';
-          await m.reply(`📊 *Subscriber Count*\n\n*JID:* \`${resolved.jid}\`\n*Subscribers:* ${count}`);
+          await m.reply.info(`👥 *${count}* subscribers`, 'SUBSCRIBERS');
           break;
         }
 
@@ -462,5 +456,5 @@ async function _sendHelp(m, p) {
     ``,
     `💡 _Channel links and JIDs are both accepted everywhere._`,
   ].join('\n');
-  await m.reply(helpText);
+  await m.reply.info(helpText, "📢 CHANNEL MANAGER");
 }

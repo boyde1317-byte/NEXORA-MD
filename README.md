@@ -119,6 +119,7 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.fire` | firelogo | Blazing flame-text logo |
 | `.glass` | glasslogo | Glassmorphism badge logo |
 | `.metallic` | 3d, threed, chrome | 3D chrome/gold metallic logo |
+| `.viewonce` | vv, reveal, readonce | View Once reader — reply to a one-view photo/video/voice note to reveal it (group admins only) |
 | `.mascot` | wolf, wolflogo | Wolf mascot badge logo |
 | `.retro` | vintage, retrologo | 70s vintage badge logo |
 | `.channels` | chan, chans, mychannels, newsletters | List the WhatsApp channels this bot follows (owner) |
