@@ -1,5 +1,6 @@
 import { client } from '../core/client.js';
 import { db } from '../database/db.js';
+import { getChannelPill } from '../lib/menuContext.js';
 import { config } from '../../config/index.js';
 import brand from '../../config/brand.js';
 import owner from '../../config/owner.js';
@@ -57,6 +58,8 @@ export const collectMenuData = (sock) => {
     // channelJid: required by the newsletter menu for admin invite cards.
     // Set CHANNEL_JID in .env (e.g. 123456789@newsletter) to enable that tier.
     channelJid: process.env.CHANNEL_JID || config.channelJid || null,
+    // Channel pill (top of menu card): set via .channel create or .setchannel
+    channelPill: getChannelPill(),
   };
 };
 

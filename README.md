@@ -119,6 +119,7 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.fire` | firelogo | Blazing flame-text logo |
 | `.glass` | glasslogo | Glassmorphism badge logo |
 | `.metallic` | 3d, threed, chrome | 3D chrome/gold metallic logo |
+| `.setchannel` | — | Owner: sets/clears the channel pill on menu cards (`.setchannel <name> <...@newsletter>` / `off`). Auto-captured by `.channel create` |
 | `.backup` | — | Owner database-backup manager: status, now (snapshot), list, restore (safety copy first). Auto: 24h snapshots, 7-day retention |
 | `.viewonce` | vv, reveal, readonce | View Once reader — reply to a one-view photo/video/voice note to reveal it (group admins only) |
 | `.mascot` | wolf, wolflogo | Wolf mascot badge logo |

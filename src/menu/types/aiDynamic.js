@@ -157,7 +157,7 @@ export const aiDynamicMenu = {
             buildPillUrlButton(`\u{1F4AC} ${toSmallcaps('Contact Developer')}`, 'https://wa.me/233533416608'),
             buildNavigationButton(menuData.prefix),
           ],
-          contextInfo: { externalAdReply: adReply, mentionedJid: [m.sender] },
+          contextInfo: { externalAdReply: adReply, ...(menuData.channelPill || {}), mentionedJid: [m.sender] },
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
         console.warn('[MENU aiDynamic] Tier 1 (sendInteractive + adReply) failed, trying nativeFlow:', err.message);
@@ -186,7 +186,7 @@ export const aiDynamicMenu = {
     return await sock.sendMessage(m.from, {
       text,
       mentions:    m.isGroup ? [m.sender] : [],
-      contextInfo: { externalAdReply: adReply },
+      contextInfo: { externalAdReply: adReply, ...(menuData.channelPill || {}) },
     }, { quoted: buildFakeImageQuote({ jpegThumbnail: imgData.buffer || undefined }) });
   }
 };

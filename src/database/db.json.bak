@@ -7,7 +7,20 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789769209559,
-      "xp": 9,
+      "xp": 25,
+      "coins": 0,
+      "level": 0,
+      "streak": 0,
+      "lastDaily": null
+    },
+    "447700900123@s.whatsapp.net": {
+      "jid": "447700900123@s.whatsapp.net",
+      "banned": false,
+      "premium": false,
+      "warnings": 0,
+      "hasOnboarded": false,
+      "createdAt": 1789769230489,
+      "xp": 5,
       "coins": 0,
       "level": 0,
       "streak": 0,
@@ -43,7 +56,9 @@
   },
   "stats": {
     "commandsUsed": {
-      "backup": 4
+      "backup": 4,
+      "menu": 4,
+      "setchannel": 8
     }
   }
 }

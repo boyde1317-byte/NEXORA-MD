@@ -22,6 +22,7 @@
  *       used only when interactive cards are unavailable
  */
 
+import { withChannelPill } from '../../lib/menuContext.js';
 import capabilities from '../../core/capabilities.js';
 import { selectMenu } from '../../lib/interactiveKit.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
@@ -83,10 +84,12 @@ export const commandDirectoryMenu = {
       return await sock.sendMessage(m.from, {
         image: imagePayload,
         caption: buildTextMenu(menuData),
+        contextInfo: withChannelPill(),
       }, { quoted: m });
     }
     return await sock.sendMessage(m.from, {
       text: buildTextMenu(menuData),
+      contextInfo: withChannelPill(),
     }, { quoted: m });
   },
 };

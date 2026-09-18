@@ -112,7 +112,7 @@ export const bottomSheetMenu = {
             { name: 'quick_reply', params: { display_text: '\u{1F916} System Stats',     id: `${menuData.prefix}menu aiDynamic` } },
             { name: 'cta_url',     params: { display_text: '\u{1F4AC} Contact Dev',      url: 'https://wa.me/233533416608' } },
           ],
-          contextInfo: { externalAdReply: adReply },
+          contextInfo: { externalAdReply: adReply, ...(menuData.channelPill || {}) },
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
         console.warn('[MENU bottomSheet] Tier 2 (sendInteractive + adReply) failed, trying flat nativeFlow:', err.message);

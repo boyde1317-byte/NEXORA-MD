@@ -127,6 +127,10 @@ export default {
 
           await m.react('✅');
           const pic = metadata.picture?.directPath ? '✅' : (pictureBuffer ? '⏳' : '❌');
+          try {
+            const { db } = await import('../../database/db.js');
+            db.setSettings({ channelId: metadata.id, channelName: metadata.name });
+          } catch (_) {}
           await m.reply.success(`*${metadata.name}* is live 🎉\n\n• Invite: \`${metadata.invite || '—'}\`\n• Picture: ${pic}\n\n_Subscribe:_ \`${p}channel follow ${metadata.id}\``);
           break;
         }

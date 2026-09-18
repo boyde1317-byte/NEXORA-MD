@@ -1,40 +1,55 @@
-import newsletterManager from '../../newsletter/newsletterManager.js';
+/**
+ * setchannel.js — owner control over the channel pill shown on menu cards.
+ *
+ *   .setchannel <...@newsletter>   → set the pill (JID from .channel info/list)
+ *   .setchannel <name> <...@newsletter> → set with a custom display name
+ *   .setchannel off                → remove the pill
+ *
+ * The pill is the small " forwarded from <channel> " banner at the top
+ * of menu cards. It is captured automatically when you run
+ * .channel create — this command exists for adopting an existing
+ * channel (grab its JID via .channel info <link>).
+ */
+import { db } from '../../database/db.js';
+import { isChannelJid } from '../../lib/menuContext.js';
 
 export default {
   name: 'setchannel',
-  aliases: ['setch', 'setdefaultchannel'],
+  aliases: [],
   category: 'owner',
-  description: 'Sets the default official WhatsApp broadcast channel JID for the framework.',
-  permissions: {
-    owner: true
-  },
-  cooldown: 2000,
-  execute: async ({ sock, m, args, prefix }) => {
-    const p = prefix || '.';
-    const targetJid = args[0];
-    
-    if (!targetJid) {
-      return await m.reply(
-        `⚠️ *Usage:* \`${p}setchannel <newsletter-jid>\`\n\n` +
-        `_Example:_ \`${p}setchannel 120363200000000000@newsletter\``
+  description: 'Sets/clears the channel pill on menu cards: .setchannel <...@newsletter> | off',
+  permissions: { owner: true },
+  cooldown: 3000,
+  execute: async ({ m, args }) => {
+    const sub = args[0]?.toLowerCase();
+
+    if (sub === 'off') {
+      db.setSettings({ channelId: undefined, channelName: undefined });
+      return await m.reply.success('Channel pill removed from menu cards.');
+    }
+
+    if (!sub || !args.length) {
+      const current = db.getSettings?.() || {};
+      const cur = current.channelId
+        ? `Current pill: *${current.channelName || current.channelId}*\n\`${current.channelId}\``
+        : 'No channel pill set yet.';
+      return await m.reply.info(
+        `${cur}\n\n• Set: \`.setchannel <...@newsletter>\`\n• Custom name: \`.setchannel <name> <...@newsletter>\`\n• Remove: \`.setchannel off\`\n\nGrab a channel JID with \`.channel info <link>\` or \`.channel list\`.`,
+        '📢 CHANNEL PILL',
       );
     }
 
-    if (!targetJid.endsWith('@newsletter')) {
-      return await m.reply.error(`*Invalid JID format!* WhatsApp channel JIDs must end with \`@newsletter\`.`);
+    // .setchannel <name> <jid>
+    let jid = null, name = null;
+    for (let i = 0; i < args.length; i++) {
+      if (isChannelJid(args[i])) { jid = args[i]; name = args.slice(0, i).join(' ') || null; }
+    }
+    if (!jid) {
+      return await m.reply.warn('That does not look like a channel JID. Expected something like `123456789@newsletter` — get it via `.channel info <link>`.');
     }
 
-    try {
-      newsletterManager.setDefaultChannel(targetJid);
-      
-      let successMsg = `✅ *Official Channel Updated Successfully!*\n\n`;
-      successMsg += `• *New Default JID:* \`${targetJid}\`\n\n`;
-      successMsg += `All future interactive menus, default newsletter invites, and footer links will now point to this channel.`;
-      
-      await m.reply(successMsg);
-    } catch (err) {
-      console.error('[SETCHANNEL] Error saving setting:', err);
-      await m.reply.error(`Failed to update default channel: ${err.message || err}`);
-    }
-  }
+    db.setSettings({ channelId: jid, channelName: name || jid.split('@')[0] });
+    await m.react('✅');
+    return await m.reply.success(`Menu cards will now show the pill: *${name || jid.split('@')[0]}*`);
+  },
 };
