@@ -137,6 +137,13 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 |---------|---------|-------------|
 | `.antilink` | antilinks, nolink | Toggle anti-link protection |
 | `.antitag` | antimention, notag | Toggle protection against mass-mention ("tag everyone") spam by non-admins |
+| `.antibot` | nobots | STRONG anti-bot: join gate (verified bot names turned away), instant removal for bot-named members, behavior scoring (menu walls, foreign command streaks). Subcommands: `on/off/status`, `scan` (audit members), `whitelist/unwhitelist @user`, `list` |
+| `.antisticker` | nosticker | Toggle non-admin sticker deletion (shared 3-strike counter) |
+| `.antispam` | antiflood | Toggle flood control — 5 messages / 8s window (shared 3-strike counter) |
+| `.antiword` | bannedwords | Banned-word filter. Subcommands: `add/remove/list` — word-boundary matching |
+| `.antidelete` | snitch | Repost deleted messages (deleted-message snitch mode) |
+| `.antiviewonce` | noviewonce | Auto-rescue view-once media and repost it |
+| `.antiforeign` | localonly | Country-code join filter. Subcommands: `on/off/status`, `allow/remove <cc>`, `list` |
 | `.copylink` | gcl | Get the current group's invite link with a copy button |
 | `.demote` | unadmin, dm | Demotes a group admin back to regular participant |
 | `.gcstory` | groupstory, swgc, gstatus | Sends a Group Story (status) to the current group |
@@ -247,6 +254,7 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.calc` | calculate, math, maths | Quick calculator |
 | `.checkchid` | channelid, chid, chatid | Get JID and metadata for current chat or a WhatsApp Channel link |
 | `.delsticker` | removesticker, unsticker | Remove a sticker → command mapping |
+| `.device` | devinfo, deviceinfo | Device info check — linked-device index (`:N` suffix), sender-key encryption, verified business name, About, pfp, group role, last-seen. Usage: `.device [@user | reply | number]` |
 | `.get` | fetchhtml, html | Fetch a website and return its raw HTML |
 | `.ip` | ipinfo, iplookup, geoip | Looks up info for an IP address or domain |
 | `.liststicker` | stickerlist, stickercmds | Show all registered sticker to command mappings |

@@ -17,6 +17,7 @@ import { db } from '../database/db.js';
 import { handleMessage } from '../handlers/message.js';
 import { restoreReminders } from '../plugins/utility/remind.js';
 import { handleGroupParticipantsUpdate } from '../handlers/group.js';
+import { snitchRecall } from '../lib/antiGuard.js';
 import { client } from './client.js';
 import { connectionMonitor } from './connectionMonitor.js';
 import { getLinkedBotPhones } from './sessionManager.js';
@@ -369,6 +370,37 @@ export async function connectToWhatsApp() {
       await handleGroupParticipantsUpdate(update, sock);
     } catch (err) {
       console.error('[HANDLER ERROR] Uncaught error in group handler:', err.message || err);
+    }
+  });
+
+  // ── Anti-delete (snitch): repost deleted messages when enabled ─────────
+  sock.ev.on('messages.update', async (updates) => {
+    try {
+      for (const u of updates) {
+        const revoke = u.update?.message?.protocolMessage
+          && u.update.message.protocolMessage.type === 0; // REVOKE
+        if (!revoke) continue;
+        const jid = u.key?.remoteJid;
+        if (!jid?.endsWith('@g.us')) continue;
+        const groupData = db.getGroup(jid);
+        if (!groupData.antidelete) continue;
+        const deletedKey = u.update.message.protocolMessage.key;
+        const entry = snitchRecall(jid, deletedKey?.id);
+        if (!entry) continue;
+        const num = String(entry.sender).split('@')[0].split(':')[0];
+        const snitch = async (content) => sock.sendMessage(jid, content, { mentions: [entry.sender] }).catch(() => {});
+        if (entry.body && (entry.type === 'conversation' || entry.type === 'extendedTextMessage')) {
+          await snitch({
+            text: `🗑️ *Anti-delete* — @${num} deleted:\n\n${entry.body.slice(0, 3000)}`,
+          });
+        } else {
+          await snitch({
+            text: `🗑️ *Anti-delete* — @${num} deleted a *${entry.type}* message. Media expired from cache — use ${config.prefix[0]}save on it before it's deleted next time.`,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[ANTIDELETE] Error:', err.message);
     }
   });
 

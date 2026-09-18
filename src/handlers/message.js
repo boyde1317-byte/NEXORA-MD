@@ -15,6 +15,10 @@ import {
   getLevelProgress,
 } from '../economy/leveling.js';
 import { getDisplayName } from '../lib/displayName.js';
+import { strikeAndKick, isExempt, isFlooding, resetFlood, snitchRemember } from '../lib/antiGuard.js';
+import { isBotName, scoreBotMessage, trackForeignCommand, resetBotTracker } from '../lib/botDetector.js';
+import { rememberDevice } from '../lib/deviceCache.js';
+import { downloadMediaMessage } from 'baileys';
 import { getRandomResponse } from '../nexora-messages.js';
 import { suggestCommand } from '../lib/fuzzyMatch.js';
 import { toSmallcaps } from '../lib/smallcaps.js';
@@ -129,6 +133,43 @@ export async function awardMessageXp(m, sock) {
 /**
 * Main incoming message handler — full command pipeline.
 */
+/**
+ * Anti-view-once rescue: download a view-once message's media and repost it
+ * with a "saved" caption, so the content survives the tap-to-view expiry.
+ * Falls back to a text notice when the media can't be re-downloaded.
+ */
+async function handleViewOnceRescue(rawMessage, sock, jid, sender) {
+  const raw = rawMessage.message || {};
+  const voKey = ['viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV3']
+    .find((k) => raw[k]?.message);
+  if (!voKey) return;
+  const inner = raw[voKey].message;
+  const type = Object.keys(inner)[0];
+  const num = String(sender).split('@')[0].split(':')[0];
+  const caption = `👁️ *View-once rescued* — from @${num}`;
+  const mentions = [sender];
+
+  try {
+    const buffer = await downloadMediaMessage(rawMessage, 'buffer', {});
+    if (!buffer?.length) throw new Error('empty media buffer');
+
+    const payload = { mentions };
+    if (type === 'imageMessage')   Object.assign(payload, { image: buffer, caption, mimetype: inner[type]?.mimetype || 'image/jpeg' });
+    else if (type === 'videoMessage') Object.assign(payload, { video: buffer, caption, mimetype: inner[type]?.mimetype || 'video/mp4', gifPlayback: !!inner[type]?.gifPlayback });
+    else if (type === 'audioMessage' || type === 'pttMessage') Object.assign(payload, { audio: buffer, ptt: true, mimetype: inner[type]?.mimetype || 'audio/ogg; codecs=opus' });
+    else if (type === 'stickerMessage') Object.assign(payload, { sticker: buffer });
+    else if (type === 'documentMessage') Object.assign(payload, { document: buffer, fileName: inner[type]?.fileName || 'view-once', mimetype: inner[type]?.mimetype });
+    else throw new Error(`unsupported view-once type: ${type}`);
+
+    await sock.sendMessage(jid, payload);
+  } catch (err) {
+    await sock.sendMessage(jid, {
+      text: `👁️ *View-once from @${num}* could not be saved (${err.message}). Type: ${type}`,
+      mentions,
+    }).catch(() => {});
+  }
+}
+
 export async function handleMessage(rawMessage, sock) {
 try {
   // Fast-path: skip messages with no content or no destination
@@ -153,6 +194,9 @@ try {
   const sender = m.sender;
   const isGroupMsg = m.isGroup;
 
+  // Device cache: keep the last raw message metadata per sender for .device
+  rememberDevice(rawMessage);
+
   // ── Passive XP from activity ────────────────────────────────────────────
   // Fire-and-forget: never let xp bookkeeping delay or break command handling.
   awardMessageXp(m, sock).catch(err => {
@@ -172,7 +216,7 @@ try {
       if (LINK_RE.test(body)) {
         try {
           const senderIsAdmin = await m.isAdmin();
-          if (!senderIsAdmin && !m.isOwner) {
+          if (!senderIsAdmin && !(await m.isOwner)) {
             await sock.sendMessage(jid, { delete: m.key });
             const groupData2 = db.getGroup(jid);
             const groupWarns = groupData2.warnings || {};
@@ -218,7 +262,7 @@ try {
       if (mentioned.length >= MASS_MENTION_THRESHOLD) {
         try {
           const senderIsAdmin = await m.isAdmin();
-          if (!senderIsAdmin && !m.isOwner) {
+          if (!senderIsAdmin && !(await m.isOwner)) {
             await sock.sendMessage(jid, { delete: m.key });
             const groupData3 = db.getGroup(jid);
             const groupWarns = groupData3.warnings || {};
@@ -249,6 +293,118 @@ try {
           console.error('[ANTITAG] Error enforcing anti-tag:', err.message);
         }
       }
+    }
+  }
+
+  // ── Anti-guard suite (antisticker / antispam / antiword / antidelete
+  // / antiviewonce) ─────────────────────────────────────────────────────
+  // Same position as antilink/antitag: before the prefix gate so plain
+  // (non-command) messages are still policed. Strikes are shared with
+  // antilink/antitag via the per-group warnings map.
+  if (isGroupMsg && !m.fromMe) {
+    try {
+      const guard = db.getGroup(jid);
+      const exempt = await isExempt(m);
+
+      // Snitch cache: remember every group message (bounded per group)
+      if (guard.antidelete || guard.antiviewonce) {
+        snitchRemember(jid, {
+          id: m.key.id, sender, body, type: m.type,
+          message: rawMessage.message,
+        });
+      }
+
+      if (!exempt) {
+        // ── Anti-sticker: non-admin stickers are deleted ──
+        if (guard.antisticker && m.type === 'stickerMessage') {
+          await strikeAndKick(sock, { jid, sender, key: m.key, reason: 'stickers are not allowed in this group!' });
+          return;
+        }
+
+        // ── Anti-spam: flood control (sliding window) ──
+        if (guard.antispam && isFlooding(jid, sender)) {
+          await strikeAndKick(sock, { jid, sender, key: m.key, reason: 'flooding the group! Slow down.' });
+          resetFlood(jid, sender);
+          return;
+        }
+
+        // ── Anti-bot: detect and remove bot accounts ──
+        if (guard.antibot?.on) {
+          const whitelist = Array.isArray(guard.antibot.whitelist) ? guard.antibot.whitelist : [];
+          if (!whitelist.includes(sender)) {
+            const known = new Set([...client.commands.keys()]);
+            for (const [alias, primary] of client.aliases) { known.add(alias); known.add(primary); }
+            const nameHit   = isBotName(rawMessage.pushName);
+            const sig       = scoreBotMessage({ pushName: rawMessage.pushName, body, knownCommands: known });
+            const streaking = trackForeignCommand(jid, sender, body, known);
+
+            // Identity tier: verified bot NAME — remove immediately. A
+            // behavioral signal alone never instant-kicks (a human pasting
+            // a decorated menu must not lose membership over one message);
+            // behavior is handled by the scored strike below.
+            if (nameHit) {
+              try {
+                await sock.groupParticipantsUpdate(jid, [sender], 'remove');
+                await sock.sendMessage(jid, {
+                  text: `🤖 *Anti-bot* — @${sender.split('@')[0]} was removed. Bot account detected (name: ${rawMessage.pushName}).`,
+                  mentions: [sender],
+                });
+              } catch (_) { /* kick failed — bot not admin; scoring continues */ }
+              resetBotTracker(jid, sender);
+              return;
+            }
+
+            let score = sig.score + (streaking ? 1 : 0);
+
+            // Borderline: corroborate with a profile-picture check (bots
+            // usually have no pfp). Only fetched when sync score is 2, so
+            // this adds at most one light lookup per borderline sender.
+            if (score === 2) {
+              try {
+                const pfp = await sock.profilePictureUrl?.(sender, 'url');
+                if (!pfp) score += 1;
+              } catch (_) { /* lookup failed — keep score */ }
+            }
+
+            if (score >= 3) {
+              await strikeAndKick(sock, {
+                jid, sender, key: m.key,
+                reason: `bot behavior detected (${[...sig.reasons, ...(streaking ? ['foreign command streak'] : [])].join('; ')}). Human? Ask an admin to whitelist you.`,
+              });
+              resetBotTracker(jid, sender);
+              return;
+            }
+          }
+        }
+
+        // ── Anti-word: banned words are deleted ──
+        if (guard.antiword?.on && Array.isArray(guard.antiword.words) && guard.antiword.words.length && body) {
+          const hit = guard.antiword.words.find((w) => {
+            const esc = String(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return new RegExp(`(^|[^\\p{L}])${esc}([^\\p{L}]|$)`, 'iu').test(body);
+          });
+          if (hit) {
+            await strikeAndKick(sock, { jid, sender, key: m.key, reason: 'banned words are not allowed in this group!' });
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[ANTIGUARD] Error in anti-guard suite:', err.message);
+    }
+  }
+
+  // ── Anti-view-once: save view-once media and repost it ────────────────
+  // Never punishes — it rescues. Enabled per group; skips the bot's own
+  // messages. Runs fire-and-forget so it never blocks the pipeline.
+  if (isGroupMsg && !m.fromMe && db.getGroup(jid).antiviewonce) {
+    const raw = rawMessage.message || {};
+    const voKey = ['viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV3']
+      .find((k) => raw[k]?.message);
+    if (voKey) {
+      handleViewOnceRescue(rawMessage, sock, jid, sender).catch((err) => {
+        console.error('[ANTIVO] Error rescuing view-once:', err.message);
+      });
     }
   }
 

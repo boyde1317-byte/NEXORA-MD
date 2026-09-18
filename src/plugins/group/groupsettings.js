@@ -36,6 +36,17 @@ export default {
           { id: `${p}open`,   title: '🌐 Open Group',   description: 'All members can send messages' },
           { id: `${p}close`,  title: '🔒 Close Group',  description: 'Only admins can send messages' },
         ]},
+        { title: 'Protection', rows: [
+          { id: `${p}antilink`,     title: '🔗 Anti-Link',      description: 'Delete non-admin links' },
+          { id: `${p}antitag`,      title: '📢 Anti-Tag',       description: 'Stop mass-mention spam' },
+          { id: `${p}antisticker`,  title: '🖼️ Anti-Sticker',  description: 'Delete non-admin stickers' },
+          { id: `${p}antispam`,     title: '⚡ Anti-Spam',     description: 'Flood control (5 msgs / 8s)' },
+          { id: `${p}antiword`,     title: '🤬 Anti-Word',     description: 'Banned-words filter' },
+          { id: `${p}antidelete`,  title: '🗑️ Anti-Delete',  description: 'Snitch deleted messages' },
+          { id: `${p}antiviewonce`, title: '👁️ Anti-View-Once', description: 'Auto-save view-once media' },
+          { id: `${p}antiforeign`,  title: '🌍 Anti-Foreign',  description: 'Country-code join filter' },
+          { id: `${p}antibot`,      title: '🤖 Anti-Bot',      description: 'STRONG bot detection + removal' },
+        ]},
         { title: 'Info Editing', rows: [
           { id: `${p}lock`,   title: '🔐 Lock Info',    description: 'Only admins can edit group info' },
           { id: `${p}unlock`, title: '🔓 Unlock Info',  description: 'All members can edit group info' },

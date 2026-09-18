@@ -1,4 +1,7 @@
 import { greetingManager } from '../greetings/greetingManager.js';
+import { db } from '../database/db.js';
+import { getLinkedBotPhones } from '../core/sessionManager.js';
+import { isBotName } from '../lib/botDetector.js';
 
 /**
  * Routes group participant events to the canonical greeting pipeline.
@@ -33,6 +36,52 @@ export async function handleGroupParticipantsUpdate(update, sock) {
       for (const rawP of participants) {
         const participant = normaliseP(rawP);
         if (!participant) continue;
+
+        // ── Anti-foreign: remove numbers outside the allowed country codes ──
+        // Exempts the bot's own numbers (main + paired sessions) and is
+        // skipped entirely when the bot isn't a group admin (kick would
+        // just fail anyway — the greeting still fires).
+        // ── Anti-bot join gate: verified bot names are turned away ──────
+        const antibot = db.getGroup(groupJid).antibot;
+        if (antibot?.on) {
+          const whitelist = Array.isArray(antibot.whitelist) ? antibot.whitelist : [];
+          const botSelf   = sock.user?.id?.split('@')[0]?.split(':')[0];
+          const isBotSelf = participant.split('@')[0] === botSelf
+            || getLinkedBotPhones().some((x) => x.split('@')[0] === participant.split('@')[0]);
+          if (!isBotSelf && !whitelist.includes(participant)) {
+            try {
+              const [info] = await sock.onWhatsApp(participant);
+              const vName  = info?.verifiedName || info?.verifiedBizName || '';
+              if (vName && isBotName(vName)) {
+                await sock.sendMessage(groupJid, {
+                  text: `🤖 @${participant.split('@')[0]} was turned away at the door — bot account detected (name: ${vName}).`,
+                  mentions: [participant],
+                }).catch(() => {});
+                await sock.groupParticipantsUpdate(groupJid, [participant], 'remove');
+                continue;
+              }
+            } catch (_) { /* onWhatsApp lookup failed — allow, behavior scoring still watches */ }
+          }
+        }
+
+        const foreign = db.getGroup(groupJid).antiforeign;
+        if (foreign?.on && Array.isArray(foreign.allow) && participant.endsWith('@s.whatsapp.net')) {
+          const num = participant.split('@')[0];
+          const linked = getLinkedBotPhones().map((x) => String(x).split('@')[0]);
+          const isBot = sock.user?.id?.split('@')[0] === num || linked.includes(num);
+          const allowed = foreign.allow.some((cc) => num.startsWith(String(cc)));
+          if (!isBot && !allowed) {
+            try {
+              await sock.sendMessage(groupJid, {
+                text: `🌍 @${num} was removed — this group only allows numbers from: ${foreign.allow.join(', ')}`,
+                mentions: [participant],
+              }).catch(() => {});
+              await sock.groupParticipantsUpdate(groupJid, [participant], 'remove');
+              continue; // no welcome for the removed number
+            } catch (_) { /* fall through to greeting if the kick failed */ }
+          }
+        }
+
         await greetingManager.handleJoin(sock, groupJid, participant);
       }
     } else if (action === 'remove') {
