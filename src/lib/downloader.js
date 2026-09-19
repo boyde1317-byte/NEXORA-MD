@@ -209,7 +209,11 @@ export async function tiktokDownload(url) {
   if (videos.length === 0) throw new Error('TikTok returned no downloadable video for that link — it may have been removed or is private.');
   return {
     title: data.title,
-    author: data.title_audio,
+    // `creator` is the uploader's actual username. `title_audio` is NOT an
+    // author field at all — it's the sound/music track title (usually just
+    // the video's caption + " (audio)"), so it was showing the same long
+    // caption text (truncated mid-word) as the "Author" on every card.
+    author: data.creator || data.author_name || data.username || data.nickname || null,
     thumbnail: data.thumbnail,
     video: videos[0],
     audio: audios[0],
