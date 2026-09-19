@@ -11,7 +11,7 @@ import { withReactionStatus} from '../../lib/cosmetics.js';
 
 import { tiktokDownload, isUrl} from '../../lib/downloader.js';
 import { DownloadProgress} from '../../lib/progress.js';
-import { sendReelWithStatsCard } from '../../lib/richContent.js';
+import { richTableCard } from '../../lib/interactiveKit.js';
 
 export default {
   name: 'tiktok',
@@ -41,29 +41,31 @@ export default {
           data.author   ? `👤 ${data.author}`             : null,
         ].filter(Boolean).join('\n');
 
-        // ── Rich tier: native reel player + stats card (TikTok-style) ──
-        const reelSent = await sendReelWithStatsCard(sock, m.from, m, {
-          reel: {
-            title: data.title || 'TikTok Video',
-            profileIconUrl: data.thumbnail,
-            thumbnailUrl: data.thumbnail,
-            videoUrl: data.video,
-          },
-          tableHeaders: ['Metric', 'Value'],
-          tableRows: [
-            ['Author', (data.author || 'Unknown').slice(0, 40)],
-            ['Quality', 'No watermark'],
-            ['Source', 'TikTok'],
-          ],
-          headerText: `🎬 ${data.title || 'TikTok Video'}`.slice(0, 60),
-          footer: '© NEXORA-MD by Aizen',
-        });
-        if (reelSent) return;
-
+        // The video is the actual deliverable — always send it as a real
+        // playable attachment. The old "reel" primitive (Baileys'
+        // generateReelWithStatsV2) puts the video behind a raw external
+        // video_url inside an unproven GenAI reel_item block, which is a
+        // Meta-AI-account content type, not a normal media message — on
+        // device it rendered nothing at all for that section, just the
+        // stats table below it, so the user got a table with no video.
         await sock.sendMessage(m.from, {
           video: { url: data.video },
           caption: `${meta}\n_No watermark_`,
         }, { quoted: m });
+
+        // Stats card is a bonus follow-up, never a replacement — uses the
+        // device-proven richTableCard (same primitive as .warns/.backup),
+        // not the unproven reel block.
+        await richTableCard(sock, m.from, {
+          title: data.title || 'TikTok Video',
+          headers: ['Metric', 'Value'],
+          rows: [
+            ['Author', (data.author || 'Unknown').slice(0, 40)],
+            ['Quality', 'No watermark'],
+            ['Source', 'TikTok'],
+          ],
+          footer: '© NEXORA-MD by Aizen',
+        });
       } catch (err) {
         await m.reply.error(`TikTok download failed: ${err.message}`);
         throw err;

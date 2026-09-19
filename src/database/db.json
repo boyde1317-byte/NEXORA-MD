@@ -7,7 +7,7 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789769209559,
-      "xp": 315,
+      "xp": 325,
       "coins": 50,
       "level": 1,
       "streak": 0,
@@ -137,7 +137,8 @@
       "delall": 3,
       "setcmd": 6,
       "subscribe": 4,
-      "broadcast": 2
+      "broadcast": 2,
+      "tiktok": 1
     }
   },
   "reminders": [],

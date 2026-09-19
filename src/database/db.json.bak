@@ -7,7 +7,7 @@
       "warnings": 0,
       "hasOnboarded": false,
       "createdAt": 1789769209559,
-      "xp": 315,
+      "xp": 325,
       "coins": 50,
       "level": 1,
       "streak": 0,
@@ -144,8 +144,7 @@
   "digest": {
     "subscribers": {
       "233533416608@s.whatsapp.net": {
-        "lastSentDate": null,
-        "createdAt": 1789774316337
+        "lastSentDate": "2026-09-18"
       }
     }
   }
