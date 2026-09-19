@@ -67,7 +67,8 @@ export default {
         switch (platform) {
           // ── YouTube ──────────────────────────────────────────────────
           case 'youtube': {
-            const data = await youtubeDownload(url);
+            // mode 'video' → mp4 job on the loader.to fallback; anything else → mp3
+            const data = await youtubeDownload(url, { preferMp4: mode === 'video' || mode === 'auto' });
             const wantAudio = mode === 'audio' || (!mode.includes('video') && true);
             // Default to video for ytmp4-style, audio for play-style
             // If mode is 'auto', prefer video

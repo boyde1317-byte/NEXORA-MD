@@ -25,7 +25,7 @@ export default {
         const progress = new DownloadProgress(sock, m.from, m);
         await progress.start('Downloading video');
         try {
-          const data = await youtubeDownload(query);
+          const data = await youtubeDownload(query, { preferMp4: true });
           if (!data.mp4) throw new Error('No video stream available for that link.');
 
           // Probe the stream URL to catch expired CDN links before sending
@@ -40,7 +40,7 @@ export default {
 
           let videoUrl = data.mp4;
           if (!(await streamIsLive(videoUrl))) {
-            const retry = await youtubeDownload(query).catch(() => null);
+            const retry = await youtubeDownload(query, { preferMp4: true }).catch(() => null);
             if (retry?.mp4 && (await streamIsLive(retry.mp4))) {
               videoUrl = retry.mp4;
             } else {

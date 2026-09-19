@@ -33,6 +33,23 @@ const BACKENDS = [
 ];
 const DEFAULT_TIMEOUT = 20000;
 
+/**
+ * getJson2 — plain JSON fetch with a semantic validator and timeout.
+ * Used for non-tioo endpoints (loader.to) that need no host failover.
+ */
+async function getJson2(path, validate) {
+  const res = await fetch(path, {
+    headers: { 'User-Agent': 'Mozilla/5.0' },
+    signal: AbortSignal.timeout(DEFAULT_TIMEOUT),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  if (validate && !validate(json)) throw new Error('unexpected response shape');
+  return json;
+}
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
 /** True if the given text looks like a public http(s) URL. */
 export const isUrl = (s) => {
   const trimmed = (s || '').trim();
@@ -113,17 +130,73 @@ export async function youtubeSearch(query) {
   })).filter(v => v.url);
 }
 
-/** YouTube video → direct mp3 + mp4 links, by URL. */
-export async function youtubeDownload(url) {
-  const data = await getJson(`/youtube?url=${encodeURIComponent(url)}`);
-  if (!data?.status) throw new Error('Could not fetch that YouTube video. Check the link and try again.');
-  return {
-    title: data.title,
-    author: data.author,
-    thumbnail: data.thumbnail,
-    mp4: data.mp4,
-    mp3: data.mp3,
-  };
+/**
+ * YouTube video → direct mp3 + mp4 links, by URL.
+ *
+ * The tioo /youtube route started returning a bare {status:true} with no
+ * links at all (YouTube extraction dead across all four tioo hosts since
+ * ~2026-09-19 — every .play/.ytmp3 "No audio stream available"). A 200
+ * with status:true looked "successful" to the failover loop, so it never
+ * tried anything else. Now we treat empty-link responses as failures and
+ * fall through to loader.to's two-step API:
+ *   1. GET /ajax/download.php?format=mp3&url=… → {id, progress_url}
+ *   2. poll progress_url every 2s (up to ~40s) → {success, download_url}
+ * loader.to links are short-lived, same as the old ymcdn tokens — callers
+ * already buffer immediately, which is why we kept that contract.
+ */
+export async function youtubeDownload(url, { preferMp4 = false } = {}) {
+  // ── Primary: tioo family (works again if their extractor recovers) ──
+  try {
+    const data = await getJson(`/youtube?url=${encodeURIComponent(url)}`);
+    // A 200/status:true body with NO links is the new dead-extractor
+    // shape — count it as a failure instead of a success.
+    const alive = data?.status && (data.mp3 || data.mp4);
+    if (alive) {
+      return {
+        title: data.title,
+        author: data.author,
+        thumbnail: data.thumbnail,
+        mp4: data.mp4,
+        mp3: data.mp3,
+      };
+    }
+  } catch (_) { /* primary down/empty — fall through to loader.to */ }
+
+  // ── Fallback: loader.to two-step ──────────────────────────────────
+  const viaLoader = await loaderToDownload(url, preferMp4 ? '360' : 'mp3');
+  if (!viaLoader) {
+    throw new Error('Could not fetch that YouTube video. Check the link and try again.');
+  }
+  return viaLoader;
+}
+
+/**
+ * loader.to two-step download. Returns the same shape as the tioo route
+ * (mp3 in .mp3, video in .mp4) or null when the job never produced a URL.
+ */
+async function loaderToDownload(url, format) {
+  const start = await getJson2(
+    `https://loader.to/ajax/download.php?format=${format}&url=${encodeURIComponent(url)}`,
+    (j) => !!(j?.success && j?.progress_url),
+  ).catch(() => null);
+  if (!start) return null;
+
+  // Poll the progress endpoint until the download URL appears.
+  for (let i = 0; i < 20; i++) {
+    await sleep(2000);
+    const p = await getJson2(start.progress_url, (j) => j && typeof j === 'object')
+      .catch(() => null);
+    if (p?.success === 1 && p?.download_url) {
+      return {
+        title: null,
+        author: null,
+        thumbnail: null,
+        mp3: format === 'mp3' ? p.download_url : undefined,
+        mp4: format !== 'mp3' ? p.download_url : undefined,
+      };
+    }
+  }
+  return null;
 }
 
 /** TikTok video → direct (no-watermark) video/audio links. */
