@@ -149,9 +149,9 @@ export const assetManager = {
     await ensureDefaultAssets();
 
     const db = this.loadAssetsDb();
-    const geminiAvailable = aiAssetGenerator.isEnabled();
+    const geminiAvailable = aiAssetGenerator.isBootGenerationEnabled();
 
-    console.log(`[ASSET MANAGER] Gemini AI generation: ${geminiAvailable ? 'ENABLED' : 'DISABLED'}`);
+    console.log(`[ASSET MANAGER] Boot-time Gemini AI generation: ${geminiAvailable ? 'ENABLED' : 'DISABLED'}`);
     console.log('[ASSET MANAGER] All default visuals are CDN-hosted URLs — no local files required.');
 
     if (!geminiAvailable) {
@@ -211,9 +211,8 @@ export const assetManager = {
    * Regenerates all AI assets (leaves manual overrides untouched)
    */
   async regenerateAll() {
-    const geminiAvailable = aiAssetGenerator.isEnabled();
-    if (!geminiAvailable) {
-      throw new Error('Gemini API is not configured or GENERATE_ASSETS is not set to true.');
+    if (!aiAssetGenerator.isEnabled()) {
+      throw new Error('Image generation is unavailable (no Gemini key and Pollinations fallback disabled).');
     }
 
     const db = this.loadAssetsDb();

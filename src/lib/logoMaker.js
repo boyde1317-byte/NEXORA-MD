@@ -80,7 +80,7 @@ export async function sendLogo({ m, sock, styleId, text, prefix }) {
   const check = validateLogoText(text);
   if (!check.ok) { await m.reply.warn(check.error); return false; }
   if (!aiAssetGenerator.isEnabled()) {
-    await m.reply.error('AI image generation is offline. Set GEMINI_API_KEY and GENERATE_ASSETS=true.');
+    await m.reply.error('AI image generation is offline. Set GEMINI_API_KEY + GENERATE_ASSETS=true, or add a free Pollinations key: POLLINATIONS_TOKEN (register at auth.pollinations.ai).');
     return false;
   }
 

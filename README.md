@@ -396,8 +396,12 @@ SUPER_OWNER_NUMBERS="233XXXXXXXXX"
 # AI — free key from console.groq.com (enables chat, remix, summary, math AI)
 GROQ_API_KEY="gsk_..."
 
-# Optional — image generation (Google AI Studio)
+# Optional — image generation via Gemini (Google AI Studio)
 GEMINI_API_KEY="AIza..."
+
+# Optional — free image-generation fallback for .logo / .generateimage
+# (used when Gemini is missing or fails). Free key: https://auth.pollinations.ai
+POLLINATIONS_TOKEN="..."
 
 # Optional — server plans shown by .store / .order
 # STORE_PLANS='[{"ram":"1GB","price":10},{"ram":"4GB","price":40}]'
