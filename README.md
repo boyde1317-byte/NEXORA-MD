@@ -437,35 +437,127 @@ Node 20 + `npm install` + `npm start` — same steps as above; use PM2 (`pm2 sta
 
 ---
 
-## 🔌 Writing a Plugin
+## 🔌 Writing Plugins
 
-Every command is a single `.js` file in `src/plugins/`. The minimum shape:
+Every command is a plugin: one `.js` file in `src/plugins/<category>/`. Drop a file in, restart (or `.reload`), and it's live. This section is the full manual.
+
+### Quick start
 
 ```js
-// src/plugins/greet.js
-export default {
-  name: 'greet',                    // trigger: .greet
-  aliases: ['hello', 'hi'],        // also: .hello, .hi
-  category: 'general',
-  description: 'Sends a greeting.',
-  cooldown: 2000,                   // ms; overrides global default
-  permissions: {
-    owner: false,                   // set true to restrict to owner
-    groupOnly: false,               // set true for groups only
-    admin: false,                   // require sender to be group admin
-    botAdmin: false                 // require bot to be group admin
-  },
+// src/plugins/fun/greet.js
+import { actionCard } from '../../lib/interactiveKit.js';
 
-  execute: async ({ m, args, prefix, sock, db, config }) => {
-    const name = args[0] || 'friend';
-    await m.reply(`👋 Hello, ${name}!`);
+export default {
+  name: 'greet',
+  aliases: ['hello', 'hi'],
+  category: 'fun',
+  description: 'Greets someone. Usage: .greet @person (or .greet Bob)',
+  cooldown: 2000,
+  execute: async ({ m, sock, args, prefix }) => {
+    const mentions = m.msg?.contextInfo?.mentionedJid ?? [];
+    const who = mentions.length ? `@${mentions[0].split('@')[0].split(':')[0]}` : (args[0] || 'friend');
+    await actionCard(sock, m.from, { text: `👋 Hello, ${who}!`, footer: 'NEXORA' },
+      [{ label: '👋 Again', cmd: `${prefix}greet` }],
+      { quoted: m, mentions });
   }
 };
 ```
 
-For rich cards, import the builders from `src/lib/interactiveKit.js` (`selectMenu`, `actionCard`, `copyResultCard`) — every consumer keeps a plain fallback if the rich send fails. Load a plugin at runtime with `.reload`.
+The file's default export is the plugin object. The loader (`src/core/client.js`) picks up any `.js` file anywhere under `src/plugins/`, so category folders are for organization.
 
----
+### Plugin fields (all supported fields)
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `name` | string | **Required.** Trigger without prefix — `.greet` |
+| `execute` | function | **Required.** `async ({ ...ctx }) => {}` |
+| `aliases` | string[] | Extra triggers. Must not collide with existing names/aliases (loader warns, last one wins) |
+| `category` | string | One of the folders: `ai`, `anime`, `channel`, `download`, `economy`, `fun`, `games`, `general`, `group`, `logomaker`, `media`, `owner`, `utility`, `web`. **Omit it and the command works but is hidden from menus** |
+| `description` | string | Shown in `.menu` and the command detail page. Put usage examples here — this is the only "help text" the menu reads |
+| `cooldown` | number | Per-user cooldown in ms. Omit for the global default (`config.cooldownTime`) |
+| `permissions` | object | The canonical gate — `permissions: { owner, groupOnly, admin, botAdmin }` (all booleans). Legacy flat flags (`ownerOnly`, `groupOnly`, `adminOnly`, `botAdmin`) still work as fallbacks but prefer the object |
+| `dependencies` | string[] | Names of other plugins that must exist — loader warns if missing |
+| `onLoad` | function | Lifecycle hook, awaited once at boot (and after `.reload`): `onLoad({ client, db, config, brand, logger })` |
+
+What the flags mean: `owner: true` restricts to `OWNER_NUMBERS`; `groupOnly: true` refuses DMs; `admin: true` requires the sender to be a group admin; `botAdmin: true` requires the bot itself to be group admin. The dispatcher (`src/handlers/message.js`) enforces all of them before your `execute` runs — you never need to re-check permissions inside the command.
+
+### The `execute` context
+
+```js
+execute: async ({ m, sock, jid, sender, args, body, prefix,
+                  isGroup, isOwner, rawMessage, db, client, config }) => {}
+```
+
+* `m` — serialized message object, the workhorse (see below)
+* `sock` — the Baileys socket, for anything raw (`sendMessage`, presence, etc.)
+* `args` — array of words after the command. `prefix` is the active prefix string (usually `.`; default it with `const p = prefix || '.'`)
+* `body` — full text after the prefix, `rawMessage` — the untouched Baileys proto
+* `isGroup`, `isOwner`, `isGroup` flags, plus `db` (database handle), `client` (command registry), `config`
+
+### The `m` object surface
+
+| Member | What it does |
+|--------|--------------|
+| `m.reply(text)` | Plain text reply. Auto-attaches the ad-reply banner card (see `enrichContext.js`) |
+| `m.reply.success / .error / .warn / .info / .loading` | Pre-formatted variants (`loading(text)` shows a spinner card you should replace with the result) |
+| `m.reply(text, { skipAdReply: true })` | Suppress the banner card |
+| `m.reply(text, { contextInfo })` | Custom contextInfo override |
+| `m.react(emoji)` | React to the triggering message |
+| `m.sender`, `m.from` | Sender JID, chat JID. Numbers: `m.sender.split('@')[0].split(':')[0]` |
+| `m.quoted` | The replied-to message, if any (`m.quoted.sender`, `m.quoted.text`) |
+| `m.msg?.contextInfo?.mentionedJid` | Array of `@mentions` in the triggering message |
+| `m.download()` | Download attached media (images/audio/video) as a Buffer |
+| `m.edit(text)`, `m.delete()` | Edit/delete the *bot's own* message (edit powers in-place animations, see `fun/hack.js`) |
+
+Mention tags: WhatsApp only renders `@number` when the JID is also in the `mentions` array — every send that prints `@user` must pass `mentions: [jid]`.
+
+### Applying rich messages
+
+Rich output is a **tier system**: try the rich card first, fall back to plain text if it throws. Never assume the rich renderer succeeded — device support varies and the whole rich engine can be off (`NEXORA_RICH_RESPONSE=0` disables it globally).
+
+```js
+// Tier 1: rich table
+try {
+  return await richTableCard(sock, m.from, {
+    title: '🪙 LEADERBOARD',
+    headers: ['#', 'User', 'Coins'],
+    rows,
+    footer: 'Page 1/3',
+  }, { quoted: m });
+} catch (err) {
+  console.warn(`[lb] rich failed, falling back:`, err.message);
+}
+// Tier 2: plain text fallback — always reached, never a dead end
+await m.reply(plainTextRows);
+```
+
+Builders live in two files:
+
+* `src/lib/interactiveKit.js` — `richTableCard` (native tables), `richArticleCard` (text + LaTeX + links), `richCodeCard`, `richCarouselCard`, `richMediaCard` (inline images), `actionCard` (buttons), `copyResultCard`, `linkCard`, `mixedCard`, `selectMenu` (list picker), `bottomSheetCard`, `offerCard`. All degrade gracefully to plain text internally.
+* `src/lib/richContent.js` — `sendGridCard`, `sendMultiImageGallery`, `sendGifCard`, `sendReelWithStatsCard`, `sendLinkCard`, `sendListCard`. Gate with `richEnabled()` if you want to skip the attempt entirely.
+
+Other rendering helpers: `sendAIRichReply` (`aiRichReply.js`, markdown/tables/code for AI output), `asciiBuilder` (`ui/asciiBuilder.js`, plain-text tables/banners for fallbacks), `DownloadProgress` (`lib/progress.js`, animated progress for downloads), `withReactionStatus` + `animateReveal` (`lib/cosmetics.js`, status reactions and staged reveals).
+
+Reference plugins worth copying: `economy/leaderboard.js` (rich table + ascii fallback), `utility/wiki.js` (table card + action buttons), `fun/hack.js` (edit-based animation), `ai/ai.js` (AI rich reply + context memory).
+
+### Must-knows checklist
+
+1. **Reply exactly once per outcome.** The dispatcher auto-sends an error card if your plugin *throws* without having replied (`m._replyCount`), so a plugin that errors mid-send won't double-reply. But don't `reply()` and *also* `throw` — that stacks messages.
+2. **Always `try/catch` rich sends** and have a working plain-text fallback. The catch block is your second chance, not dead code.
+3. **Cooldowns are per sender + command.** Set realistic values — group games spam fast. `cooldown: 3000` is a good default for fun commands.
+4. **Write usage into `description`.** The menu shows only `name` + `description`, so `.greet @person` examples belong in the description string itself.
+5. **Never hardcode the prefix.** Use the `prefix` argument (`const p = prefix || '.'`).
+6. **Don't block.** `execute` is awaited in the message pipeline — long work (API calls, downloads) should use `DownloadProgress` or an early acknowledgment, never a silent 30-second stall. The dispatcher already emits a "typing…" presence for you.
+7. **Media in, media out:** use `m.download()` for input, and route image sends through the rich builders or `sock.sendMessage` with a Buffer — not raw URLs, which expire.
+8. **Keep secrets out of replies.** Errors from APIs often contain keys — log with `console.warn`, reply a clean message.
+9. **Names are global.** Before picking a name, `grep -rn "name: 'yourname'" src/plugins/` — the loader warns on collisions but last-loaded wins, which makes confusing behavior.
+10. **Test before pushing:** `node --check <file>`, `npx eslint <file>`, then a loader boot check:
+
+```bash
+node -e "process.env.NEXORA_LOG_SILENT='1'; const { client } = await import('./src/core/client.js'); await client.loadPlugins(); console.log('loaded:', client.commands.size, 'missing new cmd?', !client.commands.has('greet'))"
+```
+
+Then `.reload greet` (owner command) loads it live without a restart. `.reload` with a category reloads the whole folder.
 
 ## 🧩 Rich Message System
 
