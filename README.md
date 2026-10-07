@@ -1,17 +1,10 @@
 <div align="center">
 
-```
- ███╗   ██╗███████╗██╗  ██╗ ██████╗ ██████╗ █████╗  
-████╗  ██║██╔════╝╚██╗ ██╔╝██╔═══██╗██╔══██╗██╔══██╗
- ██╔██╗ ██║█████╗  ╚███╔╝ ██║   ██║██████╔╝███████║ 
- ██║╚██╗██║██╔══╝  ██╔██╗ ██║   ██║██╔══██║██╔══██║ 
-██║ ╚████║███████╗██╔╝ ██╗╚██████╔╝██║  ██║██║  ██║ 
-╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ 
-```
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:141E30,100:25D366&height=180&text=NEXORA%20MD&fontSize=52&fontAlignY=36&animation=twinkling" width="100%" alt="NEXORA MD"/>
 
-**Rich-native WhatsApp bot platform**
-
-**By Aizen • v2.0.0**
+<a href="https://readme-typing-svg.herokuapp.com">
+  <img src="https://readme-typing-svg.herokuapp.com?lines=Rich-native+WhatsApp+bot+platform;By+Aizen+%E2%80%A2+v2.0.0&font=Fira+Code&color=25D366FF&height=55&width=520&center=true&vCenter=true&size=22" alt="Typing SVG"/>
+</a>
 
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![WhatsApp](https://img.shields.io/badge/WhatsApp-Multi--Device-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://www.whatsapp.com)
