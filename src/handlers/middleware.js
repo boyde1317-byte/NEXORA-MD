@@ -2,6 +2,7 @@ import { config } from '../../config/index.js';
 import { client } from '../core/client.js';
 import { db } from '../database/db.js';
 import { getRandomResponse } from '../nexora-messages.js';
+import { getChatLanguage, getLocalizedResponse, t } from '../lib/i18n.js';
 import { suggestCommand } from '../lib/fuzzyMatch.js';
 import { actionCard } from '../lib/interactiveKit.js';
 
@@ -204,7 +205,7 @@ export async function cooldownGuard(ctx, next) {
       timeStr = `${remainingSec.toFixed(1)}s`;
     }
 
-    const cooldownMsg = getRandomResponse('cooldown', command.name, timeStr);
+    const cooldownMsg = getLocalizedResponse('cooldown', ctx.lang, command.name, timeStr);
     const sameCategory = [...clientInst.commands.values()]
       .filter(c => c.category === command.category && c.name !== command.name)
       .slice(0, 3)
@@ -213,7 +214,7 @@ export async function cooldownGuard(ctx, next) {
     if (sameCategory.length > 0 && typeof actionCard === 'function') {
       try {
         await actionCard(ctx.sock, ctx.jid, {
-          text: `${cooldownMsg}\n\nWhile you wait, try:`,
+          text: `${cooldownMsg}\n\n${t(ctx.lang, 'while_you_wait')}`,
           footer: `${ctx.config?.botName || config.botName} • Cooldown`,
         }, sameCategory.map(c => ({ label: `▶️ ${ctx.prefix}${c}`, cmd: `${ctx.prefix}${c}` })), { quoted: ctx.rawMessage || ctx.m });
       } catch (_) {
@@ -262,7 +263,7 @@ export async function permissionCheck(ctx, next) {
   // 1. Owner-only guard
   if (ownerOnly && !ownerCheck) {
     const replyFn = ctx.reply || ctx.m?.reply;
-    if (replyFn) await replyFn(getRandomResponse('owner_only'));
+    if (replyFn) await replyFn(getLocalizedResponse('owner_only', ctx.lang));
     return;
   }
 
@@ -271,12 +272,12 @@ export async function permissionCheck(ctx, next) {
   const publicMode = dbInst.getSettings?.().publicMode ?? ctx.config?.publicMode ?? config.publicMode;
   if (!publicMode && !ownerCheck) {
     if (typeof ctx.reply?.warn === 'function') {
-      await ctx.reply.warn('This bot is running in private mode. Only the owner can use commands.');
+      await ctx.reply.warn(getLocalizedResponse('private_mode', ctx.lang));
     } else if (typeof ctx.m?.reply?.warn === 'function') {
-      await ctx.m.reply.warn('This bot is running in private mode. Only the owner can use commands.');
+      await ctx.m.reply.warn(getLocalizedResponse('private_mode', ctx.lang));
     } else {
       const replyFn = ctx.reply || ctx.m?.reply;
-      if (replyFn) await replyFn('This bot is running in private mode. Only the owner can use commands.');
+      if (replyFn) await replyFn(getLocalizedResponse('private_mode', ctx.lang));
     }
     return;
   }
@@ -284,7 +285,7 @@ export async function permissionCheck(ctx, next) {
   // 3. Group-only guard
   if (groupOnly && !ctx.isGroup) {
     const replyFn = ctx.reply || ctx.m?.reply;
-    if (replyFn) await replyFn(getRandomResponse('group_only'));
+    if (replyFn) await replyFn(getLocalizedResponse('group_only', ctx.lang));
     return;
   }
 
@@ -293,7 +294,7 @@ export async function permissionCheck(ctx, next) {
     const senderIsAdmin = ctx.m?.isAdmin ? await ctx.m.isAdmin() : false;
     if (!senderIsAdmin && !ownerCheck) {
       const replyFn = ctx.reply || ctx.m?.reply;
-      if (replyFn) await replyFn(getRandomResponse('permission_denied'));
+      if (replyFn) await replyFn(getLocalizedResponse('permission_denied', ctx.lang));
       return;
     }
   }
@@ -303,7 +304,7 @@ export async function permissionCheck(ctx, next) {
     const botIsAdmin = ctx.m?.isBotAdmin ? await ctx.m.isBotAdmin() : false;
     if (!botIsAdmin) {
       const replyFn = ctx.reply || ctx.m?.reply;
-      if (replyFn) await replyFn(getRandomResponse('bot_not_admin'));
+      if (replyFn) await replyFn(getLocalizedResponse('bot_not_admin', ctx.lang));
       return;
     }
   }
@@ -337,7 +338,7 @@ export async function commandResolver(ctx, next) {
     if (suggestion) {
       try {
         await actionCard(ctx.sock, ctx.jid, {
-          text: `${getRandomResponse('not_found', `${p}${ctx.commandName}`)}\n\nDid you mean: *${p}${suggestion}*?`,
+          text: `${getLocalizedResponse('not_found', ctx.lang, `${p}${ctx.commandName}`)}\n\nDid you mean: *${p}${suggestion}*?`,
           footer: `${ctx.config?.botName || config.botName} • Did you mean?`,
         }, [
           { label: `▶️ Run ${p}${suggestion}`, cmd: `${p}${suggestion}` },
@@ -345,11 +346,11 @@ export async function commandResolver(ctx, next) {
         ], { quoted: ctx.rawMessage || ctx.m });
       } catch (_) {
         const replyFn = ctx.reply || ctx.m?.reply;
-        if (replyFn) await replyFn(`${getRandomResponse('not_found', `${p}${ctx.commandName}`)}\n\nDid you mean: *${p}${suggestion}*?`);
+        if (replyFn) await replyFn(`${getLocalizedResponse('not_found', ctx.lang, `${p}${ctx.commandName}`)}\n\nDid you mean: *${p}${suggestion}*?`);
       }
     } else {
       const replyFn = ctx.reply || ctx.m?.reply;
-      if (replyFn) await replyFn(`${getRandomResponse('not_found', `${p}${ctx.commandName}`)}\n\nType *${p}help* to see all commands, or *${p}menu* for the interactive console.`);
+      if (replyFn) await replyFn(`${getLocalizedResponse('not_found', ctx.lang, `${p}${ctx.commandName}`)}\n\nType *${p}help* to see all commands, or *${p}menu* for the interactive console.`);
     }
     // Do not call next() as command was not found
   }
@@ -392,6 +393,7 @@ export async function executePipeline(context) {
     config: context.config || config,
     reply: context.reply || m?.reply,
     react: context.react || m?.react,
+    lang: context.lang || getChatLanguage({ db: context.db || db, from: (context.jid || m?.from), isGroup: (context.isGroup ?? m?.isGroup ?? false), config: context.config || config }),
   };
 
   try {
@@ -437,7 +439,7 @@ export async function executePipeline(context) {
       const cmdName = ctx.command?.name || ctx.commandName;
       let errText;
       if (cmdName) {
-        errText = getRandomResponse('exec_error', cmdName, err.message || 'Unknown error');
+        errText = getLocalizedResponse('exec_error', ctx.lang, cmdName, err.message || 'Unknown error');
         errText += `\n\n_Type \`${p}help ${cmdName}\` for usage info, or try again._`;
       } else {
         errText = '⚠️ An unexpected error occurred while processing your message.';

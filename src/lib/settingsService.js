@@ -26,6 +26,7 @@ export const SETTING_DEFS = {
   publicMode:            { type: 'bool', label: 'Public Mode',       cat: 'Behavior', dbKey: 'publicMode' },
   autoRead:              { type: 'bool', label: 'Auto-Read Chats',    cat: 'Behavior' },
   autoStatusView:        { type: 'bool', label: 'Auto-View Status',   cat: 'Behavior' },
+  language:              { type: 'string', label: 'Default Language',  cat: 'Behavior', max: 8 },
 
   // ── feature flags (gate command categories at dispatch) ────────────────
   'features.ai':             { type: 'bool', label: 'AI Commands',        cat: 'Features', gateCat: ['ai', 'logomaker'] },

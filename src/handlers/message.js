@@ -16,6 +16,7 @@ import {
   getLevelProgress,
 } from '../economy/leveling.js';
 import { getDisplayName } from '../lib/displayName.js';
+import { getChatLanguage, getLocalizedResponse } from '../lib/i18n.js';
 import { strikeAndKick, isExempt, isFlooding, resetFlood, snitchRemember } from '../lib/antiGuard.js';
 import { isBotName, scoreBotMessage, trackForeignCommand, resetBotTracker } from '../lib/botDetector.js';
 import { rememberDevice } from '../lib/deviceCache.js';
@@ -512,6 +513,7 @@ try {
     }
 
     // ── "Did you mean?" fuzzy suggestion ──────────────────────────────
+    const lang = getChatLanguage({ db, from: jid, isGroup: isGroupMsg, config });
     // Instead of silently ignoring, suggest the closest command match.
     // When a match is found, send an interactive button so the user can
     // tap to run it directly — no retyping needed.
@@ -520,7 +522,7 @@ try {
     if (suggestion) {
       try {
         await actionCard(sock, jid, {
-          text:   `${getRandomResponse('not_found', `${prefix}${commandName}`)}\n\nDid you mean: *${prefix}${suggestion}*?`,
+          text:   `${getLocalizedResponse('not_found', lang, `${prefix}${commandName}`)}\n\nDid you mean: *${prefix}${suggestion}*?`,
           footer: `${config.botName} • Did you mean?`,
         }, [
           { label: `▶️ Run ${prefix}${suggestion}`, cmd: `${prefix}${suggestion}` },
@@ -528,12 +530,12 @@ try {
         ], { quoted: rawMessage });
       } catch (_) {
         await m.reply(
-          `${getRandomResponse('not_found', `${prefix}${commandName}`)}\n\nDid you mean: *${prefix}${suggestion}*?`
+          `${getLocalizedResponse('not_found', lang, `${prefix}${commandName}`)}\n\nDid you mean: *${prefix}${suggestion}*?`
         );
       }
     } else {
       await m.reply(
-        `${getRandomResponse('not_found', `${prefix}${commandName}`)}\n\nType *${prefix}help* to see all commands, or *${prefix}menu* for the interactive console.`
+        `${getLocalizedResponse('not_found', lang, `${prefix}${commandName}`)}\n\nType *${prefix}help* to see all commands, or *${prefix}menu* for the interactive console.`
       );
     }
     return;
@@ -573,13 +575,15 @@ try {
   // approval commands themselves stay owner-gated.
   if (!publicMode && !ownerCheck && !command.requestable) {
     console.warn(`[CMD-DENY] ${resolvedName}: private_mode — sender ${sender} is not owner`);
-    await m.reply.warn('This bot is running in private mode. Only the owner can use commands.');
+    await m.reply.warn(getLocalizedResponse('private_mode', getChatLanguage({ db, from: jid, isGroup: isGroupMsg, config })));
     return;
   }
 
+  const permLang = getChatLanguage({ db, from: jid, isGroup: isGroupMsg, config });
+
   // 3. Group-only guard
   if (groupOnly && !isGroupMsg) {
-    await m.reply(getRandomResponse('group_only'));
+    await m.reply(getLocalizedResponse('group_only', permLang));
     return;
   }
 
@@ -587,7 +591,7 @@ try {
   if (adminOnly && isGroupMsg) {
     const senderIsAdmin = await m.isAdmin();
     if (!senderIsAdmin && !ownerCheck) {
-      await m.reply(getRandomResponse('permission_denied'));
+      await m.reply(getLocalizedResponse('permission_denied', permLang));
       return;
     }
   }

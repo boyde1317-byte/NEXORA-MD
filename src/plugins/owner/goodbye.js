@@ -7,10 +7,10 @@ export default {
   category: 'owner',
   description: 'Toggle goodbye messages on or off (per-group or global).',
   permissions: {
-    owner: true
+    admin: true
   },
   cooldown: 2000,
-  execute: async ({ m, args, prefix }) => {
+  execute: async ({ m, args, prefix, isOwner }) => {
     const p = prefix || '.';
     const opt = args[0] ? args[0].toLowerCase() : null;
 
@@ -29,6 +29,11 @@ export default {
         `${info}\n\nUsage:\n• \`${p}goodbye on\` — Enable ${m.isGroup ? 'in this group' : 'globally'}\n• \`${p}goodbye off\` — Disable ${m.isGroup ? 'in this group' : 'globally'}\n\nIn a group, toggles per-group. In DM, toggles the global default.`,
         'GOODBYE CONTROLS'
       );
+    }
+
+    // Global default (DM) stays owner-only.
+    if (!m.isGroup && !isOwner) {
+      return await m.reply.warn('Only the owner can change the global default. In a group, any admin can toggle it for that group.');
     }
 
     const enabled = opt === 'on';
