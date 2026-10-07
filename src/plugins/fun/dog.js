@@ -15,7 +15,7 @@ export default {
         const data = await res.json();
         
         await actionCard(sock, m.from, {
-          text: `✦ *RANDOM DOG* ✦\n\nWho\'s a good bot? Here\'s a good dog. 🐶`,
+          text: `✦ *RANDOM DOG* ✦\n\nWho's a good bot? Here's a good dog. 🐶`,
           image: { url: data[0].url },
           footer: 'NEXORA • Woof 🐶'
         }, [

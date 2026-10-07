@@ -99,7 +99,7 @@ export default {
       });
 
       return await mixedCard(sock, m.from, {
-        text: `🔗 *WORD CHAIN*\n\nGame started! Who\'s got the vocabulary for this?\n\nPlayers: 1/${MAX_PLAYERS}\n\nType \`${p}wordchain join\` to play! ✦`,
+        text: `🔗 *WORD CHAIN*\n\nGame started! Who's got the vocabulary for this?\n\nPlayers: 1/${MAX_PLAYERS}\n\nType \`${p}wordchain join\` to play! ✦`,
         footer: 'NEXORA • Word Chain',
       }, [
         { kind: 'action', label: '🔗 Join Game',  cmd: `${p}wordchain join` },
@@ -156,7 +156,7 @@ export default {
       setTurnTimeout(m.from, sock, db, p);
 
       return await mixedCard(sock, m.from, {
-        text: `🔗 *WORD CHAIN — GO!*\n\nStarting letter: *${startLetter.toUpperCase()}*\n\n👤 Current turn: +${playerNum}\n\nType a word starting with *${startLetter.toUpperCase()}* — use \`${p}wordchain <word>\`\n⏱️ 30s per turn. Don\'t blank out. ✦`,
+        text: `🔗 *WORD CHAIN — GO!*\n\nStarting letter: *${startLetter.toUpperCase()}*\n\n👤 Current turn: +${playerNum}\n\nType a word starting with *${startLetter.toUpperCase()}* — use \`${p}wordchain <word>\`\n⏱️ 30s per turn. Don't blank out. ✦`,
         footer: `${game.players.length} players • Last one standing wins ${WIN_COINS} 🪙`,
       }, [
         { kind: 'action', label: '🛑 Stop Game', cmd: `${p}wordchain stop` },
