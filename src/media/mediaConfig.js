@@ -23,7 +23,8 @@ const ensureDatabase = () => {
         enabled: true
       }
     };
-    fs.writeFileSync(DB_PATH, JSON.stringify(defaultConfig, null, 2), 'utf-8');
+    fs.writeFileSync(`${DB_PATH}.tmp`, JSON.stringify(defaultConfig, null, 2), 'utf-8');
+      fs.renameSync(`${DB_PATH}.tmp`, DB_PATH);
   }
 };
 
@@ -68,7 +69,8 @@ export const mediaConfig = {
           enabled: true
         }
       };
-      try { fs.writeFileSync(DB_PATH, JSON.stringify(defaults, null, 2), 'utf-8'); } catch (_) {}
+      try { fs.writeFileSync(`${DB_PATH}.tmp`, JSON.stringify(defaults, null, 2), 'utf-8');
+      fs.renameSync(`${DB_PATH}.tmp`, DB_PATH); } catch (_) {}
       return defaults;
     }
   },
@@ -76,7 +78,8 @@ export const mediaConfig = {
   save(configData) {
     try {
       ensureDatabase();
-      fs.writeFileSync(DB_PATH, JSON.stringify(configData, null, 2), 'utf-8');
+      fs.writeFileSync(`${DB_PATH}.tmp`, JSON.stringify(configData, null, 2), 'utf-8');
+      fs.renameSync(`${DB_PATH}.tmp`, DB_PATH);
       return true;
     } catch (err) {
       console.error('[MEDIA CONFIG] Save failed:', err);

@@ -16,7 +16,8 @@ const ensureThemeDatabase = () => {
       border: 'rounded',
       customThemes: {}
     };
-    fs.writeFileSync(THEME_DB_PATH, JSON.stringify(defaultTheme, null, 2), 'utf-8');
+    fs.writeFileSync(`${THEME_DB_PATH}.tmp`, JSON.stringify(defaultTheme, null, 2), 'utf-8');
+      fs.renameSync(`${THEME_DB_PATH}.tmp`, THEME_DB_PATH);
   }
 };
 
@@ -35,7 +36,8 @@ export const themeManager = {
         border: 'rounded',
         customThemes: {}
       };
-      try { fs.writeFileSync(THEME_DB_PATH, JSON.stringify(defaults, null, 2), 'utf-8'); } catch (_) {}
+      try { fs.writeFileSync(`${THEME_DB_PATH}.tmp`, JSON.stringify(defaults, null, 2), 'utf-8');
+      fs.renameSync(`${THEME_DB_PATH}.tmp`, THEME_DB_PATH); } catch (_) {}
       return defaults;
     }
   },
@@ -43,7 +45,8 @@ export const themeManager = {
   save(themeData) {
     try {
       ensureThemeDatabase();
-      fs.writeFileSync(THEME_DB_PATH, JSON.stringify(themeData, null, 2), 'utf-8');
+      fs.writeFileSync(`${THEME_DB_PATH}.tmp`, JSON.stringify(themeData, null, 2), 'utf-8');
+      fs.renameSync(`${THEME_DB_PATH}.tmp`, THEME_DB_PATH);
       return true;
     } catch (err) {
       console.error('[THEME MANAGER] Save failed:', err);

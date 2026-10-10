@@ -61,6 +61,25 @@ function validateConfig(config) {
     errors.push('Pairing mode enabled but PAIRING_PHONE not set');
   }
 
+  // AI readiness — fail LOUDLY at boot, not at 2am via a broken .ai command.
+  // Missing keys only warn (AI is optional); the point is the operator sees
+  // it in the startup log instead of discovering it from users.
+  {
+    const hasGemini = !!(process.env.GEMINI_API_KEY || process.env.NEXORA_AI_KEY);
+    const hasGroq = !!process.env.GROQ_API_KEY;
+    const hasPollinations = !!(process.env.POLLINATIONS_TOKEN || process.env.POLLINATIONS_API_KEY);
+    const detected = [
+      hasGemini && 'Gemini',
+      hasGroq && 'Groq',
+      hasPollinations && 'Pollinations',
+    ].filter(Boolean).join(', ');
+    if (detected) {
+      warnings.push(`AI providers detected: ${detected}`);
+    } else {
+      warnings.push('No AI API keys found (GEMINI_API_KEY, GROQ_API_KEY, or POLLINATIONS_TOKEN) — AI commands will be disabled');
+    }
+  }
+
   // Validate phone number formats
   for (const num of config.owner) {
     if (num.length < 7 || num.length > 15) {

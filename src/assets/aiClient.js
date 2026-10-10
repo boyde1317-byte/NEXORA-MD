@@ -181,6 +181,9 @@ function buildOpenAiCompatClient(provider) {
             Authorization: `Bearer ${provider.resolveKey()}`,
           },
           body: JSON.stringify(body),
+          // Hard timeout: a hung provider otherwise pends this promise
+          // forever and locks the whole message handler chain.
+          signal: AbortSignal.timeout(30000),
         });
 
         if (!res.ok) {
@@ -242,7 +245,11 @@ export function getAiClient() {
           } catch (e) {
             if (p === workingProvider) workingProvider = null;
             lastErr = e;
-            console.warn(`[AI CLIENT] ${p.name} failed (${String(e.message).slice(0, 100)}) — trying next provider…`);
+            console.warn(`[AI CLIENT] ${p.name} failed (${String(e.message).slice(0, 100)}) — backoff 500ms before fallback…`);
+            // Brief pause before trying the next provider: without it a
+            // 429/5xx cascaded Gemini→Groq→Mistral→OpenRouter in
+            // microseconds, burning every fallback key at once.
+            await new Promise((resolve) => setTimeout(resolve, 500));
           }
         }
         throw lastErr || new Error('No AI provider configured. Set GEMINI_API_KEY / NEXORA_AI_KEY (Google AI Studio) — or GROQ_API_KEY (free key at console.groq.com) / MISTRAL_API_KEY / OPENROUTER_API_KEY — in .env');

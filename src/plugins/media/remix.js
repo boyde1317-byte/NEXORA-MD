@@ -47,6 +47,7 @@ async function groqTranscribe(buffer, key) {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}` },
     body: fd,
+    signal: AbortSignal.timeout(25000), // hung STT calls otherwise block forever
   });
   if (!res.ok) {
     const t = await res.text().catch(() => '');
@@ -82,6 +83,7 @@ async function synthSpeech(text) {
       encodeURIComponent(chunk);
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+      signal: AbortSignal.timeout(15000), // TTS chunk guard
     });
     if (!res.ok) throw new Error(`TTS chunk failed (${res.status})`);
     parts.push(Buffer.from(await res.arrayBuffer()));

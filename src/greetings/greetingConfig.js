@@ -20,7 +20,8 @@ const ensureConfigExists = () => {
     fs.mkdirSync(dir, { recursive: true });
   }
   if (!fs.existsSync(GREETING_DB_PATH)) {
-    fs.writeFileSync(GREETING_DB_PATH, JSON.stringify(defaultGreetingConfig, null, 2), 'utf-8');
+    fs.writeFileSync(`${GREETING_DB_PATH}.tmp`, JSON.stringify(defaultGreetingConfig, null, 2), 'utf-8');
+      fs.renameSync(`${GREETING_DB_PATH}.tmp`, GREETING_DB_PATH);
   }
 };
 
@@ -39,7 +40,8 @@ export const greetingConfig = {
   save(configData) {
     try {
       ensureConfigExists();
-      fs.writeFileSync(GREETING_DB_PATH, JSON.stringify(configData, null, 2), 'utf-8');
+      fs.writeFileSync(`${GREETING_DB_PATH}.tmp`, JSON.stringify(configData, null, 2), 'utf-8');
+      fs.renameSync(`${GREETING_DB_PATH}.tmp`, GREETING_DB_PATH);
       return true;
     } catch (err) {
       console.error('[GREETING CONFIG] Save failed:', err);

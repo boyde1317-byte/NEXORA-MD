@@ -62,7 +62,8 @@ async function generateWithPollinations(prompt, aspectRatio) {
 
   const resp = await axios.get(url, {
     responseType: 'arraybuffer',
-    timeout: 120000,
+    timeout: 30000, // was 120s — a hung generation locked the handler for 2 minutes
+    maxContentLength: 15 * 1024 * 1024, // hard 15MB payload cap
     headers: {
       'User-Agent': 'NEXORA-MD/1.0',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -79,8 +80,8 @@ async function generateWithPollinations(prompt, aspectRatio) {
     throw new Error(`Pollinations returned HTTP ${resp.status}`);
   }
   const buf = Buffer.from(resp.data);
-  if (!buf || buf.length < 1000) {
-    throw new Error('Pollinations returned an empty or truncated image');
+  if (!buf || buf.length < 1000 || buf.length > 15 * 1024 * 1024) {
+    throw new Error('Pollinations returned an empty, truncated or oversized image');
   }
   console.log(`[AI ASSET GENERATOR] Pollinations image generated (${width}x${height}).`);
   return buf;

@@ -39,7 +39,11 @@ const MAX_TRACKED_CHATS = 2000;
  * Exponential backoff delay: 5s, 10s, 20s, 40s … capped at 60s
  */
 function getReconnectDelay(attempt) {
-  return Math.min(BASE_DELAY_MS * Math.pow(2, attempt - 1), MAX_DELAY_MS);
+  const base = Math.min(BASE_DELAY_MS * Math.pow(2, attempt - 1), MAX_DELAY_MS);
+  // ±25% jitter: without it, a host-wide network blip makes every linked
+  // session reconnect on the exact same tick (thundering herd).
+  const jitter = base * (0.75 + Math.random() * 0.5);
+  return Math.round(jitter);
 }
 
 /**

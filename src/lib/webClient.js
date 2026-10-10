@@ -48,6 +48,12 @@ export class WebClient {
   }
 
   async fetch(url, options = {}) {
+    // SSRF guard: isSafeUrl() existed but was never enforced on this
+    // entry point — user-supplied URLs could probe localhost/private IPs
+    // and cloud metadata endpoints.
+    if (!isSafeUrl(url)) {
+      throw new Error('Restricted URL: Requesting local or private infrastructure addresses is prohibited.');
+    }
     const { retries = this.retries, useCache = false, cacheTtl = 60000, ...fetchOptions } = options;
     const cacheKey = useCache ? crypto.createHash('md5').update(url + JSON.stringify(fetchOptions)).digest('hex') : null;
 

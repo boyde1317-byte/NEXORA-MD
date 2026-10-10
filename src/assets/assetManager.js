@@ -68,7 +68,8 @@ export const assetManager = {
     try {
       const dir = path.dirname(ASSETS_DB_PATH);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(ASSETS_DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
+      fs.writeFileSync(`${ASSETS_DB_PATH}.tmp`, JSON.stringify(data, null, 2), 'utf-8');
+      fs.renameSync(`${ASSETS_DB_PATH}.tmp`, ASSETS_DB_PATH);
       return true;
     } catch (err) {
       console.error('[ASSET MANAGER] Save DB failed:', err);

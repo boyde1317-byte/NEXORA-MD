@@ -96,7 +96,16 @@ export const db = {
         lastDaily: null,
       };
     }
-    return _data.users[jid];
+    // Normalize corrupt numeric fields. A legacy or hand-edited record can
+    // carry coins: "100" (string) or xp: NaN — left alone, every subsequent
+    // arithmetic op compounds the corruption ("100" + 50 = "10050").
+    const u = _data.users[jid];
+    if (typeof u.coins !== 'number' || !Number.isFinite(u.coins) || u.coins < 0) u.coins = Math.max(0, Math.floor(Number(u.coins) || 0));
+    if (typeof u.xp !== 'number' || !Number.isFinite(u.xp) || u.xp < 0) u.xp = Math.max(0, Math.floor(Number(u.xp) || 0));
+    if (typeof u.level !== 'number' || !Number.isFinite(u.level) || u.level < 0) u.level = Math.max(0, Math.floor(Number(u.level) || 0));
+    if (typeof u.warnings !== 'number' || !Number.isFinite(u.warnings) || u.warnings < 0) u.warnings = Math.max(0, Math.floor(Number(u.warnings) || 0));
+    if (typeof u.streak !== 'number' || !Number.isFinite(u.streak) || u.streak < 0) u.streak = Math.max(0, Math.floor(Number(u.streak) || 0));
+    return u;
   },
 
   setUser(jid, data) {
@@ -138,19 +147,34 @@ export const db = {
   },
 
   saveSync() {
-    if (this._saveTimeout) {
-      clearTimeout(this._saveTimeout);
-      this._saveTimeout = null;
-    }
+    if (this._saveTimeout) { clearTimeout(this._saveTimeout); this._saveTimeout = null; }
+    if (this._maxSaveTimer) { clearTimeout(this._maxSaveTimer); this._maxSaveTimer = null; }
     saveDb(_data);
   },
 
   save() {
+    // Debounce rapid writes, BUT with a hard ceiling: under continuous
+    // traffic the sliding timer used to be reset forever and the disk
+    // write never happened — a container restart then lost EVERYTHING
+    // since the last quiet moment. _maxSaveTimer guarantees a flush at
+    // least every 10s no matter how busy the bot is.
     if (this._saveTimeout) clearTimeout(this._saveTimeout);
     this._saveTimeout = setTimeout(() => {
       this._saveTimeout = null;
-      saveDb(_data);
+      this.flushSave();
     }, 2000);
+    if (!this._maxSaveTimer) {
+      this._maxSaveTimer = setTimeout(() => {
+        this._maxSaveTimer = null;
+        this.flushSave();
+      }, 10000);
+    }
+  },
+
+  flushSave() {
+    if (this._saveTimeout) { clearTimeout(this._saveTimeout); this._saveTimeout = null; }
+    if (this._maxSaveTimer) { clearTimeout(this._maxSaveTimer); this._maxSaveTimer = null; }
+    saveDb(_data);
   },
 
   startAutoSave() {

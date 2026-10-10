@@ -1,4 +1,5 @@
 import { mixedCard } from '../../lib/interactiveKit.js';
+import { withUserLock } from '../../economy/leveling.js';
 
 export default {
   name: 'flip',
@@ -12,13 +13,22 @@ export default {
 
     // Check if user is trying to bet
     const guess = args[0]?.toLowerCase();
-    const betAmount = parseInt(args[1], 10);
+    const betAmount = Math.floor(Number(parseInt(args[1], 10)));
 
     if (guess && ['heads', 'tails', 'h', 't'].includes(guess) && betAmount) {
       // ── Bet mode ──────────────────────────────────────────────────────
       const normalizedGuess = guess.startsWith('h') ? 'Heads' : 'Tails';
       const win = outcome === normalizedGuess;
 
+      // Sanitize: a negative bet used to pass every check and CREDIT
+      // coins on a loss (free-money exploit). NaN/Infinity are rejected.
+      if (!Number.isFinite(betAmount) || betAmount <= 0 || betAmount > 1000000) {
+        return await m.reply.error(`Invalid bet amount. Usage: \`${p}flip ${guess} <amount>\``);
+      }
+
+      // Serialize balance read+write so two rapid flips can't race the
+      // balance check (double-spend).
+      return await withUserLock(m.sender, async () => {
       const userData = db.getUser(m.sender);
       const coins = userData.coins ?? 0;
 
@@ -46,7 +56,7 @@ export default {
           { kind: 'action', label: '💰 Balance', cmd: `${p}balance` },
         ], { quoted: m });
       }
-      return;
+      }); // withUserLock
     }
 
     // ── Normal flip (no bet) ────────────────────────────────────────────

@@ -56,7 +56,8 @@ const ensureDatabaseAndDirs = () => {
   };
 
   if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, JSON.stringify(defaultConfig, null, 2), 'utf-8');
+    fs.writeFileSync(`${DB_PATH}.tmp`, JSON.stringify(defaultConfig, null, 2), 'utf-8');
+      fs.renameSync(`${DB_PATH}.tmp`, DB_PATH);
     return;
   }
 
@@ -67,13 +68,15 @@ const ensureDatabaseAndDirs = () => {
   try {
     const raw = fs.readFileSync(DB_PATH, 'utf-8');
     if (!raw.trim()) {
-      fs.writeFileSync(DB_PATH, JSON.stringify(defaultConfig, null, 2), 'utf-8');
+      fs.writeFileSync(`${DB_PATH}.tmp`, JSON.stringify(defaultConfig, null, 2), 'utf-8');
+      fs.renameSync(`${DB_PATH}.tmp`, DB_PATH);
     } else {
       JSON.parse(raw);
     }
   } catch (err) {
     console.error('[IMAGE CONFIG] Corrupt config detected, resetting to defaults:', err.message);
-    fs.writeFileSync(DB_PATH, JSON.stringify(defaultConfig, null, 2), 'utf-8');
+    fs.writeFileSync(`${DB_PATH}.tmp`, JSON.stringify(defaultConfig, null, 2), 'utf-8');
+      fs.renameSync(`${DB_PATH}.tmp`, DB_PATH);
   }
 };
 
@@ -99,7 +102,8 @@ export const imageConfig = {
   save(configData) {
     try {
       ensureDatabaseAndDirs();
-      fs.writeFileSync(DB_PATH, JSON.stringify(configData, null, 2), 'utf-8');
+      fs.writeFileSync(`${DB_PATH}.tmp`, JSON.stringify(configData, null, 2), 'utf-8');
+      fs.renameSync(`${DB_PATH}.tmp`, DB_PATH);
       return true;
     } catch (err) {
       console.error('[IMAGE CONFIG] Failed to save config:', err);

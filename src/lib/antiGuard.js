@@ -114,8 +114,13 @@ export function resetFlood(jid, sender) {
 // the full raw message node so it can be re-downloaded on repost.
 const snitchCache = new Map(); // jid -> [{ id, ts, sender, body, type, message }]
 const SNITCH_CAP = 100;
+const MAX_SNITCH_GROUPS = 100; // total groups tracked — unbounded otherwise
 
 export function snitchRemember(jid, { id, sender, body, type, message }) {
+  if (!snitchCache.has(jid) && snitchCache.size >= MAX_SNITCH_GROUPS) {
+    // Evict the least-recently-written group (Map preserves insertion order)
+    snitchCache.delete(snitchCache.keys().next().value);
+  }
   const ring = snitchCache.get(jid) || [];
   ring.push({ id, ts: Date.now(), sender, body, type, message });
   while (ring.length > SNITCH_CAP) ring.shift();

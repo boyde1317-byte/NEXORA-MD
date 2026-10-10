@@ -31,7 +31,7 @@ const BACKENDS = [
   'https://backend3.tioo.eu.org',
   'https://backend4.tioo.eu.org',
 ];
-const DEFAULT_TIMEOUT = 20000;
+const DEFAULT_TIMEOUT = 8000; // per-host: 20s x 4 backends x 2 retries was ~160s of cascading failover
 
 /**
  * getJson2 — plain JSON fetch with a semantic validator and timeout.

@@ -72,6 +72,13 @@ export const imageBuilder = {
         throw new Error(`HTTP ${response.status} ${response.statusText}`);
       }
 
+      // Reject oversized payloads BEFORE buffering them — a multi-GB
+      // target used to be fully allocated into RAM first (OOM crash).
+      const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
+      if (contentLength > MAX_IMAGE_SIZE) {
+        throw new Error(`Remote image Content-Length (${contentLength} bytes) exceeds limit`);
+      }
+
       const arrayBuffer = await response.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       

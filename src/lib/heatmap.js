@@ -39,6 +39,8 @@ export function trackActivity(jid, sender, ts = Date.now()) {
 
     let rec = store.get(jid);
     if (!rec) {
+      // Hard cap: one record per group, forever, was an unbounded leak
+      if (store.size >= 200) store.delete(store.keys().next().value);
       rec = { dayKey: todayKey, hours: new Uint32Array(24), days: new Uint32Array(7), users: new Map(), total: 0 };
       store.set(jid, rec);
     }

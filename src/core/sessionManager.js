@@ -397,7 +397,9 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
         await notifyStatus(notifyJid, `⚠️ +${phone} failed to reconnect ${RECONNECT_MAX_ATTEMPTS} times — session dropped. Re-link with .pair ${phone}.`);
         return;
       }
-      const delay = Math.min(RECONNECT_BASE_MS * Math.pow(2, attempts - 1), RECONNECT_MAX_MS);
+      const baseDelay = Math.min(RECONNECT_BASE_MS * Math.pow(2, attempts - 1), RECONNECT_MAX_MS);
+      // ±25% jitter desynchronizes the fleet after a shared network blip
+      const delay = Math.round(baseDelay * (0.75 + Math.random() * 0.5));
       console.log(`[SESSION] +${phone} reconnect attempt ${attempts} in ${delay / 1000}s`);
       setTimeout(() => {
         spawnSessionSocket(phone, 'resume', notifyJid).catch((err) => {

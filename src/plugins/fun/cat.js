@@ -10,7 +10,7 @@ export default {
   execute: async ({ sock, m, prefix }) => {
     await withReactionStatus(m, async () => {
       try {
-        const res = await fetch('https://api.thecatapi.com/v1/images/search');
+        const res = await fetch('https://api.thecatapi.com/v1/images/search', { signal: AbortSignal.timeout(8000) });
         if (!res.ok) throw new Error('API failed');
         const data = await res.json();
         

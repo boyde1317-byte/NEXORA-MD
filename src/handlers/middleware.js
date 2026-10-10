@@ -113,7 +113,7 @@ export async function rateLimiter(ctx, next) {
   const windowMs = ctx.config?.rateLimit?.windowMs ?? rateLimiter.windowMs ?? 30000;
 
   const sender = ctx.sender || ctx.m?.sender;
-  const isOwner = ctx.isOwner ?? ctx.m?.isOwner ?? false;
+  const isOwner = await resolveOwner(ctx);
 
   if (sender && !isOwner) {
     const body = ctx.body || ctx.m?.body || '';
@@ -258,7 +258,7 @@ export async function permissionCheck(ctx, next) {
   const adminOnly = perms.admin ?? command.adminOnly ?? false;
   const botAdminRequired = perms.botAdmin ?? command.botAdmin ?? false;
 
-  const ownerCheck = ctx.isOwner ?? ctx.m?.isOwner ?? false;
+  const ownerCheck = await resolveOwner(ctx);
 
   // 1. Owner-only guard
   if (ownerOnly && !ownerCheck) {
@@ -354,6 +354,20 @@ export async function commandResolver(ctx, next) {
     }
     // Do not call next() as command was not found
   }
+}
+
+/**
+ * Resolves the effective owner flag. `m.isOwner` is defined as an async
+ * getter on the serialized message (it returns a Promise), and a Promise
+ * is always truthy — so naively reading it made every user look like the
+ * owner. This helper awaits it when present.
+ */
+async function resolveOwner(ctx) {
+  if (ctx.isOwner !== undefined) return !!ctx.isOwner;
+  if (ctx.m?.isOwner !== undefined) {
+    try { return !!(await ctx.m.isOwner); } catch (_) { return false; }
+  }
+  return false;
 }
 
 // ── Instantiate Singleton Registry & Default Registration ─────────────────

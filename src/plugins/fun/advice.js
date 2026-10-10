@@ -10,7 +10,7 @@ export default {
   execute: async ({ sock, m, prefix }) => {
     await withReactionStatus(m, async () => {
       try {
-        const res = await fetch('https://api.adviceslip.com/advice');
+        const res = await fetch('https://api.adviceslip.com/advice', { signal: AbortSignal.timeout(8000) });
         const data = await res.json();
         
         const adviceText = data.slip.advice;

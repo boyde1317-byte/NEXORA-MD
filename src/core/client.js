@@ -79,7 +79,7 @@ export const client = {
     const failed = [];
     const lifecycleHooks = [];
     const dependencyWarnings = [];
-    const loadedPlugins = new Map(); // name -> { plugin, filePath }
+    const loadedPlugins = this._loadedPlugins = new Map(); // name -> { plugin, filePath } — kept for targeted .reload
 
     // ── Pass 1: Load all plugins ──────────────────────────────────────────────
     for (const filePath of files) {
@@ -122,12 +122,23 @@ export const client = {
             `[PLUGIN WARN] Duplicate command "${cmdName}": ${filePath} overwrites ${prev?.filePath || '(unknown)'}`
           );
         }
+        // Clean stale aliases when a duplicate overwrites a previous plugin
+        if (this.commands.has(cmdName)) {
+          for (const [alias, target] of this.aliases) {
+            if (target === cmdName) this.aliases.delete(alias);
+          }
+        }
         this.commands.set(cmdName, plugin);
         loadedPlugins.set(cmdName, { plugin, filePath });
 
-        if (Array.isArray(plugin.aliases)) {
+        if (plugin.aliases !== undefined && !Array.isArray(plugin.aliases)) {
+          const reason = 'Field "aliases" must be an Array if defined';
+          console.warn(`[PLUGIN WARN] ${file}: ${reason}`);
+        } else if (Array.isArray(plugin.aliases)) {
           for (const alias of plugin.aliases) {
-            this.aliases.set(alias.toLowerCase(), cmdName);
+            if (typeof alias === 'string' && alias.trim()) {
+              this.aliases.set(alias.toLowerCase(), cmdName);
+            }
           }
         }
 
@@ -216,28 +227,29 @@ export const client = {
     const oldPlugin = this.commands.get(name);
     if (!oldPlugin) return false;
 
-    // Find the plugin file
-    const pluginsDir = path.resolve(__dirname, '../plugins');
-    const files = walkDirSync(pluginsDir).filter(f => f.endsWith('.js'));
-
-    let pluginFile = null;
-    for (const filePath of files) {
-      try {
-        // Cache-bust to get fresh module
-        const fileUrl = new URL(`file://${filePath}`);
-        const importUrl = `${fileUrl.href}?t=${Date.now()}`;
-        const mod = await import(importUrl);
-        if (mod.default?.name?.toLowerCase() === name) {
-          pluginFile = { filePath, mod };
-          break;
-        }
-      } catch (_) {
-        continue;
-      }
+    // Reload ONLY this plugin's file. The old approach re-imported every
+    // plugin file with a cache-buster until it found the match, which
+    // re-executed top-level side effects across the entire plugin tree
+    // (timers, listeners) on every .reload call.
+    const record = this._loadedPlugins?.get(name);
+    if (!record?.filePath) {
+      console.error(`[PLUGIN RELOAD] Could not find source file for ${pluginName}`);
+      return false;
     }
 
-    if (!pluginFile) {
-      console.error(`[PLUGIN RELOAD] Could not find source file for ${pluginName}`);
+    let mod = null;
+    try {
+      const fileUrl = new URL(`file://${record.filePath}`);
+      const importUrl = `${fileUrl.href}?t=${Date.now()}`;
+      mod = await import(importUrl);
+    } catch (err) {
+      console.error(`[PLUGIN RELOAD] Failed to import ${record.filePath}:`, err.message || err);
+      return false;
+    }
+
+    const pluginFile = { filePath: record.filePath, mod };
+    if (!pluginFile.mod?.default || pluginFile.mod.default.name?.toLowerCase() !== name) {
+      console.error(`[PLUGIN RELOAD] ${record.filePath} no longer exports command "${name}" — keeping the old version`);
       return false;
     }
 

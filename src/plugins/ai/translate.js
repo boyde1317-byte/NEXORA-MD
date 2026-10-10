@@ -120,6 +120,7 @@ async function transcribeVoice(buffer, key) {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}` },
     body: fd,
+    signal: AbortSignal.timeout(25000), // hung STT calls otherwise block forever
   });
   if (!res.ok) throw new Error(`Transcription failed (${res.status}).`);
   const data = await res.json();
