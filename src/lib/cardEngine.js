@@ -264,7 +264,7 @@ export async function renderRankCard(data) {
 
 /**
  * Music card: Spotify-style now-playing card from a cover image.
- * data = { title, artist, coverUrl, requesterName }
+ * data = { title, artist, coverUrl | coverBuffer, requesterName }
  */
 export async function renderMusicCard(data) {
   const W = 1000, H = 320;
@@ -284,7 +284,12 @@ export async function renderMusicCard(data) {
   ctx.save();
   ctx.shadowColor = 'rgba(0,0,0,0.55)';
   ctx.shadowBlur = 24;
-  const cover = await loadRemote(data.coverUrl);
+  let cover = null;
+  try {
+    cover = data.coverBuffer
+      ? await loadImage(await sharp(data.coverBuffer).png().toBuffer())
+      : await loadRemote(data.coverUrl);
+  } catch (_) { cover = null; }
   if (cover) {
     ctx.drawImage(cover, sx, sy, S, S);
   } else {

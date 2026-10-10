@@ -114,6 +114,21 @@ export async function awardMessageXp(m, sock) {
     // is attached. Without a profile picture the 🎉 line must live in the body.
     if (!ppUrl) bodyLines.unshift(`🎉 *LEVEL UP*`, '');
 
+    // ── Rendered card image first, rich card second, plain text last ──
+    try {
+      const { renderLevelUpCard } = await import('../lib/cardEngine.js');
+      const cardBuf = await renderLevelUpCard({
+        name, avatarUrl: ppUrl, level, rankBadge: badge, coinBonus,
+      });
+      await sock.sendMessage(m.from, {
+        image: cardBuf,
+        caption: `✨ *${name}* just hit *Level ${level}* ${badge}\n🪙 +${coinBonus.toLocaleString()} coins\n_Keep going — the next rank is waiting_`,
+      }, { quoted: m });
+      return;
+    } catch (err) {
+      console.warn('[XP] level-up image card failed, falling back:', err.message);
+    }
+
     try {
       const { default: capabilities } = await import('../core/capabilities.js');
       if (!capabilities.nativeFlow) throw new Error('native flow disabled');
