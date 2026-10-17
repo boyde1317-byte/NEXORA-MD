@@ -15,7 +15,7 @@ import {
   generateWAMessageFromContent,
 } from 'baileys';
 import { AIRich } from './NIXCODE.js';
-import { hoistAfterRelay } from './richMediaHoist.js';
+import { hoistAfterRelay, rehostRichCardMedia } from './richMediaHoist.js';
 
 // ── V1 + V2 generators (imported from the fork's rich-message-utils.js) ─────
 import {
@@ -86,6 +86,7 @@ async function _relayGenerated(sock, jid, generated, options = {}) {
   // Generators embed quoted context via buildRichContextInfo / buildV2ContextInfo.
   // Do NOT pass quoted here — it would double-set contextInfo at the wrong level
   // and cause WhatsApp to drop native rendering on the message.
+  await rehostRichCardMedia(sock, generated.message); // move card images onto WA CDN pre-relay
   const message = await generateWAMessageFromContent(jid, generated.message, {
     userJid: sock.user?.id || '0@s.whatsapp.net',
   });
