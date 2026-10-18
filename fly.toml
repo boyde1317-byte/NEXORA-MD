@@ -9,6 +9,16 @@
 #   fly deploy
 #
 # NOTE: the bot must never sleep — auto_stop_machines is false.
+#
+# SCALING PAIRED SESSIONS (.pair / /pair web page):
+#   fly.toml defaults to a 512MB shared-cpu-1x machine, which safely hosts
+#   MAX_EXTRA_SESSIONS=5 (each linked session costs ~60-120MB RSS).
+#   To pair more, raise BOTH together, e.g. 10 sessions on a 1GB machine:
+#     [[vm]]
+#       size = "shared-cpu-1x"
+#       memory = 1024
+#     fly secrets set MAX_EXTRA_SESSIONS=10
+#   Watch /api/health (memory.rssMb) as you grow.
 
 app = "nexora-md"
 primary_region = "lhr"

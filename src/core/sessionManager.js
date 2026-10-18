@@ -53,8 +53,21 @@ import { handleGroupParticipantsUpdate } from '../handlers/group.js';
 
 const logger = pino({ level: 'silent' });
 
-/** Max simultaneously active extra sessions — protects memory/host. */
-export const MAX_EXTRA_SESSIONS = 5;
+/**
+ * Max simultaneously active extra sessions — protects memory/host.
+ *
+ * Configurable via MAX_EXTRA_SESSIONS in .env (1–50, default 5). Size for
+ * RAM first: one linked session costs roughly 60–120MB RSS, so the Fly.io
+ * default (512MB shared-cpu-1x) safely hosts ~5. Raise alongside a bigger
+ * machine (1GB ≈ 10, 2GB ≈ 20). WhatsApp also flags IPs that link dozens
+ * of accounts fast — grow gradually and prefer quality over fleet size.
+ */
+const MAX_SESSIONS = (() => {
+  const n = Number.parseInt(process.env.MAX_EXTRA_SESSIONS, 10);
+  if (Number.isNaN(n)) return 5;
+  return Math.max(1, Math.min(50, n));
+})();
+export const MAX_EXTRA_SESSIONS = MAX_SESSIONS;
 
 /** Window the pairing socket stays open waiting for the code entry. */
 const PAIRING_WINDOW_MS = 3 * 60 * 1000;
