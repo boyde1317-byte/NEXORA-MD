@@ -133,6 +133,11 @@ const rawConfig = {
     phoneNumber: process.env.PAIRING_PHONE || '',
   },
 
+  // ── Web pairing (free self-service page at /pair) ─────────────────────────
+  webPair: {
+    enabled: parseBool(process.env.WEB_PAIR_ENABLED, true),
+  },
+
   // ── Session storage ───────────────────────────────────────────────────────
   sessionPath: process.env.SESSION_PATH || './session',
 
