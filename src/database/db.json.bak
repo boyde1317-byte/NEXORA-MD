@@ -137,7 +137,8 @@
       "delall": 3,
       "setcmd": 6,
       "subscribe": 4,
-      "broadcast": 2
+      "broadcast": 2,
+      "tiktok": 1
     }
   },
   "reminders": [],

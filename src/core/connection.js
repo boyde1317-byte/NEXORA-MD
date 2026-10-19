@@ -28,7 +28,45 @@ const __dirname  = path.dirname(__filename);
 const logger = pino({ level: 'silent' });
 
 let reconnectAttempts = 0;
-const BASE_DELAY_MS   = config.reconnectLimit === 0 ? 5000 : 5000;
+
+// ── Reliable main-session pairing ──────────────────────────────────────────
+// One code per "arm". Boot arms ONCE. Auto-reconnects never re-request a code
+// on their own — the old design burned a fresh code every ~4 minutes for
+// hours (each one invalidating the last), which WhatsApp flags as pairing
+// spam; the phone then rejects every entry with "couldn't link device" until
+// the number cools down.
+let mainPairingArmed = true;                    // one fresh code at first boot
+let pairingCodeBudget = Math.max(1, parseInt(process.env.PAIRING_BUDGET || '10', 10));
+let pairingBudgetUsed = 0;
+let lastCodeIssuedAt = 0;
+
+/**
+ * Arm a fresh main-session pairing attempt. Exposed for control surfaces
+ * (this standalone build has no Telegram panel; the export is dormant but
+ * ready for a webhook/HTTP trigger). If the live socket has not spent its
+ * code slot the code is requested immediately; otherwise the socket is
+ * ended so the reconnect loop opens a fresh, armed socket.
+ */
+export async function requestMainPairingCode() {
+  const sock = client.socket;
+  if (!sock) return { ok: false, message: 'Main socket is not up yet — try again in a minute.' };
+  if (sock.authState?.creds?.registered) return { ok: false, message: 'Main session is already linked.' };
+  if (pairingBudgetUsed >= pairingCodeBudget) {
+    return { ok: false, message: `Pairing budget used (${pairingCodeBudget} codes this run). Redeploy to reset it.` };
+  }
+  const sinceLast = Date.now() - lastCodeIssuedAt;
+  if (lastCodeIssuedAt && sinceLast < 90_000) {
+    return { ok: false, message: `A code was issued ${Math.round(sinceLast / 1000)}s ago. Wait a moment, then try again.` };
+  }
+  mainPairingArmed = true;
+  if (sock.__pairingCodeUsed) {
+    console.log('[CONNECTION] Pairing re-armed: rotating socket for a fresh code...');
+    try { sock.end(undefined); } catch (_) {}
+    return { ok: true, message: 'Fresh code coming on the next socket.' };
+  }
+  return { ok: true, message: 'Requesting a fresh code now.' };
+}
+
 const MAX_DELAY_MS    = config.keepAliveIntervalMs ? 60000 : 60000;
 
 // ── Memory bounds for the in-memory message store ──────────────────────────
@@ -185,11 +223,22 @@ export async function connectToWhatsApp() {
     // Gate on `registered` — the ONLY signal that a link actually completed.
     // creds.me is set by requestPairingCode itself and means nothing here.
     if (pairingCodeRequested || sock.authState.creds.registered) return;
+    // Arm gate: only an armed attempt (boot or re-arm) issues a code.
+    // Plain reconnects must NOT mint codes — see module header notes.
+    if (!mainPairingArmed) return;
+    if (pairingBudgetUsed >= pairingCodeBudget) {
+      console.warn(`[CONNECTION] Pairing budget used (${pairingCodeBudget}) — no further codes this run.`);
+      return;
+    }
     pairingCodeRequested = true;
+    mainPairingArmed = false;
+    sock.__pairingCodeUsed = true;
     try {
       const cleanPhone = config.pairing.phoneNumber.replace(/[^0-9]/g, '');
       console.log(`[CONNECTION] Requesting pairing code for: ${cleanPhone}`);
       const code = await sock.requestPairingCode(cleanPhone);
+      pairingBudgetUsed += 1;
+      lastCodeIssuedAt = Date.now();
       console.log(`\n${'='.repeat(60)}`);
       console.log(`🔑 WHATSAPP PAIRING CODE: ${code}`);
       console.log(`👉 WhatsApp → Settings → Linked Devices → Link a Device`);
@@ -199,6 +248,7 @@ export async function connectToWhatsApp() {
       console.log(`${'='.repeat(60)}\n`);
     } catch (err) {
       pairingCodeRequested = false;
+      sock.__pairingCodeUsed = false;
       console.error('[CONNECTION] Failed to request pairing code:', err.message || err);
     }
   };
@@ -263,7 +313,7 @@ export async function connectToWhatsApp() {
       const badSession         = statusCode === DisconnectReason.badSession;
 
       if (loggedOut) {
-        console.error('[CONNECTION] Session logged out by WhatsApp — clearing session and scheduling re-pair in 30s...');
+        console.error('[CONNECTION] Session logged out by WhatsApp — clearing session. No auto re-pair: redeploy (or a control surface) for a fresh code when ready.');
         db.saveSync();
         try {
           const files = fs.readdirSync(sessionDir);
@@ -274,7 +324,7 @@ export async function connectToWhatsApp() {
             if (fs.statSync(p).isDirectory()) continue;
             fs.rmSync(p, { force: true });
           }
-          console.log('[CONNECTION] Session cleared. Will attempt re-pair in 30 seconds...');
+          console.log('[CONNECTION] Session cleared. Reconnecting idle — fresh codes are armed per-boot or via requestMainPairingCode().');
         } catch (e) {
           console.error('[CONNECTION] Failed to clear session:', e.message);
         }
