@@ -100,7 +100,7 @@ const buildA2uiSpec = (uuid, bannerUrl) => {
 export const galaxyMenu = {
   id: 19,
   name: 'galaxyMenu',
-  description: 'Moongod-style Galaxy menu — relayed viewOnce envelope, galaxy bar, ~20-button native-flow stack, BloksWidget card',
+  description: 'Galaxy menu — relayed viewOnce envelope, galaxy bar, 24-button native-flow stack, BloksWidget card',
   supportedMessages: ['interactiveMessage', 'nativeFlowMessage', 'bloksWidget'],
 
   renderer: async ({ sock, m, menuData }) => {

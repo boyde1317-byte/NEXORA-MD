@@ -14,7 +14,7 @@
  *   - cta_url contact button (wa.me deep link)
  *
  * Plan data is env-overridable via STORE_PLANS (JSON), defaults mirror
- * Moonson's AizenPanel pricing.
+ * Moonson's panel pricing.
  */
 
 import { Button } from '../../lib/moonsonKit.js';
@@ -49,7 +49,7 @@ export default {
   name: 'store',
   aliases: ['servers', 'hosting'],
   category: 'general',
-  description: 'Server hosting plans with an interactive plan picker (Moonson-style card).',
+  description: 'Server hosting plans with an interactive plan picker card.',
   cooldown: 5000,
   execute: async ({ sock, m, prefix }) => {
     const p = prefix || '.';

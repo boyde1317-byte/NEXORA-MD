@@ -42,7 +42,8 @@ menuManager.register(orderMessage);
 menuManager.register(richCard);
 menuManager.register(buttonsCard);
 menuManager.register(listFallback);
-menuManager.register(moonsonCard);
+menuManager.register(moonsonCard); // legacy alias 'moonsonCard' kept for .setmenu compat
+menuManager.menus.set('moonsoncard', moonsonCard);
 menuManager.register(galaxyMenu);
 menuManager.register(commandDirectory);
 

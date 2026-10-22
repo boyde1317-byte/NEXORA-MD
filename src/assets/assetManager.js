@@ -68,8 +68,7 @@ export const assetManager = {
     try {
       const dir = path.dirname(ASSETS_DB_PATH);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(`${ASSETS_DB_PATH}.tmp`, JSON.stringify(data, null, 2), 'utf-8');
-      fs.renameSync(`${ASSETS_DB_PATH}.tmp`, ASSETS_DB_PATH);
+      fs.writeFileSync(ASSETS_DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
       return true;
     } catch (err) {
       console.error('[ASSET MANAGER] Save DB failed:', err);
@@ -150,9 +149,9 @@ export const assetManager = {
     await ensureDefaultAssets();
 
     const db = this.loadAssetsDb();
-    const geminiAvailable = aiAssetGenerator.isBootGenerationEnabled();
+    const geminiAvailable = aiAssetGenerator.isEnabled();
 
-    console.log(`[ASSET MANAGER] Boot-time Gemini AI generation: ${geminiAvailable ? 'ENABLED' : 'DISABLED'}`);
+    console.log(`[ASSET MANAGER] Gemini AI generation: ${geminiAvailable ? 'ENABLED' : 'DISABLED'}`);
     console.log('[ASSET MANAGER] All default visuals are CDN-hosted URLs — no local files required.');
 
     if (!geminiAvailable) {
@@ -212,8 +211,9 @@ export const assetManager = {
    * Regenerates all AI assets (leaves manual overrides untouched)
    */
   async regenerateAll() {
-    if (!aiAssetGenerator.isEnabled()) {
-      throw new Error('Image generation is unavailable (no Gemini key and Pollinations fallback disabled).');
+    const geminiAvailable = aiAssetGenerator.isEnabled();
+    if (!geminiAvailable) {
+      throw new Error('Gemini API is not configured or GENERATE_ASSETS is not set to true.');
     }
 
     const db = this.loadAssetsDb();
