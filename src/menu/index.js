@@ -21,6 +21,7 @@ import richCard from './types/richCard.js';
 import buttonsCard from './types/buttonsCard.js';
 import listFallback from './types/listFallback.js';
 import moonsonCard from './types/moonsonCard.js';
+import galaxyMenu from './types/galaxyMenu.js';
 import commandDirectory from './types/commandDirectory.js';
 
 // Register them all statically in the manager
@@ -42,6 +43,7 @@ menuManager.register(richCard);
 menuManager.register(buttonsCard);
 menuManager.register(listFallback);
 menuManager.register(moonsonCard);
+menuManager.register(galaxyMenu);
 menuManager.register(commandDirectory);
 
 /**
@@ -52,7 +54,7 @@ menuManager.register(commandDirectory);
  * @param {string|number} [customKey] - Optional override style key/id
  */
 export const showMenu = async (sock, m, customKey = null) => {
-  const menuData = collectMenuData(sock);
+  const menuData = await collectMenuData(sock, m);
 
   const menu = customKey
     ? menuManager.getMenu(customKey)
