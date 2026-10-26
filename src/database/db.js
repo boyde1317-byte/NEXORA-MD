@@ -67,6 +67,7 @@ runMigrations(_data, (data) => saveDb(data));
 
 export const db = {
   data: _data,
+  _dirty: false,
   _saveTimeout: null,
   _autoSaveInterval: null,
 
@@ -149,10 +150,11 @@ export const db = {
   saveSync() {
     if (this._saveTimeout) { clearTimeout(this._saveTimeout); this._saveTimeout = null; }
     if (this._maxSaveTimer) { clearTimeout(this._maxSaveTimer); this._maxSaveTimer = null; }
-    saveDb(_data);
+    if (saveDb(_data)) this._dirty = false;
   },
 
   save() {
+    this._dirty = true;
     // Debounce rapid writes, BUT with a hard ceiling: under continuous
     // traffic the sliding timer used to be reset forever and the disk
     // write never happened — a container restart then lost EVERYTHING
@@ -174,13 +176,13 @@ export const db = {
   flushSave() {
     if (this._saveTimeout) { clearTimeout(this._saveTimeout); this._saveTimeout = null; }
     if (this._maxSaveTimer) { clearTimeout(this._maxSaveTimer); this._maxSaveTimer = null; }
-    saveDb(_data);
+    if (this._dirty && saveDb(_data)) this._dirty = false;
   },
 
   startAutoSave() {
     if (this._autoSaveInterval) return;
     this._autoSaveInterval = setInterval(() => {
-      saveDb(_data);
+      if (this._dirty && saveDb(_data)) this._dirty = false;
     }, AUTO_SAVE_INTERVAL_MS);
     this._autoSaveInterval.unref();
   },
