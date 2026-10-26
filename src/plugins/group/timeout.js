@@ -1,13 +1,13 @@
 /**
- * timeout.js — Temporarily restrict a user from sending messages.
+ * timeout.js — Temporarily lock a group to admin-only mode.
  *
- * .timeout @user 5m    — Mute @user for 5 minutes
- * .timeout @user 1h    — Mute @user for 1 hour
- * .timeout @user 30s    — Mute @user for 30 seconds
+ * .timeout @user 5m    — Lock the group for 5 minutes
+ * .timeout @user 1h    — Lock the group for 1 hour
+ * .timeout @user 30s    — Lock the group for 30 seconds
  *
- * Requires admin or owner. Uses WhatsApp's group setting to temporarily
- * switch the group to admin-only mode, then restores the original setting
- * when the timeout expires.
+ * Requires admin or owner. WhatsApp does not provide a reliable per-user
+ * send restriction here, so this command temporarily switches the entire
+ * group to admin-only mode and restores the original setting on expiry.
  *
  * UX: Fixed broken implementation that demoted users instead of muting.
  * Now properly saves/restores group state and tracks active timeouts.
@@ -44,7 +44,7 @@ export default {
   name: 'timeout',
   aliases: ['muteuser', 'tempmute', 'shh'],
   category: 'group',
-  description: 'Temporarily mute a user. Usage: .timeout @user <duration> (e.g. 5m, 1h, 30s)',
+  description: 'Temporarily lock the group to admins. Usage: .timeout @user <duration> (e.g. 5m, 1h, 30s)',
   cooldown: 3000,
   groupOnly: true,
   adminOnly: true,
@@ -102,15 +102,12 @@ export default {
       }
     } catch (_) {}
 
-    // ── If a timeout is already active in this group, cancel its timer first
+    // ── Do not silently replace an active group-wide lock.
     if (activeTimeouts.has(m.from)) {
-      const existing = activeTimeouts.get(m.from);
-      clearTimeout(existing.timer);
+      return await m.reply.error('This group is already locked by an active timeout. Use `.unmute` or wait for it to expire.');
     }
 
-    // ── Apply restriction: switch group to announcement (admin-only) mode
-    // This prevents the target user from sending messages. We save the
-    // previous setting so we can restore it when the timeout expires.
+    // ── Apply a group-wide restriction: switch to admin-only mode.
     let previousSetting = 'not_announcement'; // assume open by default
     try {
       const metadata = await sock.groupMetadata(m.from);
@@ -121,7 +118,7 @@ export default {
       await sock.groupSettingUpdate(m.from, 'announcement');
     } catch (err) {
       return await m.reply.error(
-        `Could not mute the group — I need admin privileges. ${err.message || ''}`
+        `Could not lock the group — I need admin privileges. ${err.message || ''}`
       );
     }
 
@@ -129,7 +126,7 @@ export default {
     const durationStr = formatDuration(durationMs);
 
     await mixedCard(sock, m.from, {
-      text: `🔇 *USER TIMED OUT*\n\n👤 +${targetNum}\n⏰ Duration: *${durationStr}*\n\nThe group is temporarily set to admin-only mode. It will automatically reopen when the timeout expires.`,
+      text: `🔇 *GROUP LOCK ACTIVE*\n\n👤 Requested for: +${targetNum}\n⏰ Duration: *${durationStr}*\n\nAll non-admin members are temporarily restricted because WhatsApp applies this setting to the whole group. The original setting will be restored when the lock expires.`,
       footer: 'NEXORA • Timeout',
     }, [
       { kind: 'action', label: '🔊 Unmute Now', cmd: `${p}unmute` },

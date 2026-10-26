@@ -66,7 +66,7 @@ export const carouselMenu = {
           caption:   `${emoji} *${toSmallcaps(cat + ' Command Pack')}*\n\n${cmdList}${overflow}\n\n${toSmallcaps('Total')}: ${cmds.length} ${toSmallcaps('commands')}`,
           footer:    `\u2726 ${toSmallcaps('Card')} ${idx + 1}/${capped.length} \u2502 ${menuData.botName}`,
           nativeFlow: [
-            { text: `\u26A1 ${cat.toUpperCase()}`, id: `${menuData.prefix}menu` },
+            { text: `⚡ ${cat.toUpperCase()}`, id: `${menuData.prefix}help ${cat}` },
             { text: `\u{1F916} ${toSmallcaps('Stats')}`, id: `${menuData.prefix}menu aiDynamic` },
           ],
           ...(imgData.source?.startsWith('http')
@@ -89,7 +89,7 @@ export const carouselMenu = {
         const emoji = CATEGORY_EMOJIS[cat] || '\u{1F4C2}';
         return {
           text: `${emoji} ${cat.toUpperCase()} (${menuData.categories[cat].length})`,
-          id:   `${menuData.prefix}menu`,
+          id:   `${menuData.prefix}help ${cat}`,
         };
       });
       if (catButtons.length === 0) {
