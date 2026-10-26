@@ -28,8 +28,8 @@
  *     source of truth (live registry + statuses, not auth folders).
  *   • Reconnect/backoff behaviour is NEXORA's (exponential, capped), not
  *     Yuzuki's flat 3s infinite retry loop.
- *   • Approval is REQUIRED — unlike Yuzuki, strangers who find the bot
- *     cannot pair a number instantly; requests queue behind admin approval.
+ *   • Community-gated self-pairing is the normal path; admin approval is the
+ *     fallback when community verification is temporarily unavailable.
  *   • Polling errors are logged and the library self-heals; switch to a
  *     webhook (bot.setWebhook) only if update drops ever show up in logs.
  *
@@ -146,6 +146,8 @@ function floodOk(userId) {
  *  the intended cheap retry. */
 const PHONE_PAIR_COOLDOWN_MS = 60_000;
 const phonePairLast = new Map();
+// Prevent two Telegram admins from approving the same request concurrently.
+const approvalInFlight = new Set();
 function phoneCooldownOk(phone) {
   const last = phonePairLast.get(phone) || 0;
   return Date.now() - last >= PHONE_PAIR_COOLDOWN_MS;
@@ -659,7 +661,12 @@ export async function startTelegramBot() {
       return reply(chatId, `🚫 Denied the request for +${req.phone}.`);
     }
 
+    if (approvalInFlight.has(req.phone)) {
+      return reply(chatId, `⏳ Pairing approval for +${req.phone} is already being processed.`);
+    }
+
     const status = await bot.sendMessage(chatId, `⏳ Approving +${req.phone}…`);
+    approvalInFlight.add(req.phone);
     try {
       await pairSession(req.phone, { notifyJid: req.dmJid, pairedBy: req.requesterId || null });
       removePairRequest(req.phone);
@@ -669,6 +676,8 @@ export async function startTelegramBot() {
     } catch (err) {
       await bot.editMessageText(`❌ *Pairing failed after approval:* ${err.message || err}\n\nThe request was kept — retry or /pairdeny ${req.phone}.`,
         { chat_id: chatId, message_id: status.message_id, parse_mode: 'Markdown' });
+    } finally {
+      approvalInFlight.delete(req.phone);
     }
   }
 
@@ -809,6 +818,10 @@ export async function startTelegramBot() {
     }
 
     if (deny) {
+      if (approvalInFlight.has(req.phone)) {
+        await bot.answerCallbackQuery(query.id, { text: 'Approval is already being processed.' });
+        return;
+      }
       removePairRequest(req.phone);
       await notifyRequester(req.dmJid, `🚫 Your pairing request for *+${req.phone}* was denied.`);
       await bot.answerCallbackQuery(query.id, { text: 'Denied.' });
@@ -819,9 +832,14 @@ export async function startTelegramBot() {
       }).catch(() => {});
     }
 
+    if (approvalInFlight.has(req.phone)) {
+      return bot.answerCallbackQuery(query.id, { text: 'Approval is already being processed.' });
+    }
+
     await bot.answerCallbackQuery(query.id, { text: 'Approving…' });
+    approvalInFlight.add(req.phone);
     try {
-      await pairSession(req.phone, { notifyJid: req.dmJid });
+      await pairSession(req.phone, { notifyJid: req.dmJid, pairedBy: req.requesterId || null });
       removePairRequest(req.phone);
       await notifyRequester(req.dmJid, `✅ *Your pairing request for +${req.phone} was APPROVED!* The code arrives next — enter it within a couple of minutes.`);
       await bot.editMessageText(`📶 Pairing request for +${req.phone} — *APPROVED* ✅ — code delivering to the requester.`, {
@@ -831,6 +849,8 @@ export async function startTelegramBot() {
       }).catch(() => {});
     } catch (err) {
       await bot.answerCallbackQuery(query.id, { text: `Failed: ${err.message || err}` });
+    } finally {
+      approvalInFlight.delete(req.phone);
     }
   });
 
