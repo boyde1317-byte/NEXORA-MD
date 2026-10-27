@@ -3,6 +3,7 @@ import { layoutConfig } from '../../../config/layout.js';
 import brand from '../../../config/brand.js';
 import owner from '../../../config/owner.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
+import { channelPrivilegeLine } from '../../lib/channelPromo.js';
 
 /**
  * Menu template builder.
@@ -87,12 +88,16 @@ export const menuTemplate = (menuData) => {
 
   // ── Footer ───────────────────────────────────────────────────────────
   formattedLines.push('');
+  const circleLine = channelPrivilegeLine(menuData.prefix || '.');
   if (styleName === 'classic') {
+    formattedLines.push(`┃  ${circleLine}`);
     formattedLines.push(`┃  ${toSmallcaps('Powered by')} ✦ {botName} ✦`);
     formattedLines.push(`┗━━━━━━━━━━━━━━━━━━━━━━━━`);
   } else if (styleName === 'minimal') {
+    formattedLines.push(circleLine);
     formattedLines.push(`Powered by ✦ {botName} ✦`);
   } else {
+    formattedLines.push(`${borders.line} ${circleLine}`);
     formattedLines.push(`${borders.bottomLeft}── ${toSmallcaps('Powered by')} ✦ {botName} ✦ ──`);
   }
 
