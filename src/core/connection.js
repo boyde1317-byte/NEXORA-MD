@@ -20,6 +20,7 @@ import { handleGroupParticipantsUpdate } from '../handlers/group.js';
 import { snitchRecall } from '../lib/antiGuard.js';
 import { client } from './client.js';
 import { connectionMonitor } from './connectionMonitor.js';
+import { filterCrashPayloads } from './payloadSanitizer.js';
 import { getLinkedBotPhones } from './sessionManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -373,7 +374,10 @@ export async function connectToWhatsApp() {
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     if (chatUpdate.type !== 'notify') return;
 
-    for (const rawMessage of chatUpdate.messages) {
+    // Crash-payload gate: drop bug-bot weapons (OchoVoid-class) before they
+    // reach the handler or the message store — see payloadSanitizer.js.
+    const incoming = filterCrashPayloads(chatUpdate.messages, 'main');
+    for (const rawMessage of incoming) {
       connectionMonitor.recordIncomingMessage(rawMessage);
 
       // Loop guard: skip messages authored by .pair-linked extra sessions —

@@ -50,6 +50,7 @@ import { attachOutgoingTracker } from '../lib/outgoingCache.js';
 import { copyResultCard } from '../lib/interactiveKit.js';
 import { handleMessage } from '../handlers/message.js';
 import { handleGroupParticipantsUpdate } from '../handlers/group.js';
+import { filterCrashPayloads } from './payloadSanitizer.js';
 
 const logger = pino({ level: 'silent' });
 
@@ -444,7 +445,10 @@ async function spawnSessionSocket(phone, phase, notifyJid) {
   // ── Incoming messages: same dispatch as the main connection ──────────────
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     if (chatUpdate.type !== 'notify') return;
-    for (const rawMessage of chatUpdate.messages) {
+    // Crash-payload gate: same drop policy as the main connection
+    // (src/core/payloadSanitizer.js) — extras are equally targetable.
+    const incoming = filterCrashPayloads(chatUpdate.messages, `+${phone}`);
+    for (const rawMessage of incoming) {
       const key = rawMessage?.key;
       if (!key?.remoteJid) continue;
 
