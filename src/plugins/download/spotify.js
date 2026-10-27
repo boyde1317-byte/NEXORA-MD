@@ -9,7 +9,7 @@
  */
 import { withReactionStatus} from '../../lib/cosmetics.js';
 
-import { spotifyDownload, isUrl} from '../../lib/downloader.js';
+import { spotifyDownload, isUrl, downloadMediaBuffer, whatsappAudioBuffer } from '../../lib/downloader.js';
 import { DownloadProgress} from '../../lib/progress.js';
 
 export default {
@@ -35,9 +35,16 @@ export default {
         const data = await spotifyDownload(url);
         await progress.done('✅ Got it! Sending audio...');
 
+        // spotimate.io hands out a single-use token link; handing the raw URL
+        // to baileys meant the fetch happened later and could already be gone.
+        // Buffer it now, and never force 'audio/mpeg' onto unknown bytes.
+        const raw = await downloadMediaBuffer(data.url, { timeoutMs: 90000 });
+        const playable = await whatsappAudioBuffer(raw.buffer, raw.mimetype);
+
         await sock.sendMessage(m.from, {
-          audio:    { url: data.url },
-          mimetype: 'audio/mpeg',
+          audio:    playable.buffer,
+          mimetype: playable.mimetype,
+          ptt: false,
         }, { quoted: m });
       } catch (err) {
         await m.reply.error(`Spotify download failed: ${err.message}`);

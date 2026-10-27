@@ -28,20 +28,29 @@ export default {
           const data = await youtubeDownload(query, { preferMp4: true });
           if (!data.mp4) throw new Error('No video stream available for that link.');
 
-          // Probe the stream URL to catch expired CDN links before sending
-          const streamIsLive = async (url) => {
+          // Probe the stream URL to catch expired CDN links before sending,
+          // and read its size: there was no ceiling at all, so a long video
+          // failed deep inside the upload with an opaque baileys error.
+          const MAX_VIDEO_BYTES = 64 * 1024 * 1024; // WhatsApp-friendly ceiling
+          const probe = async (url) => {
             try {
               const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(8000) });
-              return res.ok;
+              if (!res.ok) return { live: false, bytes: 0 };
+              return { live: true, bytes: Number(res.headers.get('content-length') || 0) };
             } catch (_) {
-              return false;
+              return { live: false, bytes: 0 };
             }
           };
 
           let videoUrl = data.mp4;
-          if (!(await streamIsLive(videoUrl))) {
+          const head = await probe(videoUrl);
+          if (head.live && head.bytes > MAX_VIDEO_BYTES) {
+            throw new Error(`That video is ${(head.bytes / 1024 / 1024).toFixed(0)} MB — too heavy to send over WhatsApp. Try \`${prefix}play\` for the audio, or a shorter link.`);
+          }
+          if (!head.live) {
             const retry = await youtubeDownload(query, { preferMp4: true }).catch(() => null);
-            if (retry?.mp4 && (await streamIsLive(retry.mp4))) {
+            const retryHead = retry?.mp4 ? await probe(retry.mp4) : { live: false };
+            if (retryHead.live) {
               videoUrl = retry.mp4;
             } else {
               throw new Error('The video stream link expired before it could be sent. Please try again.');

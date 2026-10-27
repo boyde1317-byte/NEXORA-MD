@@ -32,6 +32,11 @@ const BACKENDS = [
   'https://backend4.tioo.eu.org',
 ];
 const DEFAULT_TIMEOUT = 8000; // per-host: 20s x 4 backends x 2 retries was ~160s of cascading failover
+// Some routes are far slower than the rest (the /spotify extraction measures
+// 12-22s per host — it transcodes server-side). With the 8s default every
+// single .spotify call aborted on every host, including the one that had the
+// track, so the command could never succeed. Slow routes opt into this.
+const SLOW_TIMEOUT = 35000;
 
 /**
  * getJson2 — plain JSON fetch with a semantic validator and timeout.
@@ -94,8 +99,23 @@ async function getJson(path, { timeout = DEFAULT_TIMEOUT, validate } = {}) {
         const ct = res.headers.get('content-type') ?? '';
         if (!ct.includes('json')) throw new Error('Non-JSON response — the link may be invalid or unsupported.');
         const body = await res.json();
+        // A JSON *string* is a failure envelope, not data. The tioo family
+        // answers `/igdl` with the bare body "Request Failed With Code 401"
+        // (HTTP 200, content-type json). That passed every check above and
+        // was returned as a "successful" extraction, so the host-failover
+        // loop never advanced and the caller blamed the user's link.
+        if (body === null || typeof body !== 'object') {
+          throw new Error(`Backend returned a plain-text failure ("${String(body).slice(0, 80)}").`);
+        }
         if (validate && !validate(body)) {
           throw new Error('Backend returned an empty extraction result.');
+        }
+        // Sticky host: put the backend that just worked at the front of the
+        // list, so a slow/partial host is not re-probed on every request.
+        const idx = BACKENDS.indexOf(base);
+        if (idx > 0) {
+          BACKENDS.splice(idx, 1);
+          BACKENDS.unshift(base);
         }
         return body;
       } catch (err) {
@@ -108,7 +128,12 @@ async function getJson(path, { timeout = DEFAULT_TIMEOUT, validate } = {}) {
       await new Promise(r => setTimeout(r, RETRY_DELAY));
     }
   }
-  throw new Error(`Download failed after ${MAX_RETRIES} attempts. The backend may be temporarily unavailable — try again in a moment.`);
+  // Carry the reason through: callers map specific messages (e.g. the
+  // Facebook "private / rate-limited" hint) and could never match the old
+  // generic wording, so every real cause was flattened into
+  // "Download failed after 2 attempts."
+  const reason = lastError?.message ? ` Last error: ${lastError.message}` : '';
+  throw new Error(`Download failed after ${MAX_RETRIES} attempts. The backend may be temporarily unavailable — try again in a moment.${reason}`);
 }
 
 /** YouTube search (used by .play / .ytmp4 without a direct URL). */
@@ -165,7 +190,7 @@ export async function youtubeDownload(url, { preferMp4 = false } = {}) {
   // ── Fallback: loader.to two-step ──────────────────────────────────
   const viaLoader = await loaderToDownload(url, preferMp4 ? '360' : 'mp3');
   if (!viaLoader) {
-    throw new Error('Could not fetch that YouTube video. Check the link and try again.');
+    throw new Error('YouTube extraction is down on both sources right now (the fallback now requires an API key). Try again in a few minutes.');
   }
   return viaLoader;
 }
@@ -175,6 +200,10 @@ export async function youtubeDownload(url, { preferMp4 = false } = {}) {
  * (mp3 in .mp3, video in .mp4) or null when the job never produced a URL.
  */
 async function loaderToDownload(url, format) {
+  // NOTE: loader.to now answers `{error_code:"api_key_required"}` for
+  // keyless server-side use, so this fallback is effectively dead unless an
+  // API key is configured. The validator makes it fail fast (no 40s poll)
+  // instead of hanging; the caller's error message says so.
   const start = await getJson2(
     `https://loader.to/ajax/download.php?format=${format}&url=${encodeURIComponent(url)}`,
     (j) => !!(j?.success && j?.progress_url),
@@ -216,7 +245,12 @@ export async function tiktokDownload(url) {
     // author field at all — it's the sound/music track title (usually just
     // the video's caption + " (audio)"), so it was showing the same long
     // caption text (truncated mid-word) as the "Author" on every card.
-    author: data.creator || data.author_name || data.username || data.nickname || null,
+    // `creator` on the live endpoint is the API vendor's handle ("@prm2.0"),
+    // not the uploader — every TikTok card was crediting the API reseller.
+    // Only trust it when it does not look like a known vendor handle.
+    author: (data.creator && !/^@?prm2/i.test(String(data.creator).trim()))
+      ? data.creator
+      : (data.author_name || data.username || data.nickname || null),
     thumbnail: data.thumbnail,
     video: videos[0],
     audio: audios[0],
@@ -269,7 +303,12 @@ export async function twitterDownload(url) {
 
 /** Spotify track → direct mp3 download link. */
 export async function spotifyDownload(url) {
-  const data = await getJson(`/spotify?url=${encodeURIComponent(url)}`);
+  // /spotify is the slowest route on the whole family (server-side transcode,
+  // measured 12-22s). It needs SLOW_TIMEOUT or it aborts on every host.
+  const data = await getJson(`/spotify?url=${encodeURIComponent(url)}`, {
+    timeout: SLOW_TIMEOUT,
+    validate: (j) => !!(j?.status && j?.res_data?.formats?.[0]?.url),
+  });
   const res = data?.res_data;
   const format = res?.formats?.[0];
   if (!data?.status || !format?.url) throw new Error('Could not fetch that Spotify track. Check the link and try again.');
@@ -411,6 +450,96 @@ export async function getLyrics(artist, title) {
   return data.lyrics.trim();
 }
 
+/**
+ * Re-encode a downloaded audio track into a container WhatsApp can actually
+ * play.
+ *
+ * Why: the YouTube route hands back itag 249 — Opus inside a WebM container
+ * (verified: bytes start 1a 45 df a3, content-type audio/webm). Sending that
+ * with `mimetype: 'audio/mpeg'` is a lie the client detects, which surfaces
+ * on-device as "this audio is not available because something is wrong with
+ * the audio file". Anything that is not a container WhatsApp natively plays
+ * (mpeg/mp4/aac/ogg-opus/amr) gets re-encoded with ffmpeg (already in the
+ * image). On any ffmpeg failure the original bytes are returned unchanged so
+ * the command still has a chance of playing.
+ *
+ * @param {Buffer} buffer
+ * @param {string} mimetype  the mimetype the source actually served
+ * @returns {Promise<{buffer: Buffer, mimetype: string}>}
+ */
+export async function whatsappAudioBuffer(buffer, mimetype = '') {
+  const playable = /^audio\/(mpeg|mp3|mp4|aac|ogg|opus|amr|x-m4a)/i.test(mimetype) ||
+                   /^audio\/ogg/i.test(mimetype);
+  if (playable) return { buffer, mimetype };
+
+  try {
+    const { execFile } = await import('node:child_process');
+    const out = await new Promise((resolve, reject) => {
+      const child = execFile(
+        'ffmpeg',
+        ['-hide_banner', '-loglevel', 'error', '-i', 'pipe:0',
+         '-vn', '-acodec', 'libmp3lame', '-b:a', '128k', '-f', 'mp3', 'pipe:1'],
+        { encoding: 'buffer', maxBuffer: 200 * 1024 * 1024, timeout: 120000 },
+        (err, stdout) => (err ? reject(err) : resolve(stdout)),
+      );
+      child.stdin.on('error', () => {});
+      child.stdin.end(buffer);
+    });
+    if (!out || !out.length) throw new Error('ffmpeg produced no output');
+    return { buffer: out, mimetype: 'audio/mpeg' };
+  } catch (err) {
+    console.warn('[downloader] audio transcode failed, sending source bytes:', err.message);
+    return { buffer, mimetype: /^audio\//i.test(mimetype) ? mimetype : 'audio/mpeg' };
+  }
+}
+
+/**
+ * Sniff whether a tokenised CDN link is video or image.
+ * These links carry no extension and answer `application/octet-stream`, so
+ * extension heuristics misclassify every Instagram reel as an image.
+ */
+export async function sniffIsVideo(url) {
+  try {
+    const r = await fetch(url, { headers: { Range: 'bytes=0-15' }, signal: AbortSignal.timeout(12000) });
+    const ct = (r.headers.get('content-type') || '').toLowerCase();
+    if (ct.startsWith('video/')) return true;
+    if (ct.startsWith('image/')) return false;
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (buf.length < 12) return false;
+    if (buf.slice(4, 8).toString('ascii') === 'ftyp') return true;   // mp4/mov
+    if (buf.slice(0, 4).toString('ascii') === 'RIFF') return false;  // webp
+    return false;
+  } catch (_) {
+    return /\.mp4(\?|$)/i.test(url);
+  }
+}
+
+/**
+ * Single Pinterest pin → image URLs.
+ *
+ * `/pinterest` on the backend is a *keyword search*, so passing a pin URL to
+ * it (as the smart downloader did) returned unrelated results or nothing.
+ * A pin page carries its own originals-sized image in the HTML, which is what
+ * `.download <pin link>` actually needs.
+ */
+export async function pinterestPin(url) {
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36',
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
+    redirect: 'follow',
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) throw new Error(`Pinterest returned HTTP ${res.status}.`);
+  const html = await res.text();
+  const hits = [...html.matchAll(/https:\/\/i\.pinimg\.com\/(?:originals|1200x)\/[A-Za-z0-9\/._-]+\.(?:jpg|jpeg|png|webp)/g)]
+    .map(m => m[0]);
+  const unique = [...new Set(hits)];
+  if (!unique.length) throw new Error('Could not find an image on that Pinterest pin.');
+  return unique.slice(0, 10);
+}
+
 export default {
   youtubeSearch,
   youtubeDownload,
@@ -420,12 +549,15 @@ export default {
   twitterDownload,
   spotifyDownload,
   pinterestSearch,
+  pinterestPin,
   apkSearch,
   webSearch,
   getWeather,
   translateText,
   wikiSearch,
   getLyrics,
+  whatsappAudioBuffer,
+  sniffIsVideo,
 };
 
 /**

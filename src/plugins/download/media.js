@@ -13,7 +13,7 @@
  */
 import { withReactionStatus} from '../../lib/cosmetics.js';
 
-import { youtubeDownload, tiktokDownload, instagramDownload, facebookDownload, twitterDownload, spotifyDownload, isUrl} from '../../lib/downloader.js';
+import { youtubeDownload, tiktokDownload, instagramDownload, facebookDownload, twitterDownload, spotifyDownload, isUrl, downloadMediaBuffer, whatsappAudioBuffer, sniffIsVideo, pinterestPin } from '../../lib/downloader.js';
 import { DownloadProgress} from '../../lib/progress.js';
 
 function detectPlatform(url) {
@@ -69,9 +69,7 @@ export default {
           case 'youtube': {
             // mode 'video' → mp4 job on the loader.to fallback; anything else → mp3
             const data = await youtubeDownload(url, { preferMp4: mode === 'video' || mode === 'auto' });
-            const wantAudio = mode === 'audio' || (!mode.includes('video') && true);
-            // Default to video for ytmp4-style, audio for play-style
-            // If mode is 'auto', prefer video
+            // mode 'auto' prefers video, 'audio' forces audio.
             if (mode === 'video' || (mode === 'auto' && data.mp4)) {
               if (!data.mp4) throw new Error('No video stream available.');
               await progress.done(`✅ ${data.title || 'Video ready'}!`);
@@ -82,9 +80,15 @@ export default {
             } else {
               if (!data.mp3) throw new Error('No audio stream available.');
               await progress.done(`✅ ${data.title || 'Audio ready'}!`);
+              // Buffer immediately (these links are short-lived tokens) and
+              // normalise the container — the route serves WebM/Opus, and
+              // stamping 'audio/mpeg' on it produced unplayable audio.
+              const raw = await downloadMediaBuffer(data.mp3, { timeoutMs: 90000 });
+              const playable = await whatsappAudioBuffer(raw.buffer, raw.mimetype);
               await sock.sendMessage(m.from, {
-                audio: { url: data.mp3 },
-                mimetype: 'audio/mpeg',
+                audio: playable.buffer,
+                mimetype: playable.mimetype,
+                ptt: false,
               }, { quoted: m });
             }
             break;
@@ -107,7 +111,9 @@ export default {
             await progress.done(`✅ Found ${items.length} item${items.length !== 1 ? 's' : ''}. Sending...`);
             for (let i = 0; i < Math.min(items.length, 10); i++) {
               const item = items[i];
-              const isVideo = /\.mp4(\?|$)/i.test(item.url) || (item.resolution || '').toLowerCase().includes('video');
+              // Token links have no extension and answer octet-stream, so
+              // the old `.mp4`/resolution check sent every reel as an image.
+              const isVideo = await sniffIsVideo(item.url);
               const caption = i === 0 ? `📥 *Instagram Download* (${items.length} items)` : `📥 Item ${i + 1} of ${items.length}`;
               if (isVideo) {
                 await sock.sendMessage(m.from, { video: { url: item.url }, caption }, { quoted: i === 0 ? m : undefined });
@@ -146,26 +152,27 @@ export default {
           case 'spotify': {
             const data = await spotifyDownload(url);
             await progress.done('✅ Got it! Sending audio...');
+            const raw = await downloadMediaBuffer(data.url, { timeoutMs: 90000 });
+            const playable = await whatsappAudioBuffer(raw.buffer, raw.mimetype);
             await sock.sendMessage(m.from, {
-              audio: { url: data.url },
-              mimetype: 'audio/mpeg',
+              audio: playable.buffer,
+              mimetype: playable.mimetype,
+              ptt: false,
             }, { quoted: m });
             break;
           }
 
           // ── Pinterest ────────────────────────────────────────────────
           case 'pinterest': {
-            // Pinterest single-pin download
-            const { pinterestSearch } = await import('../../lib/downloader.js');
-            const results = await pinterestSearch(url);
-            if (results.length > 0) {
-              await progress.done('✅ Found image. Sending...');
+            // A pin link is not a search keyword — /pinterest searches, so it
+            // answered with unrelated pins. Extract the pin's own image.
+            const images = await pinterestPin(url);
+            await progress.done(`✅ Found ${images.length} image${images.length !== 1 ? 's' : ''}. Sending...`);
+            for (const [i, img] of images.slice(0, 10).entries()) {
               await sock.sendMessage(m.from, {
-                image: { url: results[0].image },
-                caption: `📌 *${results[0].title || 'Pinterest Image'}*`,
-              }, { quoted: m });
-            } else {
-              throw new Error('Could not fetch that Pinterest pin.');
+                image: { url: img },
+                caption: i === 0 ? '📌 *Pinterest*' : undefined,
+              }, { quoted: i === 0 ? m : undefined });
             }
             break;
           }

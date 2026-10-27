@@ -1,6 +1,6 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard, selectMenu } from '../../lib/interactiveKit.js';
-import { youtubeSearch, youtubeDownload, isUrl, downloadMediaBuffer, isPlausibleMedia } from '../../lib/downloader.js';
+import { youtubeSearch, youtubeDownload, isUrl, downloadMediaBuffer, isPlausibleMedia, whatsappAudioBuffer } from '../../lib/downloader.js';
 
 const MAX_RESULTS = 5;
 
@@ -42,7 +42,10 @@ export default {
           // already died, grab a fresh backend link and try once more.
           let audio;
           const grab = async (d) => {
-            const { buffer, mimetype } = await downloadMediaBuffer(d.mp3, { timeoutMs: 90000 });
+            // googlevideo's edge throttles hard from a datacenter IP (measured
+            // 60-86s for a 3.5min track), so 90s was cutting off real
+            // downloads. Give the buffer room before giving up.
+            const { buffer, mimetype } = await downloadMediaBuffer(d.mp3, { timeoutMs: 180000 });
             // The CDN's content-type is sometimes missing/generic even on a
             // genuine audio stream, so we still fall back to audio/mpeg for
             // those — but never for a buffer that doesn't actually look like
@@ -63,9 +66,15 @@ export default {
             audio = await grab(await youtubeDownload(query));
           }
 
+          // The route serves Opus-in-WebM (itag 249), not an MP3. Re-encode
+          // to a container the client can actually decode before sending —
+          // otherwise the file lands as unplayable audio on the recipient's
+          // phone no matter what mimetype we stamp on it.
+          const playable = await whatsappAudioBuffer(audio.buffer, audio.mimetype);
+
           await sock.sendMessage(m.from, {
-            audio: audio.buffer,
-            mimetype: audio.mimetype,
+            audio: playable.buffer,
+            mimetype: playable.mimetype,
             ptt: false,
           }, { quoted: m });
 
