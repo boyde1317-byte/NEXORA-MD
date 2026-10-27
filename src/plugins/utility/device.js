@@ -20,6 +20,7 @@
  * Great companion to .antibot — spot the accounts hiding behind a
  * linked device bridge before trusting them.
  */
+import { resolveDisplayIdentity } from '../../lib/identity.js';
 import { richTableCard, mixedCard } from '../../lib/interactiveKit.js';
 import { getDeviceInfo, lastSeenAgo } from '../../lib/deviceCache.js';
 
@@ -50,24 +51,33 @@ export default {
     if (!target && rawNum && rawNum.length >= 7) target = `${rawNum}@s.whatsapp.net`;
     if (!target) target = m.sender;
 
-    const num = target.split('@')[0].split(':')[0];
-    const norm = `${num}@s.whatsapp.net`;
+    // LID targets aren't dialable — resolve to a real phone when possible
+    let num = null;
+    const devId = await resolveDisplayIdentity(sock, target, m.isGroup ? m.from : null);
+    const displayLabel = devId.number ? '+' + devId.number : devId.label;
+    const displayTitle = devId.number ? '+' + devId.number : 'hidden account';
+    if (String(target).endsWith('@lid')) {
+      num = devId.number || null;
+    } else {
+      num = target.split('@')[0].split(':')[0];
+    }
+    const norm = num ? `${num}@s.whatsapp.net` : null;
 
     // ── observed data (device cache) ────────────────────────────────────────
     const dev = getDeviceInfo(norm) || getDeviceInfo(target);
 
     // ── live lookups — each independent, none fatal ────────────────────────
     const [waInfo, status, pfp, meta] = await Promise.all([
-      withTimeout(sock.onWhatsApp?.(norm).catch(() => null)).then((r) => r?.[0] || null),
-      withTimeout(sock.fetchStatus?.(norm).catch(() => null)),
-      withTimeout(sock.profilePictureUrl?.(norm, 'url').catch(() => null)),
+      withTimeout(norm ? sock.onWhatsApp?.(norm).catch(() => null) : Promise.resolve(null)).then((r) => r?.[0] || null),
+      withTimeout(norm ? sock.fetchStatus?.(norm).catch(() => null) : Promise.resolve(null)),
+      withTimeout(norm ? sock.profilePictureUrl?.(norm, 'url').catch(() => null) : Promise.resolve(null)),
       m.isGroup ? m.getGroupMetadata().catch(() => null) : Promise.resolve(null),
     ]);
 
     const exists   = waInfo ? (Array.isArray(waInfo) ? waInfo : [waInfo])[0]?.exists : null;
     const bizName  = waInfo?.verifiedName || waInfo?.verifiedBizName || '';
     const about    = status?.status?.status?.toString().trim() || status?.status?.toString().trim() || '';
-    const part     = meta?.participants?.find((x) => (x.id || '').split(':')[0] === num);
+    const part     = meta?.participants?.find((x) => (x.id || '').split(':')[0] === (num || (String(target).split(':')[0])));
     const role     = part ? (part.admin ? (part.admin === 'superadmin' ? 'Owner (superadmin)' : 'Admin') : 'Member') : (m.isGroup ? 'Not in this group' : '—');
 
     // ── verdict hints (observed only) ────────────────────────────────────────
@@ -88,7 +98,7 @@ export default {
     // ── card ────────────────────────────────────────────────────────────────
     const rows = [
       ['👤 Name',        dev?.pushName || m.pushName || '—'],
-      ['📱 Number',      `+${num}`],
+      ['📱 Number',      devId.number ? `+${devId.number}` : 'hidden (LID)'],
       ['✅ On WhatsApp',  exists === null ? 'unknown (lookup failed)' : (exists ? 'yes' : 'NO — not registered')],
       ['🏪 Business',    bizName || 'not a verified business'],
       ['💬 About',       about ? about.slice(0, 60) : 'not set'],
@@ -98,11 +108,11 @@ export default {
       ['🔐 Sender-key',  dev ? (dev.hasSenderKey ? 'yes (modern app session)' : 'not observed yet') : '—'],
       ['🆔 Last msg id', dev ? `${dev.msgIdPrefix}…` : '—'],
       ['📡 Last type',   dev?.lastType || '—'],
-      ['🕒 Last seen',   fmtAgo(lastSeenAgo(norm) ?? lastSeenAgo(target))],
+      ['🕒 Last seen',   fmtAgo((norm && lastSeenAgo(norm)) ?? lastSeenAgo(target))],
     ];
 
     await richTableCard(sock, m.from, {
-      title: `📟 DEVICE INFO — +${num}`,
+      title: `📟 DEVICE INFO — ${displayTitle}`,
       headers: ['Field', 'Value'],
       rows,
       footer: hints.length ? `⚠️ ${hints.join('; ')}` : '✅ nothing unusual observed',
@@ -110,12 +120,12 @@ export default {
 
     if (pfp) {
       await mixedCard(sock, m.from, {
-        text: `📟 *Profile picture of +${num}*\n\nTap to open in full size.`,
+        text: `📟 *Profile picture of ${displayTitle}*\n\nTap to open in full size.`,
         footer: 'NEXORA • Device Info',
       }, [
         { kind: 'url',  label: '🖼️ Open Picture', value: pfp },
         { kind: 'url',  label: '💬 Open Chat',      value: `https://wa.me/${num}` },
-        { kind: 'copy', label: '📋 Copy Number',   value: `+${num}` },
+        { kind: 'copy', label: '📋 Copy Number',   value: num ? `+${num}` : 'hidden (LID)' },
       ], { quoted: m });
     }
   },

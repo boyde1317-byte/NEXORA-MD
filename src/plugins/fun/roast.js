@@ -10,6 +10,7 @@
  *
  * Styles: default | savage | gentle
  */
+import { resolveDisplayIdentity, mentionChip } from '../../lib/identity.js';
 import { actionCard } from '../../lib/interactiveKit.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { aiTextGenerator, clearConversation } from '../../assets/aiTextGenerator.js';
@@ -103,7 +104,7 @@ export default {
         roastText = pool[Math.floor(Math.random() * pool.length)];
       }
 
-      const tag = targetIsSelf ? 'yourself' : `@${target.split('@')[0].split(':')[0]}`;
+      const tag = targetIsSelf ? 'yourself' : (await mentionChip(sock, target, m.from)).label;
       const label = style === 'default' ? '🔥 Roast' : style === 'savage' ? '🌶️ Savage Roast' : '🥺 Gentle Roast';
       const power = aiPowered ? 'AI-powered' : 'house special';
 

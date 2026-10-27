@@ -6,6 +6,7 @@
  * Big meters, colors, and a one-line verdict. Pure entertainment —
  * the "aura" comes from a hash, not from a person.
  */
+import { resolveDisplayIdentity, mentionChip } from '../../lib/identity.js';
 import { actionCard } from '../../lib/interactiveKit.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 
@@ -73,8 +74,8 @@ export default {
       const bar = meter(pct);
 
       const who = checkingOther
-        ? `@${target.split('@')[0].split(':')[0]}`
-        : 'You';
+        ? (await mentionChip(sock, target, m.from)).label
+          : 'You';
 
       const text =
         `✦ *VIBE CHECK* ✦\n\n` +

@@ -4,6 +4,7 @@
  * Original line list written for NEXORA — nothing copied from another
  * bot or listicle site. Playful, PG, and safe to send in any group.
  */
+import { resolveDisplayIdentity, mentionChip } from '../../lib/identity.js';
 import { actionCard } from '../../lib/interactiveKit.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 
@@ -46,7 +47,7 @@ export default {
       const deliver = target && target !== m.sender;
 
       const text = deliver
-        ? `💌 *A delivery for you:*\n\n💬 _"${line}"_\n\n_From a secret admirer (it's ${'@' + m.sender.split('@')[0].split(':')[0]}, he wasn't brave enough to say it)_`
+        ? `💌 *A delivery for you:*\n\n💬 _"${line}"_\n\n_From a secret admirer (it's ${(await mentionChip(sock, m.sender, m.from)).label}, he wasn't brave enough to say it)_`
         : `💌 *Pickup line of the day:*\n\n💬 _"${line}"_\n\n_Use responsibly. Results not guaranteed._`;
 
       await actionCard(sock, m.from, { text, footer: 'NEXORA • Pickup Lines 💘' },

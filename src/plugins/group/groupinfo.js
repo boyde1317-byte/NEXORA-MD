@@ -12,7 +12,7 @@ export default {
       const meta = await sock.groupMetadata(m.from);
       if (!meta) throw new Error('Could not retrieve group metadata.');
 
-      const admins    = meta.participants.filter(p => p.admin).map(p => `+${p.id.split('@')[0]}`);
+      const admins = meta.participants.filter(p => p.admin).map(p => `+${p.phoneNumber ? String(p.phoneNumber).replace(/[^0-9]/g, '') : (String(p.id).endsWith('@lid') ? 'member' : String(p.id).split('@')[0])}`);
       const total     = meta.participants.length;
       const adminCount = admins.length;
       const createdAt = meta.creation

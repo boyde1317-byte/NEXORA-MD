@@ -4,6 +4,7 @@
  * Sends profile picture (if available) + richTableCard with stats.
  * Removed follow-up mixedCard to prevent double messages.
  */
+import { resolveDisplayIdentity } from '../../lib/identity.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { richTableCard } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
@@ -26,7 +27,8 @@ export default {
       targetJid = m.msg.contextInfo.mentionedJid[0];
     }
 
-    const number = targetJid.split('@')[0].split(':')[0];
+    const targetId = await resolveDisplayIdentity(sock, targetJid, m.isGroup ? m.from : null);
+    const number = targetId.number || targetId.label;
     const isSelf = targetJid === m.sender;
 
     await withReactionStatus(m, async () => {

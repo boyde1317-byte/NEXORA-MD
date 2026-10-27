@@ -7,6 +7,7 @@
  * edits themselves. The footer of the final message says it plainly:
  * this is a joke and nothing was actually accessed.
  */
+import { resolveDisplayIdentity, mentionChip } from '../../lib/identity.js';
 import { actionCard } from '../../lib/interactiveKit.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -51,7 +52,7 @@ export default {
       );
     }
 
-    const tag = `@${target.split('@')[0].split(':')[0]}`;
+    const tag = (await mentionChip(sock, target, m.from)).label;
     const targets = [target];
 
     // ── Stage the animation by editing one message in place ────────────
