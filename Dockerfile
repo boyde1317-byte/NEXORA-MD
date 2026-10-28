@@ -4,8 +4,21 @@ WORKDIR /app
 
 # git + ca-certificates are needed to fetch the baileys git dependency —
 # node:20-slim ships neither. Must come BEFORE any git command below.
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates ffmpeg \
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates ffmpeg curl \
     && rm -rf /var/lib/apt/lists/*
+
+# yt-dlp is the self-hosted fallback source for Instagram: the hosted route is
+# quota-based and answers HTTP 401 once its shared upstream budget is spent, so
+# it needs a real second extractor rather than more retries. This is the
+# standalone PyInstaller build, so no Python runtime is required. Non-fatal on
+# purpose — if the download fails the build still succeeds and the bot simply
+# falls back to the hosted API alone.
+RUN curl -fsSL --retry 3 --max-time 180 \
+      https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux \
+      -o /usr/local/bin/yt-dlp \
+    && chmod +x /usr/local/bin/yt-dlp \
+    && /usr/local/bin/yt-dlp --version \
+    || echo "WARN: yt-dlp not installed - Instagram local fallback disabled"
 
 # Copy package files first for better Docker layer caching
 # Wildcard: package-lock.json was removed from the repo (111f3ad),

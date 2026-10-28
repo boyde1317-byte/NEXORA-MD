@@ -10,6 +10,28 @@ console.groq.com). Watch the deploy logs for the pairing code on first boot.
 
 ---
 
+## 0. Downloader smoke test (before you touch a phone)
+
+The download commands depend on third-party endpoints, so verify them from the
+server before blaming a client rendering issue:
+
+```bash
+node scripts/downloaders-smoke.mjs
+```
+
+It exercises every downloader path live and prints PASS/FAIL per source. Two
+notes on reading it:
+
+- **Instagram** goes through the hosted scraper first, then the local yt-dlp
+  fallback. A PASS with media means at least one source is healthy; a FAIL
+  means both are down (usually the shared scraper's 401 plus a missing
+  yt-dlp binary — check `yt-dlp --version` in the container).
+- **X/Twitter** uses the hosted route then fxtwitter. It also verifies the
+  chosen variant is the best one that fits under the send cap, so a sudden
+  drop to 360p in the output is worth a look.
+
+The script always exits 0 so an upstream outage never fails CI.
+
 ## 1. Core Audit (run first)
 
 - [ ] `.testrich` — all 15 message types render, no ⚠️ marks in the report

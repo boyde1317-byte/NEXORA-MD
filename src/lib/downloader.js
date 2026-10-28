@@ -31,7 +31,10 @@ const BACKENDS = [
   'https://backend3.tioo.eu.org',
   'https://backend4.tioo.eu.org',
 ];
-const DEFAULT_TIMEOUT = 8000; // per-host: 20s x 4 backends x 2 retries was ~160s of cascading failover
+// 8s per host was tight enough that a slow-but-healthy route (/yts under load,
+// which aborts a whole search) read as an outage. 12s plus a hard wall-clock
+// budget below keeps the worst case bounded without inventing failures.
+const DEFAULT_TIMEOUT = 12000;
 // Some routes are far slower than the rest (the /spotify extraction measures
 // 12-22s per host — it transcodes server-side). With the 8s default every
 // single .spotify call aborted on every host, including the one that had the
@@ -89,10 +92,15 @@ export const isUrl = (s) => {
 async function getJson(path, { timeout = DEFAULT_TIMEOUT, validate } = {}) {
   const MAX_RETRIES = 2;  // try each backend up to 2 times (2 × hosts attempts)
   const RETRY_DELAY = 1500;  // ms between retries
+  // Wall-clock ceiling for the whole call. Without it, 4 hosts x 2 attempts x
+  // a slow timeout stacks into minutes of dead waiting on a real outage.
+  const budgetMs = timeout * 3;
+  const startedAt = Date.now();
   let lastError;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     for (const base of BACKENDS) {
+      if (Date.now() - startedAt > budgetMs) break;
       try {
         const res = await fetch(`${base}${path}`, { signal: AbortSignal.timeout(timeout) });
         if (!res.ok) throw new Error(`Backend returned HTTP ${res.status}.`);
@@ -228,10 +236,112 @@ async function loaderToDownload(url, format) {
   return null;
 }
 
+// ── Self-hosted fallback (yt-dlp) ─────────────────────────────────────────────
+// The tioo family proxies a shared rapidapi key for Instagram. When that quota
+// is spent, every host answers the same HTTP 200 + "Request Failed With Code
+// 401" body, so no amount of host failover helps. yt-dlp extracts public
+// Instagram posts directly and needs no key — verified logged-out on live
+// reels and photo posts. It is optional: if the binary is absent (local dev)
+// the bridge simply reports itself unavailable and the provider error stands.
+const YTDLP_BIN = process.env.YTDLP_PATH || 'yt-dlp';
+
+async function ytDlpJson(url, { timeoutMs = 90000 } = {}) {
+  const { execFile } = await import('node:child_process');
+  const stdout = await new Promise((resolve, reject) => {
+    execFile(
+      YTDLP_BIN,
+      ['-j', '--no-warnings', '--ignore-config', '--socket-timeout', '20', url],
+      { maxBuffer: 64 * 1024 * 1024, timeout: timeoutMs },
+      (err, out) => {
+        if (err) {
+          const why = err.code === 'ENOENT' ? 'yt-dlp not installed' : (err.message || 'yt-dlp failed');
+          return reject(new Error(why));
+        }
+        resolve(out);
+      },
+    );
+  });
+  // A photo carousel prints one JSON object per line (one per item).
+  return String(stdout).trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
+}
+
+/** Pick the best downloadable asset out of one yt-dlp entry. */
+function pickYtDlpAsset(entry) {
+  if (!entry) return null;
+  const formats = (entry.formats || []).filter((f) => f && f.url);
+  const bestVideo = formats
+    .filter((f) => f.vcodec && f.vcodec !== 'none')
+    .sort((a, b) => (b.height || 0) - (a.height || 0))[0];
+  const url = bestVideo?.url || entry.url;
+  if (!url) return null;
+  return {
+    thumbnail: entry.thumbnail,
+    url,
+    resolution: entry.width && entry.height ? `${entry.width}x${entry.height}` : undefined,
+    isVideo: !!(bestVideo || entry.ext === 'mp4' || (entry.vcodec && entry.vcodec !== 'none')),
+    title: entry.title,
+  };
+}
+
+async function instagramViaYtDlp(url) {
+  const entries = await ytDlpJson(url);
+  const assets = entries.map(pickYtDlpAsset).filter(Boolean);
+  if (!assets.length) throw new Error('yt-dlp found no media on that post');
+  return assets;
+}
+
+// WhatsApp rejects/stalls on very large video payloads, and X happily offers
+// 70MB 1080p variants. Pick the best variant that still fits.
+const MAX_SEND_BYTES = 60 * 1024 * 1024;
+
+async function contentLengthOf(url) {
+  try {
+    const r = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(10000) });
+    return Number(r.headers.get('content-length') || 0);
+  } catch (_) {
+    return 0; // unknown → treat as acceptable
+  }
+}
+
+/** Highest-quality variant that still fits under MAX_SEND_BYTES. */
+async function bestFittingVariant(urls) {
+  for (const u of urls) {
+    const size = await contentLengthOf(u);
+    if (!size || size <= MAX_SEND_BYTES) return { url: u, size };
+  }
+  return { url: urls[urls.length - 1], size: 0 };
+}
+
+// ── fxtwitter (keyless X/Twitter source) ─────────────────────────────────────
+// Secondary source for X. Returns the direct video.twimg.com URL plus metadata,
+// with no key and no rate-limited proxy in between.
+async function twitterViaFx(url) {
+  const m = String(url).match(/status(?:es)?\/(\d+)/i);
+  if (!m) throw new Error('not a status link');
+  const handle = String(url).match(/(?:x|twitter)\.com\/([^/]+)\/status/i)?.[1];
+  const path = handle && !/^i$|^web$/i.test(handle) ? `${handle}/status/${m[1]}` : `status/${m[1]}`;
+  const data = await getJson2(
+    `https://api.fxtwitter.com/${path}`,
+    (j) => !!(j?.code === 200 && j?.tweet),
+  );
+  const media = data.tweet.media || {};
+  const video = (media.videos || [])[0];
+  if (!video?.url) throw new Error('that post has no video');
+  return {
+    title: data.tweet.text || '',
+    url: video.url,
+    thumbnail: video.thumbnail_url,
+    author: data.tweet.author?.screen_name ? `@${data.tweet.author.screen_name}` : undefined,
+  };
+}
+
 /** TikTok video → direct (no-watermark) video/audio links. */
 export async function tiktokDownload(url) {
   const data = await getJson(`/ttdl?url=${encodeURIComponent(url)}`, {
-    validate: (j) => !!(j?.status || j.video?.length || j.audio?.length || j.images?.length || j.photos?.length),
+    // Require actual media, not just a success flag: a degraded host answers
+    // {status:true, video:[], audio:[]}, which used to satisfy the validator
+    // and end the host walk while healthy backends still had the video.
+    validate: (j) => !!((j?.video?.length) || (j?.audio?.length) || (j?.images?.length) || (j?.photos?.length)),
   });
   const videos = data.video || [];
   const audios = data.audio || [];
@@ -257,16 +367,38 @@ export async function tiktokDownload(url) {
   };
 }
 
-/** Instagram post/reel/story → direct media links. */
+/**
+ * Instagram post/reel/story → direct media links.
+ *
+ * Two sources: the tioo route, then yt-dlp. The route is quota-based (its
+ * shared upstream answers 401 once spent) and does not recover by switching
+ * hosts, which is why it needs a real second source rather than more retries.
+ */
 export async function instagramDownload(url) {
-  const data = await getJson(`/igdl?url=${encodeURIComponent(url)}`);
-  const list = Array.isArray(data) ? data : (data?.data || []);
-  if (!list.length) throw new Error('Could not fetch that Instagram link. It may be private or invalid.');
-  return list.map(item => ({
-    thumbnail: item.thumbnail,
-    url: item.url,
-    resolution: item.resolution,
-  })).filter(i => i.url);
+  let primaryError;
+  try {
+    const data = await getJson(`/igdl?url=${encodeURIComponent(url)}`);
+    const list = Array.isArray(data) ? data : (data?.data || []);
+    const mapped = list.map(item => ({
+      thumbnail: item.thumbnail,
+      url: item.url,
+      resolution: item.resolution,
+    })).filter(i => i.url);
+    if (mapped.length) return mapped;
+    primaryError = new Error('the scraper returned no media');
+  } catch (err) {
+    primaryError = err;
+  }
+
+  try {
+    const viaYtDlp = await instagramViaYtDlp(url);
+    if (viaYtDlp.length) return viaYtDlp;
+  } catch (_) { /* fall through with the provider error */ }
+
+  if (/401/i.test(primaryError.message)) {
+    throw new Error('the shared Instagram scraper is rate-limited right now (HTTP 401) and the local fallback could not read it either — try again in a few minutes.');
+  }
+  throw new Error(`Could not fetch that Instagram link. It may be private or invalid. (${primaryError.message})`);
 }
 
 /** Facebook video → direct (SD + HD) links. */
@@ -289,16 +421,45 @@ export async function facebookDownload(url) {
   };
 }
 
-/** Twitter/X post → direct video/media links. */
+/**
+ * Twitter/X post → direct video/media links.
+ *
+ * Two sources: the tioo route, then fxtwitter. Empty media objects from the
+ * route ({url:[{},{}]}, which it also returns when its own quota is spent)
+ * count as a miss so the second source gets a turn.
+ */
 export async function twitterDownload(url) {
-  const data = await getJson(`/twitter?url=${encodeURIComponent(url)}`);
-  const links = (data?.url || []).filter(u => u && (u.hd || u.sd || u.url));
-  if (!data?.status || links.length === 0) throw new Error('Could not fetch media from that X/Twitter post. It may not contain a video, or the link is invalid.');
-  const best = links[links.length - 1];
-  return {
-    title: data.title,
-    url: best.hd || best.sd || best.url,
-  };
+  let primaryError;
+  try {
+    const data = await getJson(`/twitter?url=${encodeURIComponent(url)}`);
+    const links = (data?.url || []).filter(u => u && (u.hd || u.sd || u.url));
+    if (data?.status && links.length) {
+      // Variants come back smallest-first in no guaranteed order; taking the
+      // last one handed out 640x360 for a video that had a 1280x720 version.
+      const area = (u) => {
+        const m = String(u.hd || u.sd || u.url || '').match(/\/(\d{2,4})x(\d{2,4})\//);
+        return m ? Number(m[1]) * Number(m[2]) : 0;
+      };
+      const ranked = [...links]
+        .sort((a, b) => area(b) - area(a))
+        .map((u) => u.hd || u.sd || u.url)
+        .filter(Boolean);
+      const { url } = await bestFittingVariant(ranked);
+      return {
+        title: data.title,
+        url,
+      };
+    }
+    primaryError = new Error('the scraper returned no media for that post');
+  } catch (err) {
+    primaryError = err;
+  }
+
+  try {
+    return await twitterViaFx(url);
+  } catch (fxErr) {
+    throw new Error(`Could not fetch media from that X/Twitter post. It may not contain a video, or the link is invalid. (${primaryError.message}; fallback: ${fxErr.message})`);
+  }
 }
 
 /** Spotify track → direct mp3 download link. */
@@ -322,7 +483,9 @@ export async function spotifyDownload(url) {
 
 /** Pinterest search (by query) → list of pin images. */
 export async function pinterestSearch(query) {
-  const data = await getJson(`/pinterest?url=${encodeURIComponent(query)}`);
+  const data = await getJson(`/pinterest?url=${encodeURIComponent(query)}`, {
+    validate: (j) => !!(j?.success && (j?.result?.result || []).length),
+  });
   const list = data?.result?.result || [];
   if (!data?.success || list.length === 0) throw new Error('No Pinterest results found for that search.');
   return list.map(p => ({
