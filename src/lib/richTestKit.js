@@ -18,6 +18,18 @@ import { AIRich } from './NIXCODE.js';
 import { hoistAfterRelay, rehostRichCardMedia } from './richMediaHoist.js';
 import { baileysBridge } from '../core/baileysBridge.js';
 import { sendUnifiedRich, productItemCard, markdownText, extWidget, followUpPills, singleSection, hScrollSection } from './vipRichKit.js';
+import { randomUUID } from 'node:crypto';
+import {
+  buildA2uiSpec,
+  bloksWidgetFor,
+  bloksWidgetSupport,
+  validateComponents,
+  column,
+  card,
+  text,
+  divider,
+  urlButton,
+} from './a2uiSurface.js';
 
 // ── V1 + V2 generators (imported from the fork's rich-message-utils.js) ─────
 import {
@@ -1333,6 +1345,73 @@ export async function testMoonsonFbCombo(sock, jid, quoted) {
   return 'AIRich fb combo ✓';
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// r19 — BloksWidget / A2UI v0.9 surface.
+//
+// The one path in the whole stack that needs nothing from Meta: the surface is
+// composed locally and rides `InteractiveMessage.bloksWidget` (proto tag 66,
+// field 8). No flow_id, no WABA, no hosted screen.
+//
+// This test exists because every other generator in this kit has a device audit
+// case and this one had none. It fails loudly when the pinned proto has no
+// widget slot, so a silent skip can never be mistaken for a rendering bug.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function testBloksSurface(sock, jid, quoted) {
+  if (!bloksWidgetSupport()) {
+    throw new Error('proto.Message.InteractiveMessage.BloksWidget is missing on this fork — widget cannot be built');
+  }
+
+  const uuid = randomUUID();
+  const spec = buildA2uiSpec({
+    uuid,
+    components: [
+      column('root', ['info_card', 'channel_text', 'open_button']),
+      card('info_card', 'info_body'),
+      column('info_body', ['title', 'rule', 'body']),
+      text('title', 'A2UI Surface — built locally, not by Meta', 'h3'),
+      divider('rule'),
+      text('body', 'Column → Card → Column → Text/Divider, plus a Button whose action is openUrl. If this renders as a real card, the bloksWidget path works.'),
+      text('channel_text', 'NEXORA Channel'),
+      urlButton('open_button', 'channel_text', 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326'),
+    ],
+  });
+
+  const check = validateComponents(spec.createSurface.components);
+  if (!check.ok) throw new Error('surface invalid before send: ' + check.errors.join('; '));
+
+  const bloksWidget = bloksWidgetFor(uuid, spec);
+  if (!bloksWidget) throw new Error('bloksWidgetFor returned nothing despite a passing support check');
+
+  const messageParamsJson = JSON.stringify({
+    limited_time_offer: { text: 'A2UI v0.9', url: 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326', copy_code: 'a2ui', expiration_time: Date.now() * 999 },
+    bottom_sheet: { in_thread_buttons_limit: 0, divider_indices: [1, 2, 3, 999], list_title: 'A2UI surface', button_title: ' ' },
+  });
+
+  const interactiveMessage = {
+    body: { text: '🧩 *BloksWidget / A2UI surface*\n\nCard above = widget rendered. Body text only = widget skipped by the client.' },
+    footer: { text: 'NEXORA • r19 (im_a2ui, surfaceId ' + spec.createSurface.surfaceId + ')' },
+    nativeFlowMessage: {
+      messageParamsJson,
+      messageVersion: 1,
+      buttons: [
+        { name: 'single_select', buttonParamsJson: JSON.stringify({ has_multiple_buttons: true }) },
+        { name: 'call_permission_request', buttonParamsJson: JSON.stringify({ has_multiple_buttons: true }) },
+        { name: 'cta_url', buttonParamsJson: JSON.stringify({ display_text: 'Open channel', url: 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326' }) },
+      ],
+    },
+    bloksWidget,
+  };
+
+  const generated = generateWAMessageFromContent(
+    jid,
+    { viewOnceMessage: { message: { interactiveMessage } } },
+    { ...(sock.user?.id ? { userJid: sock.user.id } : {}) }
+  );
+  await sock.relayMessage(jid, generated.message, { messageId: generated.key.id });
+
+  return 'bloks a2ui surface ✓ (' + spec.createSurface.components.length + ' components, ' + JSON.stringify(spec).length + 'B spec)';
+}
+
 export const RICH_TESTS = [
   // V1 generators (submessage-based)
   { id: 'v1table',    label: '📊 V1 Table',           fn: testV1Table,         group: 'V1' },
@@ -1387,6 +1466,7 @@ export const RICH_TESTS = [
   { id: 'secret',   label: '🔒 Secret Flow Card', fn: testSecretFlow,      group: 'r14 Gems' },
   { id: 'dino',     label: '🦖 HTML Game: Dino',  fn: testHtmlGame('dino'),    group: 'r16 Gems' },
   { id: 'vipcard',  label: '👑 VIP Rich Card',   fn: testVipRichCard,       group: 'r18 Gems' },
+  { id: 'blokssurface', label: '🧩 Bloks A2UI Surface', fn: testBloksSurface, group: 'Bloks' },
   { id: 'htmlcalc', label: '🧮 HTML Calc',        fn: testHtmlGame('calc'),    group: 'r16 Gems' },
   { id: 'monitor',  label: '📡 HTML Server Monitor', fn: testHtmlGame('monitor'), group: 'r16 Gems' },
   { id: 'v2codetable',  label: '💻 V2 Code+Table',     fn: testV2CodeWithTable,     group: 'Combos V2' },

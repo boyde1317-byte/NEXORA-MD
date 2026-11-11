@@ -3,6 +3,16 @@ import { generateWAMessageFromContent } from 'baileys';
 import brand from '../../../config/brand.js';
 import owner from '../../../config/owner.js';
 import { getChannelPill } from '../../lib/menuContext.js';
+import {
+  buildA2uiSpec,
+  bloksWidgetFor,
+  column,
+  card,
+  text,
+  divider,
+  image,
+  urlButton,
+} from '../../lib/a2uiSurface.js';
 
 /**
  * Galaxy Menu (id: 19) — full Moongod .menu port.
@@ -65,40 +75,23 @@ const infoBlock = (p) =>
  └─ ${brand.name} ⚡`;
 
 /** The A2UI spec card riding the bloksWidget (Moongod "Graphiq" card, NEXORA-branded). */
-const buildA2uiSpec = (uuid, bannerUrl) => {
-  // Single root — A2UI validation walks from `root`; a duplicate root id makes
-  // referenced children (header_image) unreachable and the widget fails with
-  // A2UIValidationException (seen live on device 2026-10-22).
-  const rootChildren = bannerUrl
-    ? ['header_image', 'information', 'button2']
-    : ['information', 'button2'];
+const nexoraA2uiSpec = (uuid, bannerUrl) => {
+  // Single root — A2UI validation walks DOWN from `root`; a duplicate root id
+  // makes referenced children (header_image) unreachable and the widget dies
+  // with A2UIValidationException (seen live on device 2026-10-22). The shared
+  // validator in a2uiSurface.js guards that whole class of mistake.
   const components = [
-    { id: 'root', component: 'Column', children: rootChildren },
-    ...(bannerUrl
-      ? [{ id: 'header_image', component: 'Image', url: bannerUrl, variant: 'header', fit: 'cover' }]
-      : []),
-    { id: 'information', component: 'Card', child: 'information_card' },
-    { id: 'information_card', component: 'Column', children: ['title_text', 'Divider8', 'infor_text'] },
-    { id: 'title_text', component: 'Text', text: `About ${fancy(brand.name)} — Quick Facts`, variant: 'h3' },
-    { id: 'Divider8', component: 'Divider' },
-    { id: 'infor_text', component: 'Text', text: infoBlock('.'), variant: 'body' },
-    { id: 'nexora_channel', component: 'Text', text: 'NEXORA Channel' },
-    {
-      id: 'button2',
-      component: 'Button',
-      child: 'nexora_channel',
-      variant: 'borderless',
-      action: { call: 'openUrl', args: { url: CHANNEL_URL } },
-    },
+    column('root', bannerUrl ? ['header_image', 'information', 'button2'] : ['information', 'button2']),
+    ...(bannerUrl ? [image('header_image', bannerUrl)] : []),
+    card('information', 'information_card'),
+    column('information_card', ['title_text', 'Divider8', 'infor_text']),
+    text('title_text', `About ${fancy(brand.name)} — Quick Facts`, 'h3'),
+    divider('Divider8'),
+    text('infor_text', infoBlock('.'), 'body'),
+    text('nexora_channel', 'NEXORA Channel'),
+    urlButton('button2', 'nexora_channel', CHANNEL_URL),
   ];
-  return {
-    version: 'v0.9',
-    createSurface: {
-      surfaceId: 'starcore-widget=' + uuid,
-      catalogId: 'https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json',
-      components,
-    },
-  };
+  return buildA2uiSpec({ uuid, components });
 };
 
 export const galaxyMenu = {
@@ -279,21 +272,8 @@ export const galaxyMenu = {
       gx(`╰───「 ${fancy(brand.name)} ${fancy('v') + brand.version} 」───╯`, `${prefix}menu`),
     ];
 
-    // ── BloksWidget card (skipped when the proto lacks it) ──
-    let bloksWidget;
-    try {
-      const { proto } = await import('baileys');
-      const InteractiveMessage = proto.Message.InteractiveMessage;
-      if (InteractiveMessage?.BloksWidget) {
-        bloksWidget = InteractiveMessage.BloksWidget.create({
-          uuid,
-          type: 'im_a2ui',
-          data: JSON.stringify(buildA2uiSpec(uuid, bannerUrl)),
-        });
-      }
-    } catch {
-      bloksWidget = undefined;
-    }
+    // ── BloksWidget card (skipped, and says why, when the proto lacks it) ──
+    const bloksWidget = bloksWidgetFor(uuid, nexoraA2uiSpec(uuid, bannerUrl));
 
     // ── Status-broadcast product-card quote (Moongod "Paxley Catalyze" header) ──
     // A quoted message keyed to status@broadcast with a review_and_pay button
