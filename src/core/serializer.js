@@ -220,7 +220,8 @@ async function findParticipant(participants, targetJid, sock) {
 }
 
 /**
- * Resolve whether a sender JID belongs to the configured bot owner(s),
+ * Resolve whether a sender JID belongs to the configured bot owner(s) or to
+ * a runtime sudo owner added with .addowner (settings.sudoOwners),
  * following LID → phone-number resolution so owner checks keep working when
  * WhatsApp presents the owner's own account as an opaque LID instead of a
  * phone-number JID (common with privacy settings on newer accounts).
@@ -249,6 +250,27 @@ async function resolveIsOwner(sock, senderJid, fromMe, groupJid) {
 
   const num = await resolveSenderNumber(sock, senderJid, groupJid);
   if (num && config.owner.includes(num)) return true;
+
+  // Runtime sudo owners (.addowner, see src/plugins/owner/sudo.js): numbers
+  // added at runtime are stored in settings.sudoOwners and must count as
+  // owners here, or .addowner silently does nothing — the list is written
+  // but never read. Sudo grants owner commands only, never super-owner
+  // powers (see resolveIsSuperOwner, which does not consult this list).
+  // Fail closed: a missing or malformed list simply grants nothing, and
+  // a corrupt settings value must never crash message handling.
+  if (num) {
+    try {
+      const sudoOwners = db.getSettings()?.sudoOwners;
+      if (Array.isArray(sudoOwners)) {
+        for (const entry of sudoOwners) {
+          const sudoNum = String(entry?.number ?? entry ?? '').replace(/[^0-9]/g, '');
+          if (sudoNum && sudoNum === num) return true;
+        }
+      }
+    } catch (_) {
+      // Fall through to not-an-owner below.
+    }
+  }
 
   return false;
 }
