@@ -216,6 +216,14 @@ const RATE_MAX_USER = 10;   // cmds per window, per user
 const RATE_MAX_CHAT = 20;   // cmds per window, per chat
 const RATE_WINDOW = 10000;  // ms
 
+// Default per-command cooldown when a plugin does not set its own.
+// The configured value lives at rateLimit.cooldownMs (COMMAND_COOLDOWN,
+// default 1500ms). There is no top-level config.cooldownTime — reading it
+// returns undefined and silently disables the cooldown, which is what
+// used to happen here. Used by both the typed-command guard and the
+// sticker-shortcut guard below; keep them on this one value.
+const DEFAULT_COOLDOWN_MS = config.rateLimit?.cooldownMs ?? 3000;
+
 function checkRateLimit(key, max) {
   const now = Date.now();
   const stamps = (RATE_LIMIT_STORE.get(key) || []).filter(t => now - t < RATE_WINDOW);
@@ -530,11 +538,84 @@ try {
       const resolvedName = client.aliases.get(stickerCmd) ?? stickerCmd;
       const command = client.commands.get(resolvedName);
       if (command) {
+        // Sticker shortcuts must pass the SAME guards as typed commands.
+        // They used to run with no checks at all, so any sticker mapped
+        // to an owner-only command (or any command, for a banned user or
+        // in private mode) could be triggered by anyone who sent that
+        // sticker. Stickers are forwardable and their content hash is
+        // stable across re-sends, so the mapping alone must never be
+        // treated as permission. Keep these guards in sync with the
+        // typed-command guards below; do not add a new command surface
+        // without them.
+        const stickerOwner = await m.isOwner;
+        const stickerPerms = command.permissions || {};
+        const stickerOwnerOnly = stickerPerms.owner ?? command.ownerOnly ?? false;
+        const stickerGroupOnly = stickerPerms.groupOnly ?? command.groupOnly ?? false;
+        const stickerAdminOnly = stickerPerms.admin ?? command.adminOnly ?? false;
+        const stickerBotAdminRequired = stickerPerms.botAdmin ?? command.botAdmin ?? false;
+        const stickerLang = getChatLanguage({ db, from: jid, isGroup: isGroupMsg, config });
+
+        if (stickerOwnerOnly && !stickerOwner) {
+          await m.reply(getRandomResponse('owner_only'));
+          return;
+        }
+        const stickerPublicMode = db.getSettings().publicMode ?? config.publicMode;
+        if (!stickerPublicMode && !stickerOwner && !command.requestable) {
+          await m.reply.warn(getLocalizedResponse('private_mode', stickerLang));
+          return;
+        }
+        if (stickerGroupOnly && !isGroupMsg) {
+          await m.reply(getLocalizedResponse('group_only', stickerLang));
+          return;
+        }
+        if (stickerAdminOnly && isGroupMsg) {
+          const senderIsAdmin = await m.isAdmin();
+          if (!senderIsAdmin && !stickerOwner) {
+            await m.reply(getLocalizedResponse('permission_denied', stickerLang));
+            return;
+          }
+        }
+        if (stickerBotAdminRequired && isGroupMsg) {
+          const botIsAdmin = await m.isBotAdmin();
+          if (!botIsAdmin) {
+            await m.reply(getRandomResponse('bot_not_admin'));
+            return;
+          }
+        }
+
+        // Global volume limiter, mirroring the typed-command guard below.
+        // Without it, sticker spam could dodge the per-user/chat ceiling.
+        if (!stickerOwner) {
+          const stickerUserOk = checkRateLimit(`u:${sender}`, RATE_MAX_USER);
+          const stickerChatOk = checkRateLimit(`c:${jid}`, RATE_MAX_CHAT);
+          if (!stickerUserOk || !stickerChatOk) {
+            try {
+              await m.reply.warn('Easy there — too many commands too fast. Give me a few seconds.');
+            } catch (_) {}
+            return;
+          }
+        }
+
+        // Per-command cooldown, mirroring the typed-command guard below.
+        const stickerCooldownKey = `${sender}_${resolvedName}`;
+        const stickerCooldownMs = command.cooldown ?? DEFAULT_COOLDOWN_MS;
+        const stickerLastUsed = client.cooldowns.get(stickerCooldownKey);
+        if (stickerLastUsed && Date.now() - stickerLastUsed < stickerCooldownMs) {
+          const stickerRemainingSec = (stickerCooldownMs - (Date.now() - stickerLastUsed)) / 1000;
+          await m.reply(getRandomResponse('cooldown', command.name, `${Math.max(0.1, stickerRemainingSec).toFixed(1)}s`));
+          return;
+        }
+
+        // Banned users cannot trigger commands by sticker either.
+        if (db.getUser(sender)?.banned) {
+          await m.reply.error('You have been banned from using this bot.');
+          return;
+        }
+
         // Sticker shortcuts pay the same coin costs as typed commands —
         // otherwise a sticker mapped to a paid command would be a free
         // bypass. Same semantics: refund when the plugin throws.
         let stickerCharge = 0;
-        const stickerOwner = await m.isOwner;
         if (!stickerOwner) {
           const cost = commandCost(command, db.getUser(sender));
           if (cost > 0) {
@@ -549,12 +630,17 @@ try {
             stickerCharge = charge.cost;
           }
         }
+        // Reserve the cooldown now that the sticker command is eligible
+        // to run. Denied users above return before this, so they are not
+        // penalised for a denial they can fix (same as typed commands).
+        client.cooldowns.set(stickerCooldownKey, Date.now());
+        setTimeout(() => client.cooldowns.delete(stickerCooldownKey), stickerCooldownMs);
         try {
           m._activeCommand = command.name;
           await command.execute({
             m, sock, jid, sender,
             args: [], body: '', prefix: '',
-            isGroup: isGroupMsg, isOwner: m.isOwner,
+            isGroup: isGroupMsg, isOwner: stickerOwner,
             rawMessage, db, client, config,
             reply: m.reply, react: m.react,
           });
@@ -714,7 +800,7 @@ try {
   }
 
   const cooldownKey = `${sender}_${resolvedName}`;
-  const cooldownMs = command.cooldown ?? config.cooldownTime;
+  const cooldownMs = command.cooldown ?? DEFAULT_COOLDOWN_MS;
   const lastUsed = client.cooldowns.get(cooldownKey);
 
   if (lastUsed && now - lastUsed < cooldownMs) {
