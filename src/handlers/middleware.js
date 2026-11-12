@@ -1,3 +1,16 @@
+/**
+ * NOTE: executePipeline() in this file is NOT the runtime command path.
+ * handleMessage() in src/handlers/message.js enforces permissions,
+ * cooldowns, and rate limits inline and calls plugins directly. This
+ * module's registry is only inspected by the owner-only `.middleware`
+ * diagnostic command (src/plugins/owner/middleware.js), and the
+ * logger / bannedCheck / rateLimiter / prefixGuard / cooldownGuard /
+ * permissionCheck / commandResolver middlewares below do not run in
+ * production. Do not add a new guard here expecting it to take effect;
+ * add it to handleMessage() instead, or wire executePipeline() in as
+ * the single entry point first. This file is kept (not deleted) because
+ * the diagnostic command depends on middlewareRegistry and rateLimiter.
+ */
 import { config } from '../../config/index.js';
 import { client } from '../core/client.js';
 import { db } from '../database/db.js';
@@ -190,7 +203,7 @@ export async function cooldownGuard(ctx, next) {
   const now = Date.now();
   const sender = ctx.sender || ctx.m?.sender;
   const cooldownKey = `${sender}_${resolvedName}`;
-  const cooldownMs = command.cooldown ?? ctx.config?.cooldownTime ?? config.cooldownTime ?? 3000;
+  const cooldownMs = command.cooldown ?? ctx.config?.rateLimit?.cooldownMs ?? config.rateLimit?.cooldownMs ?? 3000;
   const lastUsed = clientInst.cooldowns.get(cooldownKey);
 
   if (lastUsed && now - lastUsed < cooldownMs) {
