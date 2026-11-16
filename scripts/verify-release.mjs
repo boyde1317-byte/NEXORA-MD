@@ -218,6 +218,26 @@ await check('A2UI menu surface validates', () => {
   return `${components.length} nodes`;
 });
 
+await check('A2UI menu surface has no orphan components', () => {
+  const components = menuModule.buildA2uiMenuComponents(fakeMenuData);
+  const byId = new Map(components.map((c) => [c.id, c]));
+  const seen = new Set();
+  const walk = (id) => {
+    if (!byId.has(id) || seen.has(id)) return;
+    seen.add(id);
+    const node = byId.get(id);
+    for (const kid of node.children || []) walk(kid);
+    if (node.child) walk(node.child);
+    for (const tab of node.tabs || []) walk(tab.child);
+    if (node.trigger) walk(node.trigger);
+    if (node.content) walk(node.content);
+  };
+  walk('root');
+  const orphans = components.filter((c) => !seen.has(c.id)).map((c) => c.id);
+  assert(orphans.length === 0, `unreachable from root: ${orphans.join(', ')}`);
+  return `${components.length} nodes reachable`;
+});
+
 await check('A2UI menu renders a text fallback', () => {
   const built = kit.buildA2ui({ components: menuModule.buildA2uiMenuComponents(fakeMenuData) });
   assert(built.text.includes('Commands'), 'fallback text missing the stats block');

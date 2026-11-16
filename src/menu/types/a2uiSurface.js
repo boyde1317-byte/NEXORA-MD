@@ -90,7 +90,11 @@ export const buildA2uiMenuComponents = (menuData = {}) => {
     A2.text('lbl_repo', 'GitHub'),
 
     A2.divider('rule2'),
-    A2.column('links', ['open_panel', 'open_channel', 'open_repo']),
+    // Buttons must be reachable from root: the fork's validator only checks
+    // that references resolve, but the device rejects surfaces with orphan
+    // components (A2UIValidationException, no card). Keep every button id
+    // listed here, matching the audit 'button' surface in a2uiKit.js.
+    A2.column('links', ['open_panel', 'open_channel', 'open_repo', 'btn_panel', 'btn_channel', 'btn_repo']),
     A2.text('open_panel', 'Open the NEXORA panel'),
     A2.text('open_channel', 'Join the NEXORA channel'),
     A2.text('open_repo', 'NEXORA on GitHub'),
