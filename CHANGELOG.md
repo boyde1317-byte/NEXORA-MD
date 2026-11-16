@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Bottom sheet menu restyle (`src/menu/types/bottomSheet.js`): the bot
+  name renders via `brand.display` in the stat header, footer fallback,
+  ad reply title, sheet option title and tier-2 header (a custom bot
+  name stays plain); all sheet rows and tier-2 quick replies use small
+  caps labels like the AI-Dynamic buttons. The custom footer from
+  `.setfooter` is never styled, and stat rows, divider and ad reply
+  body are unchanged.
 - AI-Dynamic menu restyle (`src/menu/types/aiDynamic.js`): theme titles
   and the bot name render in bold sans via the shared font helper and
   `brand.display` (a custom bot name stays plain); theme names in the

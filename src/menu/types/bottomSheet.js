@@ -5,6 +5,7 @@ import { imageManager } from '../../images/imageManager.js';
 import { footerManager } from '../../core/footer.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import brand from '../../../config/brand.js';
 
 /**
  * Bottom Sheet Menu (id: 13) \u2014 enhanced for rich-messages.
@@ -22,6 +23,11 @@ import { asciiBuilder } from '../../ui/asciiBuilder.js';
  *   3 \u2192 nativeFlow without optionText + image header (flat quick-reply buttons)
  *   4 \u2192 guaranteed plain text
  */
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
+
 export const bottomSheetMenu = {
   id: 13,
   name: 'bottomSheet',
@@ -33,7 +39,7 @@ export const bottomSheetMenu = {
 
     // Build richer body text with visual stat rows
     const statBlock = [
-      `\u2726 *${toSmallcaps(menuData.botName + ' Command Center')}* \u2726`,
+      `\u2726 ${displayName(menuData.botName)} ${toSmallcaps('Command Center')} \u2726`,
       '',
       asciiBuilder.statRow('Total Commands', menuData.totalCommands),
       asciiBuilder.statRow('Prefix', menuData.prefix),
@@ -45,7 +51,7 @@ export const bottomSheetMenu = {
     ].join('\n');
 
     const bodyText   = statBlock + buildTextMenu(menuData);
-    const footerText = footerManager.getFooter() || `${menuData.botName} \u2502 ${toSmallcaps('Bottom Sheet')}`;
+    const footerText = footerManager.getFooter() || `${displayName(menuData.botName)} \u2502 ${toSmallcaps('Bottom Sheet')}`;
 
     // Resolve image payload
     const imagePayload = imgData.source?.startsWith('http')
@@ -54,7 +60,7 @@ export const bottomSheetMenu = {
 
     // Build embedded externalAdReply for fallback tiers
     const adReply = {
-      title:                 `\u2726 ${menuData.botName} \u2726`,
+      title:                 `\u2726 ${displayName(menuData.botName)} \u2726`,
       body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Bottom Sheet')}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
@@ -70,13 +76,13 @@ export const bottomSheetMenu = {
 
     // Command rows exposed in the sheet \u2014 richer set with emoji prefixes
     const commandButtons = [
-      { text: '\u{1F3D1} Ping Speed',          id: `${menuData.prefix}ping` },
-      { text: '\u{2139}\uFE0F About Bot',           id: `${menuData.prefix}about` },
-      { text: '\u{1F4CB} Command List',          id: `${menuData.prefix}menulist` },
-      { text: '\u{1F916} System Stats',          id: `${menuData.prefix}menu aiDynamic` },
-      { text: '\u{1F3A8} Set Menu Style',         id: `${menuData.prefix}setmenu` },
-      { text: '\u{1F3ED} Set Footer',            id: `${menuData.prefix}setfooter` },
-      { text: '\u{1F4AC} Contact Dev',           url: 'https://wa.me/233533416608' },
+      { text: `\u{1F3D1} ${toSmallcaps('Ping Speed')}`,    id: `${menuData.prefix}ping` },
+      { text: `\u{2139}\uFE0F ${toSmallcaps('About Bot')}`,     id: `${menuData.prefix}about` },
+      { text: `\u{1F4CB} ${toSmallcaps('Command List')}`,  id: `${menuData.prefix}menulist` },
+      { text: `\u{1F916} ${toSmallcaps('System Stats')}`,  id: `${menuData.prefix}menu aiDynamic` },
+      { text: `\u{1F3A8} ${toSmallcaps('Set Menu Style')}`, id: `${menuData.prefix}setmenu` },
+      { text: `\u{1F3ED} ${toSmallcaps('Set Footer')}`,     id: `${menuData.prefix}setfooter` },
+      { text: `\u{1F4AC} ${toSmallcaps('Contact Dev')}`,    url: 'https://wa.me/233533416608' },
     ];
 
     // ── Tier 1: nativeFlow + optionText + image header ────────────────────
@@ -88,7 +94,7 @@ export const bottomSheetMenu = {
           image:       imagePayload,
           buttons:     commandButtons,
           optionText:  '\u{1F4CB} ' + toSmallcaps('Browse All Commands'),
-          optionTitle: menuData.botName + ' Menu',
+          optionTitle: `${displayName(menuData.botName)} ${toSmallcaps('Menu')}`,
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {
         console.warn('[MENU bottomSheet] Tier 1 (nativeFlow + optionText + image) failed, trying interactive:', err.message);
@@ -102,15 +108,15 @@ export const bottomSheetMenu = {
           body:    bodyText,
           footer:  footerText,
           header:  {
-            title:    `\u2726 ${toSmallcaps(menuData.botName + ' Menu')} \u2726`,
+            title:    `\u2726 ${displayName(menuData.botName)} ${toSmallcaps('Menu')} \u2726`,
             subtitle: `${toSmallcaps('Quick Access')} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`,
             image:    imagePayload,
           },
           buttons: [
-            { name: 'quick_reply', params: { display_text: '\u{1F3D1} Ping Speed',       id: `${menuData.prefix}ping` } },
-            { name: 'quick_reply', params: { display_text: '\u{1F4CB} Command List',     id: `${menuData.prefix}menulist` } },
-            { name: 'quick_reply', params: { display_text: '\u{1F916} System Stats',     id: `${menuData.prefix}menu aiDynamic` } },
-            { name: 'cta_url',     params: { display_text: '\u{1F4AC} Contact Dev',      url: 'https://wa.me/233533416608' } },
+            { name: 'quick_reply', params: { display_text: `\u{1F3D1} ${toSmallcaps('Ping Speed')}`,   id: `${menuData.prefix}ping` } },
+            { name: 'quick_reply', params: { display_text: `\u{1F4CB} ${toSmallcaps('Command List')}`, id: `${menuData.prefix}menulist` } },
+            { name: 'quick_reply', params: { display_text: `\u{1F916} ${toSmallcaps('System Stats')}`, id: `${menuData.prefix}menu aiDynamic` } },
+            { name: 'cta_url',     params: { display_text: `\u{1F4AC} ${toSmallcaps('Contact Dev')}`,  url: 'https://wa.me/233533416608' } },
           ],
           contextInfo: { externalAdReply: adReply, ...(menuData.channelPill || {}) },
         }, { quoted: menuData.audioQuote || m });
