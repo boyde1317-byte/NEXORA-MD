@@ -63,7 +63,7 @@ export default {
         if (sub === 'jodoh') {
           // .primbon jodoh Name1 dd/mm/yyyy Name2 dd/mm/yyyy
           const joined = rest.join(' ');
-          const match = joined.match(/^(.+?)\s+(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})\s+(.+?)\s+(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+          const match = joined.match(/^(.+?)\s+(\d{1,2})[/-](\d{1,2})[/-](\d{4})\s+(.+?)\s+(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
           if (!match) return await m.reply.warn(`Usage: \`${p}primbon jodoh <name1> <dd/mm/yyyy> <name2> <dd/mm/yyyy>\``);
           const [, nama1, d1, b1, y1, nama2, d2, b2, y2] = match;
           const d = await call('ramalanjodoh', {

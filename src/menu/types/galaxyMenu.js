@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { generateWAMessageFromContent } from 'baileys';
+import { A2, attachA2ui } from '../../lib/a2uiKit.js';
 import brand from '../../../config/brand.js';
 import owner from '../../../config/owner.js';
 import { getChannelPill } from '../../lib/menuContext.js';
@@ -64,41 +65,41 @@ const infoBlock = (p) =>
  │  └─ ./NexoraGraphiq ⚡
  └─ ${brand.name} ⚡`;
 
-/** The A2UI spec card riding the bloksWidget (Moongod "Graphiq" card, NEXORA-branded). */
-const buildA2uiSpec = (uuid, bannerUrl) => {
-  // Single root — A2UI validation walks from `root`; a duplicate root id makes
-  // referenced children (header_image) unreachable and the widget fails with
-  // A2UIValidationException (seen live on device 2026-10-22).
+/**
+ * The A2UI spec card riding the bloksWidget (Moongod "Graphiq" card,
+ * NEXORA-branded).
+ *
+ * Built with the fork's A2UI v0.9 builders instead of hand-written nodes, and
+ * validated before it is attached (a2uiKit.attachA2ui): a surface the client
+ * cannot resolve used to reach the device and die silently as an
+ * A2UIValidationException — the menu went out with no card at all.
+ * Exactly one `root`; every referenced child must exist.
+ *
+ * Exported so scripts/verify-release.mjs can assert the surface offline.
+ */
+export const buildA2uiSpec = (uuid, bannerUrl) => {
   const rootChildren = bannerUrl
     ? ['header_image', 'information', 'button2']
     : ['information', 'button2'];
-  const components = [
-    { id: 'root', component: 'Column', children: rootChildren },
-    ...(bannerUrl
-      ? [{ id: 'header_image', component: 'Image', url: bannerUrl, variant: 'header', fit: 'cover' }]
-      : []),
-    { id: 'information', component: 'Card', child: 'information_card' },
-    { id: 'information_card', component: 'Column', children: ['title_text', 'Divider8', 'infor_text'] },
-    { id: 'title_text', component: 'Text', text: `About ${fancy(brand.name)} — Quick Facts`, variant: 'h3' },
-    { id: 'Divider8', component: 'Divider' },
-    { id: 'infor_text', component: 'Text', text: infoBlock('.'), variant: 'body' },
-    { id: 'nexora_channel', component: 'Text', text: 'NEXORA Channel' },
-    {
-      id: 'button2',
-      component: 'Button',
-      child: 'nexora_channel',
-      variant: 'borderless',
-      action: { call: 'openUrl', args: { url: CHANNEL_URL } },
-    },
-  ];
-  return {
-    version: 'v0.9',
-    createSurface: {
-      surfaceId: 'starcore-widget=' + uuid,
-      catalogId: 'https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json',
-      components,
-    },
-  };
+
+  return A2.surface({
+    uuid,
+    components: [
+      A2.column('root', rootChildren),
+      ...(bannerUrl
+        ? [A2.image('header_image', bannerUrl, { variant: 'header', fit: 'cover', description: `${brand.name} banner` })]
+        : []),
+      A2.card('information', 'information_card'),
+      A2.column('information_card', ['title_text', 'Divider8', 'infor_text']),
+      A2.text('title_text', `About ${fancy(brand.name)} — Quick Facts`, 'h3'),
+      A2.divider('Divider8'),
+      A2.text('infor_text', infoBlock('.'), 'body'),
+      // Label node for the channel button (not in rootChildren: the button
+      // renders it, it is not a standalone row).
+      A2.text('nexora_channel', 'NEXORA Channel'),
+      A2.urlButton('button2', 'nexora_channel', CHANNEL_URL, { variant: 'borderless' }),
+    ],
+  });
 };
 
 export const galaxyMenu = {
@@ -279,21 +280,17 @@ export const galaxyMenu = {
       gx(`╰───「 ${fancy(brand.name)} ${fancy('v') + brand.version} 」───╯`, `${prefix}menu`),
     ];
 
-    // ── BloksWidget card (skipped when the proto lacks it) ──
-    let bloksWidget;
+    // ── BloksWidget card: validated surface, proto-gated ──
+    // attachA2ui only writes the widget when the surface validates and the
+    // proto can carry it, so a bad card degrades to the plain card instead of
+    // a device-side A2UIValidationException.
+    const widgetHolder = {};
     try {
-      const { proto } = await import('baileys');
-      const InteractiveMessage = proto.Message.InteractiveMessage;
-      if (InteractiveMessage?.BloksWidget) {
-        bloksWidget = InteractiveMessage.BloksWidget.create({
-          uuid,
-          type: 'im_a2ui',
-          data: JSON.stringify(buildA2uiSpec(uuid, bannerUrl)),
-        });
-      }
-    } catch {
-      bloksWidget = undefined;
+      attachA2ui(widgetHolder, buildA2uiSpec(uuid, bannerUrl), { uuid });
+    } catch (err) {
+      console.warn('[galaxyMenu] A2UI card skipped:', err.message);
     }
+    const bloksWidget = widgetHolder.bloksWidget;
 
     // ── Status-broadcast product-card quote (Moongod "Paxley Catalyze" header) ──
     // A quoted message keyed to status@broadcast with a review_and_pay button

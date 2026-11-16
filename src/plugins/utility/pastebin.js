@@ -65,7 +65,7 @@ export default {
           const { id, content } = await readPaste(link);
           const preview = content.length > 3800 ? content.slice(0, 3800) + '\n...' : content;
           return await m.reply(
-            `📋 *PASTE ${id}*\n\n\`\`\`\`\n${preview.replace(/```\`\`\``/g, "'''")}\n\`\`\`\``
+            `📋 *PASTE ${id}*\n\n\`\`\`\`\n${preview.replace(/`{3,}/g, "'''")}\n\`\`\`\``
           );
         } catch (err) {
           return await m.reply.error(`Could not read that paste: ${err.message}`);

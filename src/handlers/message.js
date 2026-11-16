@@ -179,7 +179,8 @@ async function handleViewOnceRescue(rawMessage, sock, jid, sender) {
   if (!voKey) return;
   const inner = raw[voKey].message;
   const type = Object.keys(inner)[0];
-  const voId = await resolveDisplayIdentity(sock, sender, isGroupMsg ? jid : null);
+  const isGroupChat = String(jid || '').endsWith('@g.us');
+  const voId = await resolveDisplayIdentity(sock, sender, isGroupChat ? jid : null);
   const voChip = voId.number ? `@${voId.number}` : voId.label;
   const caption = `👁️ *View-once rescued* — from ${voChip}`;
   const mentions = [voId.phoneJid || sender];
@@ -199,7 +200,7 @@ async function handleViewOnceRescue(rawMessage, sock, jid, sender) {
     await sock.sendMessage(jid, payload);
   } catch (err) {
     await sock.sendMessage(jid, {
-      text: `👁️ *View-once from @${num}* could not be saved (${err.message}). Type: ${type}`,
+      text: `👁️ *View-once from ${voChip}* could not be saved (${err.message}). Type: ${type}`,
       mentions,
     }).catch(() => {});
   }

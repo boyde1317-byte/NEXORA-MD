@@ -48,10 +48,10 @@ export default {
               return await m.reply.warn(`Your tools are still warm. Try again in *${min} min*.`, 'ROB');
             }
             if (t.jailUntil && now < t.jailUntil) {
-              return await m.reply.warn('🚔 They\'re in jail — nothing to steal but regrets.', 'ROB');
+              return await m.reply.warn("🚔 They're in jail — nothing to steal but regrets.", 'ROB');
             }
             if ((t.coins ?? 0) < MIN_TARGET_COINS) {
-              return await m.reply.warn(`They\'re too broke to rob (need ${MIN_TARGET_COINS}+ coins on hand).`, 'ROB');
+              return await m.reply.warn(`They're too broke to rob (need ${MIN_TARGET_COINS}+ coins on hand).`, 'ROB');
             }
 
             // ── odds: 40% base, +/- 2% per level of difference (capped) ────

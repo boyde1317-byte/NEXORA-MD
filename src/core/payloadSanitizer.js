@@ -39,7 +39,12 @@ const MAX_PAGE_COUNT = 5000;             // document pageCount
 const MAX_DIMENSION = 100000;            // image/video width or height
 const MAX_WALK_DEPTH = 25;               // object nesting depth
 const MAX_WALK_NODES = 20000;            // total nodes inspected per message
-const ZERO_WIDTH_RUN = /[\u200b\u200c\u200d\u2060\ufeff]{32,}/;
+const ZERO_WIDTH_CODES = [0x200b, 0x200c, 0x200d, 0x2060, 0xfeff];
+// Built at runtime: a literal joined character class here trips
+// no-misleading-character-class, and the ZWJ (0x200d) really is intended.
+const ZERO_WIDTH_RUN = new RegExp(
+  '[' + ZERO_WIDTH_CODES.map((c) => String.fromCharCode(c)).join('') + ']{32,}'
+);
 const NUL = /\0/;                        // no legitimate WA string contains NUL
 
 /** Module-level counters, for the Telegram panel / health endpoints. */

@@ -19,7 +19,7 @@
 import newsletterManager from '../../newsletter/newsletterManager.js';
 import { richTableCard } from '../../lib/interactiveKit.js';
 import { channelInviteCaption, getChannelContext } from '../../lib/channelPromo.js';
-import brand from '../../config/brand.js';
+import brand from '../../../config/brand.js';
 
 export default {
   name: 'channel',

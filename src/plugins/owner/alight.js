@@ -18,7 +18,7 @@ export default {
   cooldown: 30000,
   permissions: { owner: true },
 
-  execute: async ({ m, args }) => {
+  execute: async ({ m, args, sock }) => {
     const sub = (args[0] || '').toLowerCase();
     if (sub !== 'bulk') {
       return await m.reply.info(

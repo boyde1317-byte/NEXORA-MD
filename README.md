@@ -3,12 +3,12 @@
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:141E30,100:25D366&height=180&text=NEXORA%20MD&fontSize=52&fontAlignY=36&animation=twinkling" width="100%" alt="NEXORA MD"/>
 
 <a href="https://readme-typing-svg.herokuapp.com">
-  <img src="https://readme-typing-svg.herokuapp.com?lines=Rich-native+WhatsApp+bot+platform;By+Aizen+%E2%80%A2+v2.0.0&font=Fira+Code&color=25D366FF&height=55&width=520&center=true&vCenter=true&size=22" alt="Typing SVG"/>
+  <img src="https://readme-typing-svg.herokuapp.com?lines=Rich-native+WhatsApp+bot+platform;By+Aizen+%E2%80%A2+v2.1.0&font=Fira+Code&color=25D366FF&height=55&width=520&center=true&vCenter=true&size=22" alt="Typing SVG"/>
 </a>
 
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![WhatsApp](https://img.shields.io/badge/WhatsApp-Multi--Device-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://www.whatsapp.com)
-[![Baileys](https://img.shields.io/badge/Baileys-v0.3.18--r6-FF6B35?style=for-the-badge)](https://github.com/boyde1317-byte/baileys)
+[![Baileys](https://img.shields.io/badge/Baileys-v0.3.18--r21-FF6B35?style=for-the-badge)](https://github.com/boyde1317-byte/baileys)
 [![Commands](https://img.shields.io/badge/Commands-181+-purple?style=for-the-badge)](#-command-reference)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
@@ -20,7 +20,7 @@
 
 **NEXORA MD** is a production WhatsApp multi-device bot platform — **181 commands** across 15 categories, with a rich-message engine that makes the bot *feel native*: tappable pickers, copy-code buttons, interactive approval cards, image headers, voice synthesis, and full-text fallbacks everywhere.
 
-Built on a **pinned private Baileys fork** ([`boyde1317-byte/baileys#v0.3.18-r6`](https://github.com/boyde1317-byte/baileys)) with device-verified rich-message generators. Every rich surface ships with a plain-text fallback, so nothing breaks when WhatsApp changes things underneath you.
+Built on a **pinned private Baileys fork** ([`boyde1317-byte/baileys#v0.3.18-r21`](https://github.com/boyde1317-byte/baileys)) with device-verified rich-message generators. Every rich surface ships with a plain-text fallback, so nothing breaks when WhatsApp changes things underneath you.
 
 ---
 
@@ -32,7 +32,8 @@ Built on a **pinned private Baileys fork** ([`boyde1317-byte/baileys#v0.3.18-r6`
 - **Media pickers with thumbnails**: `.play` / `.ytmp4` single-selects show the YouTube thumbnail as the card header
 - **Interactive approval cards**: pairing requests and server orders land in the super owner's DM with native Approve / Deny buttons
 - **LaTeX, maps, tables, galleries** as native cards (`.math`, `.locate`, `.weather`, `.pin`)
-- Rollback to plain-text mode with `NEXORA_RICH_RESPONSE=0`; audit any device with `.testrich` (15 message types) or `.testmessage`
+- **A2UI v0.9 surfaces** — locally composed native cards (`InteractiveMessage.bloksWidget`): tabs, lists, icons, images, modals, tap-to-open buttons and form inputs. Every surface is validated before send and falls back to text, so a card the client cannot parse never replaces the message
+- Rollback to plain-text mode with `NEXORA_RICH_RESPONSE=0`; audit any device with `.testrich` (15 message types), `.testa2ui` (18 A2UI components) or `.testmessage`
 - **Sticker → command mapping**: tap a sticker and it runs its mapped command
 
 ### 👥 Multi-Session Pairing
@@ -347,6 +348,7 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.takeall` | packall, stealpack | Bundle all stickers in this group into a sticker pack named nexora (styled font) |
 | `.testmessage` | testmsg, msgdebug | Test all interactive message types via a native WA list picker |
 | `.testrich` | testrichmsg, richdebug | 🧪 Test party for OURIN-baileys rich message generators (V1 + V2) |
+| `.testa2ui` | a2uitest | 🧪 A2UI v0.9 surface audit — one card per catalog component, plus `check` (validate offline) and `all` (send every surface) |
 | `.unban` | pardon | Unban a user |
 | `.viewstatus` | vs, statuslist, fetchstatus | Views WhatsApp Status updates from contacts |
 | `.welcome` | wc | Toggle welcome messages on or off (per-group or global) |
@@ -571,7 +573,7 @@ Then `.reload greet` (owner command) loads it live without a restart. `.reload` 
 
 | Package | Why |
 |---------|-----|
-| `baileys` (pinned fork `#v0.3.18-r6`) | WhatsApp multi-device socket + rich message generators (keyless git install via Dockerfile `insteadOf`) |
+| `baileys` (pinned fork `#v0.3.18-r21`) | WhatsApp multi-device socket + rich message generators (keyless git install via Dockerfile `insteadOf`) |
 | NIXCODE rich-message builder | Native cards, buttons, carousels (vendored `src/lib/NIXCODE.js`, attribution preserved) |
 | `qrcode-terminal` | Headless pairing |
 | `sharp` | Image processing for thumbnails and stickers |

@@ -13,7 +13,7 @@ export default {
   description: 'Unban a user. Usage: .unban @user',
   cooldown: 2000,
   permissions: { owner: true },
-  execute: async ({ m }) => {
+  execute: async ({ m, sock }) => {
     let targetJid = null;
     if (m.mentioned?.length > 0) targetJid = m.mentioned[0];
     else if (m.quoted?.sender) targetJid = m.quoted.sender;

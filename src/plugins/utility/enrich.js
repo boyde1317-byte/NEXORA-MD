@@ -249,8 +249,8 @@ async function render(m, sock, style, text, key, p) {
     case 'contact': {
       // First phone-looking token in the text becomes the TEL; the rest is
       // the contact's display name. No number → the sender's own number.
-      const phoneMatch = text.match(/\+?\d[\d\s\-]{6,}\d/);
-      const phone = (phoneMatch ? phoneMatch[0] : (m.sender || '').split('@')[0]).replace(/[\s\-]/g, '');
+      const phoneMatch = text.match(/\+?\d[\d\s-]{6,}\d/);
+      const phone = (phoneMatch ? phoneMatch[0] : (m.sender || '').split('@')[0]).replace(/[\s-]/g, '');
       const name = (phoneMatch ? text.replace(phoneMatch[0], '') : text).trim().slice(0, 60) || 'Enriched Contact';
       const vcard = buildVcard(name, phone);
       await sock.sendMessage(m.from, {

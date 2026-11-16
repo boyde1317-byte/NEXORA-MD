@@ -3,6 +3,61 @@
 All notable changes to **NEXORA MD** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.1.0] — 2026-11-16
+
+Upgrade release: the pinned fork moves to `#v0.3.18-r21` and NEXORA gains the
+full A2UI v0.9 surface layer, plus an offline release gate.
+
+### Added
+
+- **A2UI v0.9 surfaces** (`src/lib/a2uiKit.js`) — the whole 18-component basic
+  catalog: layout (`Row`, `Column`, `List`, `Card`, `Tabs`, `Modal`, `Divider`),
+  content (`Text`, `Image`, `Icon`, `Video`, `AudioPlayer`), `Button` and the
+  input set (`TextField`, `CheckBox`, `ChoicePicker`, `Slider`,
+  `DateTimeInput`). Surfaces are composed locally and shipped in
+  `InteractiveMessage.bloksWidget`; no Meta Flow or WABA involved
+- **Pre-send validation** — every surface is checked against the catalog
+  (required props, single `root`, no duplicate ids, no dangling child refs)
+  before it leaves the process, with a plain-text fallback. An invalid surface
+  used to reach the device and fail as an `A2UIValidationException` with no
+  visible error
+- **Menu style 20 `.setmenu 20` (`a2uiSurface`)** — native card with banner,
+  live stats block and tabs for Categories / Top / Links, plus tap-to-open
+  buttons for panel, channel and repo
+- **`.testa2ui`** — owner audit: one card per catalog component, `check` to run
+  the validation offline, `all` to sweep every surface, `list`, `catalog`
+- **`scripts/verify-release.mjs`** (`npm test`) — 24 offline checks covering the
+  pin, the A2UI layer, menu and plugin registries, capability flags, the
+  crash-payload sanitizer and docs/version consistency
+- **CI** (`.github/workflows/verify.yml`) — lint + release gate on node 20, 22
+  and 24 for every push and PR
+
+### Changed
+
+- Baileys pin `#v0.3.18-r17` → `#v0.3.18-r21`; the stale lockfile that was
+  actually installing r13 is fixed, so `npm ci` and `npm install` now agree
+- `galaxyMenu`'s A2UI card is built with the fork's builders and validated via
+  `attachA2ui` instead of hand-written proto nodes
+
+### Fixed
+
+- Six `ReferenceError` crashes on live commands: undefined crew chip in
+  `.heist`, missing `sock` in `.alight` / `.ban` / `.unban`, and undefined
+  `isGroupMsg` / `num` in the view-once rescue path
+- `.newsletter` never loaded — a wrong relative import depth (`../../config`
+  instead of `../../../config`) failed the whole plugin
+- `.pull` was unreachable: the gacha plugin's `pull` alias shadowed the
+  codebase downloader's canonical name. Gacha aliases are now `wish` / `summon`
+- The LaTeX formatting rule in the AI system prompt was mangled by single
+  backslashes (`\f` became a form feed); it now renders as intended
+- ESLint: 20 errors → 0 (escape sequences, zero-width character class,
+  misleading character class)
+
+### Docs
+
+- README: `r21` pin badge, A2UI feature blurb, `.testa2ui` row, v2.1.0 badge
+- Brand version 2.1.0
+
 ## [2.0.0] — 2026-10-07
 
 First official release. 219 commands across 14 categories, built on the pinned

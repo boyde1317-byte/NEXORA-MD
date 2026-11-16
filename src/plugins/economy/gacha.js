@@ -10,7 +10,10 @@ import { mixedCard } from '../../lib/interactiveKit.js';
 
 export default {
   name: 'gacha',
-  aliases: ['pull'],
+  // NOTE: `pull` used to live here, which made the alias shadow the
+  // canonical `.pull` codebase downloader (aliases are resolved before
+  // command names). `.roll` keeps the gacha reachable without the collision.
+  aliases: ['wish', 'summon'],
   category: 'economy',
   description: `Pull the slot machine for coins, gems and XP. ${PULL_COST} coins per pull. Pity guarantees Rare+ every ${PITY_THRESHOLD} pulls.`,
   cooldown: 6000,

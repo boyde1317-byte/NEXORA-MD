@@ -1,0 +1,142 @@
+import { A2, buildA2ui, sendA2uiSurface, surfaceToText, a2uiSupported } from '../../lib/a2uiKit.js';
+import { buildTextMenu } from '../formatter.js';
+import { ASSET_URLS } from '../../assets/assetUrls.js';
+
+/**
+ * A2UI Surface Menu (id: 20) — the v0.9 BloksWidget menu.
+ *
+ * Sends one native card composed locally and rendered by the client:
+ *   - banner image, title and a live stats block
+ *   - Tabs: Commands (every category with its count), Top (busiest commands),
+ *     Links (channel / panel / repo)
+ *   - a List of the busiest categories, tap-to-open URLs via A2UI buttons
+ *
+ * The component tree is built with the fork's A2UI builders and validated
+ * before send (a2uiKit). If the proto cannot carry a widget, or the surface
+ * fails validation, the renderer falls back to the plain-text menu — a menu
+ * is never left empty.
+ *
+ * Pick it with `.setmenu 20` / `.menu a2uiSurface`.
+ */
+
+const PANEL_URL = 'https://nexora-telegram.fly.dev';
+const CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326';
+const GITHUB_URL = 'https://github.com/boyde1317-byte/NEXORA-MD';
+
+/**
+ * Build the component tree for the menu surface.
+ * Pure — the offline verify suite renders it without a socket.
+ *
+ * @param {object} menuData  collectMenuData() output
+ * @returns {object[]} A2UI components (exactly one `root`)
+ */
+export const buildA2uiMenuComponents = (menuData = {}) => {
+  const categories = Object.keys(menuData.categories || {}).sort();
+  const stats = [
+    `Commands: ${menuData.totalCommands ?? '—'}`,
+    `Categories: ${categories.length}`,
+    `Users: ${menuData.users ?? '—'}`,
+    `Groups: ${menuData.groups ?? '—'}`,
+    `Uptime: ${menuData.uptime ?? '—'}`,
+    `Prefix: ${menuData.prefix || '.'}`,
+  ].join('\n');
+
+  // Busiest categories first, capped so the list stays readable on a phone
+  const busiest = categories
+    .map((cat) => ({ cat, count: (menuData.categories[cat] || []).length }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+
+  const topCommands = categories
+    .flatMap((cat) => (menuData.categories[cat] || []).map((c) => ({ cat, name: c.name })))
+    .slice(0, 10);
+
+  const components = [
+    A2.column('root', ['banner', 'title', 'rule1', 'stats', 'tabs', 'rule2', 'links']),
+
+    A2.image('banner', ASSET_URLS.menuBanner, {
+      variant: 'header',
+      fit: 'cover',
+      description: `${menuData.botName || 'NEXORA MD'} banner`,
+    }),
+    A2.text('title', `${menuData.botName || 'NEXORA MD'} — command menu`, 'h3'),
+    A2.divider('rule1'),
+    A2.text('stats', stats),
+
+    A2.tabs('tabs', [
+      { title: 'Categories', child: 'categories_panel' },
+      { title: 'Top', child: 'top_panel' },
+      { title: 'Links', child: 'links_panel' },
+    ]),
+
+    // ── Tab 1: every category with its command count ──
+    A2.column('categories_panel', ['cat_intro', 'cat_list']),
+    A2.text('cat_intro', 'Tap a category below, then run `.help <category>` for the full list.', 'caption'),
+    A2.list('cat_list', busiest.map((b) => `cat_${b.cat}`), { listStyle: 'unordered' }),
+    ...busiest.map((b) => A2.text(`cat_${b.cat}`, `${b.cat} — ${b.count} commands`)),
+
+    // ── Tab 2: a slice of the command surface ──
+    A2.column('top_panel', ['top_intro', 'top_list']),
+    A2.text('top_intro', 'A quick slice of what NEXORA can do:', 'caption'),
+    A2.list('top_list', topCommands.map((c, i) => `top_${i}`), { listStyle: 'ordered' }),
+    ...topCommands.map((c, i) => A2.text(`top_${i}`, `${menuData.prefix || '.'}${c.name} — ${c.cat}`)),
+
+    // ── Tab 3: where to go next ──
+    A2.column('links_panel', ['link_intro', 'link_row']),
+    A2.text('link_intro', 'NEXORA lives in a few places:', 'caption'),
+    A2.row('link_row', ['lbl_panel', 'lbl_channel', 'lbl_repo'], { justify: 'spaceBetween', align: 'center' }),
+    A2.text('lbl_panel', 'Panel'),
+    A2.text('lbl_channel', 'Channel'),
+    A2.text('lbl_repo', 'GitHub'),
+
+    A2.divider('rule2'),
+    A2.column('links', ['open_panel', 'open_channel', 'open_repo']),
+    A2.text('open_panel', 'Open the NEXORA panel'),
+    A2.text('open_channel', 'Join the NEXORA channel'),
+    A2.text('open_repo', 'NEXORA on GitHub'),
+    A2.urlButton('btn_panel', 'open_panel', PANEL_URL, { variant: 'primary' }),
+    A2.urlButton('btn_channel', 'open_channel', CHANNEL_URL, { variant: 'borderless' }),
+    A2.urlButton('btn_repo', 'open_repo', GITHUB_URL, { variant: 'borderless' }),
+  ];
+
+  return components;
+};
+
+export const a2uiSurfaceMenu = {
+  id: 20,
+  name: 'a2uiSurface',
+  description: 'A2UI v0.9 BloksWidget menu — native card with banner, tabs, category list and tap-to-open links',
+  supportedMessages: ['interactiveMessage', 'bloksWidget', 'extendedTextMessage'],
+
+  renderer: async ({ sock, m, menuData }) => {
+    const jid = m.from || m.key?.remoteJid || m.chat;
+    const fallbackText = buildTextMenu(menuData);
+
+    // Proto gate first: no widget support → straight to the text menu.
+    if (!a2uiSupported()) {
+      console.warn('[a2uiSurface] proto cannot carry a BloksWidget — text menu');
+      return sock.sendMessage(jid, { text: fallbackText }, { quoted: m });
+    }
+
+    const components = buildA2uiMenuComponents(menuData);
+    const built = buildA2ui({ components });
+
+    // Validate before send: an invalid surface dies on the device with no
+    // error the bot can see, so the text menu is the safer answer.
+    if (!built.ok) {
+      console.warn('[a2uiSurface] surface rejected — text menu:', built.errors.join('; '));
+      return sock.sendMessage(jid, { text: fallbackText }, { quoted: m });
+    }
+
+    return sendA2uiSurface(sock, jid, {
+      components,
+      title: menuData.botName || 'NEXORA MD',
+      subtitle: `${menuData.totalCommands ?? '—'} commands • ${menuData.uptime ?? ''}`.trim(),
+      text: `✦ ${menuData.botName || 'NEXORA MD'} — tap a tab to browse`,
+      footer: `${menuData.prefix || '.'}help <category> • ${menuData.botName || 'NEXORA MD'}`,
+    }, { quoted: m });
+  },
+};
+
+export { surfaceToText };
+export default a2uiSurfaceMenu;

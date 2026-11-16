@@ -3,7 +3,7 @@
   "description": "Next Generation WhatsApp Multi Device Framework",
   "author": "Aizen",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
   "engines": {
     "node": ">=20.0.0"
@@ -15,12 +15,14 @@
     "build": "echo 'No build required for Nexora MD'",
     "clean": "rm -rf dist session",
     "lint": "eslint src/ --ext .js",
-    "lint:fix": "eslint src/ --ext .js --fix"
+    "lint:fix": "eslint src/ --ext .js --fix",
+    "verify": "node scripts/verify-release.mjs",
+    "test": "node scripts/verify-release.mjs && node scripts/test-payload-sanitizer.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
     "@napi-rs/canvas": "^1.0.10",
-    "baileys": "github:boyde1317-byte/baileys#v0.3.18-r17",
+    "baileys": "github:boyde1317-byte/baileys#v0.3.18-r21",
     "chalk": "^5.4.1",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",

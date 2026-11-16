@@ -696,7 +696,7 @@ export async function pinterestPin(url) {
   });
   if (!res.ok) throw new Error(`Pinterest returned HTTP ${res.status}.`);
   const html = await res.text();
-  const hits = [...html.matchAll(/https:\/\/i\.pinimg\.com\/(?:originals|1200x)\/[A-Za-z0-9\/._-]+\.(?:jpg|jpeg|png|webp)/g)]
+  const hits = [...html.matchAll(/https:\/\/i\.pinimg\.com\/(?:originals|1200x)\/[A-Za-z0-9/._-]+\.(?:jpg|jpeg|png|webp)/g)]
     .map(m => m[0]);
   const unique = [...new Set(hits)];
   if (!unique.length) throw new Error('Could not find an image on that Pinterest pin.');

@@ -14,7 +14,7 @@ export default {
   description: 'Ban a user from using the bot. Usage: .ban @user [reason]',
   cooldown: 2000,
   permissions: { owner: true },
-  execute: async ({ m, args }) => {
+  execute: async ({ m, args, sock }) => {
     let targetJid = null;
     if (m.mentioned?.length > 0) targetJid = m.mentioned[0];
     else if (m.quoted?.sender) targetJid = m.quoted.sender;

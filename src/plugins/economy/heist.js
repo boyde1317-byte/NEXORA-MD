@@ -13,6 +13,8 @@ import { withReactionStatus } from '../../lib/cosmetics.js';
 import { richTableCard } from '../../lib/interactiveKit.js';
 
 const ENTRY_FEE = 200;
+/** `@number` chip for a crew member; the jid is in `mentions`, so WA links it. */
+const crewChip = (jid) => `@${String(jid).split('@')[0].split(':')[0]}`;
 const JOIN_WINDOW_MS = 90 * 1000;
 const MAX_CREW = 6;
 
