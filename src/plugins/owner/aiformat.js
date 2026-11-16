@@ -104,6 +104,7 @@ export default {
       ['comparison', 'iPhone vs Galaxy'],
       ['table', 'give me a table of prices'],
       ['steps', 'how to deploy'],
+      ['profile', 'who is Kwame Nkrumah'],
     ]
       .map(([shape, example]) => `${detectRichIntent(example).shape === shape ? '✅' : '❌'} ${shape}`)
       .join('\n');
@@ -116,6 +117,7 @@ export default {
       + `*Try it:*\n`
       + `• \`${p}aiformat compare iPhone 15 vs Galaxy S24\`\n`
       + `• \`${p}aiformat test\` — send all three samples\n`
+      + `• \`${p}aiformat who is Kwame Nkrumah\` — a single subject, tailored answer, no table\n`
       + `• \`${p}ai compare MTN vs Telecel data bundles\``,
       'NEXORA • AI format',
     );

@@ -46,7 +46,7 @@ Built on a **pinned private Baileys fork** ([`boyde1317-byte/baileys#v0.3.18-r21
 - **Provider walk with call-time fallback**: Gemini (image generation) → Groq (text + vision, free tier) → Mistral → OpenRouter — the first working provider is memoized
 - Chat, code, proofread, translate, brainstorm, vision, step-by-step math with native LaTeX
 - **`.remix`** — reply to a voice note: whisper-large-v3 transcription → style rewrite (corporate, Shakespeare, Gen Z, pirate, Yoda, Gordon Ramsay) → synthesized back **as a voice note**
-- **Every answer is formatted for WhatsApp, not copied out of a chat log**: each AI turn is built with a rendering contract (pipe table for comparisons, fenced code cards, LaTeX for math, single-asterisk markup, no `#` headings) plus per-turn shape detection — ask "compare iPhone 15 vs Galaxy S24" and the reply arrives as a native table with a one-line verdict. `.aiformat` shows what the model is told and renders the samples
+- **The format follows the task, not the other way round**: each AI turn is built with a rendering contract plus per-turn shape detection. "Compare iPhone 15 vs Galaxy S24" comes back as a native pipe table with a one-line verdict; "who is Kwame Nkrumah" comes back as a titled bullet profile and is explicitly forbidden from becoming a table; "how do I deploy this" becomes numbered steps; a haiku gets no directive at all. Code renders as a code card, math as LaTeX, and `**bold**` is folded to WhatsApp markup. `.aiformat <prompt>` shows which shape a prompt maps to before you send it
 - AI auto-reply mode (`.chatbot`) for non-command messages
 
 ### 💰 Economy & Engagement

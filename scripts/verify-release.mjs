@@ -405,7 +405,12 @@ await check('comparison prompts are detected, chat prompts are not', () => {
     ['what is the difference between TCP and UDP', 'comparison'],
     ['give me a table of african capitals', 'table'],
     ['how do I deploy this to fly.io', 'steps'],
+    ['who is Kwame Nkrumah', 'profile'],
+    ['give me info on Elon Musk', 'profile'],
+    ['tell me about the Eiffel Tower', 'profile'],
     ['write a haiku about coffee', null],
+    ['what is the capital of Ghana', null],
+    ['recommend a laptop for video editing', null],
     ['summarize this article', null],
   ];
   for (const [prompt, expected] of cases) {
@@ -429,6 +434,27 @@ await check('rich prompt carries the contract, plain prompt does not', () => {
   const poem = buildAISystemPrompt('write a haiku about coffee', { rich: true });
   assert(!/THIS TURN/.test(poem), 'shape directive leaked into an unrelated prompt');
   return 'contract gated on richResponse';
+});
+
+await check('only a real comparison or an explicit table request gets a table', () => {
+  // The contract must forbid tabling a single subject outright.
+  assert(/NEVER table a single subject/i.test(RICH_FORMAT_CONTRACT), 'contract does not forbid single-subject tables');
+
+  const person = buildAISystemPrompt('who is Kwame Nkrumah', { rich: true });
+  // Only the per-turn directive may demand a table — the shared contract
+  // mentions one because it has to describe the rule.
+  const personDirective = person.slice(person.indexOf('THIS TURN'));
+  assert(/this is not a comparison/i.test(personDirective), 'person directive does not rule out a table');
+  assert(!/pipe table/i.test(personDirective), 'person directive still demands a table');
+  assert(!/Verdict/.test(personDirective), 'person directive asks for a comparison verdict');
+
+  const comparison = buildAISystemPrompt('compare iPhone 15 vs Galaxy S24', { rich: true });
+  assert(/Reply with exactly one pipe table/.test(comparison), 'comparison prompt lost its table directive');
+
+  const chat = buildAISystemPrompt('write a haiku about coffee', { rich: true });
+  assert(!/THIS TURN/.test(chat), 'an unrelated prompt got a shape directive');
+
+  return 'table gated to comparisons only';
 });
 
 await check('comparison markdown becomes one native table block', () => {

@@ -21,13 +21,13 @@ import { NEXORA_SYSTEM_PROMPT } from '../nexora-ai-prompt.js';
 
 /** Rules the model must follow when the reply is painted by AIRich. */
 export const RICH_FORMAT_CONTRACT = [
-  'RENDERING — this chat paints your reply as a native WhatsApp rich card, not as a wall of text. Use the slots you have:',
-  '- Comparing 2+ options, or any spec/feature/price question about several things: answer with ONE GFM pipe table. Row 1 = header, and its first cell must name the row axis (Feature, Spec, Price); the remaining cells are the option names (2-4 options). Row 2 = separator (|---|). Then at most 8 attribute rows. One short value per cell (1-4 words), no sentences, no line breaks, no links inside cells. End with one line: *Verdict:* <pick> — <one reason>.',
-  '- A table is ONLY for comparison or tabular data. Never table prose, a single item, a story, or code.',
+  'RENDERING — this chat can paint tables, code cards, LaTeX and lists. Pick the shape that fits the task the user gave you. Do not use a shape just because it exists.',
+  '- A pipe table is for ONE case: the user is comparing 2+ named options, or they explicitly asked for a table/breakdown. Row 1 = header, and its first cell must name the row axis (Feature, Spec, Price); remaining cells are the option names (2-4 options). Row 2 = separator (|---|). Then at most 8 attribute rows, one short value per cell (1-4 words), no sentences or links inside cells. End with one line: *Verdict:* <pick> — <one reason>.',
+  '- NEVER table a single subject: a person, a place, a company, one product on its own, a story, an explanation or code. Something having many attributes does not make it a comparison.',
+  '- Answer the task as it was asked. About a person, company, place or topic: a short *bold* title line, then 3-5 "-" bullets of the facts that matter, then one line of context. Explaining something: 2-3 short paragraphs. A recommendation or opinion: 2-4 sentences. Enumerable facts: bullets.',
   '- Code: exactly one fenced block tagged with its language (```python). Code never goes inside a table cell.',
   '- Math: LaTeX between $...$. Never use LaTeX for prices or plain words.',
   '- A procedure or how-to: numbered list (1. 2. 3.), max 8 steps, one line each.',
-  '- Anything else enumerable: "-" bullets, max 8, one line each.',
   '- No "#" or "##" headings — open with a short *bold* line instead.',
   '- Emphasis: single asterisks for *bold* and single underscores for _italic_ (WhatsApp markup; **double** asterisks and __double__ underscores arrive as literal characters).',
 ].join('\n');
@@ -50,6 +50,12 @@ const SHAPE_NOTES = {
     'Reply with a numbered list (1. 2. 3.), max 8 steps, one line each, in the order they must be done.',
     'Do not use a table for steps.',
   ].join(' '),
+  profile: [
+    'THIS TURN: the user asked about one subject (a person, company, place or thing).',
+    'Do NOT use a table — this is not a comparison.',
+    'Open with a short *bold* line naming it, then 3-5 "-" bullets covering what it is, what it is known for, key dates/numbers and current status where relevant, then one closing line that answers why it matters for the user\'s question.',
+    'Only state facts you are confident of. If you do not know the subject, say so in one sentence instead of inventing a profile.',
+  ].join(' '),
 };
 
 /** Ordered: the first match wins, so comparison beats the generic shapes. */
@@ -66,13 +72,22 @@ const INTENT_PATTERNS = [
     shape: 'steps',
     re: /(^|\s)(how\s+(do|to|can)\b|steps?\b|guide\b|walkthrough\b|set\s?up\b|configure\b|install\b)/i,
   },
+  {
+    shape: 'profile',
+    re: /\bwho\s+(is|was|are|were)\b|\b(info|information)\s+(on|about)\b|\btell\s+me\s+(more\s+)?about\b|\bprofile\s+(of|on)\b|\bbiography\b|\bbackground\s+(on|of)\b|\bexplain\b|\bhistory\s+of\b/i,
+  },
 ];
 
 /**
  * Work out which rich shape (if any) fits this prompt.
  *
+ * Only a real comparison (or an explicit table request) is allowed to force a
+ * table. Everything else is shaped by the task: a procedure becomes a numbered
+ * list, a single subject becomes a titled bullet answer, and plain chat gets no
+ * directive at all.
+ *
  * @param {string} prompt
- * @returns {{ shape: 'comparison'|'table'|'steps'|null, directive: string|null }}
+ * @returns {{ shape: 'comparison'|'table'|'steps'|'profile'|null, directive: string|null }}
  */
 export function detectRichIntent(prompt) {
   const text = String(prompt || '');

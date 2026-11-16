@@ -3,6 +3,27 @@
 All notable changes to **NEXORA MD** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.2.1] — 2026-11-16
+
+The table rule in 2.2.0 was too broad: it also told the model to tabulate
+"spec/feature questions about several things", which could push a person or a
+place into a grid. The shape now has to match the task.
+
+### Changed
+
+- **Tables are for comparisons only** — the contract allows one when the user is
+  comparing 2+ named options or explicitly asks for a table/breakdown, and says
+  outright: never table a single subject (a person, place, company, one product,
+  a story, an explanation or code). Having many attributes is not a comparison
+- **New `profile` shape** — "who is X", "info on X", "tell me about X",
+  "explain X", "history of X" get a titled bullet answer (3-5 facts plus one
+  line of context) and an explicit no-table rule, with an instruction to say so
+  plainly rather than invent facts about a subject it does not know
+- The contract now says how to answer non-comparison tasks: person/topic →
+  title + bullets, explanation → 2-3 short paragraphs, opinion/recommendation →
+  2-4 sentences, enumerable facts → bullets
+- `.aiformat` lists the `profile` shape and its example
+
 ## [2.2.0] — 2026-11-16
 
 AI replies now use the rich renderer on purpose instead of by accident: the
