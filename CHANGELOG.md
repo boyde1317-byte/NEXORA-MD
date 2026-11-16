@@ -3,6 +3,25 @@
 All notable changes to **NEXORA MD** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.2.2] — 2026-11-16
+
+Picks up baileys `0.3.18-r22`, which adds three protocol surfaces the fork had
+always been missing. Nothing in the bot's own commands changes; the new
+capability is available to plugins.
+
+### Changed
+- baileys dependency moved from `v0.3.18-r21` to `v0.3.18-r22`.
+
+### Added
+- Usernames: `sock.checkUsername`, `setUsername`, `deleteUsername`,
+  `getMyUsername`, `getUsernameRecommendations`, `checkAndSetUsername`,
+  `findUserByUsername` and `fetchContactUsernames`.
+- Reporting: `sock.reportSpam`, `reportContact`, `reportGroup`, `reportUser`
+  and `reportMessage`. Reporting tags are captured as messages arrive, so
+  `reportSpam()` works on recent messages in a chat.
+- Registration: `sock.requestRegistrationCode` and `sock.register` for
+  phone-number signup, plus `getBanDetails` for ban-appeal status.
+
 ## [2.2.1] — 2026-11-16
 
 The table rule in 2.2.0 was too broad: it also told the model to tabulate

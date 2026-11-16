@@ -20,7 +20,7 @@
 
 **NEXORA MD** is a production WhatsApp multi-device bot platform — **181 commands** across 15 categories, with a rich-message engine that makes the bot *feel native*: tappable pickers, copy-code buttons, interactive approval cards, image headers, voice synthesis, and full-text fallbacks everywhere.
 
-Built on a **pinned private Baileys fork** ([`boyde1317-byte/baileys#v0.3.18-r21`](https://github.com/boyde1317-byte/baileys)) with device-verified rich-message generators. Every rich surface ships with a plain-text fallback, so nothing breaks when WhatsApp changes things underneath you.
+Built on a **pinned private Baileys fork** ([`boyde1317-byte/baileys#v0.3.18-r22`](https://github.com/boyde1317-byte/baileys)) with device-verified rich-message generators. Every rich surface ships with a plain-text fallback, so nothing breaks when WhatsApp changes things underneath you.
 
 ---
 
@@ -574,7 +574,7 @@ Then `.reload greet` (owner command) loads it live without a restart. `.reload` 
 
 | Package | Why |
 |---------|-----|
-| `baileys` (pinned fork `#v0.3.18-r21`) | WhatsApp multi-device socket + rich message generators (keyless git install via Dockerfile `insteadOf`) |
+| `baileys` (pinned fork `#v0.3.18-r22`) | WhatsApp multi-device socket + rich message generators (keyless git install via Dockerfile `insteadOf`) |
 | NIXCODE rich-message builder | Native cards, buttons, carousels (vendored `src/lib/NIXCODE.js`, attribution preserved) |
 | `qrcode-terminal` | Headless pairing |
 | `sharp` | Image processing for thumbnails and stickers |
