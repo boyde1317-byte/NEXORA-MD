@@ -1,58 +1,44 @@
-# NEXORA-MD on Fly.io — always-on WhatsApp bot
+# fly.toml app configuration file generated for nexoraflex on 2026-11-16T19:23:00Z
 #
-# Prereqs (one-time, before first deploy):
-#   fly launch --no-deploy        # creates the app, uses this file
-#   fly volumes create nexora_session --size 1
-#   fly volumes create nexora_database --size 1
-#   fly secrets set OWNER_NUMBERS=... OWNER_NAME=... PAIRING_ENABLED=true \
-#                 PAIRING_PHONE=... NEXORA_RICH_RESPONSE=1
-#   fly deploy
+# See https://docs.fly.io/reference/configuration for information about how to use this file.
 #
-# NOTE: the bot must never sleep — auto_stop_machines is false.
-#
-# SCALING PAIRED SESSIONS (.pair / /pair web page):
-#   fly.toml defaults to a 512MB shared-cpu-1x machine, which safely hosts
-#   MAX_EXTRA_SESSIONS=5 (each linked session costs ~60-120MB RSS).
-#   To pair more, raise BOTH together, e.g. 10 sessions on a 1GB machine:
-#     [[vm]]
-#       size = "shared-cpu-1x"
-#       memory = 1024
-#     fly secrets set MAX_EXTRA_SESSIONS=10
-#   Watch /api/health (memory.rssMb) as you grow.
 
-app = "nexora-md"
-primary_region = "lhr"
+app = 'nexoraflex'
+primary_region = 'lhr'
 
 [build]
-
 [env]
-  NEXORA_MENU_GIF_URL = "https://base44.app/api/apps/6acfd0aaa54519204c9b5698/files/mp/public/6acfd0aaa54519204c9b5698/50442af8d_nexora-menu-loop.mp4"
-  NODE_ENV = "production"
-  PORT = "3000"
-  SESSION_PATH = "/app/data/session"
-  DB_PATH = "/app/data/db.json"
+  DB_PATH = '/app/data/db.json'
+  NEXORA_MENU_GIF_URL = 'https://base44.app/api/apps/6acfd0aaa54519204c9b5698/files/mp/public/6acfd0aaa54519204c9b5698/50442af8d_nexora-menu-loop.mp4'
+  NODE_ENV = 'production'
+  PORT = '3000'
+  SESSION_PATH = '/app/data/session'
 
-# Single Fly volume (platform limit: 1 volume per machine) — session + db.json inside
 [[mounts]]
-  source = "nexora_data"
-  destination = "/app/data"
+  source = 'nexora_data'
+  destination = '/app/data'
 
-# Auth session — lost volume = re-pairing required
 [http_service]
   internal_port = 3000
   force_https = true
-  auto_stop_machines = false   # WhatsApp bot must stay connected
+  auto_stop_machines = 'off'
   auto_start_machines = true
   min_machines_running = 1
 
   [http_service.concurrency]
-    type = "requests"
-    soft_limit = 50
+    type = 'requests'
     hard_limit = 100
+    soft_limit = 50
 
   [[http_service.checks]]
-    interval = "30s"
-    timeout = "5s"
-    grace_period = "15s"
-    method = "GET"
-    path = "/api/health"
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '15s'
+    method = 'GET'
+    path = '/api/health'
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024
