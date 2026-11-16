@@ -19,6 +19,7 @@ export default {
   cooldown: 2000,
   execute: async ({ m, sock, prefix }) => {
     const p = prefix || '.';
+    const d = brand.display || {};
     const totalCmds = client.commands?.size ?? 0;
 
     // ── Tier 1: richResponse table ─────────────────────────────────────────
@@ -27,15 +28,15 @@ export default {
         title:   'VERSION INFO',
         headers: ['Component', 'Details'],
         rows: [
-          ['Bot Name',    brand.name],
-          ['Developer',   brand.creator],
-          ['Framework', brand.core],
+          ['Bot Name',    d.name || brand.name],
+          ['Developer',   d.creator || brand.creator],
+          ['Framework', d.core || brand.core],
           ['Version',     `v${brand.version}`],
           ['Node.js',     process.version],
           ['Platform',    process.platform],
           ['Commands',    String(totalCmds)],
         ],
-        footer: `${brand.name} — Up to date`,
+        footer: `${d.name || brand.name} — Up to date`,
       }, { quoted: m });
 
       return;
@@ -45,8 +46,8 @@ export default {
 
     // ── Tier 2: menu-identity box fallback ────────────────────────────────
     await m.reply.box('VERSION INFO', [
-      asciiBuilder.statRow('Bot', brand.name),
-      asciiBuilder.statRow('Developer', brand.creator),
+      asciiBuilder.statRow('Bot', d.name || brand.name),
+      asciiBuilder.statRow('Developer', d.creator || brand.creator),
       asciiBuilder.statRow('Core', `v${brand.version}`),
       asciiBuilder.statRow('Runtime', `Node.js ${process.version}`),
       asciiBuilder.statRow('Commands', String(totalCmds)),

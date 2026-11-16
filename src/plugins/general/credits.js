@@ -27,22 +27,23 @@ export default {
 
   execute: async ({ sock, m }) => {
     const p = config.prefix[0] || '.';
+    const d = brand.display || {};
 
     const bodyText =
-      `\u2726 *${brand.name} Credits* \u2726\n\n` +
-      `\u{1F4BB} *Developer:*\n   ${credits.getCreator()}\n\n` +
-      `\u{1F3D7}\uFE0F *Framework:*\n   ${credits.getProject()}\n\n` +
+      `\u2726 *${d.name || brand.name} Credits* \u2726\n\n` +
+      `\u{1F4BB} *Developer:*\n   ${d.creator || credits.getCreator()}\n\n` +
+      `\u{1F3D7}\uFE0F *Framework:*\n   ${d.name || credits.getProject()}\n\n` +
       `\u{1F4E6} *Version:*\n   v${credits.getVersion()}\n\n` +
-      `\u{1F4DC} *Signature:*\n   ${credits.getSignature()}`;
+      `\u{1F4DC} *Signature:*\n   ${d.signature || credits.getSignature()}`;
 
-    const footerText = `\u00A9 ${brand.name} by ${brand.creator}`;
+    const footerText = `\u00A9 ${d.name || brand.name} by ${d.creator || brand.creator}`;
 
     // ── Enriched contextInfo: newsletter quote + externalAdReply banner ──
     const contextInfo = buildEnrichedContextInfo({
       newsletterName: `${brand.name} Updates`,
-      caption:        `${brand.tagline || brand.description || 'Made with \u2665\uFE0F By ' + brand.creator}`,
-      adTitle:        brand.name,
-      adBody:         brand.tagline || `By ${brand.creator}`,
+      caption:        `${d.tagline || d.description || brand.tagline || brand.description || 'Made with \u2665\uFE0F By ' + brand.creator}`,
+      adTitle:        d.name || brand.name,
+      adBody:         d.tagline || `By ${d.creator || brand.creator}`,
       sourceUrl:      'https://github.com/boyde1317-byte/NEXORA-MD',
     });
 
@@ -58,7 +59,7 @@ export default {
         return await baileysBridge.sendButtonsCard(sock, m.from, {
           body:       bodyText,
           footer:     footerText,
-          title:      brand.name,
+          title:      d.name || brand.name,
           subtitle:   `v${brand.version}`,
           buttons,
           contextInfo,

@@ -36,32 +36,37 @@ export default {
   execute: async ({ sock, m }) => {
     try {
       const botName      = brand.name;
-      const creator      = brand.creator;
+      // Styled variants for the human-read surfaces (title, body, sheet,
+      // footer). Structured metadata — vCard, contact displayName, booking
+      // location — keeps the plain botName below.
+      const d            = brand.display || {};
+      const displayName  = d.name || brand.name;
+      const creator      = d.creator || brand.creator;
       const phone       = (owner.ownerNumber || '').replace(/[^0-9]/g, '');
       const groupLink   = process.env.BRAND_GROUP_LINK || `https://wa.me/${phone}`;
       const channelLink = process.env.BRAND_CHANNEL_LINK
         || `https://whatsapp.com/channel/${(config.channelJid || '').replace('@newsletter', '')}`;
       const websiteLink = process.env.BRAND_WEBSITE || groupLink;
-      const footer      = brand.copyright || `© ${botName}`;
+      const footer      = d.copyright || brand.copyright || `© ${botName}`;
 
       // Full sheet content — shown when the user taps the booking button
       const brandDescription =
-        `» *${botName}*\n` +
-        `  › ${brand.description}\n\n` +
+        `» *${displayName}*\n` +
+        `  › ${d.description || brand.description}\n\n` +
         `» *Who We Are*\n` +
-        `  › ${brand.core} · ${brand.engine}\n` +
-        `  › ${brand.ui} · ${brand.plugins}\n\n` +
+        `  › ${d.core || brand.core} · ${d.engine || brand.engine}\n` +
+        `  › ${d.ui || brand.ui} · ${d.plugins || brand.plugins}\n\n` +
         `» *What We Do*\n` +
         `  › WhatsApp Bot Framework\n` +
         `  › Automation & Digital Solutions\n` +
         `  › Custom Command Development\n\n` +
         `» *Our Stack*\n` +
-        `  › ${botName} — v${brand.version}\n` +
-        `  › ${brand.security} · ${brand.ai}\n\n` +
+        `  › ${displayName} — v${brand.version}\n` +
+        `  › ${d.security || brand.security} · ${d.ai || brand.ai}\n\n` +
         `» *Our Team*\n` +
         `  › ${owner.ownerName} — Founder & Developer\n\n` +
         `» *Mission*\n` +
-        `  › ${brand.tagline}\n\n` +
+        `  › ${d.tagline || brand.tagline}\n\n` +
         `» *Values*\n` +
         `  › Innovation · Simplicity · Reliability\n` +
         `  › Community-Driven\n\n` +
@@ -69,12 +74,12 @@ export default {
         `  › WhatsApp: wa.me/${phone}\n` +
         `  › Group: ${groupLink}\n` +
         `  › Channel: ${channelLink}\n\n` +
-        `_Powered by ${botName} — ${brand.signature}_`;
+        `_Powered by ${displayName} — ${d.signature || brand.signature}_`;
 
       // Compact card body — what renders in the chat bubble
       const outerBody =
-        `» *${botName}*\n` +
-        `  › ${brand.description}\n\n` +
+        `» *${displayName}*\n` +
+        `  › ${d.description || brand.description}\n\n` +
         `» *Your Tech Hub*\n` +
         `  › Bots · Automation · Digital Solutions\n\n` +
         `_Tap the button below for full details._`;
@@ -91,7 +96,7 @@ export default {
       ].join('\r\n');
 
       const card = new Button(sock)
-        .setTitle(`🖥️ ${botName}`)
+        .setTitle(`🖥️ ${displayName}`)
         .setBody(outerBody)
         .setFooter(footer)
         .setContextInfo({
@@ -121,7 +126,7 @@ export default {
         display_content: {
           display_language: 'en',
           display_meeting_type: 'Brand Information',
-          display_bottom_sheet_header: `📋 ${botName}`,
+          display_bottom_sheet_header: `📋 ${displayName}`,
           display_add_to_calendar_cta_text: 'BRAND',
           display_view_on_maps_cta_text: 'View Website',
           display_manage_booking_cta_text: '📱 Contact',

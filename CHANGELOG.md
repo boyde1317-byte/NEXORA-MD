@@ -16,6 +16,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   through AIRich (native table + follow-up pills) with a rich-response
   table card as fallback; the two confirm gates render as action cards
   with one-tap buttons. Usage and error replies stay plain.
+- Styled brand display variants (`config/brand.js` `display`): bold-sans
+  name, cursive signature, small-caps labels, italic sentences. Plain
+  values stay canonical for the pairing page, sticker metadata, menus
+  and logs; `.brand`, `.about`, `.credits` and `.version` render the
+  display variants, with structured metadata (vCard, contact name,
+  booking location) kept plain.
 
 ## [2.2.2] — 2026-11-16
 

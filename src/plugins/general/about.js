@@ -76,6 +76,7 @@ export default {
 
   execute: async ({ sock, m }) => {
     const p = config.prefix[0] || '.';
+    const d = brand.display || {};
 
     // ── Time ───────────────────────────────────────────────────────────────
     const tz  = process.env.BOT_TZ || 'Africa/Accra';
@@ -162,7 +163,7 @@ export default {
       `  › *Ping:* ${pingMs}ms\n` +
       `  › *Active Users:* ${totalUsers}\n` +
       `  › *Total Groups:* ${totalGroups}\n\n` +
-      `© ${brand.name} by ${brand.creator}`;
+      `© ${d.name || brand.name} by ${d.creator || brand.creator}`;
 
     // ── Thumbnail ──────────────────────────────────────────────────────────
     const thumbnailUrl = process.env.ABOUT_IMAGE || ASSET_URLS.thumbnail;
@@ -177,7 +178,7 @@ export default {
     return await sendInfoCard(sock, m.from, {
       body:       bodyText,
       footer:     footerText,
-      title:      brand.name,
+      title:      d.name || brand.name,
       subtitle:   `${serverStatus} \u00B7 ${timeStr}`,
       thumbnail:  thumbnailUrl,
       buttons,
