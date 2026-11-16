@@ -18,26 +18,28 @@
  */
 
 // ── Branded visual URLs (CDN-hosted, publicly accessible) ────────────────────
+// Horror-cinematic brand set v2, hosted in this repo under media/brand/ and
+// served via jsDelivr. The bot name in the path is the repository name.
 export const ASSET_URLS = {
   // Square logo / thumbnail — used in ad-reply cards, about, version, etc.
   thumbnail:
-    'https://media.base44.com/images/public/6a6ffc9ec8a196324ba9ee95/d1347bb68_generated_image.png',
+    'https://cdn.jsdelivr.net/gh/boyde1317-byte/NexoraFlex@main/media/brand/nexora-logo.jpg',
 
   // Wide menu banner — 16:9, used by all menu styles that need a header image
   menuBanner:
-    'https://base44.app/api/apps/6ade37ff324c88533b16f8d8/files/mp/public/6ade37ff324c88533b16f8d8/c4ad5ea19_nexora-brand-banner.png',
+    'https://cdn.jsdelivr.net/gh/boyde1317-byte/NexoraFlex@main/media/brand/nexora-banner.jpg',
 
-  // Welcome greeting image — 16:9, warm dawn forest scene
+  // Welcome greeting image — 16:9, glass skyscraper entrance, light and fog
   welcome:
-    'https://media.base44.com/images/public/6a6ffc9ec8a196324ba9ee95/6e8441439_generated_image.png',
+    'https://cdn.jsdelivr.net/gh/boyde1317-byte/NexoraFlex@main/media/brand/nexora-welcome.jpg',
 
-  // Goodbye greeting image — 16:9, starry night scene
+  // Goodbye greeting image — 16:9, lone figure on a foggy modern city street
   goodbye:
-    'https://media.base44.com/images/public/6a6ffc9ec8a196324ba9ee95/02ebca731_generated_image.png',
+    'https://cdn.jsdelivr.net/gh/boyde1317-byte/NexoraFlex@main/media/brand/nexora-goodbye.jpg',
 
   // Document thumbnail — same square logo, used for document-style cards
   docThumbnail:
-    'https://media.base44.com/images/public/6a6ffc9ec8a196324ba9ee95/d1347bb68_generated_image.png',
+    'https://cdn.jsdelivr.net/gh/boyde1317-byte/NexoraFlex@main/media/brand/nexora-logo.jpg',
 };
 
 export default ASSET_URLS;

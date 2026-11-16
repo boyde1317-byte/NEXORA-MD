@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Brand imagery wired in: every visual surface now serves the
+  horror-cinematic brand set v2 hosted in this repo (`media/brand/`,
+  via jsDelivr) instead of the placeholder art. `ASSET_URLS` points
+  the thumbnail and document thumbnail at the obsidian crown logo,
+  the menu banner at the rooftop banner, and welcome/goodbye at the
+  new greeting art; the greeting defaults and `database/greeting.json`
+  match. Menu styles 5-14 in `database/images.json` drop the
+  nekos.life hotlinks for the banner, and the menu fallback and
+  newsletter fallback thumbnail use it too. Owner overrides
+  (`.setwelcomeimage`, `.setmenumedia`) still win over these
+  defaults. Unchanged on purpose: the menu-loop video, the `.anime`
+  command's nekos.life API, the `.b44` downloader, and the rich-card
+  test fixtures.
 - One-box unification: every text surface now renders in the single
   slim box shared by the reply frames. The plain-text menu template
   drops its modern/classic/minimal theme borders and the theme

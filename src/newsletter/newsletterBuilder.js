@@ -83,7 +83,7 @@ export const newsletterBuilder = {
       body: data.caption || 'Official updates from Nexora Core',
       mediaType: 1, // IMAGE
       previewType: 'PHOTO',
-      thumbnailUrl: data.thumbnailUrl || 'https://base44.app/api/apps/6ade37ff324c88533b16f8d8/files/mp/public/6ade37ff324c88533b16f8d8/c4ad5ea19_nexora-brand-banner.png',
+      thumbnailUrl: data.thumbnailUrl || 'https://cdn.jsdelivr.net/gh/boyde1317-byte/NexoraFlex@main/media/brand/nexora-banner.jpg',
       sourceUrl: inviteLink
     };
 
