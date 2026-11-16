@@ -5,6 +5,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- A2UI cards were invisible on the phone: menu 20 and every `.testa2ui`
+  surface were sent as a widget-only `interactiveMessage`, which relays
+  fine and then paints nothing on a client that does not render the
+  `BloksWidget` slot — no card, no body, no error in the logs. Every A2UI
+  card now ships with at least one native-flow CTA through
+  `a2uiKit.a2uiEnvelopeSpec()`, so it renders as a normal interactive card
+  (body text plus tappable buttons) and the surface is a pure enhancement
+  on top. Menu 20 also carries its links as real buttons now (panel,
+  channel, GitHub) instead of only inside the widget.
+- `.testa2ui all` no longer fires 18 interactive cards back to back; the
+  sweep paces the sends so WhatsApp stops dropping the tail.
+- An unpaired main socket no longer retries every minute forever. When the
+  main session has no creds (the normal case when numbers are linked
+  through the web `/pair` page, which links sessions under
+  `session/extras/`), the 408 retry idles at 15 minutes and says why once.
+  `MAIN_SESSION_PAIR=true` restores the old behaviour.
+
 ### Added
 - Level-up and profile styling, same mix as the menus: the level-up
   announcement (image caption, rich card, and plain fallback) speaks
@@ -16,6 +34,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   footer watermark now reads `NEXORA MD`. Wording is unchanged
   everywhere; the rich table cards and the leaderboard keep their
   plain data rendering on purpose.
+- `.testa2ui probe` — sends three variants of the same card (widget +
+  buttons, buttons only, plain text) and reports what to conclude from
+  which ones show up, so a device-side rendering question can be settled
+  from the phone instead of the logs.
+
 - Brand imagery wired in: every visual surface now serves the
   horror-cinematic brand set v2 hosted in this repo (`media/brand/`,
   via jsDelivr) instead of the placeholder art. `ASSET_URLS` points

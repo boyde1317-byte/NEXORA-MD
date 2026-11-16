@@ -238,6 +238,34 @@ await check('A2UI menu surface has no orphan components', () => {
   return `${components.length} nodes reachable`;
 });
 
+// ── Regression: an A2UI card must never be widget-only ──────────────────────
+// A widget-only interactiveMessage relays fine and then renders as an empty
+// bubble on any client that does not paint the BloksWidget slot — the exact
+// "menu 20 does nothing / .testa2ui shows nothing" report. Every spec that
+// reaches sendA2uiSurface has to resolve to at least one native-flow button.
+await check('A2UI envelope always carries a native-flow CTA', () => {
+  const noButtons = kit.a2uiEnvelopeSpec({ components: [{ id: 'root', component: 'Text', text: 'hi' }], text: 'x' });
+  assert(Array.isArray(noButtons.buttons) && noButtons.buttons.length >= 1, 'envelope sent with no CTA');
+  assert(noButtons.buttons.every((b) => b.text && b.url), 'CTA missing text/url');
+  const own = kit.a2uiEnvelopeSpec({ components: [], text: 'x', buttons: [{ text: 'Docs', url: 'https://example.com' }] });
+  assert(own.buttons.length === 1 && own.buttons[0].text === 'Docs', 'explicit buttons not honored');
+  const bare = kit.a2uiEnvelopeSpec({ components: [], text: 'x', widget: false });
+  assert(bare.bloksWidget === false, 'widget:false not forwarded');
+  assert(bare.buttons.length >= 1, 'probe variant B lost its CTA');
+  return `${noButtons.buttons.length} default CTAs`;
+});
+
+await check('A2UI menu card ships CTAs', () => {
+  const spec = menuModule.buildA2uiMenuSpec(fakeMenuData);
+  assert(Array.isArray(spec.buttons) && spec.buttons.length >= 1, 'menu 20 spec has no buttons');
+  const envelope = kit.a2uiEnvelopeSpec(spec);
+  assert(envelope.buttons.length >= 1, 'menu 20 envelope has no buttons');
+  assert(envelope.components.length > 0, 'menu 20 envelope lost the surface');
+  assert(envelope.bloksWidget !== false, 'menu 20 dropped its surface');
+  assert(typeof envelope.text === 'string' && envelope.text.length > 0, 'menu 20 envelope has no body text');
+  return `${spec.buttons.length} buttons, ${envelope.components.length} nodes`;
+});
+
 await check('A2UI menu renders a text fallback', () => {
   const built = kit.buildA2ui({ components: menuModule.buildA2uiMenuComponents(fakeMenuData) });
   assert(built.text.includes('Commands'), 'fallback text missing the stats block');

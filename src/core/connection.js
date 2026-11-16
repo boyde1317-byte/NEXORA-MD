@@ -116,6 +116,10 @@ export function getConnectionState() {
   };
 }
 
+// Set once per boot when the main socket is found to be unpaired, so the
+// explanation is logged once instead of on every retry.
+let mainUnpairedNoticed = false;
+
 export async function connectToWhatsApp() {
   console.log('[CONNECTION] Initializing WhatsApp multi-device connection...');
   connectionMonitor.recordConnecting();
@@ -358,7 +362,26 @@ export async function connectToWhatsApp() {
       const maxAttempts = config.reconnectLimit;
       if (maxAttempts === 0 || reconnectAttempts < maxAttempts) {
         reconnectAttempts++;
-        const delay = getReconnectDelay(reconnectAttempts);
+        let delay = getReconnectDelay(reconnectAttempts);
+
+        // An unpaired main socket is NOT a failure when the operator links
+        // numbers through the web pairing page (that links extra sessions in
+        // session/extras/, which serve the chats). Without creds the socket can
+        // only sit in "QR refs attempts ended" and retry forever, which fills
+        // the logs with fake outages and hammers WhatsApp. Idle it instead and
+        // say so once.
+        const mainUnpaired = !fs.existsSync(path.join(sessionDir, 'creds.json'));
+        if (mainUnpaired && statusCode === 408 && process.env.MAIN_SESSION_PAIR !== 'true') {
+          delay = 15 * 60 * 1000;
+          if (!mainUnpairedNoticed) {
+            mainUnpairedNoticed = true;
+            console.warn(
+              '[CONNECTION] Main session has no creds — idling retries to 15 min. ' +
+              'Linked numbers (session/extras/) keep serving; pair a number at /pair. ' +
+              'Set MAIN_SESSION_PAIR=true to keep the old 1-minute QR retry.'
+            );
+          }
+        }
         console.log(`[CONNECTION] Reconnect attempt ${reconnectAttempts}${maxAttempts > 0 ? `/${maxAttempts}` : ' (unlimited)'} in ${delay / 1000}s...`);
         connectionMonitor.recordReconnectAttempt(errorMessage, reconnectAttempts);
         setTimeout(connectToWhatsApp, delay);

@@ -123,6 +123,55 @@ export function attachA2ui(interactiveMessage, input, options = {}) {
 // Sending
 // ─────────────────────────────────────────────────────────────────────────────
 
+const PANEL_URL = 'https://nexora-telegram.fly.dev';
+const CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326';
+
+/**
+ * Every A2UI card must carry at least one native-flow button.
+ *
+ * WHY (device finding, 2026-11-16): a widget-only interactiveMessage relays fine
+ * and then renders as an empty/none bubble on a client that does not paint the
+ * BloksWidget slot, with nothing in the bot logs to show for it. With one CTA
+ * the very same message renders as a normal interactive card — body text plus
+ * tappable buttons — and the widget simply adds the native layout on top where
+ * the client supports it. Never send an A2UI surface without a CTA.
+ */
+export const DEFAULT_A2UI_CTA = [
+  { text: 'Open NEXORA panel', url: PANEL_URL },
+  { text: 'Channel', url: CHANNEL_URL },
+];
+
+/**
+ * Build the exact `a2ui` content object that will be sent.
+ *
+ * Exported so the release gate can assert the envelope always carries a CTA
+ * (the regression that made menu 20 and every `.testa2ui` card invisible).
+ *
+ * @param {object} spec  sendA2uiSurface spec
+ * @returns {object} the `a2ui` payload
+ */
+export function a2uiEnvelopeSpec(spec = {}) {
+  const { components, title, subtitle, footer, image } = spec;
+  const cta = Array.isArray(spec.buttons) && spec.buttons.length ? spec.buttons : DEFAULT_A2UI_CTA;
+
+  return {
+    ...(spec.uuid ? { uuid: spec.uuid } : {}),
+    components,
+    ...(spec.surfaceId ? { surfaceId: spec.surfaceId } : {}),
+    ...(title !== undefined ? { title } : {}),
+    ...(subtitle !== undefined ? { subtitle } : {}),
+    text: spec.text || spec.caption || title || 'NEXORA',
+    ...(footer !== undefined ? { footer } : {}),
+    ...(image !== undefined ? { image } : {}),
+    buttons: cta,
+    ...(spec.contextInfo ? { contextInfo: spec.contextInfo } : {}),
+    ...(spec.viewOnce === true ? { viewOnce: true } : {}),
+    // `widget: false` sends the same card without the surface, for A/B-ing
+    // whether the surface or the envelope is what the device dislikes.
+    ...(spec.widget === false ? { bloksWidget: false } : {}),
+  };
+}
+
 /**
  * Send an A2UI surface card, falling back to plain text on any failure.
  *
@@ -141,36 +190,28 @@ export function attachA2ui(interactiveMessage, input, options = {}) {
  * @returns {Promise<object>} the sent message
  */
 export async function sendA2uiSurface(sock, jid, spec = {}, opts = {}) {
-  const { components, title, subtitle, footer, image, buttons } = spec;
-  const fallbackText = spec.text || spec.caption || title || 'NEXORA';
+  const fallbackText = spec.text || spec.caption || spec.title || 'NEXORA';
 
-  const built = buildA2ui({ uuid: spec.uuid, components, surfaceId: spec.surfaceId });
-  if (!built.ok || !a2uiSupported()) {
-    const reason = built.ok ? 'proto cannot carry a widget' : built.errors.join('; ');
+  const built = buildA2ui({ uuid: spec.uuid, components: spec.components, surfaceId: spec.surfaceId });
+  if (!built.ok) {
+    const reason = built.errors.join('; ');
     console.warn(`[a2uiKit] falling back to text (${reason})`);
     return sock.sendMessage(jid, { text: fallbackText }, opts);
   }
 
+  // A widget-only interactiveMessage is accepted by the relay and then shows
+  // NOTHING on a client that does not render the BloksWidget slot — no card,
+  // no body, no error the bot can see. Attaching at least one native-flow CTA
+  // makes the envelope a complete interactive card, so the body text and the
+  // buttons always render and the widget is a pure enhancement on top.
+  const envelope = a2uiEnvelopeSpec(spec);
+  if (!a2uiSupported() && envelope.widget !== false) {
+    console.warn('[a2uiKit] proto cannot carry a widget — sending the card without it');
+    envelope.widget = false;
+  }
+
   try {
-    return await sock.sendMessage(
-      jid,
-      {
-        a2ui: {
-          ...(spec.uuid ? { uuid: spec.uuid } : {}),
-          components,
-          ...(spec.surfaceId ? { surfaceId: spec.surfaceId } : {}),
-          ...(title !== undefined ? { title } : {}),
-          ...(subtitle !== undefined ? { subtitle } : {}),
-          text: fallbackText,
-          ...(footer !== undefined ? { footer } : {}),
-          ...(image !== undefined ? { image } : {}),
-          ...(Array.isArray(buttons) && buttons.length ? { buttons } : {}),
-          ...(spec.contextInfo ? { contextInfo: spec.contextInfo } : {}),
-          ...(spec.viewOnce === true ? { viewOnce: true } : {}),
-        },
-      },
-      opts
-    );
+    return await sock.sendMessage(jid, { a2ui: envelope }, opts);
   } catch (err) {
     console.warn('[a2uiKit] surface send failed, plain-text fallback:', err.message);
     return sock.sendMessage(jid, { text: fallbackText }, opts);
@@ -257,9 +298,6 @@ export function surfaceToText(surface) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Device audit surfaces (`.testa2ui` + scripts/verify-release.mjs)
 // ─────────────────────────────────────────────────────────────────────────────
-
-const PANEL_URL = 'https://nexora-telegram.fly.dev';
-const CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326';
 
 /**
  * One surface per catalog component, so a single component that the device

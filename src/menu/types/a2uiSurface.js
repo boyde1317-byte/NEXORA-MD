@@ -1,4 +1,4 @@
-import { A2, buildA2ui, sendA2uiSurface, surfaceToText, a2uiSupported } from '../../lib/a2uiKit.js';
+import { A2, buildA2ui, sendA2uiSurface, surfaceToText } from '../../lib/a2uiKit.js';
 import { buildTextMenu } from '../formatter.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
 
@@ -106,6 +106,27 @@ export const buildA2uiMenuComponents = (menuData = {}) => {
   return components;
 };
 
+/**
+ * The exact card payload for menu 20 — the surface plus the native-flow CTAs
+ * that keep it visible on every client. Exported so the release gate can
+ * assert the CTAs are present (a widget-only envelope renders as nothing).
+ *
+ * @param {object} menuData  collectMenuData() output
+ * @returns {object} sendA2uiSurface spec
+ */
+export const buildA2uiMenuSpec = (menuData = {}) => ({
+  components: buildA2uiMenuComponents(menuData),
+  title: menuData.botName || 'NEXORA MD',
+  subtitle: `${menuData.totalCommands ?? '—'} commands • ${menuData.uptime ?? ''}`.trim(),
+  text: `✦ ${menuData.botName || 'NEXORA MD'} — ${menuData.totalCommands ?? '—'} commands across ${Object.keys(menuData.categories || {}).length} categories`,
+  footer: `${menuData.prefix || '.'}help <category> • ${menuData.botName || 'NEXORA MD'}`,
+  buttons: [
+    { text: 'Open panel', url: PANEL_URL },
+    { text: 'Channel', url: CHANNEL_URL },
+    { text: 'GitHub', url: GITHUB_URL },
+  ],
+});
+
 export const a2uiSurfaceMenu = {
   id: 20,
   name: 'a2uiSurface',
@@ -115,12 +136,6 @@ export const a2uiSurfaceMenu = {
   renderer: async ({ sock, m, menuData }) => {
     const jid = m.from || m.key?.remoteJid || m.chat;
     const fallbackText = buildTextMenu(menuData);
-
-    // Proto gate first: no widget support → straight to the text menu.
-    if (!a2uiSupported()) {
-      console.warn('[a2uiSurface] proto cannot carry a BloksWidget — text menu');
-      return sock.sendMessage(jid, { text: fallbackText }, { quoted: m });
-    }
 
     const components = buildA2uiMenuComponents(menuData);
     const built = buildA2ui({ components });
@@ -132,13 +147,12 @@ export const a2uiSurfaceMenu = {
       return sock.sendMessage(jid, { text: fallbackText }, { quoted: m });
     }
 
-    return sendA2uiSurface(sock, jid, {
-      components,
-      title: menuData.botName || 'NEXORA MD',
-      subtitle: `${menuData.totalCommands ?? '—'} commands • ${menuData.uptime ?? ''}`.trim(),
-      text: `✦ ${menuData.botName || 'NEXORA MD'} — tap a tab to browse`,
-      footer: `${menuData.prefix || '.'}help <category> • ${menuData.botName || 'NEXORA MD'}`,
-    }, { quoted: m });
+    // The card ships with real, tappable CTAs. They are not decoration: a
+    // widget-only envelope renders as an empty bubble on clients that do not
+    // paint the BloksWidget slot (the exact "menu 20 does nothing" report), so
+    // the links must also exist as native-flow buttons. The surface still
+    // carries them inside the widget for clients that render it.
+    return sendA2uiSurface(sock, jid, buildA2uiMenuSpec(menuData), { quoted: m });
   },
 };
 
