@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- AI-Dynamic menu restyle (`src/menu/types/aiDynamic.js`): theme titles
+  and the bot name render in bold sans via the shared font helper and
+  `brand.display` (a custom bot name stays plain); theme names in the
+  card footer and Theme badge use small caps like everywhere else.
+  Section headers, buttons, stat rows and command names are unchanged.
+  Drops the unused `divider` and `buildPillCopyButton` imports.
 - Response voice mix in `src/nexora-messages.js`: italic voice for
   confirmations and notices, bold lead word for errors and access
   denials; markup-carrying templates and emoji-led lines stay plain.

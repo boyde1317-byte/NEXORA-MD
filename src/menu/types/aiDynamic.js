@@ -1,12 +1,14 @@
-import { getGreeting, divider } from '../formatter.js';
+import { getGreeting } from '../formatter.js';
 import { db } from '../../database/db.js';
 import { imageManager } from '../../images/imageManager.js';
 import { capabilities } from '../../core/capabilities.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
+import { toFancy } from '../../lib/fancyFonts.js';
+import brand from '../../../config/brand.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
-import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
+import { buildNavigationButton, buildPillButton, buildPillUrlButton } from './buttonsCard.js';
 
 /**
  * AI-Dynamic Menu (id: 12) \u2014 enhanced for rich-messages.
@@ -31,6 +33,10 @@ const THEMES = [
   { name: 'AURORA FLOW',     accent: '\u2744' },
   { name: 'PHANTOM CORE',    accent: '\u2764' },
 ];
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 export const aiDynamicMenu = {
   id: 12,
@@ -73,7 +79,7 @@ export const aiDynamicMenu = {
     const healthPercent = Math.max(20, Math.min(100, 100 - Math.floor(pingMs / 4)));
 
     // 5. Compile the themed dashboard with enhanced visuals
-    let text = `${theme.accent} *${toSmallcaps(theme.name)}* ${theme.accent}\n`;
+    let text = `${theme.accent} ${toFancy('sans', theme.name)} ${theme.accent}\n`;
     text += `_${getGreeting()}!_\n`;
     text += `\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n`;
 
@@ -114,21 +120,21 @@ export const aiDynamicMenu = {
     // ── Status Badges ────────────────────────────────────────────────────
     text += `${asciiBuilder.badge('Status', 'OPTIMAL')}  `;
     text += `${asciiBuilder.badge('Engine', 'Baileys')}  `;
-    text += `${asciiBuilder.badge('Theme', theme.name)}\n`;
+    text += `${asciiBuilder.badge('Theme', toSmallcaps(theme.name))}\n`;
 
     text += `\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n`;
-    text += `${toSmallcaps('Powered by')} \u2726 ${menuData.botName} \u2726`;
+    text += `${toSmallcaps('Powered by')} \u2726 ${displayName(menuData.botName)} \u2726`;
 
     // 5. Build image payload
     const imagePayload = imgData.source?.startsWith('http')
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
-    const footerText = `${menuData.botName} \u2502 ${menuData.totalCommands} commands \u2502 ${theme.name}`;
+    const footerText = `${displayName(menuData.botName)} \u2502 ${menuData.totalCommands} commands \u2502 ${toSmallcaps(theme.name)}`;
 
     // Build embedded externalAdReply
     const adReply = {
-      title:                 `${menuData.botName} ${toSmallcaps('AI')}`,
+      title:                 `${displayName(menuData.botName)} ${toSmallcaps('AI')}`,
       body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Dynamic Dashboard')}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
@@ -148,7 +154,7 @@ export const aiDynamicMenu = {
         return await baileysBridge.sendButtonsCard(sock, m.from, {
           body:       text,
           footer:     footerText,
-          title:      `${theme.accent} ${toSmallcaps(theme.name)} ${theme.accent}`,
+          title:      `${theme.accent} ${toFancy('sans', theme.name)} ${theme.accent}`,
           subtitle:   `${toSmallcaps('Dynamic Dashboard')} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`,
           thumbnail:  imagePayload,
           buttons: [
