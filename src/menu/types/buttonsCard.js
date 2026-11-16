@@ -23,6 +23,13 @@ import { buildFakeProductQuote } from '../../lib/waUtils.js';
 import brand from '../../../config/brand.js';
 import owner from '../../../config/owner.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
+
+// Display variants for the brand name/signature on chat-facing surfaces.
+// This file renders brand.name directly (never a runtime bot name), so the
+// display values apply as-is; the catalog quote below stays plain.
+const displayName = brand.display?.name || brand.name;
+const displaySignature = brand.display?.signature || brand.signature;
 
 /**
  * Build the productMessage catalog quote used as contextInfo.
@@ -53,26 +60,26 @@ export function buildNavigationButton(prefix) {
   // categories. Category names below match the real `category:` values
   // used across src/plugins/ (verified against the plugin source).
   const categories = [
-    { title: 'All Commands', description: 'Browse every category', id: `${p}help` },
-    { title: 'AI',           description: 'AI chat & generation',  id: `${p}help ai` },
-    { title: 'Download',     description: 'Media downloaders',     id: `${p}help download` },
-    { title: 'Utility',      description: 'Utility commands',      id: `${p}help utility` },
-    { title: 'Games',        description: 'Mini games',            id: `${p}help games` },
-    { title: 'Group',        description: 'Group management',      id: `${p}help group` },
-    { title: 'Media',        description: 'Media & sticker tools', id: `${p}help media` },
-    { title: 'Owner',        description: 'Owner commands',        id: `${p}help owner` },
-    { title: 'About',        description: 'Bot info',              id: `${p}about` },
+    { title: toSmallcaps('All Commands'), description: 'Browse every category', id: `${p}help` },
+    { title: toSmallcaps('AI'),           description: 'AI chat & generation',  id: `${p}help ai` },
+    { title: toSmallcaps('Download'),     description: 'Media downloaders',     id: `${p}help download` },
+    { title: toSmallcaps('Utility'),      description: 'Utility commands',      id: `${p}help utility` },
+    { title: toSmallcaps('Games'),        description: 'Mini games',            id: `${p}help games` },
+    { title: toSmallcaps('Group'),        description: 'Group management',      id: `${p}help group` },
+    { title: toSmallcaps('Media'),        description: 'Media & sticker tools', id: `${p}help media` },
+    { title: toSmallcaps('Owner'),        description: 'Owner commands',        id: `${p}help owner` },
+    { title: toSmallcaps('About'),        description: 'Bot info',              id: `${p}about` },
   ];
   return {
-    buttonText: { displayText: '☰ Navigation' },
+    buttonText: { displayText: `☰ ${toSmallcaps('Navigation')}` },
     buttonId: 'menu_nav',
     type: 1,
     nativeFlowInfo: {
       name: 'single_select',
       paramsJson: JSON.stringify({
-        title: 'Select Category',
+        title: toSmallcaps('Select Category'),
         sections: [{
-          title: `${brand.name} Menu`,
+          title: `${displayName} ${toSmallcaps('Menu')}`,
           rows: categories,
         }],
       }),
@@ -134,19 +141,19 @@ export const buttonsCardMenu = {
       const bodyText = '```' + menuText + '```';
 
       const footerText =
-        `${brand.name} v${brand.version} · ${menuData.totalCommands} commands\n` +
-        `${brand.signature}`;
+        `${displayName} v${brand.version} · ${menuData.totalCommands} ${toSmallcaps('commands')}\n` +
+        `${displaySignature}`;
 
       const buttons = [
-        { displayText: '📋 Main Menu', id: `${p}menu`, type: 1 },
-        { displayText: '📜 Browse Commands', id: `${p}help`, type: 1 },
+        { displayText: `📋 ${toSmallcaps('Main Menu')}`, id: `${p}menu`, type: 1 },
+        { displayText: `📜 ${toSmallcaps('Browse Commands')}`, id: `${p}help`, type: 1 },
         buildNavigationButton(p),
       ];
 
       return await baileysBridge.sendButtonsCard(sock, m.from, {
         body:       bodyText,
         footer:     footerText,
-        title:      brand.name,
+        title:      displayName,
         subtitle:   `${serverStatus} · ${timeStr}`,
         thumbnail,
         buttons,
@@ -191,12 +198,12 @@ export const buttonsCardMenu = {
         `  › *Users:* ${menuData.users}\n` +
         `  › *Groups:* ${menuData.groups}\n` +
         `  › *Version:* v${brand.version}\n\n` +
-        `${brand.name} ${brand.signature}`;
+        `${displayName} ${displaySignature}`;
 
       // Buttons: Store/quick action + Navigation single_select
       const buttons = [
-        { displayText: '📋 Browse Commands', id: `${p}help`, type: 1 },
-        { displayText: '🤖 System Info',  id: `${p}about`,    type: 1 },
+        { displayText: `📋 ${toSmallcaps('Browse Commands')}`, id: `${p}help`, type: 1 },
+        { displayText: `🤖 ${toSmallcaps('System Info')}`,  id: `${p}about`,    type: 1 },
         buildNavigationButton(p),
       ];
 
@@ -209,7 +216,7 @@ export const buttonsCardMenu = {
       return await baileysBridge.sendButtonsCard(sock, m.from, {
         body:       bodyText,
         footer:     footerText,
-        title:      brand.name,
+        title:      displayName,
         subtitle:   `${serverStatus} · ${timeStr}`,
         thumbnail,
         buttons,

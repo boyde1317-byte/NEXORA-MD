@@ -7,6 +7,11 @@ import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { buildFakeImageQuote, buildAboutContextInfo, resolveThumbnail } from '../../lib/waUtils.js';
 import { buildNavigationButton } from './buttonsCard.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
+import brand from '../../../config/brand.js';
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 /**
  * Rich Card Menu (id: 15) — .about-style rendering.
@@ -30,7 +35,7 @@ export const richCardMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData = await imageManager.getMenuImage(15);
-    const footerText = `${menuData.botName} \u2726 ${menuData.totalCommands} ${toSmallcaps('commands')} \u2726 ${menuData.uptime}`;
+    const footerText = `${displayName(menuData.botName)} \u2726 ${menuData.totalCommands} ${toSmallcaps('commands')} \u2726 ${menuData.uptime}`;
 
     const categories = Object.keys(menuData.categories).sort();
     const tableRows = categories.map(cat => {
@@ -58,12 +63,12 @@ export const richCardMenu = {
       bodyLines.push(`  ${top}${overflow}`);
     }
 
-    const bodyText = `\u2726 *${toSmallcaps(menuData.botName + ' Command Matrix')}* \u2726\n\n${bodyLines.join('\n')}`;
+    const bodyText = `\u2726 ${displayName(menuData.botName)} ${toSmallcaps('Command Matrix')} \u2726\n\n${bodyLines.join('\n')}`;
 
     // Build embedded externalAdReply for fallback tiers
     const adReply = {
-      title:                 menuData.botName,
-      body:                  `${menuData.totalCommands} commands \u2502 ${menuData.uptime}`,
+      title:                 displayName(menuData.botName),
+      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${menuData.uptime}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
       renderLargerThumbnail: true,
@@ -84,11 +89,11 @@ export const richCardMenu = {
         return await baileysBridge.sendButtonsCard(sock, m.from, {
           body:      bodyText,
           footer:    footerText,
-          title:     menuData.botName,
-          subtitle:  `${menuData.totalCommands} commands \u2502 ${menuData.uptime}`,
+          title:     displayName(menuData.botName),
+          subtitle:  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${menuData.uptime}`,
           thumbnail,
           buttons: [
-            { displayText: '\u{1F4CB} Browse Commands', id: `${menuData.prefix}help`, type: 1 },
+            { displayText: `\u{1F4CB} ${toSmallcaps('Browse Commands')}`, id: `${menuData.prefix}help`, type: 1 },
             buildNavigationButton(menuData.prefix),
           ],
           contextInfo: aboutCtx,
@@ -105,10 +110,10 @@ export const richCardMenu = {
     if (capabilities.richResponse) {
     try {
       const richContent = {
-        headerText: `\u2726 ${toSmallcaps(menuData.botName + ' Command Matrix')} \u2726`,
+        headerText: `\u2726 ${displayName(menuData.botName)} ${toSmallcaps('Command Matrix')} \u2726`,
         contentText: `${toSmallcaps('Total Commands')}: ${menuData.totalCommands}\n${toSmallcaps('Categories')}: ${categories.length}\n${toSmallcaps('Prefix')}: ${menuData.prefix}`,
         table: tableRows,
-        footerText: toSmallcaps('Powered by') + ' ' + menuData.botName,
+        footerText: toSmallcaps('Powered by') + ' ' + displayName(menuData.botName),
       };
       return await baileysBridge.sendRichResponse(sock, m.from, richContent, { quoted: menuData.audioQuote || m });
     } catch (err) {
@@ -157,7 +162,7 @@ export const richCardMenu = {
     // ── Tier 5: guaranteed plain text + fake quote + banner ────────────────
     const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.thumbBuffer || undefined });
     return await sock.sendMessage(m.from, {
-      text:        `\u2726 *${toSmallcaps(menuData.botName + ' Command Matrix')}* \u2726\n\n` + buildTextMenu(menuData),
+      text:        `\u2726 ${displayName(menuData.botName)} ${toSmallcaps('Command Matrix')} \u2726\n\n` + buildTextMenu(menuData),
       contextInfo: { externalAdReply: adReply },
     }, { quoted: fakeImgQuote });
   },

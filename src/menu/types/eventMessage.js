@@ -4,6 +4,11 @@ import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
+import brand from '../../../config/brand.js';
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 /**
  * Event Message Menu (id: 3)
@@ -36,7 +41,7 @@ export const eventMessageMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData   = await imageManager.getMenuImage(3);
-    const eventName = `✦ ${toSmallcaps(menuData.botName)} ✦`;
+    const eventName = `✦ ${displayName(menuData.botName)} ✦`;
     const eventDesc =
       `⚡ ${toSmallcaps('Active System Stats')}:\n` +
       `• ${toSmallcaps('Total Commands')}: ${menuData.totalCommands}\n` +
@@ -74,7 +79,7 @@ export const eventMessageMenu = {
         return await sock.sendMessage(m.from, {
           image:       imgData.buffer,
           mimetype:    imgData.mimetype,
-          caption:     `🎉 *${eventName}*\n\n${eventDesc}\n\n` + buildTextMenu(menuData),
+          caption:     `🎉 ${eventName}\n\n${eventDesc}\n\n` + buildTextMenu(menuData),
           contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });
       } else if (imgData.source?.startsWith('http')) {
@@ -83,7 +88,7 @@ export const eventMessageMenu = {
         adReply.originalImageUrl = imgData.source;
         return await sock.sendMessage(m.from, {
           image:       { url: imgData.source },
-          caption:     `🎉 *${eventName}*\n\n${eventDesc}\n\n` + buildTextMenu(menuData),
+          caption:     `🎉 ${eventName}\n\n${eventDesc}\n\n` + buildTextMenu(menuData),
           contextInfo: { externalAdReply: adReply },
         }, { quoted: menuData.audioQuote || m });
       }
@@ -94,8 +99,8 @@ export const eventMessageMenu = {
     // ── Tier 3: Guaranteed plain text + fake quote + banner ────────────────
     const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.thumbBuffer || undefined });
     const fallbackAdReply = {
-      title:                 `✦ ${toSmallcaps(menuData.botName)} ✦`,
-      body:                  `${menuData.totalCommands} commands • Event Menu`,
+      title:                 `✦ ${displayName(menuData.botName)} ✦`,
+      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} • ${toSmallcaps('Event Menu')}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
       renderLargerThumbnail: true,
@@ -108,7 +113,7 @@ export const eventMessageMenu = {
       fallbackAdReply.originalImageUrl = imgData.source;
     }
     return await sock.sendMessage(m.from, {
-      text:        `🎉 *${eventName}*\n\n${eventDesc}\n\n` + buildTextMenu(menuData),
+      text:        `🎉 ${eventName}\n\n${eventDesc}\n\n` + buildTextMenu(menuData),
       contextInfo: { externalAdReply: fallbackAdReply },
     }, { quoted: fakeImgQuote });
   },

@@ -7,6 +7,10 @@ import { buildFakeImageQuote, buildFakeNewsletterQuote } from '../../lib/waUtils
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildPillButton, buildPillUrlButton, buildNavigationButton } from './buttonsCard.js';
 
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
+
 /**
  * Newsletter Menu (id: 7)
  *
@@ -32,7 +36,7 @@ export const newsletterMenu = {
 
     const textContent = buildTextMenu(menuData);
     const bodyText =
-      `\u2726 *${toSmallcaps(menuData.botName + ' Menu')}* \u2726\n\n` +
+      `\u2726 ${displayName(menuData.botName)} ${toSmallcaps('Menu')} \u2726\n\n` +
       `_Verified Partner \u2502 Official Channel_\n` +
       `\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n` +
       `\u{1F4CB} *${toSmallcaps('System Brief')}*\n` +
@@ -42,7 +46,7 @@ export const newsletterMenu = {
       `\u2022 *${toSmallcaps('System Uptime')}:* ${menuData.uptime}\n\n` +
       textContent;
 
-    const footerText = `${menuData.botName} \u2502 ${toSmallcaps('Newsletter')}`;
+    const footerText = `${displayName(menuData.botName)} \u2502 ${toSmallcaps('Newsletter')}`;
 
     // Resolve image payload
     const imagePayload = imgData.source?.startsWith('http')
@@ -58,7 +62,7 @@ export const newsletterMenu = {
 
     // Build embedded externalAdReply
     const adReply = {
-      title:                 `\u{1F4E1} ${toSmallcaps(menuData.botName + ' Channel')} \u{1F4E1}`,
+      title:                 `\u{1F4E1} ${displayName(menuData.botName)} ${toSmallcaps('Channel')} \u{1F4E1}`,
       body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Official')}`,
       sourceUrl:             'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326',
       mediaType:             1,
@@ -82,10 +86,10 @@ export const newsletterMenu = {
           subtitle:   `${toSmallcaps('Commands')}: ${menuData.totalCommands} \u2502 ${toSmallcaps('Uptime')}: ${menuData.uptime}`,
           thumbnail:  imagePayload,
           buttons: [
-            buildPillButton('\u{1F3D1} Ping Speed',        `${menuData.prefix}ping`),
-            buildPillButton('\u{1F4CB} Command List',       `${menuData.prefix}menulist`),
-            buildPillButton('\u{1F916} System Stats',       `${menuData.prefix}menu aiDynamic`),
-            buildPillUrlButton('\u{1F4E1} Official Channel', 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326'),
+            buildPillButton(`\u{1F3D1} ${toSmallcaps('Ping Speed')}`,        `${menuData.prefix}ping`),
+            buildPillButton(`\u{1F4CB} ${toSmallcaps('Command List')}`,       `${menuData.prefix}menulist`),
+            buildPillButton(`\u{1F916} ${toSmallcaps('System Stats')}`,       `${menuData.prefix}menu aiDynamic`),
+            buildPillUrlButton(`\u{1F4E1} ${toSmallcaps('Official Channel')}`, 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326'),
             buildNavigationButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },
@@ -104,12 +108,12 @@ export const newsletterMenu = {
           await sock.sendMessage(m.from, {
             image:    imgData.buffer,
             mimetype: imgData.mimetype,
-            caption:  `\u{1F4E1} *${toSmallcaps(menuData.botName)}* \u2014 ${toSmallcaps('Broadcasting now')}`,
+            caption:  `\u{1F4E1} ${displayName(menuData.botName)} \u2014 ${toSmallcaps('Broadcasting now')}`,
           }, { quoted: newsletterQuote });
         } else if (imgData.source?.startsWith('http')) {
           await sock.sendMessage(m.from, {
             image:   { url: imgData.source },
-            caption: `\u{1F4E1} *${toSmallcaps(menuData.botName)}* \u2014 ${toSmallcaps('Broadcasting now')}`,
+            caption: `\u{1F4E1} ${displayName(menuData.botName)} \u2014 ${toSmallcaps('Broadcasting now')}`,
           }, { quoted: newsletterQuote });
         }
 

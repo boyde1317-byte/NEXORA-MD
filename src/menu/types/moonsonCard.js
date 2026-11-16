@@ -3,6 +3,11 @@ import { Button } from '../../lib/moonsonKit.js';
 import { buildTextMenu } from '../formatter.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildAboutContextInfo } from '../../lib/waUtils.js';
+import brand from '../../../config/brand.js';
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 /**
  * Moonson-style Menu (id: 18) — NIXCODE Button card.
@@ -26,7 +31,6 @@ export const moonsonCardMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const bodyText = buildTextMenu(menuData);
-    const titleCase = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
     // ── Image header (best-effort — card renders fine without media) ──
     let imgData = null;
@@ -38,10 +42,10 @@ export const moonsonCardMenu = {
     }
 
     const card = new Button(sock)
-      .setTitle(`✦ ${menuData.botName} ✦`)
-      .setSubtitle(`${menuData.totalCommands} commands │ ${menuData.uptime}`)
+      .setTitle(`✦ ${displayName(menuData.botName)} ✦`)
+      .setSubtitle(`${menuData.totalCommands} ${toSmallcaps('commands')} │ ${menuData.uptime}`)
       .setBody(bodyText)
-      .setFooter(`Powered by ${menuData.botName}`)
+      .setFooter(`${toSmallcaps('Powered by')} ${displayName(menuData.botName)}`)
       .setContextInfo(buildAboutContextInfo({
         botName: menuData.botName,
         description: `${menuData.totalCommands} commands`,
@@ -63,7 +67,7 @@ export const moonsonCardMenu = {
         const count = (menuData.categories[cat] || []).length;
         card.makeRow(
           '',
-          titleCase(cat),
+          toSmallcaps(cat),
           `${count} command${count !== 1 ? 's' : ''}`,
           `${menuData.prefix}help ${cat}`,
         );

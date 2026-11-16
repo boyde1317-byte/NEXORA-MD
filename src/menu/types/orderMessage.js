@@ -5,6 +5,11 @@ import { buildFakeOrderQuote, buildFakeImageQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
+import brand from '../../../config/brand.js';
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 /**
  * Order Message Menu (id: 14) — enhanced for rich-messages.
@@ -29,7 +34,7 @@ export const orderMessageMenu = {
 
     // Build richer body text with visual stat rows
     const statBlock = [
-      `\u2726 *${toSmallcaps(menuData.botName + ' Command Catalog')}* \u2726`,
+      `\u2726 ${displayName(menuData.botName)} ${toSmallcaps('Command Catalog')} \u2726`,
       '',
       asciiBuilder.statRow('Total Commands', menuData.totalCommands),
       asciiBuilder.statRow('Prefix', menuData.prefix),
@@ -38,7 +43,7 @@ export const orderMessageMenu = {
     ].join('\n');
 
     const bodyText = statBlock + buildTextMenu(menuData);
-    const footerText = `${menuData.botName} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`;
+    const footerText = `${displayName(menuData.botName)} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`;
 
     // ── Resolve image payload once ─────────────────────────────────────────
     const imagePayload = imgData.source?.startsWith('http')
@@ -63,7 +68,7 @@ export const orderMessageMenu = {
 
     // Build embedded externalAdReply
     const adReply = {
-      title:                 `\u2726 ${menuData.botName} \u2726`,
+      title:                 `\u2726 ${displayName(menuData.botName)} \u2726`,
       body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Order Card')}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
@@ -87,11 +92,11 @@ export const orderMessageMenu = {
           subtitle:   `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Prefix')}: ${menuData.prefix}`,
           thumbnail:  imagePayload,
           buttons: [
-            buildPillUrlButton('\u{1F4AC} Contact Developer', 'https://wa.me/233533416608'),
-            buildPillUrlButton('\u{1F4E1} Official Channel', 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326'),
-            buildPillCopyButton('\u{1F4CE} Copy Prefix', menuData.prefix),
-            buildPillButton('\u{1F3A8} Browse Menu Styles', `${menuData.prefix}menulist`),
-            buildPillButton('\u{1F916} System Stats',       `${menuData.prefix}menu aiDynamic`),
+            buildPillUrlButton(`\u{1F4AC} ${toSmallcaps('Contact Developer')}`, 'https://wa.me/233533416608'),
+            buildPillUrlButton(`\u{1F4E1} ${toSmallcaps('Official Channel')}`, 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326'),
+            buildPillCopyButton(`\u{1F4CE} ${toSmallcaps('Copy Prefix')}`, menuData.prefix),
+            buildPillButton(`\u{1F3A8} ${toSmallcaps('Browse Menu Styles')}`, `${menuData.prefix}menulist`),
+            buildPillButton(`\u{1F916} ${toSmallcaps('System Stats')}`,       `${menuData.prefix}menu aiDynamic`),
             buildNavigationButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },

@@ -6,6 +6,11 @@ import { footerManager } from '../../core/footer.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
 import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
+import brand from '../../../config/brand.js';
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 /**
  * Document Interactive Menu (id: 1) \u2014 enhanced for rich-messages.
@@ -31,8 +36,8 @@ export const documentInteractiveMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData    = await imageManager.getMenuImage(1);
-    const footerText = footerManager.getFooter() || `${menuData.botName} \u2502 Uptime: ${menuData.uptime}`;
-    const bodyText   = `\u2726 *${toSmallcaps(menuData.botName)}* \u2726\n\n` + buildTextMenu(menuData);
+    const footerText = footerManager.getFooter() || `${displayName(menuData.botName)} \u2502 ${toSmallcaps('Uptime')}: ${menuData.uptime}`;
+    const bodyText   = `\u2726 ${displayName(menuData.botName)} \u2726\n\n` + buildTextMenu(menuData);
 
     // Resolve image payload: prefer the { url } form \u2014 WA fetches it directly,
     // no local buffer download/re-upload round trip. Buffer is only a fallback
@@ -43,7 +48,7 @@ export const documentInteractiveMenu = {
 
     // Build the embedded externalAdReply for double visual impact
     const adReply = {
-      title:                 `\u2726 ${menuData.botName} \u2726`,
+      title:                 `\u2726 ${displayName(menuData.botName)} \u2726`,
       body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Interactive Card')}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
@@ -65,7 +70,7 @@ export const documentInteractiveMenu = {
         return await baileysBridge.sendButtonsCard(sock, m.from, {
           body:       bodyText,
           footer:     footerText,
-          title:      `\u2726 ${toSmallcaps(menuData.botName + ' Menu')} \u2726`,
+          title:      `\u2726 ${displayName(menuData.botName)} ${toSmallcaps('Menu')} \u2726`,
           subtitle:   `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Uptime')}: ${menuData.uptime}`,
           thumbnail:  imagePayload,
           buttons: [
@@ -91,11 +96,11 @@ export const documentInteractiveMenu = {
           footer:  footerText,
           image:   imagePayload,
           buttons: [
-            { text: '\u{1F4CB} Switch Menu Style', id: `${menuData.prefix}menulist` },
-            { text: '\u26A1 System Info',        id: `${menuData.prefix}menu aiDynamic` },
-            { text: '\u{1F3D1} Ping Bot',           id: `${menuData.prefix}ping` },
-            { text: '\u{1F4AC} Contact Developer',  url: 'https://wa.me/233533416608' },
-            { text: '\u{1F4CE} Copy Prefix',        copy: menuData.prefix },
+            { text: `\u{1F4CB} ${toSmallcaps('Switch Menu Style')}`, id: `${menuData.prefix}menulist` },
+            { text: `\u26A1 ${toSmallcaps('System Info')}`,        id: `${menuData.prefix}menu aiDynamic` },
+            { text: `\u{1F3D1} ${toSmallcaps('Ping Bot')}`,           id: `${menuData.prefix}ping` },
+            { text: `\u{1F4AC} ${toSmallcaps('Contact Developer')}`,  url: 'https://wa.me/233533416608' },
+            { text: `\u{1F4CE} ${toSmallcaps('Copy Prefix')}`,        copy: menuData.prefix },
           ],
         }, { quoted: menuData.audioQuote || m });
       } catch (err) {

@@ -4,7 +4,12 @@ import { imageManager } from '../../images/imageManager.js';
 import { buildFakeContactQuote } from '../../lib/waUtils.js';
 import { config } from '../../../config/index.js';
 import brand from '../../../config/brand.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 /**
  * Contact Menu (id: 9) — rewritten for itsliaaa 0.3.18-final fork.
@@ -45,7 +50,7 @@ export const contactMenu = {
     const ownerName    = menuData.ownerName || brand.creator || 'Owner';
 
     const menuText   = buildTextMenu(menuData);
-    const footerText = `${menuData.botName} • ${menuData.totalCommands} commands`;
+    const footerText = `${displayName(menuData.botName)} • ${menuData.totalCommands} ${toSmallcaps('commands')}`;
 
     // Contact card in the reply bar — tappable vCard showing the owner's name.
     const contactQuote = buildFakeContactQuote({
@@ -65,13 +70,13 @@ export const contactMenu = {
       return await baileysBridge.sendButtonsCard(sock, m.from, {
         body:       menuText,
         footer:     footerText,
-        title:      `✦ ${menuData.botName.toUpperCase()} ✦`,
+        title:      `✦ ${displayName(menuData.botName)} ✦`,
         thumbnail:  imagePayload,
         buttons: [
-          buildPillUrlButton(`💬 Message ${ownerName}`, `https://wa.me/${ownerNumber}`),
-          buildPillButton('📋 Command List', `${menuData.prefix}menulist`),
-          buildPillCopyButton('📎 Copy Prefix', menuData.prefix),
-          buildPillButton('🤖 System Stats', `${menuData.prefix}menu aiDynamic`),
+          buildPillUrlButton(`💬 ${toSmallcaps('Message')} ${ownerName}`, `https://wa.me/${ownerNumber}`),
+          buildPillButton(`📋 ${toSmallcaps('Command List')}`, `${menuData.prefix}menulist`),
+          buildPillCopyButton(`📎 ${toSmallcaps('Copy Prefix')}`, menuData.prefix),
+          buildPillButton(`🤖 ${toSmallcaps('System Stats')}`, `${menuData.prefix}menu aiDynamic`),
           buildNavigationButton(menuData.prefix),
         ],
       }, { quoted: contactQuote });
@@ -82,8 +87,8 @@ export const contactMenu = {
     // ── Tier 2: text + externalAdReply banner + contact badge ─────────────
     try {
       const adReply = {
-        title:                 `✦ ${menuData.botName.toUpperCase()} ✦`,
-        body:                  `${menuData.totalCommands} commands • Prefix: ${menuData.prefix}`,
+        title:                 `✦ ${displayName(menuData.botName)} ✦`,
+        body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} • ${toSmallcaps('Prefix')}: ${menuData.prefix}`,
         sourceUrl:             `https://wa.me/${ownerNumber}`,
         mediaType:             1,
         renderLargerThumbnail: true,
@@ -105,8 +110,8 @@ export const contactMenu = {
 
     // ── Tier 3: guaranteed plain text + contact badge + banner ────────────
     const fallbackAdReply = {
-      title:                 `✦ ${menuData.botName.toUpperCase()} ✦`,
-      body:                  `${menuData.totalCommands} commands • Prefix: ${menuData.prefix}`,
+      title:                 `✦ ${displayName(menuData.botName)} ✦`,
+      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} • ${toSmallcaps('Prefix')}: ${menuData.prefix}`,
       sourceUrl:             `https://wa.me/${ownerNumber}`,
       mediaType:             1,
       renderLargerThumbnail: true,

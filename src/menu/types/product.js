@@ -2,6 +2,12 @@ import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
+import brand from '../../../config/brand.js';
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 /**
  * Product / Offer Overlay Menu (id: 17) — rewritten for itsliaaa 0.3.18-final fork.
@@ -34,8 +40,8 @@ export const productMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData   = await imageManager.getMenuImage(5);
-    const bodyText  = `✦ *${menuData.botName.toUpperCase()}* ✦\n\n` + buildTextMenu(menuData);
-    const footerText = `${menuData.botName} • ${menuData.totalCommands} commands`;
+    const bodyText  = `✦ ${displayName(menuData.botName)} ✦\n\n` + buildTextMenu(menuData);
+    const footerText = `${displayName(menuData.botName)} • ${menuData.totalCommands} ${toSmallcaps('commands')}`;
 
     // Resolve image payload: prefer the { url } form — WA fetches it directly,
     // no local buffer download/re-upload round trip. Buffer is only a fallback
@@ -57,10 +63,10 @@ export const productMenu = {
         offerCode:  'NEXORA-FREE',
         offerExpiry: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // expires in 7 days
         buttons: [
-          { text: '💬 Contact Developer', url:  'https://wa.me/233533416608' },
-          { text: '📎 Copy Prefix',       copy: menuData.prefix },
-          { text: '🤖 System Stats',       id:   `${menuData.prefix}menu aiDynamic` },
-          { text: '🎨 Browse Menu Styles', id:   `${menuData.prefix}menulist` },
+          { text: `💬 ${toSmallcaps('Contact Developer')}`, url:  'https://wa.me/233533416608' },
+          { text: `📎 ${toSmallcaps('Copy Prefix')}`,       copy: menuData.prefix },
+          { text: `🤖 ${toSmallcaps('System Stats')}`,       id:   `${menuData.prefix}menu aiDynamic` },
+          { text: `🎨 ${toSmallcaps('Browse Menu Styles')}`, id:   `${menuData.prefix}menulist` },
         ],
       }, { quoted: menuData.audioQuote || m });
     } catch (err) {
@@ -70,8 +76,8 @@ export const productMenu = {
     // ── Tier 2: image with caption + externalAdReply ──────────────────────
     try {
       const adReply = {
-        title:                 `✦ ${menuData.botName.toUpperCase()} ✦`,
-        body:                  `${menuData.totalCommands} commands • ${menuData.uptime} uptime`,
+        title:                 `✦ ${displayName(menuData.botName)} ✦`,
+        body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} • ${menuData.uptime} ${toSmallcaps('uptime')}`,
         sourceUrl:             'https://wa.me/233533416608',
         mediaType:             1,
         renderLargerThumbnail: true,
@@ -101,8 +107,8 @@ export const productMenu = {
     // ── Tier 3: guaranteed plain text + fake quote + banner ───────────────
     const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.thumbBuffer || undefined });
     const fallbackAdReply = {
-      title:                 `✦ ${menuData.botName.toUpperCase()} ✦`,
-      body:                  `${menuData.totalCommands} commands • ${menuData.uptime}`,
+      title:                 `✦ ${displayName(menuData.botName)} ✦`,
+      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} • ${menuData.uptime}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
       renderLargerThumbnail: true,

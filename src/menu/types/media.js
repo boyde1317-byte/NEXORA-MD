@@ -6,6 +6,11 @@ import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
 import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
+import brand from '../../../config/brand.js';
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 /**
  * Media Menu (id: 10) \u2014 enhanced for rich-messages.
@@ -32,7 +37,7 @@ export const mediaMenu = {
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
-    const footerText = `${menuData.botName} \u2502 ${menuData.totalCommands} commands`;
+    const footerText = `${displayName(menuData.botName)} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`;
 
     // Build richer body text with visual stat rows
     const headerBlock = [
@@ -51,7 +56,7 @@ export const mediaMenu = {
 
     // Build embedded externalAdReply
     const adReply = {
-      title:                 `${menuData.botName} ${toSmallcaps('Media Core')}`,
+      title:                 `${displayName(menuData.botName)} ${toSmallcaps('Media Core')}`,
       body:                  `${toSmallcaps('Uptime')}: ${menuData.uptime} \u2502 ${toSmallcaps('Plugins')}: ${menuData.totalCommands}`,
       sourceUrl:             `https://wa.me/${menuData.ownerNumber || '233597514499'}`,
       mediaType:             1,

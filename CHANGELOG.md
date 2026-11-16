@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Remaining menu restyle sweep (15 files): buttonsCard, contact,
+  documentInteractive, eventMessage, listFallback, location, media,
+  moonsonCard, nativeFlow, newsletter, orderMessage, payment, product,
+  reaction, richCard. Same rules as the earlier four: the bot name
+  renders via `brand.display` in titles, headers, footers and ad
+  replies (a custom bot name stays plain, via the `displayName`
+  guard); button and picker labels use small caps; full sentences
+  use native italic markup. The shared navigation picker in
+  buttonsCard is restyled once and carries to every menu that uses
+  it. Kept plain on purpose: catalog/order/product-quote and
+  newsletter metadata, vCard contact data, custom `.setfooter`
+  footers, command names, counts and other data. `galaxyMenu` is
+  intentionally untouched — its Moongod port aesthetic (own fancy
+  font, glitch header) is a coherent theme, like the declined
+  a2uiSurface; the plain-text menu template is untouched too.
+  `config/brand.js` display comment updated to match (menus now
+  render display variants through the guard).
 - Command directory menu restyle (`src/menu/types/commandDirectory.js`):
   the bot name renders via `brand.display` in the body title and
   footer (a custom bot name stays plain); picker rows use small caps

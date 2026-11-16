@@ -2,6 +2,11 @@ import { buildCompactMenu } from '../formatter.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { imageManager } from '../../images/imageManager.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
+import brand from '../../../config/brand.js';
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 export const reactionMenu = {
   id: 11,
@@ -18,8 +23,8 @@ export const reactionMenu = {
     // and Tier 2 fresh send. The edit message type does not support contextInfo,
     // so we attach it only to fresh sends (Tier 2) and the initial loading stub.
     const adReply = {
-      title:                 `✦ ${toSmallcaps(menuData.botName)} ✦`,
-      body:                  `${menuData.totalCommands} commands • Prefix: ${menuData.prefix}`,
+      title:                 `✦ ${displayName(menuData.botName)} ✦`,
+      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} • ${toSmallcaps('Prefix')}: ${menuData.prefix}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
       renderLargerThumbnail: true,
@@ -41,7 +46,7 @@ export const reactionMenu = {
     // 2. Send the loading placeholder — include the image banner here so that
     //    even if live-edit rewrites the text later, the user already saw the image.
     const loadingMsg = await sock.sendMessage(m.from, {
-      text: `✦ *${toSmallcaps(menuData.botName)}* ✦\n\n⏳ _${toSmallcaps('Synchronizing plugins and command directories')}..._`,
+      text: `✦ ${displayName(menuData.botName)} ✦\n\n⏳ _Synchronizing plugins and command directories..._`,
       ...(hasImage ? { contextInfo: { externalAdReply: adReply } } : {}),
     }, { quoted: menuData.audioQuote || m });
 

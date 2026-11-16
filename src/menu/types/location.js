@@ -4,6 +4,11 @@ import { imageManager } from '../../images/imageManager.js';
 import { buildFakeLiveLocationQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
+import brand from '../../../config/brand.js';
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 /**
  * Location Menu (id: 8) — rewritten for itsliaaa 0.3.18-final fork.
@@ -42,10 +47,10 @@ export const locationMenu = {
   renderer: async ({ sock, m, menuData }) => {
     const imgData    = await imageManager.getMenuImage(8);
     const menuText   = buildTextMenu(menuData);
-    const footerText = `${menuData.botName} • ${menuData.totalCommands} commands`;
+    const footerText = `${displayName(menuData.botName)} • ${menuData.totalCommands} ${toSmallcaps('commands')}`;
 
     const locationQuote = buildFakeLiveLocationQuote({
-      caption: `📍 ${toSmallcaps(menuData.botName || 'NEXORA-MD')} — ${toSmallcaps('Bot Command')} ✦`,
+      caption: `📍 ${displayName(menuData.botName || brand.name)} — ${toSmallcaps('Bot Command')} ✦`,
     });
 
     // Resolve image payload: prefer the { url } form — WA fetches it directly,
@@ -60,13 +65,13 @@ export const locationMenu = {
       return await baileysBridge.sendButtonsCard(sock, m.from, {
         body:       menuText,
         footer:     footerText,
-        title:      `✦ ${menuData.botName.toUpperCase()} ✦`,
+        title:      `✦ ${displayName(menuData.botName)} ✦`,
         thumbnail:  imagePayload,
         buttons: [
-          buildPillButton('📋 Command List', `${menuData.prefix}menulist`),
-          buildPillCopyButton('📎 Copy Prefix', menuData.prefix),
-          buildPillButton('🤖 System Stats', `${menuData.prefix}menu aiDynamic`),
-          buildPillUrlButton('💬 Contact', 'https://wa.me/233533416608'),
+          buildPillButton(`📋 ${toSmallcaps('Command List')}`, `${menuData.prefix}menulist`),
+          buildPillCopyButton(`📎 ${toSmallcaps('Copy Prefix')}`, menuData.prefix),
+          buildPillButton(`🤖 ${toSmallcaps('System Stats')}`, `${menuData.prefix}menu aiDynamic`),
+          buildPillUrlButton(`💬 ${toSmallcaps('Contact')}`, 'https://wa.me/233533416608'),
           buildNavigationButton(menuData.prefix),
         ],
       }, { quoted: locationQuote });
@@ -77,8 +82,8 @@ export const locationMenu = {
     // ── Tier 2: text + externalAdReply banner + live location badge ────────
     try {
       const adReply = {
-        title:                 `✦ ${menuData.botName.toUpperCase()} ✦`,
-        body:                  `${menuData.totalCommands} commands • Prefix: ${menuData.prefix}`,
+        title:                 `✦ ${displayName(menuData.botName)} ✦`,
+        body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} • ${toSmallcaps('Prefix')}: ${menuData.prefix}`,
         sourceUrl:             'https://wa.me/233533416608',
         mediaType:             1,
         renderLargerThumbnail: true,
@@ -100,8 +105,8 @@ export const locationMenu = {
 
     // ── Tier 3: guaranteed plain text + live location badge + banner ────────
     const fallbackAdReply = {
-      title:                 `✦ ${menuData.botName.toUpperCase()} ✦`,
-      body:                  `${menuData.totalCommands} commands • Prefix: ${menuData.prefix}`,
+      title:                 `✦ ${displayName(menuData.botName)} ✦`,
+      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} • ${toSmallcaps('Prefix')}: ${menuData.prefix}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
       renderLargerThumbnail: true,

@@ -5,6 +5,11 @@ import { imageManager } from '../../images/imageManager.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
 import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
+import brand from '../../../config/brand.js';
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 /**
  * Native Flow Menu (id: 4) \u2014 enhanced for rich-messages.
@@ -28,8 +33,8 @@ export const nativeFlowMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData    = await imageManager.getMenuImage(4);
-    const bodyText   = `\u26A1 *${toSmallcaps(menuData.botName + ' Menu')}*\n\n` + buildTextMenu(menuData);
-    const footerText = `${menuData.botName} \u2502 ${toSmallcaps('Native Flow Active')}`;
+    const bodyText   = `\u26A1 ${displayName(menuData.botName)} ${toSmallcaps('Menu')}\n\n` + buildTextMenu(menuData);
+    const footerText = `${displayName(menuData.botName)} \u2502 ${toSmallcaps('Native Flow Active')}`;
 
     // Resolve image payload
     const imagePayload = imgData.source?.startsWith('http')
@@ -38,7 +43,7 @@ export const nativeFlowMenu = {
 
     // Build embedded externalAdReply for the interactive card
     const adReply = {
-      title:                 `\u2726 ${menuData.botName} \u2726`,
+      title:                 `\u2726 ${displayName(menuData.botName)} \u2726`,
       body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Prefix')}: ${menuData.prefix}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
@@ -58,7 +63,7 @@ export const nativeFlowMenu = {
         return await baileysBridge.sendButtonsCard(sock, m.from, {
           body:       bodyText,
           footer:     footerText,
-          title:      `\u{1F31F} ${toSmallcaps(menuData.botName)} \u2726`,
+          title:      `\u{1F31F} ${displayName(menuData.botName)} \u2726`,
           subtitle:   `${toSmallcaps('Native Flow')} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`,
           thumbnail:  imagePayload,
           buttons: [
@@ -81,14 +86,14 @@ export const nativeFlowMenu = {
       return await baileysBridge.sendNativeFlow(sock, m.from, {
         text:    bodyText,
         footer:  footerText,
-        title:   `\u{1F31F} ${toSmallcaps(menuData.botName)} \u2726`,
+        title:   `\u{1F31F} ${displayName(menuData.botName)} \u2726`,
         image:   imagePayload,
         buttons: [
-          { text: '\u{1F4AC} Contact Developer',  url:  'https://wa.me/233533416608' },
-          { text: '\u{1F4E1} Official Channel',   url:  'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326' },
-          { text: '\u{1F4CE} Copy Prefix',        copy: menuData.prefix },
-          { text: '\u{1F916} System Stats',        id:   `${menuData.prefix}menu aiDynamic` },
-          { text: '\u{1F3A8} Change Menu Style',   id:   `${menuData.prefix}menulist` },
+          { text: `\u{1F4AC} ${toSmallcaps('Contact Developer')}`,  url:  'https://wa.me/233533416608' },
+          { text: `\u{1F4E1} ${toSmallcaps('Official Channel')}`,   url:  'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326' },
+          { text: `\u{1F4CE} ${toSmallcaps('Copy Prefix')}`,        copy: menuData.prefix },
+          { text: `\u{1F916} ${toSmallcaps('System Stats')}`,        id:   `${menuData.prefix}menu aiDynamic` },
+          { text: `\u{1F3A8} ${toSmallcaps('Change Menu Style')}`,   id:   `${menuData.prefix}menulist` },
         ],
       }, { quoted: menuData.audioQuote || m });
     } catch (err) {

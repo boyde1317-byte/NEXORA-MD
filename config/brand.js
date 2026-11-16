@@ -14,12 +14,15 @@ export default {
   tagline: "Engineered for reliability, extensibility, and a polished user experience.",
 
   // Display variants — styled Unicode for chat-facing surfaces only
-  // (.brand, .about, .credits, .version). The plain values above stay
-  // canonical: the pairing page, sticker metadata, menus and logs read
-  // them directly and must never see styled text. No `version` here on
-  // purpose — it always renders plain. Mix: bold-sans name, cursive
-  // signature, small-caps labels, italic sentences. Styles come from
-  // the same maps as .styletext (src/plugins/utility/styletext.js).
+  // (.brand, .about, .credits, .version, and menu surfaces through the
+  // displayName guard, which keeps a custom bot name plain). The plain
+  // values above stay canonical: the pairing page, sticker metadata,
+  // vCard/contact/booking/newsletter/order/catalog metadata and logs
+  // read them directly and must never see styled text. No `version`
+  // here on purpose — it always renders plain. Mix: bold-sans name,
+  // cursive signature, small-caps labels, italic sentences. Styles
+  // come from the same maps as .styletext
+  // (src/plugins/utility/styletext.js).
   display: {
     name: "𝗡𝗘𝗫𝗢𝗥𝗔 𝗠𝗗",
     creator: "𝓐𝓲𝔃𝓮𝓷",

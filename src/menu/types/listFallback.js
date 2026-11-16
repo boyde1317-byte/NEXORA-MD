@@ -25,10 +25,17 @@
 
 import { buildTextMenu } from '../formatter.js';
 import brand from '../../../config/brand.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 import { imageManager } from '../../images/imageManager.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { config } from '../../../config/index.js';
+
+// Display variants for the brand name/creator on chat-facing surfaces.
+// This file renders brand.name directly (never a runtime bot name), so the
+// display values apply as-is.
+const displayName = brand.display?.name || brand.name;
+const displayCreator = brand.display?.creator || brand.creator;
 
 export const listFallbackMenu = {
   id:                 16,
@@ -46,7 +53,7 @@ export const listFallbackMenu = {
     // WA listMessage: max 10 sections, each section max 10 rows (hard limits).
     // We map each category to a section with one row per command (capped at 10).
     const sections = catNames.slice(0, 10).map(cat => ({
-      title: cat.charAt(0).toUpperCase() + cat.slice(1),
+      title: toSmallcaps(cat),
       rows:  categories[cat].slice(0, 10).map(cmd => ({
         title:       `${p}${cmd.name}`,
         description: cmd.description?.slice(0, 72) || 'No description',
@@ -56,7 +63,7 @@ export const listFallbackMenu = {
 
     // Always append a quick-access "Navigation" section at the end
     sections.push({
-      title: 'Quick Access',
+      title: toSmallcaps('Quick Access'),
       rows: [
         { title: `${p}menu`,   description: 'Show this menu again',   rowId: `${p}menu`   },
         { title: `${p}ping`,   description: 'Check bot latency',      rowId: `${p}ping`   },
@@ -66,15 +73,15 @@ export const listFallbackMenu = {
     });
 
     const body =
-      `*${brand.name}* — Command Menu\n\n` +
+      `${displayName} — ${toSmallcaps('Command Menu')}\n\n` +
       `› *Uptime:* ${menuData.uptime}\n` +
       `› *Commands:* ${menuData.totalCommands}\n` +
       `› *Users:* ${menuData.users}\n` +
       `› *Groups:* ${menuData.groups}\n` +
       `› *Prefix:* ${p}\n\n` +
-      `Tap the button below to browse commands by category.`;
+      `_Tap the button below to browse commands by category._`;
 
-    const footer = `${brand.name} • ${brand.creator}`;
+    const footer = `${displayName} • ${displayCreator}`;
 
     // ── Tier 1: listMessage (legacy) ───────────────────────────────────────
     // Route through baileysBridge.relayMessage for proper contextInfo handling.
@@ -83,10 +90,10 @@ export const listFallbackMenu = {
     try {
       return await baileysBridge.relayMessage(sock, m.from, {
         listMessage: {
-          title:       `${brand.name} Menu`,
+          title:       `${displayName} ${toSmallcaps('Menu')}`,
           description: body,
           footerText:  footer,
-          buttonText:  '📋 Browse Commands',
+          buttonText:  `📋 ${toSmallcaps('Browse Commands')}`,
           listType:    1,   // SINGLE_SELECT
           sections,
         },
@@ -98,8 +105,8 @@ export const listFallbackMenu = {
         return await sock.sendMessage(m.from, {
           text:       body,
           footer,
-          title:      `${brand.name} Menu`,
-          buttonText: '📋 Browse Commands',
+          title:      `${displayName} ${toSmallcaps('Menu')}`,
+          buttonText: `📋 ${toSmallcaps('Browse Commands')}`,
           sections,
           listType:   1,
         }, { quoted: m });
@@ -115,8 +122,8 @@ export const listFallbackMenu = {
       const imgData = await imageManager.getMenuImage(16);
       fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.thumbBuffer || undefined });
       fallbackAdReply = {
-        title:                 `✦ ${brand.name} ✦`,
-        body:                  `${menuData.totalCommands} commands • List Menu`,
+        title:                 `✦ ${displayName} ✦`,
+        body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} • ${toSmallcaps('List Menu')}`,
         sourceUrl:             'https://wa.me/233533416608',
         mediaType:             1,
         renderLargerThumbnail: true,
@@ -132,7 +139,7 @@ export const listFallbackMenu = {
       fakeImgQuote = m;
     }
     return await sock.sendMessage(m.from, {
-      text:        `*${brand.name} Menu*\n\n${fallbackText}`,
+      text:        `${displayName} ${toSmallcaps('Menu')}\n\n${fallbackText}`,
       ...(fallbackAdReply ? { contextInfo: { externalAdReply: fallbackAdReply } } : {}),
     }, { quoted: fakeImgQuote || m });
   },

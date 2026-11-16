@@ -4,6 +4,11 @@ import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
+import brand from '../../../config/brand.js';
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 /**
  * Payment Menu (id: 2)
@@ -35,7 +40,7 @@ export const paymentMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData     = await imageManager.getMenuImage(2);
-    const noteContent = `✦ *${toSmallcaps(menuData.botName)}* ✦\n\n` + buildTextMenu(menuData);
+    const noteContent = `✦ ${displayName(menuData.botName)} ✦\n\n` + buildTextMenu(menuData);
 
     // ── Tier 1: Native payment card ───────────────────────────────────────
     // Gate: capabilities.requestPayment is true (proto-level support confirmed).
@@ -59,8 +64,8 @@ export const paymentMenu = {
     // ── Tier 2: Guaranteed plain text + fake quote + banner ───────────────
     const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData?.thumbBuffer || undefined });
     const fallbackAdReply = {
-      title:                 `✦ ${toSmallcaps(menuData.botName)} ✦`,
-      body:                  `${menuData.totalCommands} commands • Payment Menu`,
+      title:                 `✦ ${displayName(menuData.botName)} ✦`,
+      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} • ${toSmallcaps('Payment Menu')}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
       renderLargerThumbnail: true,
