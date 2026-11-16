@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- One-box unification: every text surface now renders in the single
+  slim box shared by the reply frames. The plain-text menu template
+  drops its modern/classic/minimal theme borders and the theme
+  setting no longer affects it; the bot name renders via
+  `brand.display` (a custom bot name stays plain, via the
+  `displayName` guard), labels use small caps, the version stays
+  plain, and category dividers sit at the wall. The `.credits`
+  plain-text card takes the same box and the brand mix (styled name,
+  script creator/signature, smallcaps labels) with its wording
+  unchanged. The `.menulist` text fallback swaps its thick rules for
+  the slim box. Unchanged on purpose: the data table (a grid, not a
+  box), `galaxyMenu`, and the inline divider / badge / stat-row /
+  progress-bar pieces.
 - Remaining menu restyle sweep (15 files): buttonsCard, contact,
   documentInteractive, eventMessage, listFallback, location, media,
   moonsonCard, nativeFlow, newsletter, orderMessage, payment, product,

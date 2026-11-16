@@ -1,5 +1,3 @@
-import { themeManager } from '../themeManager.js';
-import { layoutConfig } from '../../../config/layout.js';
 import brand from '../../../config/brand.js';
 import owner from '../../../config/owner.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
@@ -15,18 +13,22 @@ import { channelPrivilegeLine } from '../../lib/channelPromo.js';
  * devices; a per-line directory scans instantly. Detailed help lives
  * in `.help <command>`; the menu is a directory, not documentation.
  *
- * Kept: themed borders, smallcaps typographic identity, per-category
- * section headers with counts, stat header, and the placeholder system.
+ * One-box rule (2026-11-16, owner-directed): the menu renders in the
+ * single slim box shared by every reply frame (`src/ui/asciiBuilder.js`
+ * slimBox) — `╭─「 」` title, `│` walls, `├─` category dividers, fixed
+ * `╰────╯` bottom. The old modern/classic/minimal theme borders are
+ * gone and the theme setting no longer affects this template. The bot
+ * name renders via `brand.display` (a custom bot name stays plain);
+ * labels use small caps; the version stays plain.
  */
 export const menuTemplate = (menuData) => {
-  const borders = themeManager.getBorders();
-  const styleName = themeManager.getTheme();
-  const bulletIcon = layoutConfig.icons.bullet;
+  // Only the brand name renders styled — a custom bot name stays plain.
+  const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
   // Compile dynamic variables
   const now = new Date();
   const replacements = {
-    '{botName}': menuData.botName || brand.name,
+    '{botName}': displayName(menuData.botName || brand.name),
     '{owner}': menuData.ownerName || owner.ownerName,
     '{runtime}': menuData.runtime || menuData.uptime || '0s',
     '{commands}': menuData.totalCommands || '0',
@@ -46,25 +48,12 @@ export const menuTemplate = (menuData) => {
 
   const formattedLines = [];
 
-  // ── Header ───────────────────────────────────────────────────────────
-  if (styleName === 'minimal') {
-    formattedLines.push(`── {botName} ──`);
-    formattedLines.push(` Owner: {owner} · v{version} · Up: {runtime}`);
-    formattedLines.push(` Prefix: {prefix} · Commands: {commands}`);
-  } else if (styleName === 'classic') {
-    formattedLines.push(`┏━━━━━━━━━━━━━━━━━━━━━━━━`);
-    formattedLines.push(`┃  ✦ {botName} ✦`);
-    formattedLines.push(`┃  {owner} · v{version} · Up: {runtime}`);
-    formattedLines.push(`┃  Prefix: {prefix} · Commands: {commands}`);
-    formattedLines.push(`┣━━━━━━━━━━━━━━━━━━━━━━━━`);
-  } else {
-    // Modern — one compact stat block, no double-spacing
-    formattedLines.push(`${borders.topLeft}✦ {botName} ✦`);
-    formattedLines.push(`${borders.line} Owner: {owner} · v{version} · Up: {runtime}`);
-    formattedLines.push(`${borders.line} Prefix: {prefix} · {commands} ${toSmallcaps('commands')}`);
-  }
+  // ── Header: slim-box title + stat lines ──────────────────────────────
+  formattedLines.push(`╭─「 ✦ {botName} ✦ 」`);
+  formattedLines.push(`│ 👑 ${toSmallcaps('Owner')}: *{owner}*  ·  v{version}  ·  ⏱ ${toSmallcaps('Up')}: *{runtime}*`);
+  formattedLines.push(`│ ⚡ ${toSmallcaps('Prefix')}: *{prefix}*  ·  *{commands}* ${toSmallcaps('commands')}`);
 
-  // ── Categories: header + inline name rows ────────────────────────────
+  // ── Categories: divider + one command per line ───────────────────────
   const sortedCategories = Object.keys(menuData.categories).sort();
   let catIndex = 0;
   for (const cat of sortedCategories) {
@@ -73,33 +62,16 @@ export const menuTemplate = (menuData) => {
     const names = cmds.map(c => `${menuData.prefix || '.'}${c.name}`);
     const header = cat.toUpperCase();
 
-    if (styleName === 'minimal') {
-      formattedLines.push('');
-      formattedLines.push(`── ${header} (${cmds.length}) ──`);
-      names.forEach(n => formattedLines.push(n));
-    } else if (styleName === 'classic') {
-      formattedLines.push(`┃  ✦ ${header} · ${cmds.length}`);
-      names.forEach(n => formattedLines.push(`${borders.line} ${n}`));
-    } else {
-      formattedLines.push(`${borders.divider}✦ ${String(catIndex).padStart(2, '0')} · ${header} · ${cmds.length}`);
-      names.forEach(n => formattedLines.push(`${borders.line} ${n}`));
-    }
+    formattedLines.push(`├─✦ ${String(catIndex).padStart(2, '0')} · ${header} · ${cmds.length}`);
+    names.forEach(n => formattedLines.push(`│ ${n}`));
   }
 
   // ── Footer ───────────────────────────────────────────────────────────
-  formattedLines.push('');
+  formattedLines.push('│');
   const circleLine = channelPrivilegeLine(menuData.prefix || '.');
-  if (styleName === 'classic') {
-    formattedLines.push(`┃  ${circleLine}`);
-    formattedLines.push(`┃  ${toSmallcaps('Powered by')} ✦ {botName} ✦`);
-    formattedLines.push(`┗━━━━━━━━━━━━━━━━━━━━━━━━`);
-  } else if (styleName === 'minimal') {
-    formattedLines.push(circleLine);
-    formattedLines.push(`Powered by ✦ {botName} ✦`);
-  } else {
-    formattedLines.push(`${borders.line} ${circleLine}`);
-    formattedLines.push(`${borders.bottomLeft}── ${toSmallcaps('Powered by')} ✦ {botName} ✦ ──`);
-  }
+  formattedLines.push(`│ ${circleLine}`);
+  formattedLines.push(`│ ${toSmallcaps('Powered by')} ✦ {botName} ✦`);
+  formattedLines.push(`╰────────────────────────╯`);
 
   // Apply placeholders and clean anti-spam spacing/broken characters
   return parseText(formattedLines.join('\n'));

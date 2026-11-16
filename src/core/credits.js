@@ -1,4 +1,6 @@
 import brand from '../../config/brand.js';
+import { toSmallcaps } from '../lib/smallcaps.js';
+import { toFancy } from '../lib/fancyFonts.js';
 
 export const credits = {
   getCreator() {
@@ -18,19 +20,24 @@ export const credits = {
   },
 
   getFullCredits() {
+    // One-box rule: the same slim box every reply frame uses, with the
+    // brand mix — styled name, script creator/signature, smallcaps
+    // labels, plain version. Wording unchanged from the original card.
+    const name = brand.display?.name || brand.name;
     return [
-      `╭─「 𝖭𝖤𝖷𝖮𝖱𝖠 𝖬𝖣 」`,
+      `╭─「 ${name} 」`,
       `│`,
-      `│ Developer:`,
-      `│ 𝗟𝗼𝗿𝗱 𝗔𝗶𝘇𝗲𝗻`,
+      `│ ${toSmallcaps('Developer')}:`,
+      `│ ${toFancy('script', 'Lord Aizen')}`,
       `│`,
-      `│ Framework:`,
-      `│ 𝖭𝖤𝖷𝖮𝖱𝖠`,
+      `│ ${toSmallcaps('Framework')}:`,
+      `│ ${name}`,
       `│`,
-      `│ Version:`,
+      `│ ${toSmallcaps('Version')}:`,
       `│ ${brand.version}`,
       `│`,
-      `╰ ༒ 𝗦𝘁𝘂𝗿𝗱𝘆 𝗟𝗼𝗻𝗲𝗿 ༒`
+      `│ ༒ ${toFancy('script', 'Sturdy Loner')} ༒`,
+      `╰────────────────────────╯`
     ].join('\n');
   }
 };

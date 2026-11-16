@@ -2,6 +2,7 @@ import { menuManager } from '../../menu/manager.js';
 import { scanCapabilities } from '../../core/baileysScanner.js';
 import { selectMenu } from '../../lib/interactiveKit.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
+import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 /**
@@ -109,34 +110,39 @@ export default {
       console.warn('[menulist] Interactive selectMenu failed, falling back to text:', err.message);
     }
 
-    // ── Tier 2: Plain text with smallcaps ────────────────────────────────
-    let text = `✦ *${toSmallcaps('Available Menu Styles')}* ✦\n`;
-    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    text += `${toSmallcaps('Active')}: *${toSmallcaps(activeStyle?.name || 'documentInteractive')}* 👑\n`;
-    text += `${toSmallcaps('Total')}: *${styles.length}* ${toSmallcaps('styles')}\n\n`;
-    text += `${toSmallcaps('Set your style with')} \`${p}setmenu <id_or_name>\`\n\n`;
+    // ── Tier 2: slim-box text fallback ─────────────────────────────────
+    // One-box rule: the same slim box every reply frame uses.
+    const lines = [
+      `${toSmallcaps('Active')}: *${toSmallcaps(activeStyle?.name || 'documentInteractive')}* 👑`,
+      `${toSmallcaps('Total')}: *${styles.length}* ${toSmallcaps('styles')}`,
+      '',
+      `${toSmallcaps('Set your style with')} \`${p}setmenu <id_or_name>\``,
+      '',
+    ];
 
     for (const info of styleInfo) {
       const { style, isActive, isIncompat, hasWarning, icon, missing } = info;
       const activeTag = isActive ? ' 👑' : '';
 
-      text += `${icon} *${style.id}. ${toSmallcaps(style.name)}*${activeTag}\n`;
-      text += `  ↳ ${toSmallcaps(style.description)}\n`;
+      lines.push(`${icon} *${style.id}. ${toSmallcaps(style.name)}*${activeTag}`);
+      lines.push(`  ↳ ${toSmallcaps(style.description)}`);
 
       if (isIncompat) {
-        text += `  ↳ ⚠️ *${toSmallcaps('Fallback mode')}* — ${toSmallcaps('missing')}: ${missing.join(', ')}\n`;
+        lines.push(`  ↳ ⚠️ *${toSmallcaps('Fallback mode')}* — ${toSmallcaps('missing')}: ${missing.join(', ')}`);
       } else if (hasWarning) {
-        text += `  ↳ 🟠 *${toSmallcaps('Account-gated')}* — ${toSmallcaps('may need verified business account')}\n`;
+        lines.push(`  ↳ 🟠 *${toSmallcaps('Account-gated')}* — ${toSmallcaps('may need verified business account')}`);
       } else {
-        text += `  ↳ ✅ ${toSmallcaps('Fully supported')}\n`;
+        lines.push(`  ↳ ✅ ${toSmallcaps('Fully supported')}`);
       }
 
-      text += '\n';
+      lines.push('');
     }
 
-    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-    text += `🟢 ${toSmallcaps('Native')}  🟠 ${toSmallcaps('Account-gated')}  🟡 ${toSmallcaps('Fallback')}\n\n`;
-    text += `${toSmallcaps('Tap the style picker above to switch instantly,')} ${toSmallcaps('or use')} \`${p}setmenu <id>\``;
+    lines.push(`🟢 ${toSmallcaps('Native')}  🟠 ${toSmallcaps('Account-gated')}  🟡 ${toSmallcaps('Fallback')}`);
+    lines.push('');
+    lines.push(`${toSmallcaps('Tap the style picker above to switch instantly,')} ${toSmallcaps('or use')} \`${p}setmenu <id>\``);
+
+    const text = asciiBuilder.box('Available Menu Styles', lines);
 
     await m.reply(text, { contextInfo: buildEnrichedContextInfo() });
   },
