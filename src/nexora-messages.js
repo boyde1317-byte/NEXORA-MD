@@ -11,6 +11,10 @@
  *   • Confident, calm, slightly witty — not robotic, not over-friendly
  *   • Short. One line. The user already knows what happened.
  *   • Smallcaps reserved for menu headers, not inline responses
+ * Voice treatments (from the .styletext font maps):
+ *   • Italic — confirmations, notices, and the bot's everyday voice
+ *   • Bold lead word — errors and access denials, so they scan fast
+ *   • Plain — templates carrying WhatsApp markup, and emoji-led lines
  *
  * Usage:
  *   import { getRandomResponse } from '../nexora-messages.js';
@@ -20,85 +24,85 @@
 export const nexoraResponses = {
   // ── Success & Confirmations ────────────────────────────────────────────
   success: [
-    "Done. ✦",
-    "Finished. You're good to go. ☕",
-    "All set. ⚡",
-    "Handled. ❖",
-    "Saved and secured. ✦",
-    "That's taken care of. ☕",
-    "Locked in. 🪐",
-    "Smooth like butter. Done. ∘",
-    "Consider it handled. ✦",
-    "Mission accomplished. Back to your regularly scheduled scrolling. ☕",
+    "𝘋𝘰𝘯𝘦. ✦",
+    "𝘍𝘪𝘯𝘪𝘴𝘩𝘦𝘥. 𝘠𝘰𝘶'𝘳𝘦 𝘨𝘰𝘰𝘥 𝘵𝘰 𝘨𝘰. ☕",
+    "𝘈𝘭𝘭 𝘴𝘦𝘵. ⚡",
+    "𝘏𝘢𝘯𝘥𝘭𝘦𝘥. ❖",
+    "𝘚𝘢𝘷𝘦𝘥 𝘢𝘯𝘥 𝘴𝘦𝘤𝘶𝘳𝘦𝘥. ✦",
+    "𝘛𝘩𝘢𝘵'𝘴 𝘵𝘢𝘬𝘦𝘯 𝘤𝘢𝘳𝘦 𝘰𝘧. ☕",
+    "𝘓𝘰𝘤𝘬𝘦𝘥 𝘪𝘯. 🪐",
+    "𝘚𝘮𝘰𝘰𝘵𝘩 𝘭𝘪𝘬𝘦 𝘣𝘶𝘵𝘵𝘦𝘳. 𝘋𝘰𝘯𝘦. ∘",
+    "𝘊𝘰𝘯𝘴𝘪𝘥𝘦𝘳 𝘪𝘵 𝘩𝘢𝘯𝘥𝘭𝘦𝘥. ✦",
+    "𝘔𝘪𝘴𝘴𝘪𝘰𝘯 𝘢𝘤𝘤𝘰𝘮𝘱𝘭𝘪𝘴𝘩𝘦𝘥. ☕",
   ],
 
   // ── Errors & Failures ──────────────────────────────────────────────────
   error: [
-    "Ran into an issue there. Let's try again. ✦",
-    "Something interrupted the process. ⚡",
-    "Couldn't quite get that done. ⨯",
-    "That didn't work as expected. Check your formatting. ✦",
-    "System hit a snag. Care to try again? ☕",
-    "Yeah... that didn't cooperate. Give it another shot. ⚡",
-    "The bot gods are displeased. Try again. 🪐",
+    "𝗥𝗮𝗻 into an issue there. Let's try again. ✦",
+    "𝗦𝗼𝗺𝗲𝘁𝗵𝗶𝗻𝗴 interrupted the process. ⚡",
+    "𝗖𝗼𝘂𝗹𝗱𝗻'𝘁 quite get that done. ⨯",
+    "𝗧𝗵𝗮𝘁 didn't work as expected. Check your formatting. ✦",
+    "𝗦𝘆𝘀𝘁𝗲𝗺 hit a snag. Care to try again? ☕",
+    "𝗬𝗲𝗮𝗵... that didn't cooperate. Give it another shot. ⚡",
+    "𝗧𝗵𝗲 bot gods are displeased. Try again. 🪐",
   ],
 
   // ── Warnings & Missing Inputs ──────────────────────────────────────────
   warning: [
-    "Something isn't quite right here. ⚆",
-    "You might want to double-check that. ✦",
-    "I need a bit more info to run this. ☕",
-    "Careful — that's not quite right. ⚡",
-    "Hold on — something's missing. ∘",
-    "Not quite. Take another look at that. ❖",
+    "𝘚𝘰𝘮𝘦𝘵𝘩𝘪𝘯𝘨 𝘪𝘴𝘯'𝘵 𝘲𝘶𝘪𝘵𝘦 𝘳𝘪𝘨𝘩𝘵 𝘩𝘦𝘳𝘦. ⚆",
+    "𝘠𝘰𝘶 𝘮𝘪𝘨𝘩𝘵 𝘸𝘢𝘯𝘵 𝘵𝘰 𝘥𝘰𝘶𝘣𝘭𝘦-𝘤𝘩𝘦𝘤𝘬 𝘵𝘩𝘢𝘵. ✦",
+    "𝘐 𝘯𝘦𝘦𝘥 𝘢 𝘣𝘪𝘵 𝘮𝘰𝘳𝘦 𝘪𝘯𝘧𝘰 𝘵𝘰 𝘳𝘶𝘯 𝘵𝘩𝘪𝘴. ☕",
+    "𝘊𝘢𝘳𝘦𝘧𝘶𝘭 — 𝘵𝘩𝘢𝘵'𝘴 𝘯𝘰𝘵 𝘲𝘶𝘪𝘵𝘦 𝘳𝘪𝘨𝘩𝘵. ⚡",
+    "𝘏𝘰𝘭𝘥 𝘰𝘯 — 𝘴𝘰𝘮𝘦𝘵𝘩𝘪𝘯𝘨'𝘴 𝘮𝘪𝘴𝘴𝘪𝘯𝘨. ∘",
+    "𝘕𝘰𝘵 𝘲𝘶𝘪𝘵𝘦. 𝘛𝘢𝘬𝘦 𝘢𝘯𝘰𝘵𝘩𝘦𝘳 𝘭𝘰𝘰𝘬 𝘢𝘵 𝘵𝘩𝘢𝘵. ❖",
   ],
 
   // ── Loading & Processing ──────────────────────────────────────────────
   loading: [
-    "Give me a moment... ∘",
-    "Processing that. ☕",
-    "Pulling the data now... ✦",
-    "Working on it. ⚡",
-    "Just a second... ∘",
-    "Crunching the numbers... 🪐",
-    "Fetching that for you... ☕",
+    "𝘎𝘪𝘷𝘦 𝘮𝘦 𝘢 𝘮𝘰𝘮𝘦𝘯𝘵... ∘",
+    "𝘗𝘳𝘰𝘤𝘦𝘴𝘴𝘪𝘯𝘨 𝘵𝘩𝘢𝘵. ☕",
+    "𝘗𝘶𝘭𝘭𝘪𝘯𝘨 𝘵𝘩𝘦 𝘥𝘢𝘵𝘢 𝘯𝘰𝘸... ✦",
+    "𝘞𝘰𝘳𝘬𝘪𝘯𝘨 𝘰𝘯 𝘪𝘵. ⚡",
+    "𝘑𝘶𝘴𝘵 𝘢 𝘴𝘦𝘤𝘰𝘯𝘥... ∘",
+    "𝘊𝘳𝘶𝘯𝘤𝘩𝘪𝘯𝘨 𝘵𝘩𝘦 𝘯𝘶𝘮𝘣𝘦𝘳𝘴... 🪐",
+    "𝘍𝘦𝘵𝘤𝘩𝘪𝘯𝘨 𝘵𝘩𝘢𝘵 𝘧𝘰𝘳 𝘺𝘰𝘶... ☕",
   ],
 
   // ── Permissions & Access Control ──────────────────────────────────────
   permission_denied: [
-    "You don't have the clearance for this. ❖",
-    "That's above your access level, I'm afraid. ☕",
-    "I can only run this for admins. ✦",
-    "Nice try — but you lack the permissions for this one. ⚡",
-    "This one's locked behind admin access. 🪐",
+    "𝗬𝗼𝘂 don't have the clearance for this. ❖",
+    "𝗧𝗵𝗮𝘁'𝘀 above your access level, I'm afraid. ☕",
+    "𝗜 can only run this for admins. ✦",
+    "𝗡𝗶𝗰𝗲 try — but you lack the permissions for this one. ⚡",
+    "𝗧𝗵𝗶𝘀 one's locked behind admin access. 🪐",
   ],
 
   owner_only: [
-    "Owner access required for this. ✦",
-    "Only my creator can authorize that. ⚡",
-    "System locked to owner protocol. ❖",
-    "That's a creator-only command. No shortcuts here. 🪐",
+    "𝗢𝘄𝗻𝗲𝗿 access required for this. ✦",
+    "𝗢𝗻𝗹𝘆 my creator can authorize that. ⚡",
+    "𝗦𝘆𝘀𝘁𝗲𝗺 locked to owner protocol. ❖",
+    "𝗧𝗵𝗮𝘁'𝘀 a creator-only command. No shortcuts here. 🪐",
   ],
 
   // ── Group Moderation ──────────────────────────────────────────────────
-  group_only: "This command works in group chats only. ✦",
-  private_only: "Let's keep this between us. Use it in private chat. ☕",
-  bot_not_admin: "I need admin privileges to do that. Promote me first. ⚡",
+  group_only: "𝘛𝘩𝘪𝘴 𝘤𝘰𝘮𝘮𝘢𝘯𝘥 𝘸𝘰𝘳𝘬𝘴 𝘪𝘯 𝘨𝘳𝘰𝘶𝘱 𝘤𝘩𝘢𝘵𝘴 𝘰𝘯𝘭𝘺. ✦",
+  private_only: "𝘓𝘦𝘵'𝘴 𝘬𝘦𝘦𝘱 𝘵𝘩𝘪𝘴 𝘣𝘦𝘵𝘸𝘦𝘦𝘯 𝘶𝘴. 𝘜𝘴𝘦 𝘪𝘵 𝘪𝘯 𝘱𝘳𝘪𝘷𝘢𝘵𝘦 𝘤𝘩𝘢𝘵. ☕",
+  bot_not_admin: "𝘐 𝘯𝘦𝘦𝘥 𝘢𝘥𝘮𝘪𝘯 𝘱𝘳𝘪𝘷𝘪𝘭𝘦𝘨𝘦𝘴 𝘵𝘰 𝘥𝘰 𝘵𝘩𝘢𝘵. 𝘗𝘳𝘰𝘮𝘰𝘵𝘦 𝘮𝘦 𝘧𝘪𝘳𝘴𝘵. ⚡",
 
   moderation: {
-    kick: "Peace restored. ☕",
-    promote: "Welcome to the top. ✦",
-    demote: "Back to the ranks. ⚡",
-    mute: "Group is locked. Quiet time. ❖",
-    unmute: "Group is open. Play nice, everyone. ✦",
-    antilink: "Caught an unauthorized link. Handled. ⚡",
+    kick: "𝘗𝘦𝘢𝘤𝘦 𝘳𝘦𝘴𝘵𝘰𝘳𝘦𝘥. ☕",
+    promote: "𝘞𝘦𝘭𝘤𝘰𝘮𝘦 𝘵𝘰 𝘵𝘩𝘦 𝘵𝘰𝘱. ✦",
+    demote: "𝘉𝘢𝘤𝘬 𝘵𝘰 𝘵𝘩𝘦 𝘳𝘢𝘯𝘬𝘴. ⚡",
+    mute: "𝘎𝘳𝘰𝘶𝘱 𝘪𝘴 𝘭𝘰𝘤𝘬𝘦𝘥. 𝘘𝘶𝘪𝘦𝘵 𝘵𝘪𝘮𝘦. ❖",
+    unmute: "𝘎𝘳𝘰𝘶𝘱 𝘪𝘴 𝘰𝘱𝘦𝘯. 𝘗𝘭𝘢𝘺 𝘯𝘪𝘤𝘦, 𝘦𝘷𝘦𝘳𝘺𝘰𝘯𝘦. ✦",
+    antilink: "𝘊𝘢𝘶𝘨𝘩𝘵 𝘢𝘯 𝘶𝘯𝘢𝘶𝘵𝘩𝘰𝘳𝘪𝘻𝘦𝘥 𝘭𝘪𝘯𝘬. 𝘏𝘢𝘯𝘥𝘭𝘦𝘥. ⚡",
   },
 
   // ── Owner Specific ────────────────────────────────────────────────────
   owner: {
-    wake: "Welcome back. What's on the agenda? ☕",
-    shutdown: "Going dark. See you soon. ✦",
-    update: "Applying updates. System is yours. ⚡",
+    wake: "𝘞𝘦𝘭𝘤𝘰𝘮𝘦 𝘣𝘢𝘤𝘬. 𝘞𝘩𝘢𝘵'𝘴 𝘰𝘯 𝘵𝘩𝘦 𝘢𝘨𝘦𝘯𝘥𝘢? ☕",
+    shutdown: "𝘎𝘰𝘪𝘯𝘨 𝘥𝘢𝘳𝘬. 𝘚𝘦𝘦 𝘺𝘰𝘶 𝘴𝘰𝘰𝘯. ✦",
+    update: "𝘈𝘱𝘱𝘭𝘺𝘪𝘯𝘨 𝘶𝘱𝘥𝘢𝘵𝘦𝘴. 𝘚𝘺𝘴𝘵𝘦𝘮 𝘪𝘴 𝘺𝘰𝘶𝘳𝘴. ⚡",
   },
 
   // ── Cooldown ──────────────────────────────────────────────────────────
@@ -128,19 +132,19 @@ export const nexoraResponses = {
 
   // ── Welcome / Onboarding ──────────────────────────────────────────────
   welcome: [
-    (name) => `Hey @${name} — I'm awake and ready. ☕`,
-    (name) => `Welcome aboard, @${name}. Let's get you started. ✦`,
-    (name) => `Ah, a new face. Hi @${name} — I've got you covered. ⚡`,
-    (name) => `@${name} just dropped in. Welcome — I'm all yours. 🪐`,
+    (name) => `𝘏𝘦𝘺 @${name} — 𝘐'𝘮 𝘢𝘸𝘢𝘬𝘦 𝘢𝘯𝘥 𝘳𝘦𝘢𝘥𝘺. ☕`,
+    (name) => `𝘞𝘦𝘭𝘤𝘰𝘮𝘦 𝘢𝘣𝘰𝘢𝘳𝘥, @${name}. 𝘓𝘦𝘵'𝘴 𝘨𝘦𝘵 𝘺𝘰𝘶 𝘴𝘵𝘢𝘳𝘵𝘦𝘥. ✦`,
+    (name) => `𝘈𝘩, 𝘢 𝘯𝘦𝘸 𝘧𝘢𝘤𝘦. 𝘏𝘪 @${name} — 𝘐'𝘷𝘦 𝘨𝘰𝘵 𝘺𝘰𝘶 𝘤𝘰𝘷𝘦𝘳𝘦𝘥. ⚡`,
+    (name) => `@${name} 𝘫𝘶𝘴𝘵 𝘥𝘳𝘰𝘱𝘱𝘦𝘥 𝘪𝘯. 𝘞𝘦𝘭𝘤𝘰𝘮𝘦 — 𝘐'𝘮 𝘢𝘭𝘭 𝘺𝘰𝘶𝘳𝘴. 🪐`,
   ],
 
   // ── Daily Reward ──────────────────────────────────────────────────────
   daily_claimed: [
-    "Reward secured. See you tomorrow. ☕",
-    "Coins in the bag. Don't break the streak! ✦",
-    "Claimed. Your wallet appreciates you. ⚡",
-    "Nice — that's another day locked in. 🪐",
-    "Sorted. Come back same time tomorrow. ∘",
+    "𝘙𝘦𝘸𝘢𝘳𝘥 𝘴𝘦𝘤𝘶𝘳𝘦𝘥. 𝘚𝘦𝘦 𝘺𝘰𝘶 𝘵𝘰𝘮𝘰𝘳𝘳𝘰𝘸. ☕",
+    "𝘊𝘰𝘪𝘯𝘴 𝘪𝘯 𝘵𝘩𝘦 𝘣𝘢𝘨. 𝘋𝘰𝘯'𝘵 𝘣𝘳𝘦𝘢𝘬 𝘵𝘩𝘦 𝘴𝘵𝘳𝘦𝘢𝘬! ✦",
+    "𝘊𝘭𝘢𝘪𝘮𝘦𝘥. 𝘠𝘰𝘶𝘳 𝘸𝘢𝘭𝘭𝘦𝘵 𝘢𝘱𝘱𝘳𝘦𝘤𝘪𝘢𝘵𝘦𝘴 𝘺𝘰𝘶. ⚡",
+    "𝘕𝘪𝘤𝘦 — 𝘵𝘩𝘢𝘵'𝘴 𝘢𝘯𝘰𝘵𝘩𝘦𝘳 𝘥𝘢𝘺 𝘭𝘰𝘤𝘬𝘦𝘥 𝘪𝘯. 🪐",
+    "𝘚𝘰𝘳𝘵𝘦𝘥. 𝘊𝘰𝘮𝘦 𝘣𝘢𝘤𝘬 𝘴𝘢𝘮𝘦 𝘵𝘪𝘮𝘦 𝘵𝘰𝘮𝘰𝘳𝘳𝘰𝘸. ∘",
   ],
 
   daily_streak_max: [
@@ -151,10 +155,10 @@ export const nexoraResponses = {
 
   // ── Level Up ──────────────────────────────────────────────────────────
   level_up: [
-    (level) => `Level ${level}! Rising through the ranks. ⚡`,
-    (level) => `You hit Level ${level}. Nicely done. ✦`,
-    (level) => `Level ${level} unlocked. Keep climbing. 🪐`,
-    (level) => `Boom — Level ${level}! The grind pays off. ☕`,
+    (level) => `𝘓𝘦𝘷𝘦𝘭 ${level}! 𝘙𝘪𝘴𝘪𝘯𝘨 𝘵𝘩𝘳𝘰𝘶𝘨𝘩 𝘵𝘩𝘦 𝘳𝘢𝘯𝘬𝘴. ⚡`,
+    (level) => `𝘠𝘰𝘶 𝘩𝘪𝘵 𝘓𝘦𝘷𝘦𝘭 ${level}. 𝘕𝘪𝘤𝘦𝘭𝘺 𝘥𝘰𝘯𝘦. ✦`,
+    (level) => `𝘓𝘦𝘷𝘦𝘭 ${level} 𝘶𝘯𝘭𝘰𝘤𝘬𝘦𝘥. 𝘒𝘦𝘦𝘱 𝘤𝘭𝘪𝘮𝘣𝘪𝘯𝘨. 🪐`,
+    (level) => `𝘉𝘰𝘰𝘮 — 𝘓𝘦𝘷𝘦𝘭 ${level}! 𝘛𝘩𝘦 𝘨𝘳𝘪𝘯𝘥 𝘱𝘢𝘺𝘴 𝘰𝘧𝘧. ☕`,
   ],
 
   // ── Ping ──────────────────────────────────────────────────────────────
@@ -177,7 +181,7 @@ export const nexoraResponses = {
   // ── Utilities ─────────────────────────────────────────────────────────
   utility: {
     ping: (ms) => `Running smooth. Speed: ${ms}ms. ⚡`,
-    download: "File retrieved. 📥",
+    download: "𝘍𝘪𝘭𝘦 𝘳𝘦𝘵𝘳𝘪𝘦𝘷𝘦𝘥. 📥",
   },
 };
 

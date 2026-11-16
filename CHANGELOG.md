@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Response voice mix in `src/nexora-messages.js`: italic voice for
+  confirmations and notices, bold lead word for errors and access
+  denials; markup-carrying templates and emoji-led lines stay plain.
+  The long success line trims to "Mission accomplished."
 - Owner-only commands wrapping the baileys `0.3.18-r22` socket surface:
   usernames (`.checkusername`, `.setusername`, `.finduser`), spam
   reporting (`.reportspam`, `.reportcontact`, `.reportgroup`,
