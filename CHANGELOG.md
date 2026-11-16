@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Carousel menu restyle (`src/menu/types/carousel.js`): the bot name
+  renders via `brand.display` in the header, card footers, tier-2
+  footer and tier-3 ad reply title (a custom bot name stays plain);
+  the two instruction sentences move from small caps to native italic
+  markup; category buttons use small caps labels instead of uppercase;
+  the tier-3 ad reply body uses small caps labels. Card captions,
+  command lists and the tier-2 title are unchanged.
 - Bottom sheet menu restyle (`src/menu/types/bottomSheet.js`): the bot
   name renders via `brand.display` in the stat header, footer fallback,
   ad reply title, sheet option title and tier-2 header (a custom bot

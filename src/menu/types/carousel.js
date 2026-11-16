@@ -3,6 +3,7 @@ import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildFakeImageQuote } from '../../lib/waUtils.js';
+import brand from '../../../config/brand.js';
 
 // Maximum carousel cards sent in a single batch.
 const MAX_CAROUSEL_CARDS = 10;
@@ -29,6 +30,11 @@ const CATEGORY_EMOJIS = {
  *   2 \u2192 nativeFlow category picker (flat buttons, one per category, up to 10)
  *   3 \u2192 guaranteed plain text
  */
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
+
 export const carouselMenu = {
   id: 6,
   name: 'carousel',
@@ -39,9 +45,9 @@ export const carouselMenu = {
     const imgData = await imageManager.getMenuImage(6);
 
     const headerText =
-      `\u{1F3A0} *${toSmallcaps(menuData.botName + ' Carousel Control')}* \u{1F3A0}\n\n` +
-      `${toSmallcaps('Swipe sideways through the cards below to browse command modules:')}\n` +
-      `${toSmallcaps('Each card shows top commands \u2014 tap to explore more.')}`;
+      `\u{1F3A0} ${displayName(menuData.botName)} ${toSmallcaps('Carousel Control')} \u{1F3A0}\n\n` +
+      `_Swipe sideways through the cards below to browse command modules:_\n` +
+      `_Each card shows top commands \u2014 tap to explore more._`;
 
     const categories = Object.keys(menuData.categories).sort();
 
@@ -64,9 +70,9 @@ export const carouselMenu = {
 
         return {
           caption:   `${emoji} *${toSmallcaps(cat + ' Command Pack')}*\n\n${cmdList}${overflow}\n\n${toSmallcaps('Total')}: ${cmds.length} ${toSmallcaps('commands')}`,
-          footer:    `\u2726 ${toSmallcaps('Card')} ${idx + 1}/${capped.length} \u2502 ${menuData.botName}`,
+          footer:    `\u2726 ${toSmallcaps('Card')} ${idx + 1}/${capped.length} \u2502 ${displayName(menuData.botName)}`,
           nativeFlow: [
-            { text: `⚡ ${cat.toUpperCase()}`, id: `${menuData.prefix}help ${cat}` },
+            { text: `⚡ ${toSmallcaps(cat)}`, id: `${menuData.prefix}help ${cat}` },
             { text: `\u{1F916} ${toSmallcaps('Stats')}`, id: `${menuData.prefix}menu aiDynamic` },
           ],
           ...(imgData.source?.startsWith('http')
@@ -88,16 +94,16 @@ export const carouselMenu = {
       const catButtons = categories.slice(0, 10).map(cat => {
         const emoji = CATEGORY_EMOJIS[cat] || '\u{1F4C2}';
         return {
-          text: `${emoji} ${cat.toUpperCase()} (${menuData.categories[cat].length})`,
+          text: `${emoji} ${toSmallcaps(cat)} (${menuData.categories[cat].length})`,
           id:   `${menuData.prefix}help ${cat}`,
         };
       });
       if (catButtons.length === 0) {
-        catButtons.push({ text: '\u{1F4CB} View Menu', id: `${menuData.prefix}menu` });
+        catButtons.push({ text: `\u{1F4CB} ${toSmallcaps('View Menu')}`, id: `${menuData.prefix}menu` });
       }
       return await baileysBridge.sendNativeFlow(sock, m.from, {
         text:    `${headerText}\n\n` + buildTextMenu(menuData),
-        footer:  `${menuData.botName} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`,
+        footer:  `${displayName(menuData.botName)} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`,
         title:   '\u{1F3A0} ' + toSmallcaps('COMMAND CATEGORIES'),
         buttons: catButtons,
       }, { quoted: menuData.audioQuote || m });
@@ -108,8 +114,8 @@ export const carouselMenu = {
     // ── Tier 3: guaranteed plain text + fake quote + banner ────────────────
     const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.thumbBuffer || undefined });
     const fallbackAdReply = {
-      title:                 `✦ ${toSmallcaps(menuData.botName)} ✦`,
-      body:                  `${menuData.totalCommands} commands • Carousel`,
+      title:                 `✦ ${displayName(menuData.botName)} ✦`,
+      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} • ${toSmallcaps('Carousel')}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
       renderLargerThumbnail: true,
