@@ -12,7 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `.reportuser`, `.reportmessage`) and phone-number registration
   (`.regcode`, `.register`). `.reportgroup` and `.register` require the
   word `confirm`: a successful group report makes the bot leave the
-  group, and registration replaces the session identity.
+  group, and registration replaces the session identity. Results render
+  through AIRich (native table + follow-up pills) with a rich-response
+  table card as fallback; the two confirm gates render as action cards
+  with one-tap buttons. Usage and error replies stay plain.
 
 ## [2.2.2] — 2026-11-16
 

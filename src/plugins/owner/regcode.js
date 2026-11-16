@@ -4,11 +4,13 @@
  * registration options in the bot's auth credentials, so `.register`
  * can complete it afterwards. This is first-time setup tooling, not a
  * routine command: requesting codes for numbers you do not control
- * spams their owner with verification SMS.
+ * spams their owner with verification SMS. The result renders through
+ * AIRich, falling back to a rich table.
  *
  * Ghana example: .regcode 233 241234567 620 01 sms
  * (cc, national number, mobile country code, mobile network code, method)
  */
+import { sendSocketResult } from '../../lib/socketCards.js';
 import { hasSocketMethod } from '../../lib/socketTargets.js';
 
 const METHODS = ['sms', 'voice', 'flash', 'wa_old'];
@@ -20,7 +22,7 @@ export default {
   description: 'Request a registration code. Usage: .regcode <cc> <number> <mcc> [mnc] [sms|voice]',
   cooldown: 60000,
   permissions: { owner: true },
-  execute: async ({ sock, m, args }) => {
+  execute: async ({ sock, m, args, jid }) => {
     if (!hasSocketMethod(sock, 'requestRegistrationCode')) {
       return await m.reply.error('This socket does not expose requestRegistrationCode — the bot needs baileys 0.3.18-r22 or newer.');
     }
@@ -45,8 +47,16 @@ export default {
         ...(mnc ? { phoneNumberMobileNetworkCode: mnc } : {}),
         method,
       });
-      const status = result?.status || 'unknown';
-      return await m.reply(`📩 Registration code requested for +${cc}${national} via ${method}.\n▸ Status: ${status}\n\nThe options are now stored in the bot's auth credentials. Complete it with \`.register <code> confirm\``);
+      return await sendSocketResult(sock, jid, m, {
+        title: '📩 REGISTRATION CODE',
+        rows: [
+          ['Number', `+${cc}${national}`],
+          ['Method', method],
+          ['Status', result?.status || 'unknown'],
+          ['Next step', 'Complete with .register <code> confirm'],
+        ],
+        tips: ['Options stored in auth credentials'],
+      });
     } catch (err) {
       console.error('[regcode]', err?.message || err);
       const detail = err?.reason || err?.message || err;

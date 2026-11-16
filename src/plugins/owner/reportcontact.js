@@ -2,8 +2,10 @@
  * reportcontact.js — Report a contact to WhatsApp.
  * Owner-only. Needs a phone-number or LID JID: mention, quoted sender,
  * or a number/JID argument. Unlike .reportspam it needs no captured
- * reporting tags.
+ * reporting tags. Accepted reports render through AIRich, falling back
+ * to a rich table.
  */
+import { sendSocketResult } from '../../lib/socketCards.js';
 import { resolveTargetJid, hasSocketMethod } from '../../lib/socketTargets.js';
 
 export default {
@@ -13,7 +15,7 @@ export default {
   description: 'Report a contact. Usage: .reportcontact @user | .reportcontact <number>',
   cooldown: 10000,
   permissions: { owner: true },
-  execute: async ({ sock, m, args }) => {
+  execute: async ({ sock, m, args, jid }) => {
     if (!hasSocketMethod(sock, 'reportContact')) {
       return await m.reply.error('This socket does not expose reportContact — the bot needs baileys 0.3.18-r22 or newer.');
     }
@@ -24,7 +26,12 @@ export default {
     try {
       const result = await sock.reportContact(target);
       if (result?.success) {
-        return await m.reply(`✅ Contact report sent for ${target}${result.reportId ? `\n▸ Report ID: ${result.reportId}` : ''}`);
+        const rows = [
+          ['Target', target],
+          ['Status', '✅ Report accepted'],
+        ];
+        if (result.reportId) rows.push(['Report ID', result.reportId]);
+        return await sendSocketResult(sock, jid, m, { title: '🚨 CONTACT REPORT', rows });
       }
       return await m.reply.error(`Contact report was not accepted${result?.error ? `: ${result.error}` : '.'}`);
     } catch (err) {

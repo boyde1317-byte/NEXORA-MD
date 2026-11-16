@@ -4,7 +4,9 @@
  * messages received since boot; without any it fails, and the reply says
  * so plainly. Target: mention, quoted sender, number/JID argument, or the
  * current chat. Optional count (1-5) limits how many messages are sent.
+ * Accepted reports render through AIRich, falling back to a rich table.
  */
+import { sendSocketResult } from '../../lib/socketCards.js';
 import { resolveTargetJid, hasSocketMethod } from '../../lib/socketTargets.js';
 
 export default {
@@ -24,7 +26,13 @@ export default {
     try {
       const result = await sock.reportSpam(target, { maxMessages });
       if (result?.success) {
-        return await m.reply(`✅ Spam report sent for ${target}${result.reportId ? `\n▸ Report ID: ${result.reportId}` : ''}${result.messageCount ? `\n▸ Messages included: ${result.messageCount}` : ''}`);
+        const rows = [
+          ['Target', target],
+          ['Status', '✅ Report accepted'],
+        ];
+        if (result.reportId) rows.push(['Report ID', result.reportId]);
+        if (result.messageCount) rows.push(['Messages included', String(result.messageCount)]);
+        return await sendSocketResult(sock, jid, m, { title: '🚨 SPAM REPORT', rows });
       }
       return await m.reply.error(`Spam report was not accepted${result?.error ? `: ${result.error}` : '.'}`);
     } catch (err) {
