@@ -106,15 +106,15 @@ export async function awardMessageXp(m, sock) {
     try { ppUrl = await sock.profilePictureUrl(m.sender, 'image'); } catch (_) {}
 
     const bodyLines = [
-      `✨ *${name}* just reached *Level ${level}*`,
+      `✨ _${name} just reached Level ${level}_`,
       '',
       `${badge}`,
       `${bar}`,
-      `${progress.xpToNextLevel.toLocaleString()} XP to the next level${coinBonus > 0 ? ` · 🪙 +${coinBonus.toLocaleString()} coins` : ''}`,
+      `_${progress.xpToNextLevel.toLocaleString()} XP to the next level${coinBonus > 0 ? ` · 🪙 +${coinBonus.toLocaleString()} coins` : ''}_`,
     ];
     // Fork quirk: the native-flow header title only renders when header media
     // is attached. Without a profile picture the 🎉 line must live in the body.
-    if (!ppUrl) bodyLines.unshift(`🎉 *LEVEL UP*`, '');
+    if (!ppUrl) bodyLines.unshift(`🎉 ${toSmallcaps('LEVEL UP')}`, '');
 
     // ── Rendered card image first, rich card second, plain text last ──
     try {
@@ -124,7 +124,7 @@ export async function awardMessageXp(m, sock) {
       });
       await sock.sendMessage(m.from, {
         image: cardBuf,
-        caption: `✨ *${name}* just hit *Level ${level}* ${badge}\n🪙 +${coinBonus.toLocaleString()} coins\n_Keep going — the next rank is waiting_`,
+        caption: `✨ _${name} just hit Level ${level}_ ${badge}\n🪙 +${coinBonus.toLocaleString()} coins\n_Keep going — the next rank is waiting_`,
       }, { quoted: m });
       return;
     } catch (err) {
@@ -141,7 +141,7 @@ export async function awardMessageXp(m, sock) {
           title: `🎉 ${toSmallcaps('LEVEL UP')}`,
           image: { url: ppUrl },
         } : {}),
-        footer: `${toSmallcaps('tap to view the full profile')} • © NEXORA-MD`,
+        footer: `${toSmallcaps('tap to view the full profile')} • © NEXORA MD`,
       }, [
         { kind: 'action', label: `👤 ${toSmallcaps('View Profile')}`, cmd: '.profile' },
       ], { quoted: m });
@@ -154,7 +154,7 @@ export async function awardMessageXp(m, sock) {
     const levelChip = levelId.number ? `@${levelId.number}` : levelId.label;
     await m.reply(
       [
-        `🎉 ${levelChip} hit *Level ${level}*! ${badge}`,
+        `🎉 _${levelChip} hit Level ${level}!_ ${badge}`,
         `${bar}${coinBonus > 0 ? ` · 🪙 +${coinBonus.toLocaleString()} coins` : ''}`,
       ].join('\n'),
       { mentions: [m.sender] }

@@ -143,35 +143,35 @@ export default {
     const lines = [
       `👤 *${toSmallcaps('User Profile')}*`,
       ``,
-      `▸ *Name*      : ${name}`,
-      `▸ *Number*    : ${numberLabel}`,
-      `▸ *Status*    : ${user.banned ? '🚫 Banned' : user.premium ? '⭐ Premium' : '✅ Active'}`,
+      `▸ *${toSmallcaps('Name')}*      : ${name}`,
+      `▸ *${toSmallcaps('Number')}*    : ${numberLabel}`,
+      `▸ *${toSmallcaps('Status')}*    : ${user.banned ? '🚫 Banned' : user.premium ? '⭐ Premium' : '✅ Active'}`,
       ``,
       `${'─'.repeat(22)}`,
       `📊 *${toSmallcaps('Leveling')}*`,
       ``,
-      `▸ *Level*     : ${progress.level} ${rankBadge(progress.level)}`,
-      `▸ *Total XP*  : ${progress.xp.toLocaleString()}`,
-      `▸ *Progress*  : ${progressBar(progress.xpIntoLevel, progress.nextLevelXp - progress.currentLevelXp)}`,
-      `▸ *Next lvl*  : ${progress.xpToNextLevel.toLocaleString()} XP away`,
-      `▸ *Coins*     : ${(user.coins || 0).toLocaleString()} 🪙`,
-      `▸ *Streak*    : ${streak} day${streak !== 1 ? 's' : ''} ${streakEmoji(streak)}`,
+      `▸ *${toSmallcaps('Level')}*     : ${progress.level} ${rankBadge(progress.level)}`,
+      `▸ *${toSmallcaps('Total XP')}*  : ${progress.xp.toLocaleString()}`,
+      `▸ *${toSmallcaps('Progress')}*  : ${progressBar(progress.xpIntoLevel, progress.nextLevelXp - progress.currentLevelXp)}`,
+      `▸ *${toSmallcaps('Next lvl')}*  : ${progress.xpToNextLevel.toLocaleString()} XP away`,
+      `▸ *${toSmallcaps('Coins')}*     : ${(user.coins || 0).toLocaleString()} 🪙`,
+      `▸ *${toSmallcaps('Streak')}*    : ${streak} day${streak !== 1 ? 's' : ''} ${streakEmoji(streak)}`,
       ``,
       `${'─'.repeat(22)}`,
       `📋 *${toSmallcaps('Account')}*`,
       ``,
-      `▸ *Member since* : ${memberSince}`,
-      `▸ *Account age*  : ${accountAge}`,
-      `▸ *Warnings*    : ${user.warnings || 0}/3`,
+      `▸ *${toSmallcaps('Member since')}* : ${memberSince}`,
+      `▸ *${toSmallcaps('Account age')}*  : ${accountAge}`,
+      `▸ *${toSmallcaps('Warnings')}*    : ${user.warnings || 0}/3`,
     ];
 
     if (user.banned) {
-      lines.push(`▸ *Ban reason* : ${user.banReason || 'Not specified'}`);
+      lines.push(`▸ *${toSmallcaps('Ban reason')}* : ${user.banReason || 'Not specified'}`);
     }
 
     if (user.lastDaily) {
       const lastDaily = new Date(user.lastDaily);
-      lines.push(`▸ *Last daily* : ${lastDaily.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`);
+      lines.push(`▸ *${toSmallcaps('Last daily')}* : ${lastDaily.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`);
     }
 
     const text = asciiBuilder.box('User Info', lines);

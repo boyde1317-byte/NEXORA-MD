@@ -136,7 +136,7 @@ function drawFooter(ctx, w, h, note) {
   ctx.font = `600 ${Math.round(h * 0.026)}px "DejaVu Sans"`;
   ctx.fillStyle = BRAND.subtext;
   ctx.textAlign = 'left';
-  ctx.fillText('⚡ NEXORA-MD', w * 0.05, h * 0.94);
+  ctx.fillText('⚡ NEXORA MD', w * 0.05, h * 0.94);
   if (note) {
     ctx.textAlign = 'right';
     ctx.fillText(note, w * 0.95, h * 0.94);

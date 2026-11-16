@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Level-up and profile styling, same mix as the menus: the level-up
+  announcement (image caption, rich card, and plain fallback) speaks
+  in the italic voice with dynamic values plain, the no-picture
+  header uses the smallcaps treatment, and the card footer drops the
+  outdated `NEXORA-MD` name. The `.userinfo` card and the `.profile`
+  plain-text fallback use smallcaps field labels (values stay plain,
+  wording and alignment unchanged). The rendered rank/level-up card
+  footer watermark now reads `NEXORA MD`. Wording is unchanged
+  everywhere; the rich table cards and the leaderboard keep their
+  plain data rendering on purpose.
 - Brand imagery wired in: every visual surface now serves the
   horror-cinematic brand set v2 hosted in this repo (`media/brand/`,
   via jsDelivr) instead of the placeholder art. `ASSET_URLS` points

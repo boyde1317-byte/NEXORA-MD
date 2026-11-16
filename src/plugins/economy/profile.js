@@ -9,6 +9,7 @@ import { withReactionStatus } from '../../lib/cosmetics.js';
 import { richTableCard } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { getLevelProgress, progressBar, rankBadge, streakEmoji } from '../../economy/leveling.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
 
 export default {
@@ -96,22 +97,22 @@ export default {
 
       // ── Tier 2: plain image + asciiBuilder fallback ──────────────────────
       const lines = [
-        `📱 Number   : +${number}`,
-        ...(d.title ? [`🏷️  Title    : ${d.title}`] : []),
-        `🏅 Rank     : ${badge}`,
+        `📱 *${toSmallcaps('Number')}*   : +${number}`,
+        ...(d.title ? [`🏷️  *${toSmallcaps('Title')}*    : ${d.title}`] : []),
+        `🏅 *${toSmallcaps('Rank')}*     : ${badge}`,
         ``,
-        `📊 Level    : ${level}`,
-        `✨ XP       : ${xp.toLocaleString()}`,
-        `📈 Progress : ${bar}`,
-        `   Next lvl : ${progress.xpToNextLevel.toLocaleString()} XP away`,
+        `📊 *${toSmallcaps('Level')}*    : ${level}`,
+        `✨ *${toSmallcaps('XP')}*       : ${xp.toLocaleString()}`,
+        `📈 *${toSmallcaps('Progress')}* : ${bar}`,
+        `   *${toSmallcaps('Next lvl')}* : ${progress.xpToNextLevel.toLocaleString()} XP away`,
         ``,
-        `🪙 Coins    : ${coins.toLocaleString()}`,
-        `${fire} Streak  : ${streak} day${streak !== 1 ? 's' : ''}`,
-        `📅 Last Claim: ${lastDaily}`,
+        `🪙 *${toSmallcaps('Coins')}*    : ${coins.toLocaleString()}`,
+        `${fire} *${toSmallcaps('Streak')}*  : ${streak} day${streak !== 1 ? 's' : ''}`,
+        `📅 *${toSmallcaps('Last Claim')}*: ${lastDaily}`,
         ``,
-        d.premium ? `💎 Premium  : Active` : null,
-        d.banned  ? `🚫 Status   : Banned` : null,
-        d.warnings > 0 ? `⚠️  Warnings : ${d.warnings}/3` : null,
+        d.premium ? `💎 *${toSmallcaps('Premium')}*  : Active` : null,
+        d.banned  ? `🚫 *${toSmallcaps('Status')}*   : Banned` : null,
+        d.warnings > 0 ? `⚠️  *${toSmallcaps('Warnings')}* : ${d.warnings}/3` : null,
       ].filter(l => l !== null);
 
       const text = asciiBuilder.box(title, lines);
