@@ -28,7 +28,12 @@ import { selectMenu } from '../../lib/interactiveKit.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
-import { buildCategoryIndex, categoryEmoji, titleize } from '../../lib/commandDirectory.js';
+import { buildCategoryIndex, categoryEmoji } from '../../lib/commandDirectory.js';
+import brand from '../../../config/brand.js';
+
+// Display name: the styled brand name when the bot runs under the brand
+// name, plain otherwise — a custom bot name stays exactly as configured.
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 export const commandDirectoryMenu = {
   id: 17,
@@ -45,24 +50,24 @@ export const commandDirectoryMenu = {
       try {
         const rows = [...byCat.entries()].map(([cat, cmds]) => ({
           id:    `${p}help ${cat}`,
-          title: `${categoryEmoji(cat)} ${titleize(cat)} (${cmds.length})`,
+          title: `${categoryEmoji(cat)} ${toSmallcaps(cat)} (${cmds.length})`,
           description: cmds.slice(0, 4).map(c => c.name).join(', ') + (cmds.length > 4 ? ` … +${cmds.length - 4}` : ''),
         }));
 
         const bodyText = [
-          `✦ *${toSmallcaps(menuData.botName)}* ✦`,
+          `✦ ${displayName(menuData.botName)} ✦`,
           ``,
           `👑 ${toSmallcaps('Owner')}: *${menuData.ownerName}*  •  ⏱ ${toSmallcaps('Uptime')}: *${menuData.uptime}*`,
           `⚡ ${toSmallcaps('Prefix')}: *${p}*  •  📦 *${byCat.size}* ${toSmallcaps('categories')}  •  *${menuData.totalCommands}* ${toSmallcaps('commands')}`,
           ``,
-          `📂 ${toSmallcaps('Tap "Browse Categories" and pick a section — every command is one tap away, with its own detail page via')} ${toSmallcaps('.help')}`,
+          `📂 _Tap "Browse Categories" and pick a section — every command is one tap away, with its own detail page via .help_`,
         ].join('\n');
 
         return await selectMenu(sock, m.from, {
           text:     bodyText,
           title:    `✦ ${toSmallcaps('Command Directory')} ✦`,
           subtitle: `${toSmallcaps('categories')} → ${toSmallcaps('commands')} → ${toSmallcaps('details')}`,
-          footer:   `${menuData.botName} • ${toSmallcaps('tap a category to browse')}`,
+          footer:   `${displayName(menuData.botName)} • ${toSmallcaps('tap a category to browse')}`,
         }, `📂 ${toSmallcaps('Browse Categories')}`, [
           { title: toSmallcaps('Categories'), rows },
         ], [

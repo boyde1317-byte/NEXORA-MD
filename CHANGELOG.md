@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Command directory menu restyle (`src/menu/types/commandDirectory.js`):
+  the bot name renders via `brand.display` in the body title and
+  footer (a custom bot name stays plain); picker rows use small caps
+  category labels instead of title case; the instruction sentence
+  moves from small caps to native italic markup. Stat lines, card
+  title/subtitle, picker button, quick actions and row descriptions
+  are unchanged; the now-unused `titleize` import drops (`.help`
+  still uses it).
 - Carousel menu restyle (`src/menu/types/carousel.js`): the bot name
   renders via `brand.display` in the header, card footers, tier-2
   footer and tier-3 ad reply title (a custom bot name stays plain);
