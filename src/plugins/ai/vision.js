@@ -1,6 +1,7 @@
 import { aiTextGenerator } from '../../assets/aiTextGenerator.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
+import { sendAIRichReply } from '../../lib/aiRichReply.js';
 import { DownloadProgress } from '../../lib/progress.js';
 import { downloadMediaMessage } from 'baileys';
 
@@ -45,6 +46,15 @@ export default {
         const reply = await aiTextGenerator.analyzeImage(buffer, prompt, detectedMime);
         await progress.done();
         
+        // ── Rich tier: analysis as native markdown (tables/code if used) ──
+        const richSent = await sendAIRichReply(sock, m.from, m, {
+          markdown: `*👁️ AI VISION ANALYSIS*\n\n_Prompt: ${prompt}_\n\n${reply}`,
+          tips:    ['NEXORA • Vision ✦'],
+          suggest: [`${p}vision`, `${p}ai`, '.menu'],
+          footer:  'NEXORA • Vision ✦',
+        });
+        if (richSent) return;
+
         await mixedCard(sock, m.from, {
           text: `👁️ *AI VISION ANALYSIS*\n\n*Prompt:* ${prompt}\n\n${reply}`,
           footer: 'NEXORA • Vision ✦',

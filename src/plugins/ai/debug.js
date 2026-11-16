@@ -1,6 +1,7 @@
 import { aiTextGenerator } from '../../assets/aiTextGenerator.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
+import { sendAIRichReply } from '../../lib/aiRichReply.js';
 import { DownloadProgress } from '../../lib/progress.js';
 
 export default {
@@ -30,6 +31,15 @@ export default {
       try {
         const reply = await aiTextGenerator.debugCode(code);
         await progress.done();
+
+        // ── Rich tier: issues as bullets, corrected code as a native card ──
+        const richSent = await sendAIRichReply(sock, m.from, m, {
+          markdown: `*🐛 CODE DEBUGGER*\n\n${reply}`,
+          tips:    ['NEXORA • Bug Hunter'],
+          suggest: [`${p}code`, `${p}proofread`, '.menu'],
+          footer:  'NEXORA • Bug Hunter',
+        });
+        if (richSent) return;
 
         await mixedCard(sock, m.from, {
           text: `🐛 *CODE DEBUGGER*\n\n${reply}`,

@@ -1,5 +1,5 @@
 import { getAiClient, hasApiKey } from './aiClient.js';
-import { NEXORA_SYSTEM_PROMPT } from '../nexora-ai-prompt.js';
+import { buildAISystemPrompt, detectRichIntent } from '../lib/aiRichFormat.js';
 
 // ── Conversation memory ──────────────────────────────────────────────────────
 // Per-user conversation history for multi-turn AI chat. Each user gets up to
@@ -65,11 +65,17 @@ export const aiTextGenerator = {
       { role: 'user', parts: [{ text: prompt }] },
     ];
 
+    // The system prompt is built per turn: with rich responses on it carries
+    // the rendering contract, plus a hard "answer as a table" directive when
+    // the user is asking for a comparison.
+    const intent = detectRichIntent(prompt);
+    if (intent.shape) console.log(`[AI TEXT GENERATOR] rich shape: ${intent.shape}`);
+
     const response = await ai.models.generateContent({
       model: CHAT_MODEL,
       contents,
       config: {
-        systemInstruction: NEXORA_SYSTEM_PROMPT,
+        systemInstruction: buildAISystemPrompt(prompt),
       },
     });
     const reply = extractText(response);
@@ -90,7 +96,9 @@ export const aiTextGenerator = {
       model: CODE_MODEL,
       contents: { parts: [{ text: prompt }] },
       config: {
-        systemInstruction: 'You are Nexora. You provide concise code solutions. Respond with a single fenced code block containing the requested code, followed by at most 2 short sentences of explanation. NEVER use generic AI cliches. NEVER write preamble.',
+        systemInstruction: buildAISystemPrompt(prompt, {
+          base: 'You are Nexora. You provide concise code solutions. Respond with a single fenced code block containing the requested code, followed by at most 2 short sentences of explanation. NEVER use generic AI cliches. NEVER write preamble.',
+        }),
       },
     });
     return extractText(response);
@@ -131,7 +139,9 @@ export const aiTextGenerator = {
       model: CHAT_MODEL,
       contents: { parts: [{ text: topic }] },
       config: {
-        systemInstruction: 'You are Nexora. Generate a creative, well-organized list of 5 to 10 ideas based on the provided topic. Keep it concise, practical, and highly engaging. Do not use generic AI cliches.',
+        systemInstruction: buildAISystemPrompt(topic, {
+          base: 'You are Nexora. Generate a creative, well-organized list of 5 to 10 ideas based on the provided topic. Use "-" bullets with a short bold lead-in per idea. Keep it concise, practical, and highly engaging. Do not use generic AI cliches.',
+        }),
       },
     });
     return extractText(response);
@@ -143,7 +153,9 @@ export const aiTextGenerator = {
       model: CODE_MODEL,
       contents: { parts: [{ text: code }] },
       config: {
-        systemInstruction: 'You are Nexora. Analyze the provided code for bugs, logic errors, or bad practices. Return a summary of issues and a fenced code block with the corrected code. Keep it concise and direct.',
+        systemInstruction: buildAISystemPrompt(code, {
+          base: 'You are Nexora. Analyze the provided code for bugs, logic errors, or bad practices. Open with 2-3 "-" bullets naming the issues, then a fenced code block with the corrected code. Keep it concise and direct.',
+        }),
       },
     });
     return extractText(response);

@@ -46,6 +46,7 @@ Built on a **pinned private Baileys fork** ([`boyde1317-byte/baileys#v0.3.18-r21
 - **Provider walk with call-time fallback**: Gemini (image generation) → Groq (text + vision, free tier) → Mistral → OpenRouter — the first working provider is memoized
 - Chat, code, proofread, translate, brainstorm, vision, step-by-step math with native LaTeX
 - **`.remix`** — reply to a voice note: whisper-large-v3 transcription → style rewrite (corporate, Shakespeare, Gen Z, pirate, Yoda, Gordon Ramsay) → synthesized back **as a voice note**
+- **Every answer is formatted for WhatsApp, not copied out of a chat log**: each AI turn is built with a rendering contract (pipe table for comparisons, fenced code cards, LaTeX for math, single-asterisk markup, no `#` headings) plus per-turn shape detection — ask "compare iPhone 15 vs Galaxy S24" and the reply arrives as a native table with a one-line verdict. `.aiformat` shows what the model is told and renders the samples
 - AI auto-reply mode (`.chatbot`) for non-command messages
 
 ### 💰 Economy & Engagement
@@ -528,7 +529,7 @@ Builders live in two files:
 * `src/lib/interactiveKit.js` — `richTableCard` (native tables), `richArticleCard` (text + LaTeX + links), `richCodeCard`, `richCarouselCard`, `richMediaCard` (inline images), `actionCard` (buttons), `copyResultCard`, `linkCard`, `mixedCard`, `selectMenu` (list picker), `bottomSheetCard`, `offerCard`. All degrade gracefully to plain text internally.
 * `src/lib/richContent.js` — `sendGridCard`, `sendMultiImageGallery`, `sendGifCard`, `sendReelWithStatsCard`, `sendLinkCard`, `sendListCard`. Gate with `richEnabled()` if you want to skip the attempt entirely.
 
-Other rendering helpers: `sendAIRichReply` (`aiRichReply.js`, markdown/tables/code for AI output), `asciiBuilder` (`ui/asciiBuilder.js`, plain-text tables/banners for fallbacks), `DownloadProgress` (`lib/progress.js`, animated progress for downloads), `withReactionStatus` + `animateReveal` (`lib/cosmetics.js`, status reactions and staged reveals).
+Other rendering helpers: `sendAIRichReply` (`aiRichReply.js`, markdown/tables/code for AI output), `buildAISystemPrompt` (`aiRichFormat.js`, the rich-rendering contract + per-turn shape directive appended to every AI system prompt), `asciiBuilder` (`ui/asciiBuilder.js`, plain-text tables/banners for fallbacks), `DownloadProgress` (`lib/progress.js`, animated progress for downloads), `withReactionStatus` + `animateReveal` (`lib/cosmetics.js`, status reactions and staged reveals).
 
 Reference plugins worth copying: `economy/leaderboard.js` (rich table + ascii fallback), `utility/wiki.js` (table card + action buttons), `fun/hack.js` (edit-based animation), `ai/ai.js` (AI rich reply + context memory).
 

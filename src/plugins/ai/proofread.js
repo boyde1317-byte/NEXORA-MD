@@ -1,6 +1,7 @@
 import { aiTextGenerator } from '../../assets/aiTextGenerator.js';
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
+import { sendAIRichReply } from '../../lib/aiRichReply.js';
 import { DownloadProgress } from '../../lib/progress.js';
 
 export default {
@@ -30,6 +31,15 @@ export default {
       try {
         const reply = await aiTextGenerator.proofreadText(text);
         await progress.done();
+
+        // ── Rich tier: corrected text as native markdown ──
+        const richSent = await sendAIRichReply(sock, m.from, m, {
+          markdown: `✅ *PROOFREAD TEXT*\n\n${reply}\n\n_Polished. Ready to send._`,
+          tips:    ['NEXORA • Red Pen'],
+          suggest: [`${p}proofread`, `${p}translate`, '.menu'],
+          footer:  'NEXORA • Red Pen',
+        });
+        if (richSent) return;
 
         await mixedCard(sock, m.from, {
           text: `✅ *PROOFREAD TEXT*\n\n${reply}\n\n_Polished. Ready to send._`,

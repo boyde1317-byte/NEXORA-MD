@@ -3,6 +3,55 @@
 All notable changes to **NEXORA MD** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.2.0] — 2026-11-16
+
+AI replies now use the rich renderer on purpose instead of by accident: the
+model is told what WhatsApp can paint, and a comparison question is turned
+into a native table instead of a paragraph.
+
+### Added
+
+- **Rich rendering contract** (`src/lib/aiRichFormat.js`) — appended to the AI
+  system prompt whenever rich responses are on: one pipe table for comparisons
+  (header names the row axis, 2-4 options, max 8 attribute rows, one short
+  value per cell, closing `*Verdict:*` line), code in a single tagged fence,
+  LaTeX for math, numbered steps, single-asterisk WhatsApp markup, no `#`
+  headings. With `NEXORA_RICH_RESPONSE=0` the base prompt ships untouched
+- **Per-turn shape detection** — `detectRichIntent()` reads the prompt and
+  appends a hard directive only when it applies: "compare X vs Y", "difference
+  between", "which is better", "pros and cons" → comparison; "table of" →
+  table; "how do I" → steps. A poem or a summary gets no table nudge, so the
+  model is never pushed into tabulating prose
+- **`.aiformat`** — owner audit: current contract state, which shape a prompt
+  maps to, and `test` / `table` / `code` / `math` to send canned AI-shaped
+  replies through the real rich path without spending an API call
+- Offline checks for the whole layer (10 new assertions in
+  `scripts/verify-release.mjs`, 34 total): intent detection, contract gating,
+  table parsing edge cases, the built `richResponseMessage` payload and the
+  `GenATableUXPrimitive` in its decoded unified response
+
+### Changed
+
+- `aiTextGenerator` builds its system prompt per turn via
+  `buildAISystemPrompt()` for chat, code, debug and brainstorm instead of
+  sending the bare persona prompt
+- `.debug`, `.vision` and `.proofread` now try the rich renderer first and keep
+  their existing interactive card as the fallback
+
+### Fixed
+
+- A table-only AI reply used to be anchored with the text "Here is the code:";
+  the lead-in now matches what is attached ("Here is the comparison:")
+- `**double**` asterisks and `__double__` underscores are folded to WhatsApp
+  markup for both paths — they previously reached the device as literal
+  characters
+- Tables the model emits now survive intact: escaped `\|` cells, tables with no
+  outer pipes, `:---:` alignment rows, CRLF line endings, ragged rows padded to
+  one width, header-only grids kept as text, and a table split by a blank line
+  rejoined into one
+- Over-wide or over-long tables are capped (6 columns, 12 rows) with a visible
+  note instead of being silently truncated
+
 ## [2.1.0] — 2026-11-16
 
 Upgrade release: the pinned fork moves to `#v0.3.18-r21` and NEXORA gains the

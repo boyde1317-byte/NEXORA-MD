@@ -373,6 +373,181 @@ await check('core message modules still import', async () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 6. AI rich formatting (prompt contract + markdown → rich blocks)
+// ─────────────────────────────────────────────────────────────────────────────
+section('AI rich formatting');
+
+const { RICH_FORMAT_CONTRACT, buildAISystemPrompt, detectRichIntent } =
+  await import(join(root, 'src/lib/aiRichFormat.js'));
+const {
+  parseAIMarkdown,
+  buildAIMarkdownMessage,
+  toWhatsAppMarkup,
+  normalizeTable,
+  MAX_TABLE_ROWS,
+} = await import(join(root, 'src/lib/aiRichReply.js'));
+const { NEXORA_SYSTEM_PROMPT } = await import(join(root, 'src/nexora-ai-prompt.js'));
+
+const COMPARISON_MD = `*iPhone 15 vs Galaxy S24*
+
+| Feature | iPhone 15 | Galaxy S24 |
+|---|---|---|
+| Display | 6.1" OLED | 6.2" AMOLED |
+| Chip | A16 Bionic | Exynos 2400 |
+| Price | $799 | $799 |
+
+*Verdict:* iPhone 15 — longer support.`;
+
+await check('comparison prompts are detected, chat prompts are not', () => {
+  const cases = [
+    ['compare iPhone 15 vs Galaxy S24', 'comparison'],
+    ['which is better, Pixel or Samsung?', 'comparison'],
+    ['what is the difference between TCP and UDP', 'comparison'],
+    ['give me a table of african capitals', 'table'],
+    ['how do I deploy this to fly.io', 'steps'],
+    ['write a haiku about coffee', null],
+    ['summarize this article', null],
+  ];
+  for (const [prompt, expected] of cases) {
+    const got = detectRichIntent(prompt).shape;
+    assert(got === expected, `"${prompt}" -> ${got}, expected ${expected}`);
+  }
+  return `${cases.length} prompts`;
+});
+
+await check('rich prompt carries the contract, plain prompt does not', () => {
+  const rich = buildAISystemPrompt('compare iPhone 15 vs Galaxy S24', { rich: true });
+  assert(rich.startsWith(NEXORA_SYSTEM_PROMPT.slice(0, 60)), 'base persona dropped');
+  assert(rich.includes(RICH_FORMAT_CONTRACT), 'contract missing');
+  assert(/pipe table/i.test(rich), 'no table directive for a comparison');
+  assert(/Verdict/.test(rich), 'no verdict line requested');
+
+  const plain = buildAISystemPrompt('compare iPhone 15 vs Galaxy S24', { rich: false });
+  assert(plain === NEXORA_SYSTEM_PROMPT, 'plain prompt was modified');
+  assert(!plain.includes('pipe table'), 'plain prompt advertises tables');
+
+  const poem = buildAISystemPrompt('write a haiku about coffee', { rich: true });
+  assert(!/THIS TURN/.test(poem), 'shape directive leaked into an unrelated prompt');
+  return 'contract gated on richResponse';
+});
+
+await check('comparison markdown becomes one native table block', () => {
+  const blocks = parseAIMarkdown(COMPARISON_MD);
+  assert(blocks.length === 3, `expected text/table/text, got ${blocks.length} blocks`);
+  assert(blocks[1].type === 'table', 'table block missing');
+  assert(blocks[1].rows.length === 4, `expected header + 3 rows, got ${blocks[1].rows.length}`);
+  assert(blocks[1].rows[0].length === 3, 'expected 3 columns');
+  assert(blocks[1].truncated === false, 'fresh table flagged truncated');
+  return `${blocks[1].rows.length} rows x ${blocks[1].rows[0].length} cols`;
+});
+
+await check('table parsing survives real model output shapes', () => {
+  // ragged row + escaped pipe
+  const ragged = parseAIMarkdown('| A | B |\n|---|---|\n| rag |\n| x \\| y | z |');
+  assert(ragged[0].rows[1].length === 2, 'ragged row not padded');
+  assert(ragged[0].rows[2][0] === 'x | y', 'escaped pipe mangled');
+
+  // no outer pipes + alignment cells
+  const bare = parseAIMarkdown('Feature | A | B\n:--- | :---: | ---:\nPrice | 1 | 2');
+  assert(bare[0].type === 'table' && bare[0].rows.length === 2, 'outer-pipe-less table lost');
+
+  // CRLF
+  const crlf = parseAIMarkdown('| A | B |\r\n|---|---|\r\n| 1 | 2 |\r\n');
+  assert(crlf[0].type === 'table', 'CRLF table lost');
+
+  // header with no body is not a table
+  const empty = parseAIMarkdown('| just | header |\n|---|---|\n');
+  assert(empty[0].type === 'text', 'empty grid shipped as a table');
+
+  // table split by a blank line is rejoined
+  const split = parseAIMarkdown('| A | B |\n|---|---|\n| 1 | 2 |\n\n| 3 | 4 |\n| 5 | 6 |');
+  assert(split.length === 1 && split[0].rows.length === 4, 'split table not rejoined');
+
+  // a table inside a fence stays code
+  const fenced = parseAIMarkdown('```md\n| A | B |\n|---|---|\n| 1 | 2 |\n```');
+  assert(fenced.length === 1 && fenced[0].type === 'code', 'fenced table became a table');
+
+  return 'ragged/bare/CRLF/empty/split/fenced';
+});
+
+await check('wide and tall tables are capped with a note, not silently cut', () => {
+  const wide = normalizeTable(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'], [['1', '2', '3', '4', '5', '6', '7', '8']]);
+  assert(wide.rows[0].length === 6, `expected 6 columns, got ${wide.rows[0].length}`);
+  assert(wide.droppedCols === 2, `droppedCols ${wide.droppedCols}`);
+
+  const long = Array.from({ length: 30 }, (_, i) => [`r${i}`, `v${i}`]);
+  const tall = normalizeTable(['a', 'b'], long);
+  assert(tall.rows.length === MAX_TABLE_ROWS + 1, `expected ${MAX_TABLE_ROWS + 1} rows, got ${tall.rows.length}`);
+  assert(tall.truncated === true, 'tall table not flagged');
+  return `cap ${MAX_TABLE_ROWS} rows x 6 cols`;
+});
+
+await check('AI markdown builds a richResponseMessage with a native table', () => {
+  const built = buildAIMarkdownMessage({}, { markdown: COMPARISON_MD, footer: 'NEXORA • Gemini ✦' });
+  assert(built && built.tableCount === 1, 'no table built');
+  const msg = built.rich.build({});
+  const rr = msg?.botForwardedMessage?.message?.richResponseMessage;
+  assert(rr, 'richResponseMessage missing');
+
+  const tableSub = rr.submessages.find((s) => s.messageType === 4);
+  assert(tableSub, 'no messageType 4 submessage');
+  assert(tableSub.tableMetadata.rows.length === 4, 'table rows lost in submessages');
+  assert(tableSub.tableMetadata.rows[0].isHeading === true, 'header row not marked');
+
+  const unified = JSON.parse(Buffer.from(rr.unifiedResponse.data, 'base64').toString());
+  const prim = unified.sections.map((s) => s.view_model.primitive).find((p) => p?.__typename === 'GenATableUXPrimitive');
+  assert(prim && prim.rows.length === 4, 'table primitive missing from unified response');
+  assert(prim.rows[2].cells[2] === 'Exynos 2400', 'cell text mutated');
+  assert(msg.messageContextInfo.botMetadata, 'bot metadata missing');
+  return 'messageType 4 + GenATableUXPrimitive';
+});
+
+await check('a table-only reply gets a comparison lead-in, not a code one', () => {
+  const built = buildAIMarkdownMessage({}, { markdown: '| A | B |\n|---|---|\n| 1 | 2 |' });
+  const rr = built.rich.build({}).botForwardedMessage.message.richResponseMessage;
+  const firstText = rr.submessages.find((s) => s.messageType === 2);
+  assert(/comparison/i.test(firstText.messageText), `lead-in was "${firstText.messageText}"`);
+  return firstText.messageText;
+});
+
+await check('AI replies fold double-asterisk markdown to WhatsApp markup', () => {
+  const out = toWhatsAppMarkup('**Verdict:** __really__ and *already*');
+  assert(out === '*Verdict:* _really_ and *already*', `got "${out}"`);
+  const built = buildAIMarkdownMessage({}, { markdown: '**Bold** thing' });
+  const rr = built.rich.build({}).botForwardedMessage.message.richResponseMessage;
+  assert(!rr.submessages[0].messageText.includes('**'), 'raw ** reached the payload');
+  return out;
+});
+
+await check('every AI reply path tries the rich renderer first', () => {
+  const aiDir = join(root, 'src/plugins/ai');
+  const files = readdirSync(aiDir).filter((f) => f.endsWith('.js'));
+  const usesGenerator = files.filter((f) =>
+    /aiTextGenerator\.(generateText|generateCode|debugCode|analyzeImage|proofreadText|brainstormIdeas|writeSong)/.test(
+      readFileSync(join(aiDir, f), 'utf8')
+    )
+  );
+  const missing = [];
+  for (const f of usesGenerator) {
+    const src = readFileSync(join(aiDir, f), 'utf8');
+    const rich = /sendAIRichReply|richCodeCard|richTextCard|mixedCard/.test(src);
+    if (!rich) missing.push(f);
+  }
+  assert(missing.length === 0, `no rich/fallback path in: ${missing.join(', ')}`);
+
+  const gen = readFileSync(join(root, 'src/assets/aiTextGenerator.js'), 'utf8');
+  assert(gen.includes('buildAISystemPrompt'), 'generator does not build the rich system prompt');
+  assert(!/systemInstruction:\s*NEXORA_SYSTEM_PROMPT/.test(gen), 'generator still hardcodes the bare prompt');
+  return `${usesGenerator.length} AI plugins`;
+});
+
+await check('owner can audit the AI format layer', () => {
+  const names = loadedPlugins.map(({ plugin }) => plugin.name);
+  assert(names.includes('aiformat'), 'aiformat audit command missing');
+  return '.aiformat';
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 6. Version + docs consistency
 // ─────────────────────────────────────────────────────────────────────────────
 section('Docs');

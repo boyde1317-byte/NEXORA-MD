@@ -27,8 +27,64 @@ import { AIRich } from './NIXCODE.js';
 import capabilities from '../core/capabilities.js';
 import { sendLatexCard } from './richContent.js';
 
-const MAX_TABLE_ROWS = 12;   // keep tables readable on device
-const MAX_TEXT_BLOCK = 3500; // per-submessage safety cap
+export const MAX_TABLE_ROWS = 12;   // keep tables readable on device
+export const MAX_TABLE_COLS = 6;    // beyond this the device scrolls sideways
+export const MAX_CELL_LEN = 64;     // one short value per cell, not a sentence
+const MAX_TEXT_BLOCK = 3500;        // per-submessage safety cap
+
+/** Split a pipe row, honouring \| escapes and optional outer pipes. */
+export function splitTableRow(line) {
+  const body = String(line).trim().replace(/^\|/, '').replace(/\|\s*$/, '');
+  const cells = [];
+  let cur = '';
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i];
+    if (ch === '\\' && body[i + 1] === '|') { cur += '|'; i++; continue; }
+    if (ch === '|') { cells.push(cur); cur = ''; continue; }
+    cur += ch;
+  }
+  cells.push(cur);
+  return cells.map(c => c.trim());
+}
+
+/** GFM separator row: |---|:---:|---| (also accepts no outer pipes). */
+export function isTableSeparator(line) {
+  const raw = String(line).trim();
+  if (!raw || !raw.includes('-')) return false;
+  const cells = splitTableRow(raw);
+  if (cells.length < 2) return false;
+  return cells.every(c => /^:?-{2,}:?$/.test(c));
+}
+
+/** Collapse a cell to something the table primitive renders cleanly. */
+const cleanCell = (cell) =>
+  String(cell ?? '')
+    .replace(/\s+/g, ' ')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/`([^`]*)`/g, '$1')
+    .trim()
+    .slice(0, MAX_CELL_LEN);
+
+/**
+ * Pad ragged rows to one width and cap columns/cell length.
+ * Models drop trailing empty cells all the time; an unpadded row shifts every
+ * value one column left on the device.
+ */
+export function normalizeTable(header, body) {
+  const natural = Math.max(header.length, ...body.map(r => r.length));
+  const width = Math.min(MAX_TABLE_COLS, natural);
+  const fit = (row) => {
+    const cells = row.slice(0, width).map(cleanCell);
+    while (cells.length < width) cells.push('');
+    return cells;
+  };
+  const rows = [fit(header), ...body.map(fit)];
+  return {
+    rows: [rows[0], ...rows.slice(1, MAX_TABLE_ROWS + 1)],
+    truncated: body.length > MAX_TABLE_ROWS,
+    droppedCols: Math.max(0, natural - width),
+  };
+}
 
 /**
  * Split an AI markdown reply into ordered blocks.
@@ -38,7 +94,7 @@ export function parseAIMarkdown(text) {
   const blocks = [];
   if (!text) return blocks;
 
-  const lines = text.split('\n');
+  const lines = String(text).replace(/^\uFEFF/, '').split(/\r?\n/);
   let buf = [];
 
   const flushText = () => {
@@ -72,25 +128,52 @@ export function parseAIMarkdown(text) {
     }
 
     // ── GFM pipe table (header + separator + rows) ──────────────────
-    if (
-      line.includes('|') &&
-      i + 1 < lines.length &&
-      /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(lines[i + 1]) &&
-      /-/.test(lines[i + 1])
-    ) {
-      const parseRow = (r) =>
-        r.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
-      const rows = [parseRow(line)];
-      i += 2; // header + separator
-      while (i < lines.length && lines[i].includes('|') && lines[i].trim()) {
-        rows.push(parseRow(lines[i]));
-        i++;
+    if (line.includes('|') && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
+      const header = splitTableRow(line);
+      const body = [];
+      let j = i + 2; // header + separator
+      while (j < lines.length && lines[j].includes('|') && lines[j].trim() && !isTableSeparator(lines[j])) {
+        body.push(splitTableRow(lines[j]));
+        j++;
       }
-      flushText();
-      if (rows.length > 1) {
-        blocks.push({ type: 'table', rows: rows.map(r => r.map(String)).slice(0, MAX_TABLE_ROWS) });
+
+      // A header row with no data rows under it is not a table — keep the
+      // lines as text instead of shipping an empty grid.
+      if (body.length && header.some(c => c.trim())) {
+        flushText();
+        i = j;
+        const { rows, truncated, droppedCols } = normalizeTable(header, body);
+        const prev = blocks[blocks.length - 1];
+        // A model that splits one table across a blank line gets it rejoined
+        // instead of shipping two half tables.
+        if (prev && prev.type === 'table' && prev.rows[0].length === rows[0].length) {
+          const combined = [...prev.rows, ...rows.slice(1)];
+          prev.truncated = combined.length > MAX_TABLE_ROWS + 1;
+          prev.droppedCols = prev.droppedCols || droppedCols;
+          prev.rows = combined.slice(0, MAX_TABLE_ROWS + 1);
+        } else {
+          blocks.push({ type: 'table', rows, truncated, droppedCols });
+        }
+
+        // Absorb a headerless continuation: long tables often get split by a
+        // blank line, and those bare pipe rows would otherwise ship as
+        // literal "| 3 | 4 |" text.
+        let k = i;
+        while (k < lines.length && !lines[k].trim()) k++;
+        while (k < lines.length && lines[k].includes('|') && !isTableSeparator(lines[k])) {
+          const cells = splitTableRow(lines[k]);
+          if (cells.length !== rows[0].length) break;
+          const target = blocks[blocks.length - 1];
+          const combined = [...target.rows, cells.map(cleanCell)];
+          if (combined.length > MAX_TABLE_ROWS + 1) { target.truncated = true; break; }
+          target.rows = combined;
+          k++;
+          while (k < lines.length && !lines[k].trim()) k++;
+        }
+        i = k;
+        continue;
       }
-      continue;
+      // fall through: treat the header line as ordinary text
     }
 
     buf.push(line);
@@ -98,6 +181,18 @@ export function parseAIMarkdown(text) {
   }
   flushText();
   return blocks;
+}
+
+/**
+ * Normalize inline markup for both render paths: the rich markdown primitive
+ * and the plain WhatsApp fallback both use single-asterisk markup, so
+ * **bold** / __italic__ have to be folded before either sees the text.
+ */
+export function toWhatsAppMarkup(text) {
+  if (!text) return text;
+  return String(text)
+    .replace(/\*\*(?=\S)([^*\n]+?)(?<=\S)\*\*/g, '*$1*')
+    .replace(/(^|\s)__(?=\S)([^_\n]+?)(?<=\S)__(?=\s|$)/g, '$1_$2_');
 }
 
 // codecogs pre-render — devices don't typeset LaTeX, they paint latex_image.url.
@@ -124,6 +219,74 @@ export function toNixLatex(text) {
 }
 
 /**
+ * Build the rich envelope for a markdown reply without sending it.
+ *
+ * Kept separate from the send so the payload shape can be asserted offline
+ * (`node scripts/verify-release.mjs`) and so a caller can decide what to do
+ * after inspecting the blocks.
+ *
+ * @returns {{ rich: AIRich, blocks: object[], latexBlocks: string[], tableCount: number, codeCount: number, textCount: number, hasContent: boolean } | null}
+ */
+export function buildAIMarkdownMessage(sock, { markdown, tips = [], suggest = [], footer } = {}) {
+  if (!markdown) return null;
+  const blocks = parseAIMarkdown(markdown);
+  if (!blocks.length) return null;
+
+  const rich = new AIRich(sock);
+  let textCount = 0, codeCount = 0, tableCount = 0;
+  const latexBlocks = [];
+  const notes = [];
+
+  for (const b of blocks) {
+    if (b.type === 'text') {
+      rich.addText(toNixLatex(toWhatsAppMarkup(b.text).slice(0, MAX_TEXT_BLOCK)), { latex: true }); // latex: LIVE since r6 (owner go-live 2026-09-14)
+      textCount++;
+    } else if (b.type === 'code') {
+      // LaTeX source ships TYPESET, not raw: ```latex blocks are rendered
+      // as image cards right after the text envelope (.testrich
+      // v2lateximg anatomy). Non-math envs (tabular) fall back to
+      // codecogs inside sendLatexCard; long blocks stay as code.
+      const lang = (b.language || '').toLowerCase();
+      if ((lang === 'latex' || lang === 'tex') && b.code.trim().length <= 1600) {
+        latexBlocks.push(b.code.trim());
+      } else {
+        rich.addCode(b.language, b.code);
+        codeCount++;
+      }
+    } else if (b.type === 'table') {
+      rich.addTable(b.rows);
+      tableCount++;
+      if (b.truncated) notes.push('_Table shortened — ask for the full breakdown._');
+      if (b.droppedCols) notes.push('_Wide table trimmed — ask for one column at a time._');
+    }
+  }
+  for (const note of notes) rich.addText(note, { latex: false });
+
+  const hasContent = textCount > 0 || codeCount > 0 || tableCount > 0;
+  if (hasContent) {
+    // AIRich requires at least one text submessage to anchor the envelope —
+    // a table-only or code-only reply gets a lead-in that matches what is
+    // actually attached (it used to say "Here is the code:" for a table).
+    if (textCount === 0) {
+      const leadIn = tableCount && !codeCount
+        ? 'Here is the comparison:'
+        : codeCount && !tableCount
+          ? 'Here is the code:'
+          : 'Here you go:';
+      rich.addText(leadIn, { latex: false });
+    }
+
+    for (const tip of [].concat(tips)) {
+      if (tip) rich.addTip(tip);
+    }
+    if (footer) rich.setFooter(footer);
+    if (suggest.length) rich.addSuggest(suggest);
+  }
+
+  return { rich, blocks, latexBlocks, tableCount, codeCount, textCount, hasContent };
+}
+
+/**
  * Send an AI reply as a native rich response (Meta-AI style).
  *
  * @returns {Promise<boolean>} true if the rich send succeeded; false if
@@ -133,53 +296,16 @@ export async function sendAIRichReply(sock, jid, quoted, { markdown, tips = [], 
   if (!capabilities.richResponse || !markdown) return false;
 
   try {
-    const blocks = parseAIMarkdown(markdown);
-    if (!blocks.length) return false;
+    const built = buildAIMarkdownMessage(sock, { markdown, tips, suggest, footer });
+    if (!built) return false;
+    const { rich, latexBlocks, hasContent } = built;
 
-    const rich = new AIRich(sock);
-    let textCount = 0, codeCount = 0, tableCount = 0;
-    const latexBlocks = [];
-    for (const b of blocks) {
-      if (b.type === 'text') {
-        rich.addText(toNixLatex(b.text.slice(0, MAX_TEXT_BLOCK)), { latex: true }); // latex: LIVE since r6 (owner go-live 2026-09-14)
-        textCount++;
-      } else if (b.type === 'code') {
-        // LaTeX source ships TYPESET, not raw: ```latex blocks are rendered
-        // as image cards right after the text envelope (.testrich
-        // v2lateximg anatomy). Non-math envs (tabular) fall back to
-        // codecogs inside sendLatexCard; long blocks stay as code.
-        const lang = (b.language || '').toLowerCase();
-        if ((lang === 'latex' || lang === 'tex') && b.code.trim().length <= 1600) {
-          latexBlocks.push(b.code.trim());
-        } else {
-          rich.addCode(b.language, b.code);
-          codeCount++;
-        }
-      } else if (b.type === 'table') {
-        rich.addTable(b.rows);
-        tableCount++;
-      }
-    }
-
-    const envelopeHasContent = textCount > 0 || codeCount > 0 || tableCount > 0;
-    if (envelopeHasContent) {
-      // AIRich requires at least one text submessage to anchor the
-      // envelope — pure-code replies get a one-line lead-in.
-      if (textCount === 0) {
-        rich.addText('Here is the code:', { latex: false });
-      }
-
-      for (const tip of [].concat(tips)) {
-        if (tip) rich.addTip(tip);
-      }
-      if (footer) rich.setFooter(footer);
-      if (suggest.length) rich.addSuggest(suggest);
-
+    if (hasContent) {
       await rich.send(jid, { quoted });
     }
 
     // Typeset LaTeX blocks — image cards sent right after the envelope.
-    let delivered = envelopeHasContent;
+    let delivered = hasContent;
     for (const tex of latexBlocks) {
       const ok = await sendLatexCard(sock, jid, quoted, {
         text: '📐 Typeset LaTeX:',
@@ -200,4 +326,13 @@ export async function sendAIRichReply(sock, jid, quoted, { markdown, tips = [], 
   }
 }
 
-export default { parseAIMarkdown, sendAIRichReply, toNixLatex };
+export default {
+  parseAIMarkdown,
+  buildAIMarkdownMessage,
+  sendAIRichReply,
+  toNixLatex,
+  toWhatsAppMarkup,
+  splitTableRow,
+  isTableSeparator,
+  normalizeTable,
+};
