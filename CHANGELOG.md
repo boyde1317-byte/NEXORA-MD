@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+- Menu 16 (listFallback) is gone: the legacy listMessage menu is unregistered
+  and its file removed. Owners who had it active fall back to menu 1, and
+  `.menulist` no longer offers it.
 ### Changed
 - Menu 21's card copy is warmer and shorter: the counts line is now just the bot
   name, the pitch is `Just hanging out here. What’s up?`, the owner rows read

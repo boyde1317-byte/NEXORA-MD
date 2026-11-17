@@ -19,7 +19,6 @@ import aiDynamic from './types/aiDynamic.js';
 import orderMessage from './types/orderMessage.js';
 import richCard from './types/richCard.js';
 import buttonsCard from './types/buttonsCard.js';
-import listFallback from './types/listFallback.js';
 import moonsonCard from './types/moonsonCard.js';
 import galaxyMenu from './types/galaxyMenu.js';
 import commandDirectory from './types/commandDirectory.js';
@@ -43,7 +42,6 @@ menuManager.register(aiDynamic);
 menuManager.register(orderMessage);
 menuManager.register(richCard);
 menuManager.register(buttonsCard);
-menuManager.register(listFallback);
 menuManager.register(moonsonCard); // legacy alias 'moonsonCard' kept for .setmenu compat
 menuManager.menus.set('moonsoncard', moonsonCard);
 menuManager.register(galaxyMenu);
