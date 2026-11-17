@@ -364,6 +364,25 @@ await check('command VIP surfaces build valid envelopes', async () => {
   return seen.join(', ');
 });
 
+await check('no Indonesian strings in the new card surfaces', async () => {
+  const files = [
+    'src/lib/messageBuilder.js',
+    'src/lib/startCard.js',
+    'src/plugins/general/start.js',
+    'src/plugins/general/messagebuilder.js',
+  ];
+  const banned = /\b(Hai Kak|Silakan|Pilih salah|Salin Kode|dibuat dengan|kamu|belum|sudah|gak|nggak|lanjut|selesai|Halo)\b/;
+  const hits = [];
+  for (const file of files) {
+    const src = readFileSync(join(root, file), 'utf8');
+    src.split('\n').forEach((line, i) => {
+      if (banned.test(line)) hits.push(`${file}:${i + 1}`);
+    });
+  }
+  assert(hits.length === 0, `Indonesian copy found at ${hits.join(', ')}`);
+  return 'card + builder sources are English-only';
+});
+
 await check('messageBuilder chains build the proven payloads', async () => {
   const { button, legacyButton, listMessage, airich } = await import(join(root, 'src/lib/messageBuilder.js'));
 

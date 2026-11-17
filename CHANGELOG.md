@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- `.start` card copy is English ("Hey there", "Tap below to continue in a
+  private chat"), and a release check now fails if Indonesian copy creeps into
+  the new card and builder sources.
+
 ### Added
 - `src/lib/messageBuilder.js` — chain-method message builder, a port of
   KYYDIW's zapo "Message Builder" (MIT © 2026 Ripki Dwi Putra / kyyinfinite,

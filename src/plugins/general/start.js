@@ -29,7 +29,7 @@ export default {
     const name = brand.display?.name || brand.name;
 
     const body =
-      `» *Hai Kak* 👋\n` +
+      `» *Hey there* 👋\n` +
       `  › Nice to meet you, I'm ${brand.name}.\n\n` +
       `_Tap below to continue in a private chat._`;
 
