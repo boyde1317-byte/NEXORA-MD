@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
+- Menu 21 no longer prints the category listing in the card. The numbered index
+  and its `+N more in the picker` tail are gone; the picker below the card is the
+  only place sections are listed, and it still carries every one of them. The card
+  keeps the greeting, the counts line with the pitch, the owner rows and the one
+  hint, and it shortened from about 19 lines to 8.
+### Changed
 - Menu 21's copy is now four blocks with a blank line between them: a greeting, a
   line about the bot, the index, and the owner details as labelled rows.
   - Greeting is time aware, read in `Africa/Accra` rather than the server's clock,

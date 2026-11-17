@@ -55,8 +55,6 @@ const ROWS_PER_SECTION = 10;
  * while the index still promised it sat in the picker.
  */
 const PICKER_BLOCKS = 10;
-/** Rows per index column block in the body. */
-const INDEX_ROWS = 9;
 /** quick_reply display_text is cut by the client past this width. */
 const LABEL_MAX = 20;
 
@@ -128,43 +126,28 @@ const CATCH_LINE = 'Downloads, AI, media and group control, one command away.';
  * zero-width space, which is what keeps the bubble this size at all.
  *
  * Four blocks, a blank line between each: the greeting, what the bot is, the
- * index, then the owner details as labelled rows. The owner rows are labelled
- * and padded rather than run together, so the name, the chat link and the
- * channel each sit on their own line.
+ * owner details as labelled rows, then the one instruction. The category listing
+ * is not repeated here: the picker below the card already carries every section,
+ * and printing it twice made the card long without saying anything new. The owner
+ * rows are labelled and padded rather than run together, so the name, the chat
+ * link and the channel each sit on their own line.
  *
  * No backtick wrapping and no fenced block: WhatsApp paints `footer.text` as
  * plain text, so menu 19's per-line monospace trick prints the backticks instead
  * of rendering them. The columns are padded, not formatted.
  */
 export const buildMenuCopy = (
-  sections,
+  sections = [],
   {
     totalCommands = 0,
     creator = '',
-    pickerRows = Infinity,
     greeting = '',
     description = CATCH_LINE,
     ownerNumber = '',
     channelUrl = '',
   } = {}
 ) => {
-  const shown = sections.slice(0, INDEX_ROWS);
-  const width = Math.max(...shown.map((s2) => s2.name.length), 4);
   const dim = (line) => String(line);
-
-  const rows = shown.map((section, i) =>
-    dim(`${String(i + 1).padStart(String(shown.length).length, '0')} ${section.name.padEnd(width)} ${String(section.count).padStart(3)}`));
-
-  // Only promise the picker for the sections it actually carries: with more
-  // categories than the picker can hold, the tail points at `help` instead of
-  // claiming rows that are not there.
-  const rest = sections.length - shown.length;
-  const inPicker = rest > 0 ? Math.max(0, Math.min(rest, pickerRows - shown.length)) : 0;
-  const tail = inPicker > 0
-    ? [dim(inPicker === rest ? `+${rest} more in the picker` : `+${inPicker} in the picker · +${rest - inPicker} via help`)]
-    : rest > 0
-      ? [dim(`+${rest} more · help <section>`)]
-      : [];
 
   const counts = dim(`${brand.name} · ${totalCommands} commands · ${sections.length} sections`);
   const say = [counts, description ? dim(description) : ''].filter(Boolean);
@@ -181,7 +164,6 @@ export const buildMenuCopy = (
   const blocks = [
     greeting ? [dim(greeting)] : [],
     say,
-    [...rows, ...tail],
     ownerRows,
     [dim('help <section> · menulist')],
   ].filter((block) => block.length);
@@ -288,7 +270,6 @@ export const atlasMenu = {
         })),
       });
     }
-    const pickerCategoryRows = pickerSections.reduce((n, block) => n + block.rows.length, 0);
 
     const buttons = [
       // Opener pair: unlocks more than three buttons on clients that gate them.
@@ -325,7 +306,6 @@ export const atlasMenu = {
         text: buildMenuCopy(sections, {
           totalCommands: menuData.totalCommands,
           creator,
-          pickerRows: pickerCategoryRows,
           greeting: greetingFor(new Date(), m.pushName || ''),
           description: CATCH_LINE,
           ownerNumber: owner.ownerNumber,

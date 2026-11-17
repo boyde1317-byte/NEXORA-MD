@@ -799,8 +799,9 @@ await check('atlas menu indexes the live registry', async () => {
   assert(inner.body.text === '\u200b', `body is ${JSON.stringify(inner.body.text)} — copy leaked out of the footer`);
   const footer = inner.footer?.text || '';
   assert(footer.includes('17 commands') && footer.includes('4 sections'), 'footer header counts are wrong');
-  assert(/economy\s+9/.test(footer), 'footer row lost the economy count');
-  assert(/core\s+2/.test(footer), 'footer row lost the core count');
+  // The listing lives in the picker, not in the card: no category rows here.
+  assert(!/^\d+ /m.test(footer), 'the card still lists categories');
+  assert(!footer.includes('more in the picker'), 'the card still promises picker rows');
   assert(footer.includes(brand.creator), 'footer lost the creator signature');
   assert(footer.includes('help <section>'), 'footer lost the help hint');
 
@@ -833,8 +834,6 @@ await check('atlas menu indexes the live registry', async () => {
   // No backticks at all: the footer is plain text, so they would show literally.
   assert(!footer.includes('`'), 'a literal backtick is showing in the footer');
   assert(!inner.body.text.includes('```'), 'the body is a code block, not a zero-width carrier');
-  const rowLines = footer.split('\n').filter((line) => /^\d/.test(line));
-  assert(rowLines.length === 4, `expected 4 dim rows, got ${rowLines.length}`);
 
   // Bar: filled, all three slots, divider after the opener pair.
   const parsed = bar.parseGalaxyBar(inner.nativeFlowMessage.messageParamsJson);
@@ -887,9 +886,10 @@ await check('atlas menu indexes the live registry', async () => {
   assert(!hotRows.find((r) => r.id === '.help media').description.includes('Most used'), 'an unused category is marked');
   assert(picker.sections.flatMap((s2) => s2.rows).length === 4, 'the picker does not list every section');
 
-  // A registry wider than the picker used to strand sections: the tail promised
-  // rows the picker never carried. One picker row is one category, so the
-  // picker must carry all of them and the tail must count the index overflow.
+  // A registry wider than the picker used to strand sections behind a tail that
+  // promised rows the picker never carried. One picker row is one category, so
+  // the picker must carry all of them, and the card must count them without
+  // listing any of them.
   const wide = Object.fromEntries(Array.from({ length: 40 }, (_, i) => [
     `sec${String(i).padStart(2, '0')}`,
     Array.from({ length: 40 - i }, (_, k) => ({ name: `c${i}_${k}`, description: 'wide' })),
@@ -899,7 +899,8 @@ await check('atlas menu indexes the live registry', async () => {
   const wideInner = sent[0].viewOnceMessage.message.interactiveMessage;
   const wideRows = JSON.parse(wideInner.nativeFlowMessage.buttons[0].buttonParamsJson).sections.flatMap((s2) => s2.rows);
   assert(wideRows.length === 40, `picker carries ${wideRows.length} of 40 sections`);
-  assert(wideInner.footer.text.includes('+31 more in the picker'), 'the tail stopped counting the sections the index hides');
+  assert(wideInner.footer.text.includes('· 40 sections'), 'the counts line lost the section total');
+  assert(!/^\d+ /m.test(wideInner.footer.text), 'the card still lists the wide registry');
 
   // Shortcut labels stay inside what a quick_reply button can show, and picker
   // rows do not repeat the count the description already carries.
