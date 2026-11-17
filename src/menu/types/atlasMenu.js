@@ -38,6 +38,7 @@
  */
 import { generateWAMessageFromContent, generateWAMessageContent } from 'baileys';
 import brand from '../../../config/brand.js';
+import owner from '../../../config/owner.js';
 import { buildGalaxyBar, BAR_ZWSP } from '../../lib/galaxyBar.js';
 
 const CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326';
@@ -77,19 +78,76 @@ export const rankSections = (categories = {}) =>
     .filter((section) => section.count > 0)
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
+/** Timezone the greeting is read in: the owner's clock, not the server's. */
+const GREETING_TZ = 'Africa/Accra';
+
 /**
- * The dim index.
+ * Time-aware greeting.
+ *
+ * One line, and it names the reader when WhatsApp hands us a push name, because
+ * a menu that greets nobody reads like a broadcast. The hour is read in the
+ * owner's timezone so a server in UTC and a phone in Accra say the same thing;
+ * if ICU is unavailable the UTC hour is close enough that the line stays sane.
+ *
+ * Exported with an injectable clock so the boundaries can be checked without
+ * waiting for the evening.
+ */
+export const greetingFor = (now = new Date(), name = '') => {
+  let hour = now.getUTCHours();
+  try {
+    hour = Number(new Intl.DateTimeFormat('en-GB', {
+      timeZone: GREETING_TZ,
+      hour: 'numeric',
+      hour12: false,
+    }).format(now));
+  } catch {
+    // No ICU: the UTC hour is the same clock in Accra, keep it.
+  }
+  const [glyph, salutation] = hour < 5
+    ? ['🌙', 'Still up']
+    : hour < 12
+      ? ['🌄', 'Good morning']
+      : hour < 17
+        ? ['☀️', 'Good afternoon']
+        : hour < 21
+          ? ['🌆', 'Good evening']
+          : ['🌙', 'Good night'];
+  const who = String(name || '').trim().split(/\s+/)[0].slice(0, 16);
+  return `${glyph} ${salutation}${who ? `, ${who}` : ''}`;
+};
+
+/** The one line the bot says about itself, under the greeting. */
+const CATCH_LINE = 'Downloads, AI, media and group control, one command away.';
+
+/**
+ * The menu copy.
  *
  * The copy lives in `footer.text`, the same field menu 19 uses and the same
  * reason: the client paints it small and grey, so the menu reads as quiet
  * information rather than a wall of body text. The body keeps a single
  * zero-width space, which is what keeps the bubble this size at all.
  *
+ * Four blocks, a blank line between each: the greeting, what the bot is, the
+ * index, then the owner details as labelled rows. The owner rows are labelled
+ * and padded rather than run together, so the name, the chat link and the
+ * channel each sit on their own line.
+ *
  * No backtick wrapping and no fenced block: WhatsApp paints `footer.text` as
  * plain text, so menu 19's per-line monospace trick prints the backticks instead
  * of rendering them. The columns are padded, not formatted.
  */
-export const buildDimIndex = (sections, { totalCommands = 0, creator = '', pickerRows = Infinity } = {}) => {
+export const buildMenuCopy = (
+  sections,
+  {
+    totalCommands = 0,
+    creator = '',
+    pickerRows = Infinity,
+    greeting = '',
+    description = CATCH_LINE,
+    ownerNumber = '',
+    channelUrl = '',
+  } = {}
+) => {
   const shown = sections.slice(0, INDEX_ROWS);
   const width = Math.max(...shown.map((s2) => s2.name.length), 4);
   const dim = (line) => String(line);
@@ -107,13 +165,28 @@ export const buildDimIndex = (sections, { totalCommands = 0, creator = '', picke
     : rest > 0
       ? [dim(`+${rest} more · help <section>`)]
       : [];
-  const head = dim(`${brand.name} · ${totalCommands} commands · ${sections.length} sections`);
-  const signature = creator ? [dim(creator)] : [];
 
-  // Signature and hint sit outside the index rows: credit, then the only
-  // instruction, and no prefix on it.
-  const hint = 'help <section> · menulist';
-  return [head, ...rows, ...tail, '', ...(signature.length ? [...signature, ''] : []), hint].join('\n');
+  const counts = dim(`${brand.name} · ${totalCommands} commands · ${sections.length} sections`);
+  const say = [counts, description ? dim(description) : ''].filter(Boolean);
+
+  // Owner details as rows: label padded so the values line up under each other.
+  const fields = [
+    ['Owner', creator],
+    ['Chat', ownerNumber ? `wa.me/${ownerNumber}` : ''],
+    ['Channel', String(channelUrl || '').replace(/^https?:\/\//, '')],
+  ].filter(([, value]) => Boolean(value));
+  const labelWidth = Math.max(...fields.map(([label]) => label.length), 0);
+  const ownerRows = fields.map(([label, value]) => dim(`${label.padEnd(labelWidth)}  ${value}`));
+
+  const blocks = [
+    greeting ? [dim(greeting)] : [],
+    say,
+    [...rows, ...tail],
+    ownerRows,
+    [dim('help <section> · menulist')],
+  ].filter((block) => block.length);
+
+  return blocks.map((block) => block.join('\n')).join('\n\n');
 };
 
 const rank = (i) => String(i + 1).padStart(2, '0');
@@ -249,10 +322,14 @@ export const atlasMenu = {
       // in the footer, not from wrapping the message in a code block.
       body: { text: BAR_ZWSP },
       footer: {
-        text: buildDimIndex(sections, {
+        text: buildMenuCopy(sections, {
           totalCommands: menuData.totalCommands,
           creator,
           pickerRows: pickerCategoryRows,
+          greeting: greetingFor(new Date(), m.pushName || ''),
+          description: CATCH_LINE,
+          ownerNumber: owner.ownerNumber,
+          channelUrl: CHANNEL_URL,
         }),
       },
       nativeFlowMessage: {

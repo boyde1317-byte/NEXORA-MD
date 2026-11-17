@@ -788,7 +788,7 @@ await check('atlas menu indexes the live registry', async () => {
   };
   await atlas.atlasMenu.renderer({
     sock,
-    m: { from: '233000000000@s.whatsapp.net' },
+    m: { from: '233000000000@s.whatsapp.net', pushName: 'Skyler' },
     menuData: { prefix: '.', totalCommands: 17, categories },
   });
 
@@ -803,6 +803,25 @@ await check('atlas menu indexes the live registry', async () => {
   assert(/core\s+2/.test(footer), 'footer row lost the core count');
   assert(footer.includes(brand.creator), 'footer lost the creator signature');
   assert(footer.includes('help <section>'), 'footer lost the help hint');
+
+  // Greeting block: time aware, and named after the reader when there is a name.
+  assert(/^(?:🌙|🌄|☀️|🌆) (?:Still up|Good morning|Good afternoon|Good evening|Good night), Skyler$/m.test(footer), 'the greeting block is missing or unnamed');
+
+  // Boundaries on a fixed clock. Accra is UTC, so the hours line up directly.
+  for (const [time, want] of [['04:30', '🌙 Still up'], ['07:30', '🌄 Good morning'], ['12:30', '☀️ Good afternoon'], ['17:30', '🌆 Good evening'], ['23:30', '🌙 Good night']]) {
+    const got = atlas.greetingFor(new Date(`2026-11-17T${time}:00Z`), '');
+    assert(got === want, `${time} greets as ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`);
+  }
+  assert(atlas.greetingFor(new Date('2026-11-17T07:30:00Z'), 'Skyler Gayle') === '🌄 Good morning, Skyler', 'the greeting does not use the first name');
+
+  // What the bot is: the counts, then the one catchy line.
+  assert(/^NEXORA MD · 17 commands · 4 sections$/m.test(footer), 'the counts line moved or changed');
+  assert(/^Downloads, AI, media and group control, one command away\.$/m.test(footer), 'the catch line is missing');
+
+  // Owner details closed as labelled rows, one value per line.
+  assert(/^Owner {2,}Moonson$/m.test(footer), 'the owner row is missing');
+  assert(/^Chat {2,}wa\.me\/\d+$/m.test(footer), 'the chat row is missing');
+  assert(/^Channel {2,}whatsapp\.com\/channel\//m.test(footer), 'the channel row is missing');
 
   // No prefix anywhere in the interface: a printed prefix goes stale.
   assert(!/^[!.\/]help/m.test(footer), 'the hint still prints a prefix');
@@ -848,7 +867,7 @@ await check('atlas menu indexes the live registry', async () => {
   sent.length = 0;
   await atlas.atlasMenu.renderer({
     sock,
-    m: { from: '233000000000@s.whatsapp.net' },
+    m: { from: '233000000000@s.whatsapp.net', pushName: 'Skyler' },
     menuData: {
       prefix: '.',
       totalCommands: 17,
@@ -887,7 +906,7 @@ await check('atlas menu indexes the live registry', async () => {
   sent.length = 0;
   await atlas.atlasMenu.renderer({
     sock,
-    m: { from: '233000000000@s.whatsapp.net' },
+    m: { from: '233000000000@s.whatsapp.net', pushName: 'Skyler' },
     menuData: {
       prefix: '.',
       totalCommands: 6,

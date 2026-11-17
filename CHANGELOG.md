@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Menu 21's copy is now four blocks with a blank line between them: a greeting, a
+  line about the bot, the index, and the owner details as labelled rows.
+  - Greeting is time aware, read in `Africa/Accra` rather than the server's clock,
+    and names the reader's push name when there is one (`🌆 Good evening, Skyler`).
+    Five bands: still up, morning, afternoon, evening, good night.
+  - The catch line sits under the counts: `Downloads, AI, media and group control,
+    one command away.`
+  - Owner details are padded rows, one value per line: `Owner  Moonson`,
+    `Chat  wa.me/…` from `config/owner.js`, `Channel  whatsapp.com/channel/…`.
+- `buildDimIndex` became `buildMenuCopy`, since it no longer builds only an index,
+  and `greetingFor` is exported with an injectable clock so the bands can be
+  checked without waiting for the evening.
+
 ### Fixed
 - Menu 21's index rows were wrapped in single backticks, copied from menu 19's
   footer. WhatsApp paints `footer.text` as plain text, so nothing was formatted:
