@@ -2,6 +2,7 @@ import { greetingConfig } from './greetingConfig.js';
 import { greetingRenderer } from './greetingRenderer.js';
 import { messageFormatter } from '../ui/messageFormatter.js';
 import { mentionLabel, resolveMentionJid } from '../lib/mentionJid.js';
+import { sendAdminAlert } from './adminAlert.js';
 
 export const greetingManager = {
   async handleJoin(sock, jid, userJid) {
@@ -32,7 +33,15 @@ export const greetingManager = {
       for (const userJid of userJids) {
         const resolvedJid = await resolveMentionJid(sock, userJid, jid);
         const text = `🌟 ${mentionLabel(resolvedJid)} has been promoted to *Group Admin* in *${groupName}*!\n\nShow them some respect and follow their guidelines!`;
-        await sock.sendMessage(jid, { text: messageFormatter.info(text, 'PROMOTION ALERT'), mentions: [resolvedJid] });
+        // Sent with a synthetic group-invite card as the quoted context, so
+        // the alert lands as a group card (name + icon + caption) rather than
+        // a bare text line.
+        await sendAdminAlert(sock, jid, {
+          text: messageFormatter.info(text, 'PROMOTION ALERT'),
+          resolvedJid,
+          groupName,
+          isPromotion: true,
+        });
       }
     } catch (err) {
       console.error('[GREETING MANAGER] Promotion handler error:', err.message || err);
@@ -46,7 +55,12 @@ export const greetingManager = {
       for (const userJid of userJids) {
         const resolvedJid = await resolveMentionJid(sock, userJid, jid);
         const text = `⚠️ ${mentionLabel(resolvedJid)} is no longer a *Group Admin* in *${groupName}*.\n\nThey have returned to being a regular member.`;
-        await sock.sendMessage(jid, { text: messageFormatter.info(text, 'DEMOTION NOTICE'), mentions: [resolvedJid] });
+        await sendAdminAlert(sock, jid, {
+          text: messageFormatter.info(text, 'DEMOTION NOTICE'),
+          resolvedJid,
+          groupName,
+          isPromotion: false,
+        });
       }
     } catch (err) {
       console.error('[GREETING MANAGER] Demotion handler error:', err.message || err);

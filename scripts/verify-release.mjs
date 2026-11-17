@@ -364,6 +364,37 @@ await check('command VIP surfaces build valid envelopes', async () => {
   return seen.join(', ');
 });
 
+await check('admin alerts quote a group invite card', async () => {
+  const adminAlert = await import(join(root, 'src/greetings/adminAlert.js'));
+
+  const promo = adminAlert.buildAdminQuote({
+    groupJid: '120363000000000000@g.us', groupName: 'VERTEX DOWN', isPromotion: true,
+  });
+  const gi = promo.message.groupInviteMessage;
+  assert(gi.groupJid === '120363000000000000@g.us', 'quote lost the real group jid');
+  assert(gi.groupName === 'VERTEX DOWN', 'quote lost the group name');
+  assert(gi.inviteCode === 'null', 'quote must not carry a real invite code');
+  assert(/admin/i.test(gi.caption), 'promotion caption missing');
+  assert(promo.key?.id?.startsWith('BAE5'), 'quote key id not synthesised');
+
+  const demo = adminAlert.buildAdminQuote({ groupJid: 'g@g.us', groupName: 'G', isPromotion: false });
+  assert(demo.message.groupInviteMessage.caption !== gi.caption, 'promote and demote captions are identical');
+
+  const calls = [];
+  const fakeSock = {
+    profilePictureUrl: async () => { throw new Error('no icon'); },
+    sendMessage: async (jid, body, opts) => { calls.push({ jid, body, opts }); return { key: { id: 'X' } }; },
+  };
+  await adminAlert.sendAdminAlert(fakeSock, 'g@g.us', {
+    text: '🌟 @1 promoted', resolvedJid: '1@s.whatsapp.net', groupName: 'G', isPromotion: true,
+  });
+  assert(calls.length === 1, 'alert not sent');
+  const sent = calls[0];
+  assert(sent.opts?.quoted?.message?.groupInviteMessage, 'alert was sent without the invite card');
+  assert(sent.body.mentions?.[0] === '1@s.whatsapp.net', 'mention dropped from the alert');
+  return 'promote + demote';
+});
+
 await check('greeting product card carries the menu banner', () => {
   const banner = Buffer.from([0xff, 0xd8, 0xff, 0xdb]);
   const card = greetingCard.buildGreetingProductCard({

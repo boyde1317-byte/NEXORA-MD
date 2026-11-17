@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Promote and demote announcements arrive as group cards: the alert text is
+  sent with a synthetic `groupInviteMessage` as its quoted context
+  (`buildFakeGroupInviteQuote`, `inviteCode: 'null'` so no real invite is
+  exposed), captioned "🎖️ New group admin" or "📉 Admin removed". The card
+  image is the group's own icon, resized to a 320 px JPEG, falling back to the
+  brand menu banner so it never ships blank.
+
+### Added
 - VIP unified-response cards on the commands that fit: `.stats`, `.about` and
   `.credits` now send the `.vipcard` envelope (product card + markdown + CTA
   shelf + link chips) via `src/lib/vipSurfaces.js`, each falling back to its
