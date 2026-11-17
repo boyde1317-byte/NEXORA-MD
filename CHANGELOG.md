@@ -5,6 +5,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- `.galaxybar` (`src/plugins/general/galaxybar.js`) and `src/lib/galaxyBar.js`:
+  the galaxy bar treated as an empty container rather than fixed copy. Three
+  slots (`limited_time_offer`, `bottom_sheet`, `tap_target_configuration`) are
+  supplied independently; `buildGalaxyBar()` with no arguments is `{}`, a slot
+  object with no keys is dropped, an explicit `''` is kept, and
+  `fillGalaxyBar` grows a bar one slot at a time. Variants 1-5 send the
+  container alone (empty, then each blank slot, then all three), 6 fills the
+  offer, 7 sends the empty bar with a single CTA, and 8 grows from `{}` so the
+  fill path can be seen on a device. Every probe rides the menu-19 carrier
+  (viewOnce envelope, zero-width body, no footer, no header) so only the bar
+  differs. galaxyMenu itself is untouched.
+- `.testrich` now carries the same series as its own **Bar Probes** group, so
+  the containers can be run next to the rich generators: `barempty`, `baroffer`,
+  `barsheet`, `bartap`, `barall`, `barfill`, `barone`, `bargrow`. Both commands
+  read the probe list from `src/lib/galaxyBar.js`, and a release check fails the
+  build if a probe exists in one place but not the other.
+
 ### Fixed
 - `.play` / `.ytmp4` extraction. Every keyless source behind them was dead
   (verified live 2026-11-17): the tioo `/youtube` route answers a 20-byte

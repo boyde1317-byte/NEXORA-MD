@@ -40,7 +40,8 @@ export default {
       }
 
       const sections = Object.entries(groups).map(([groupName, tests]) => ({
-        title: groupName + ' Generators',
+        // "Bar Probes" is a group of questions, not another generator family.
+        title: groupName.endsWith('Probes') ? groupName : groupName + ' Generators',
         rows: tests.map(t => ({
           id:    p + 'testrich ' + t.id,
           title: t.label,

@@ -608,6 +608,128 @@ exit 0
   }
 });
 
+await check('galaxy bar is an empty container, not a template', async () => {
+  const bar = await import(join(root, 'src/lib/galaxyBar.js'));
+
+  // The whole point: nothing supplied means nothing in the payload.
+  assert(bar.buildGalaxyBar() === '{}', `empty bar was ${bar.buildGalaxyBar()}`);
+  assert(bar.EMPTY_BAR === '{}', 'EMPTY_BAR is not a bare object');
+  assert(!bar.barHasCopy(bar.EMPTY_BAR), 'the empty bar carries copy');
+  assert(bar.barIsEmpty(bar.EMPTY_BAR), 'the empty bar reports slots');
+  assert(!/[A-Za-z]/.test(bar.EMPTY_BAR), 'the empty bar contains letters');
+
+  // A supplied slot with no keys is "not supplied", not an empty slot.
+  const blankSlot = bar.buildGalaxyBar({ offer: {} });
+  assert(blankSlot === '{}', `an empty slot object leaked into the bar: ${blankSlot}`);
+
+  // An explicit blank string is a deliberate blank and must survive.
+  const deliberate = JSON.parse(bar.buildGalaxyBar({ offer: { text: '', url: '' } }));
+  assert(deliberate.limited_time_offer?.text === '', 'an explicit blank was dropped instead of kept');
+
+  // undefined/null fields vanish at any depth.
+  const messy = JSON.parse(bar.buildGalaxyBar({
+    sheet: { list_title: 'Menu', button_title: null, divider_indices: [1, undefined, 3] },
+  }));
+  assert(!('button_title' in messy.bottom_sheet), 'a null field survived the build');
+  assert(messy.bottom_sheet.divider_indices.length === 2, 'undefined survived inside an array');
+
+  // Growing from empty: only the patched slot appears.
+  const grown = JSON.parse(bar.fillGalaxyBar(bar.EMPTY_BAR, { offer: { text: 'Boarding now' } }));
+  assert(Object.keys(grown).length === 1, `grow path produced ${Object.keys(grown).join(',')}`);
+  assert(grown.limited_time_offer.text === 'Boarding now', 'grow path lost the supplied text');
+  assert(!bar.barHasCopy(bar.EMPTY_BAR) && bar.barHasCopy(JSON.stringify(grown)), 'copy detection is inverted');
+
+  // Filling a second slot must not disturb the first.
+  const twice = JSON.parse(bar.fillGalaxyBar(JSON.stringify(grown), { sheet: { list_title: 'Actions' } }));
+  assert(twice.limited_time_offer.text === 'Boarding now' && twice.bottom_sheet.list_title === 'Actions', 'fill did not merge slots');
+
+  // Aliases resolve to protocol names, unknown names do not.
+  assert(bar.resolveSlot('offer') === 'limited_time_offer', 'offer alias did not resolve');
+  assert(bar.resolveSlot('tap') === 'tap_target_configuration', 'tap alias did not resolve');
+  assert(bar.resolveSlot('nonsense') === null, 'an unknown slot name resolved');
+
+  // Broken input never throws, it degrades to an empty bar.
+  assert(JSON.stringify(bar.parseGalaxyBar('{not json')) === '{}', 'bad JSON did not degrade to empty');
+
+  return 'empty by default, fills slot by slot, merges without inventing copy';
+});
+
+await check('galaxy bar plugin is registered and sends the carrier', async () => {
+  const plugin = (await import(join(root, `src/plugins/general/galaxybar.js?t=${Date.now()}`))).default;
+  assert(plugin.name === 'galaxybar', `plugin name was ${plugin.name}`);
+  assert(Array.isArray(plugin.aliases) && plugin.aliases.includes('gbar'), 'gbar alias missing');
+  assert(typeof plugin.execute === 'function', 'plugin has no execute');
+
+  // Drive the plugin against a fake socket and inspect the relayed payload.
+  const relayed = [];
+  const replies = [];
+  const sock = {
+    user: { id: '233000000000:1@s.whatsapp.net' },
+    relayMessage: async (_jid, message, opts) => { relayed.push({ message, opts }); },
+    sendMessage: async (_jid, content) => { replies.push(content.text || ''); },
+  };
+  const m = { from: '233000000000@s.whatsapp.net' };
+
+  await plugin.execute({ sock, m, args: [], prefix: '.' });
+  assert(relayed.length === 1, `empty variant relayed ${relayed.length} messages`);
+
+  const inner = relayed[0].message.viewOnceMessage.message.interactiveMessage;
+  assert(inner.body.text === '\u200b', 'the carrier body is not a zero-width space');
+  assert(!inner.footer, 'the probe added a footer');
+  assert(inner.header.hasMediaAttachment === false, 'the probe attached header media');
+  assert(inner.nativeFlowMessage.messageParamsJson === '{}', `payload bar was ${inner.nativeFlowMessage.messageParamsJson}`);
+  assert(inner.nativeFlowMessage.buttons.length === 0, 'the empty probe carried buttons');
+  assert(replies[0].includes('none (bar is {})'), 'the reply did not report an empty bar');
+
+  // Variant 8 proves the fill path through the plugin, not just the lib.
+  relayed.length = 0; replies.length = 0;
+  await plugin.execute({ sock, m, args: ['bargrow', 'Boarding now'], prefix: '.' });
+  const grown = JSON.parse(relayed[0].message.viewOnceMessage.message.interactiveMessage.nativeFlowMessage.messageParamsJson);
+  assert(grown.limited_time_offer?.text === 'Boarding now', 'bargrow did not fill the offer slot');
+  assert(Object.keys(grown).length === 1, 'bargrow filled more than the requested slot');
+
+  return 'relays the empty container, fills on request';
+});
+
+await check('galaxy bar probes are shared by .galaxybar and .testrich', async () => {
+  const bar = await import(join(root, 'src/lib/galaxyBar.js'));
+  const kit = await import(join(root, `src/lib/richTestKit.js?t=${Date.now()}`));
+
+  const ids = bar.BAR_PROBES.map((p) => p.id);
+  assert(ids.length === 8, `probe series has ${ids.length} entries`);
+  assert(new Set(ids).size === ids.length, 'probe ids are not unique');
+
+  // Every probe must be reachable from .testrich, or the two commands drift.
+  const registered = new Set(kit.RICH_TESTS.map((t) => t.id));
+  for (const id of ids) {
+    assert(registered.has(id), `probe ${id} is not registered in .testrich`);
+  }
+  const group = kit.RICH_TESTS.filter((t) => t.group === 'Bar Probes');
+  assert(group.length === ids.length, `Bar Probes group has ${group.length} entries`);
+
+  // The blank probes must carry no human copy at all; the filled ones must.
+  for (const probe of bar.BAR_PROBES) {
+    const resolved = bar.resolveBarProbe(probe);
+    if (probe.id === 'barfill' || probe.id === 'bargrow') {
+      assert(bar.barHasCopy(resolved.bar), `${probe.id} carries no copy`);
+    } else {
+      assert(!bar.barHasCopy(resolved.bar), `${probe.id} invented copy`);
+    }
+    // Carrier invariants for every probe: dim body, no footer, no header media.
+    const carrier = bar.buildBarCarrier({ bar: resolved.bar, buttons: resolved.buttons });
+    const inner = carrier.viewOnceMessage.message.interactiveMessage;
+    assert(inner.body.text === '\u200b', `${probe.id} body is not zero-width`);
+    assert(!inner.footer, `${probe.id} added a footer`);
+    assert(inner.header.hasMediaAttachment === false, `${probe.id} attached header media`);
+  }
+
+  // The filled probe is the only one that needs a button to anchor its strip.
+  assert(bar.resolveBarProbe(bar.getBarProbe('barfill')).buttons.length === 1, 'barfill lost its CTA');
+  assert(bar.resolveBarProbe(bar.getBarProbe('baroffer')).buttons.length === 0, 'baroffer grew a button');
+
+  return `${ids.length} probes, shared and carrier-checked`;
+});
+
 await check('sticker annotation builds a real annotation', async () => {
   const mod = await import(join(root, 'src/lib/stickerAnnotation.js'));
   const { default: sharp } = await import('sharp');

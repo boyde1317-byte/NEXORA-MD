@@ -18,6 +18,7 @@ import { AIRich } from './NIXCODE.js';
 import { hoistAfterRelay, rehostRichCardMedia } from './richMediaHoist.js';
 import { baileysBridge } from '../core/baileysBridge.js';
 import { sendUnifiedRich, productItemCard, markdownText, extWidget, followUpPills, singleSection, hScrollSection } from './vipRichKit.js';
+import { BAR_PROBES, resolveBarProbe, barSlots, buildBarCarrier } from './galaxyBar.js';
 
 // ── V1 + V2 generators (imported from the fork's rich-message-utils.js) ─────
 import {
@@ -1333,6 +1334,39 @@ export async function testMoonsonFbCombo(sock, jid, quoted) {
   return 'AIRich fb combo ✓';
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Galaxy bar probes — the bar as an empty container
+//
+// Same series as `.galaxybar`, defined once in src/lib/galaxyBar.js so both
+// commands send identical payloads. Every probe rides the menu-19 carrier:
+// viewOnce envelope, zero-width body, no footer, no header media. That leaves
+// the bar as the only thing that differs between them.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const _relayBarProbe = async (sock, jid, probe) => {
+  const resolved = resolveBarProbe(probe);
+  const generated = generateWAMessageFromContent(jid, buildBarCarrier({
+    bar: resolved.bar,
+    buttons: resolved.buttons,
+  }), { userJid: sock.user?.id || '0@s.whatsapp.net' });
+
+  await sock.relayMessage(jid, generated.message, { messageId: generated.key.id });
+
+  const slots = barSlots(resolved.bar);
+  const size = Buffer.byteLength(resolved.bar, 'utf8');
+  const btn = resolved.buttons.length ? ` +${resolved.buttons.length}btn` : '';
+  return `${slots.length ? slots.join('+') : 'no slots'} (${size}B${btn})`;
+};
+
+/** Build the runner for one probe id, so the registry stays a one-liner each. */
+export const barProbeTest = (id) => {
+  const probe = BAR_PROBES.find((b) => b.id === id);
+  if (!probe) throw new Error('unknown bar probe: ' + id);
+  return async (sock, jid) => _relayBarProbe(sock, jid, probe);
+};
+
+export const testBarEmpty = async (sock, jid) => _relayBarProbe(sock, jid, BAR_PROBES[0]);
+
 export const RICH_TESTS = [
   // V1 generators (submessage-based)
   { id: 'v1table',    label: '📊 V1 Table',           fn: testV1Table,         group: 'V1' },
@@ -1387,6 +1421,16 @@ export const RICH_TESTS = [
   { id: 'secret',   label: '🔒 Secret Flow Card', fn: testSecretFlow,      group: 'r14 Gems' },
   { id: 'dino',     label: '🦖 HTML Game: Dino',  fn: testHtmlGame('dino'),    group: 'r16 Gems' },
   { id: 'vipcard',  label: '👑 VIP Rich Card',   fn: testVipRichCard,       group: 'r18 Gems' },
+  // Galaxy bar as an empty container (shared with .galaxybar)
+  { id: 'barempty',  label: '🫙 Bar: Empty {}',        fn: barProbeTest('barempty'),  group: 'Bar Probes' },
+  { id: 'baroffer',  label: '🫙 Bar: Offer Blank',     fn: barProbeTest('baroffer'),  group: 'Bar Probes' },
+  { id: 'barsheet',  label: '🫙 Bar: Sheet Blank',     fn: barProbeTest('barsheet'),  group: 'Bar Probes' },
+  { id: 'bartap',    label: '🫙 Bar: Callout Blank',   fn: barProbeTest('bartap'),    group: 'Bar Probes' },
+  { id: 'barall',    label: '🫙 Bar: All Blank',       fn: barProbeTest('barall'),    group: 'Bar Probes' },
+  { id: 'barfill',   label: '🫙 Bar: Offer Filled',    fn: barProbeTest('barfill'),   group: 'Bar Probes' },
+  { id: 'barone',    label: '🫙 Bar: Empty + 1 CTA',   fn: barProbeTest('barone'),    group: 'Bar Probes' },
+  { id: 'bargrow',   label: '🫙 Bar: Grown From {}',   fn: barProbeTest('bargrow'),   group: 'Bar Probes' },
+
   { id: 'htmlcalc', label: '🧮 HTML Calc',        fn: testHtmlGame('calc'),    group: 'r16 Gems' },
   { id: 'monitor',  label: '📡 HTML Server Monitor', fn: testHtmlGame('monitor'), group: 'r16 Gems' },
   { id: 'v2codetable',  label: '💻 V2 Code+Table',     fn: testV2CodeWithTable,     group: 'Combos V2' },
