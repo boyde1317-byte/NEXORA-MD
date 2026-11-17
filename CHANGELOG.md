@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Removed
+- Menus 2 (payment), 3 (eventMessage), 10 (media), 11 (reaction) and 12
+  (aiDynamic) are gone: unregistered and their type files removed. Owners who
+  had one of them active fall back to menu 1, and `.menulist` no longer offers
+  them. Note: the `System Stats` buttons in the surviving menus still point at
+  `.menu aiDynamic`, which now answers that the style is not found.
+### Removed
 - Menu 16 (listFallback) is gone: the legacy listMessage menu is unregistered
   and its file removed. Owners who had it active fall back to menu 1, and
   `.menulist` no longer offers it.
