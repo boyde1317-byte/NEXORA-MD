@@ -28,9 +28,9 @@ const displayName = (name) => (name === brand.name && brand.display?.name ? bran
  * offerExpiry  → Unix timestamp (seconds) for the offer's expiration countdown
  *
  * Tiers:
- *   1 → nativeFlow + offerText overlay (image header + offer banner + buttons)
- *   2 → image with caption + externalAdReply (offer banner unsupported on client)
- *   3 → guaranteed plain text
+ *   1 → nativeFlow + offerText overlay (image header + offer banner + buttons), quoted by product card
+ *   2 → image with caption + externalAdReply (offer banner unsupported on client), quoted by product card
+ *   3 → guaranteed plain text, quoted by product card
  */
 export const productMenu = {
   id: 20,
@@ -50,6 +50,17 @@ export const productMenu = {
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
+    // Product card in the reply bar — same catalog-quote shape as buttonsCard.
+    // Built once, quoted by every tier.
+    const fakeProductQuote = buildFakeProductQuote({
+      title: menuData.botName,
+      description: brand.description || `${brand.name} by ${brand.creator}`,
+      currencyCode: 'BTC',
+      priceAmount1000: 100000000,
+      businessOwnerJid: '0@s.whatsapp.net',
+      jpegThumbnail: imgData.thumbBuffer || undefined,
+    });
+
     // ── Tier 1: nativeFlow with offer overlay ─────────────────────────────
     // offerText injects a limited_time_offer object into messageParamsJson, which
     // renders as a highlighted offer banner at the top of the interactive card.
@@ -68,7 +79,7 @@ export const productMenu = {
           { text: `🤖 ${toSmallcaps('System Stats')}`,       id:   `${menuData.prefix}menu aiDynamic` },
           { text: `🎨 ${toSmallcaps('Browse Menu Styles')}`, id:   `${menuData.prefix}menulist` },
         ],
-      }, { quoted: menuData.audioQuote || m });
+      }, { quoted: fakeProductQuote });
     } catch (err) {
       console.warn('[MENU product] Tier 1 (offer overlay) failed, trying image banner:', err.message);
     }
@@ -89,7 +100,7 @@ export const productMenu = {
           mimetype:    imgData.mimetype,
           caption:     bodyText,
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: menuData.audioQuote || m });
+        }, { quoted: fakeProductQuote });
       } else if (imgData.source?.startsWith('http')) {
         adReply.thumbnailUrl = imgData.source;
 
@@ -98,23 +109,13 @@ export const productMenu = {
           image:       { url: imgData.source },
           caption:     bodyText,
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: menuData.audioQuote || m });
+        }, { quoted: fakeProductQuote });
       }
     } catch (err) {
       console.warn('[MENU product] Tier 2 (image banner) failed, falling back to text:', err.message);
     }
 
     // ── Tier 3: guaranteed plain text + fake product quote + banner ─────────
-    // Same catalog-quote shape as buttonsCard: the quoted reply bar shows a
-    // product card with the bot name.
-    const fakeProductQuote = buildFakeProductQuote({
-      title: menuData.botName,
-      description: brand.description || `${brand.name} by ${brand.creator}`,
-      currencyCode: 'BTC',
-      priceAmount1000: 100000000,
-      businessOwnerJid: '0@s.whatsapp.net',
-      jpegThumbnail: imgData.thumbBuffer || undefined,
-    });
     const fallbackAdReply = {
       title:                 `✦ ${displayName(menuData.botName)} ✦`,
       body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} • ${menuData.uptime}`,
