@@ -1,6 +1,7 @@
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
+import { buildFakeLiveLocationQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
 import brand from '../../../config/brand.js';
@@ -50,10 +51,9 @@ export const locationMenu = {
     // ── Step 0: the style's own card — a real locationMessage ─────────────
     // Coordinates come from config.location when the owner sets a pin; the
     // fallback is Accra city centre so the card still renders something honest.
-    let cardQuote = null;
     try {
       const pin = config.location || { lat: 5.6037, lng: -0.187, address: 'Accra, Ghana' };
-      cardQuote = await baileysBridge.sendLocationCard(sock, m.from, {
+      await baileysBridge.sendLocationCard(sock, m.from, {
         degreesLatitude:  pin.lat,
         degreesLongitude: pin.lng,
         name:             displayName(menuData.botName),
@@ -66,6 +66,9 @@ export const locationMenu = {
     const menuText   = buildTextMenu(menuData);
     const footerText = `${displayName(menuData.botName)} • ${menuData.totalCommands} ${toSmallcaps('commands')}`;
 
+    const locationQuote = buildFakeLiveLocationQuote({
+      caption: `📍 ${displayName(menuData.botName || brand.name)} — ${toSmallcaps('Bot Command')} ✦`,
+    });
 
     // Resolve image payload: prefer the { url } form — WA fetches it directly,
     // no local buffer download/re-upload round trip. Buffer is only a fallback
@@ -88,7 +91,7 @@ export const locationMenu = {
           buildPillUrlButton(`💬 ${toSmallcaps('Contact')}`, 'https://wa.me/233533416608'),
           buildNavigationButton(menuData.prefix),
         ],
-      }, { quoted: cardQuote });
+      }, { quoted: locationQuote });
     } catch (err) {
       console.warn('[MENU location] Tier 1 (nativeFlow + image + location quote) failed, trying adReply:', err.message);
     }
@@ -112,7 +115,7 @@ export const locationMenu = {
       return await sock.sendMessage(m.from, {
         text:        menuText,
         contextInfo: { externalAdReply: adReply },
-      });
+      }, { quoted: locationQuote });
     } catch (err) {
       console.warn('[MENU location] Tier 2 (adReply + location quote) failed, continuing to text:', err.message);
     }
@@ -135,7 +138,7 @@ export const locationMenu = {
     return await sock.sendMessage(m.from, {
       text:        menuText,
       contextInfo: { externalAdReply: fallbackAdReply },
-    });
+    }, { quoted: locationQuote });
   },
 };
 

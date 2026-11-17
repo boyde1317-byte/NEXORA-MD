@@ -258,34 +258,26 @@ function hasNativeFlowContent(messageContent) {
  * the rest of the menu and bot system doesn't rely on raw protobuf constructs.
  */
 /**
- * A quote renders only when WhatsApp can resolve the stanza it points at, so
- * `options.quoted` has to be a real message — the result of an earlier send,
- * `{ key, message }` — never a fabricated proto. relayMessage() skips
- * generateWAMessageFromContent, so the contextInfo the fork would have built has
- * to be assembled here by hand.
+ * Turn a `{ quoted }` argument into the contextInfo that renders the reply
+ * strip. waUtils builders hand back a synthetic key plus the card proto, and
+ * that is all WhatsApp needs: the strip is drawn from `quotedMessage`, so a
+ * fabricated stanzaId renders fine (see src/lib/enrichContext.js and the way
+ * `.enrich` sends `m.reply(text, { quoted: buildFakeOrderQuote() })`).
+ *
+ * The relay-based senders build their message by hand instead of going through
+ * generateWAMessageFromContent, so they have to attach this themselves or the
+ * quote is silently dropped and every style shows the same bare strip.
  */
 const buildQuotedContextInfo = (quoted) => {
+  const key = quoted && quoted.key;
   const message = quoted && quoted.message;
-  const stanzaId = quoted && quoted.key && quoted.key.id;
-  if (!message || !stanzaId) return null;
-  // A live socket hands back the generated proto ({ contactMessage: {...} }), but
-  // a caller may also pass the raw payload it sent ({ contacts: {...} }), so map
-  // the fork's input keys as a fallback.
-  const INPUT_TO_PROTO = {
-    contacts:    'contactMessage',
-    location:    'locationMessage',
-    orderText:   'orderMessage',
-    product:     'productMessage',
-    nativeFlow:  'interactiveMessage',
-    buttons:     'buttonsMessage',
-  };
-  const protoType = Object.keys(message).find((key) => key.endsWith('Message'))
-    || INPUT_TO_PROTO[Object.keys(message)[0]];
-  if (!protoType) return null;
+  if (!key || !message) return null;
+  const stanzaId = key.id || ('BAE5' + Math.random().toString(36).slice(2, 10).toUpperCase());
   return {
     stanzaId,
-    participant: quoted.key.participant || quoted.key.remoteJid,
-    quotedMessage: { [protoType]: message[protoType] || message },
+    participant: key.participant,
+    remoteJid: key.remoteJid,
+    quotedMessage: message,
   };
 };
 
@@ -1177,9 +1169,8 @@ export const baileysBridge = {
       }
     }
 
-    // options.quoted is the card this list belongs to: quoting the real stanza
-    // puts that card in the reply strip, which is what makes each style read as
-    // its own card instead of a generic quoted line.
+    // The style's own card rides on the reply as a quote, exactly the shape
+    // .enrich sends, so the strip above the banner shows that card.
     const quotedCtx = buildQuotedContextInfo(options.quoted);
 
     const msgContent = {
@@ -1198,7 +1189,7 @@ export const baileysBridge = {
         // Setting viewOnce:true would make it self-destruct after one tap, which
         // is wrong for a menu. Only use viewOnce on single-use cards (about, result cards).
         ...(contextInfo || quotedCtx
-          ? { contextInfo: { ...(quotedCtx || {}), ...(contextInfo || {}) } }
+          ? { contextInfo: { ...(contextInfo || {}), ...(quotedCtx || {}) } }
           : {}),
         // Accepts TWO input shapes so callers can mix plain buttons with
         // pre-built ones (e.g. buildNavigationButton()'s raw nativeFlowInfo

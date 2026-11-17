@@ -22,19 +22,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   check renders all five against a stub socket and asserts each one rides on its
   own card (`productMessage`, `orderMessage`, `contactMessage`,
   `liveLocationMessage`, `newsletterAdminInviteMessage`).
-- The card styles now quote the card they just sent, instead of a fabricated one.
-  A quote only renders when WhatsApp can resolve the stanza it points at, and the
-  old `buildFake*Quote()` helpers produced a bare proto with no `stanzaId`, so the
-  reply strip could never resolve into a contact, order, location or product card:
-  every style showed the same dead strip above the banner. Now `product`, `order`,
-  `contact` and `location` send their real card first (`productMessage`,
-  `orderMessage`, `contactMessage`, `locationMessage`), keep the returned key and
-  pass it as `quoted` on the list reply, so the strip renders that exact card.
-  `sendButtonsCard` had been dropping `options.quoted` entirely, because it relays
-  a hand-built message and never reached `generateWAMessageFromContent`; it now
-  assembles the same `contextInfo` the fork would have (`buildQuotedContextInfo`).
-  `sendProduct` also stopped turning `price: 0` into a $1.00 card. Newsletter
-  still needs a `channelJid` before it can send its invite.
+- The card styles now send their own card as a **separate message before** the
+  interactive list: contact → `contactMessage`, location → `locationMessage`,
+  order → `orderMessage`, product → `productMessage`. The quoted card alone was
+  invisible (WhatsApp renders no card preview inside a quote), which is why all
+  of them still read as the same pill list on a phone. New bridge senders
+  `sendContactCard`, `sendLocationCard` and `sendOrderCard` wrap the fork's
+  `contacts` / `location` / `orderText` keys; product reuses `sendProduct`, which
+  also stopped turning a `price: 0` into a $1.00 card. Newsletter still needs a
+  `channelJid` before it can send its invite.
+- Card styles now actually ride on their cards. The waUtils builders were never
+  the problem: `.enrich` sends `m.reply(text, { quoted: buildFakeOrderQuote() })`
+  and every strip renders, because WhatsApp draws the reply bar from
+  `contextInfo.quotedMessage` and does not need a resolvable stanza. The bug was
+  `baileysBridge.sendButtonsCard`: it builds the message by hand and relays it,
+  so `options.quoted` never reached the wire and contact, order and location lost
+  their card silently. New `buildQuotedContextInfo()` folds the builder's key and
+  message into `stanzaId` / `participant` / `remoteJid` / `quotedMessage`, the same
+  shape `enrichContext.js` uses, so those styles now quote their own card.
+  Product already worked through `sendNativeFlow`, which forwards `quoted`.
 - `a2uiSurface` now claims id 16 instead of 20: it was registered under the same
   id as `product` and won the key, so `.menu 20` silently rendered the A2UI card
   and the product style was unreachable by number.

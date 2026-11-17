@@ -1,6 +1,7 @@
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
+import { buildFakeContactQuote } from '../../lib/waUtils.js';
 import { config } from '../../../config/index.js';
 import brand from '../../../config/brand.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
@@ -21,7 +22,7 @@ const displayName = (name) => (name === brand.name && brand.display?.name ? bran
  *   { text, id }    → quick_reply
  *   { text, copy }  → cta_copy
  *
- * The card is a real contactMessage (sendContactCard), not a quote: WhatsApp
+ * The contact quote uses buildFakeContactQuote — Moonson-proven key shape
  * (0@s.whatsapp.net participant + status@broadcast remoteJid), AI attribution
  * carried in the vcard's waid. WA never looks up the original message in
  * chat history — no ghost thread.
@@ -47,9 +48,8 @@ export const contactMenu = {
     const imgData = (await imageManager.getMenuImage(9).catch(() => null)) || {};
 
     // ── Step 0: the style's own card — a real contactMessage ──────────────
-    let cardQuote = null;
     try {
-      cardQuote = await baileysBridge.sendContactCard(sock, m.from, {
+      await baileysBridge.sendContactCard(sock, m.from, {
         displayName: `${brand.creator || 'Owner'} · ${displayName(menuData.botName)}`,
         phone:       (config.owner && config.owner[0]) || '233533416608',
         org:         brand.name,
@@ -62,6 +62,12 @@ export const contactMenu = {
 
     const menuText   = buildTextMenu(menuData);
     const footerText = `${displayName(menuData.botName)} • ${menuData.totalCommands} ${toSmallcaps('commands')}`;
+
+    // Contact card in the reply bar — tappable vCard showing the owner's name.
+    const contactQuote = buildFakeContactQuote({
+      displayName: ownerName,
+      phoneNumber: ownerNumber,
+    });
 
     // Resolve image payload: prefer the { url } form — WA fetches it directly,
     // no local buffer download/re-upload round trip. Buffer is only a fallback
@@ -84,7 +90,7 @@ export const contactMenu = {
           buildPillButton(`🤖 ${toSmallcaps('System Stats')}`, `${menuData.prefix}menu aiDynamic`),
           buildNavigationButton(menuData.prefix),
         ],
-      }, { quoted: cardQuote });
+      }, { quoted: contactQuote });
     } catch (err) {
       console.warn('[MENU contact] Tier 1 (nativeFlow + image + contact quote) failed, trying adReply:', err.message);
     }
@@ -108,7 +114,7 @@ export const contactMenu = {
       return await sock.sendMessage(m.from, {
         text:        menuText,
         contextInfo: { externalAdReply: adReply },
-      });
+      }, { quoted: contactQuote });
     } catch (err) {
       console.warn('[MENU contact] Tier 2 (adReply + contact quote) failed, continuing to text:', err.message);
     }
@@ -131,7 +137,7 @@ export const contactMenu = {
     return await sock.sendMessage(m.from, {
       text:        menuText,
       contextInfo: { externalAdReply: fallbackAdReply },
-    });
+    }, { quoted: contactQuote });
   },
 };
 

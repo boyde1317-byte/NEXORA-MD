@@ -1185,20 +1185,20 @@ await check('every card style rides on its waUtils card', async () => {
     return null;
   };
 
-  // [label, file, export, own card key on the wire, quoted card it may still use]
-  // A quoted card is invisible to the reader (WhatsApp shows no card preview in a
-  // quote), so the style's own message type has to lead and the quote is gone
-  // entirely. Newsletter is the exception: its invite needs a channelJid, so until
-  // one is configured it still rides on its quote.
+  // [label, file, export, quoted card, own card key on the wire]
+  // The quoted card alone is invisible to the reader (WhatsApp shows no card
+  // preview in a quote), so the style's own message type has to lead. Newsletter
+  // is the exception: it needs a channelJid to build an invite, so it keeps riding
+  // on the quote until one is configured.
   const styles = [
-    ['product', 'product.js', 'productMenu', 'product', null, 'productMessage'],
-    ['order', 'orderMessage.js', 'orderMessageMenu', 'orderText', null, 'orderMessage'],
-    ['contact', 'contact.js', 'contactMenu', 'contacts', null, 'contactMessage'],
-    ['location', 'location.js', 'locationMenu', 'location', null, 'locationMessage'],
-    ['newsletter', 'newsletter.js', 'newsletterMenu', null, 'newsletterAdminInviteMessage', null],
+    ['product', 'product.js', 'productMenu', 'productMessage', 'product'],
+    ['order', 'orderMessage.js', 'orderMessageMenu', 'orderMessage', 'orderText'],
+    ['contact', 'contact.js', 'contactMenu', 'contactMessage', 'contacts'],
+    ['location', 'location.js', 'locationMenu', 'liveLocationMessage', 'location'],
+    ['newsletter', 'newsletter.js', 'newsletterMenu', 'newsletterAdminInviteMessage', null],
   ];
 
-  for (const [label, file, exported, ownCard, quoted, quotedProto] of styles) {
+  for (const [label, file, exported, wanted, ownCard] of styles) {
     const mod = await import(join(root, `src/menu/types/${file}`));
     const menu = mod[exported] || mod.default;
     // One ordered timeline: the card styles send their own card first and then
@@ -1206,8 +1206,8 @@ await check('every card style rides on its waUtils card', async () => {
     const wire = [];
     const sock = {
       user: { id: '233000000000:1@s.whatsapp.net' },
-      sendMessage: async (_jid, content, options) => { wire.push({ content, options }); return { key: { id: 'CARDSTANZA' }, message: content }; },
-      relayMessage: async (_jid, message, options) => { wire.push({ content: message, options }); return { key: { id: 'LIST' } }; },
+      sendMessage: async (_jid, content, options) => { wire.push({ content, options }); return { key: { id: 'card' } }; },
+      relayMessage: async (_jid, message) => { wire.push({ content: message }); return { key: { id: 'card' } }; },
       waUploadToServer: async () => { throw new Error('no upload in check'); },
     };
     await menu.renderer({
@@ -1220,31 +1220,13 @@ await check('every card style rides on its waUtils card', async () => {
     const carried = wire.map((step) => findQuoted(step.content)
       || (step.options?.quoted?.message ? Object.keys(step.options.quoted.message).join(',') : null))
       .filter(Boolean);
+    assert(carried.length, `the ${label} menu is quoted on nothing`);
+    assert(carried[0].includes(wanted), `the ${label} menu rides on ${carried[0]}, expected ${wanted}`);
+
     if (ownCard) {
       const first = wire[0]?.content || {};
       assert(first[ownCard] !== undefined,
         `the ${label} menu leads with ${Object.keys(first).join(',')} instead of its own ${ownCard} card`);
-
-      // The list reply has to quote THAT card's real stanza. A fabricated quote
-      // carries no stanzaId, so WhatsApp cannot resolve it and every style ends up
-      // with the same dead strip on top.
-      const list = wire[wire.length - 1];
-      const ctx = list.content?.buttonsMessage?.contextInfo || list.content?.contextInfo || null;
-      const quotedCtx = ctx || list.options?.quoted || null;
-      assert(quotedCtx, `the ${label} list carries no quote pointing at its card`);
-      if (ctx) {
-        assert(ctx.stanzaId === 'CARDSTANZA',
-          `the ${label} list quotes stanza ${ctx.stanzaId || 'none'}, not the card it just sent`);
-        assert(ctx.quotedMessage?.[quotedProto] !== undefined,
-          `the ${label} list quotes no ${quotedProto}, so the strip cannot render its card`);
-      } else {
-        assert(quotedCtx.key?.id === 'CARDSTANZA',
-          `the ${label} list quotes something other than the card it just sent`);
-      }
-    }
-    if (quoted) {
-      assert(carried.length, `the ${label} menu is quoted on nothing`);
-      assert(carried[0].includes(quoted), `the ${label} menu rides on ${carried[0]}, expected ${quoted}`);
     }
   }
 
