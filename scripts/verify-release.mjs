@@ -823,7 +823,8 @@ await check('atlas menu indexes the live registry', async () => {
 
   // Owner details closed as labelled rows, one value per line, labels in small caps.
   assert(new RegExp(`^${toSmallcaps('Made by')} {2,}Moonson$`, 'm').test(footer), 'the owner row is missing');
-  assert(new RegExp(`^${toSmallcaps('DM')} {2,}wa\\.me/\\d+$`, 'm').test(footer), 'the chat row is missing');
+  assert(new RegExp(`^${toSmallcaps('DM')} {2,}wa\\.me/@[a-z0-9._]+$`, 'm').test(footer), 'the chat row is missing or does not use the username');
+  assert(!/wa\.me\/\d/.test(footer), 'the card prints the owner phone number');
   assert(new RegExp(`^${toSmallcaps('Our channel')} {2,}whatsapp\\.com/channel/`, 'm').test(footer), 'the channel row is missing');
 
   // No prefix anywhere in the interface: a printed prefix goes stale.
@@ -1238,6 +1239,22 @@ await check('every card style rides on its waUtils card', async () => {
   }
 
   return '5 card styles ride CTA interactiveMessage cards';
+});
+
+await check('menu 21 points at the owner username, not the number', async () => {
+  // The DM row used to print the owner's phone number. It now shows the
+  // WhatsApp username instead, so the menu never exposes the number.
+  const { buildMenuCopy } = await import(join(root, 'src/menu/types/atlasMenu.js'));
+  const copy = buildMenuCopy([], {
+    greeting: 'Good afternoon',
+    creator: 'Moonson',
+    ownerUsername: 'moonson3',
+    channelUrl: 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326',
+    botName: 'NEXORA MD',
+  });
+  assert(copy.includes('wa.me/@moonson3'), 'menu 21 does not print the owner username');
+  assert(!/wa\.me\/\d/.test(copy), 'menu 21 still prints the owner phone number');
+  return 'username only';
 });
 
 await check('every menu style keeps its copy in the grey footer', async () => {

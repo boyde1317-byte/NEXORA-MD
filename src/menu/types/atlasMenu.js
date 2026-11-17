@@ -147,7 +147,7 @@ export const buildMenuCopy = (
     creator = '',
     greeting = '',
     description = CATCH_LINE,
-    ownerNumber = '',
+    ownerUsername = '',
     channelUrl = '',
     botName = brand.name,
   } = {}
@@ -160,7 +160,7 @@ export const buildMenuCopy = (
   // Owner details as rows: label padded so the values line up under each other.
   const fields = [
   ['Made by', creator],
-  ['DM', ownerNumber ? `wa.me/${ownerNumber}` : ''],
+  ['DM', ownerUsername ? `wa.me/@${ownerUsername}` : ''],
   ['Our channel', String(channelUrl || '').replace(/^https?:\/\//, '')],
 ].filter(([, value]) => Boolean(value));
   const labelWidth = Math.max(...fields.map(([label]) => label.length), 0);
@@ -314,7 +314,7 @@ description: 'Pick a section and see what’s inside',
           creator,
           greeting: greetingFor(new Date(), m.pushName || ''),
           description: CATCH_LINE,
-          ownerNumber: owner.ownerNumber,
+          ownerUsername: owner.ownerUsername,
           channelUrl: CHANNEL_URL,
           botName,
         }),

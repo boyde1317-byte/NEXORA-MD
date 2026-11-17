@@ -52,6 +52,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   so the quoted card strip survives this path too.
 - Removed the leftover leading card message from those styles: the quote strip
   already carries the card, so sending it twice just repeated it.
+- Menu 21's DM row prints the owner's WhatsApp username (`wa.me/@moonson3`)
+  instead of the phone number, so the card no longer exposes the number. The
+  username lives in `config/owner.js` as `ownerUsername` (env `OWNER_USERNAME`,
+  default `moonson3`), and the release check fails if the card prints a numeric
+  wa.me link again.
 - Every menu style now paints its copy grey, menu 21's way. The menu text moves
   out of `interactiveMessage`/`buttonsMessage` body into `footer.text`, which
   WhatsApp renders small and grey, and the body carries a single zero-width space
