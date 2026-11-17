@@ -42,24 +42,6 @@ export const productMenu = {
   renderer: async ({ sock, m, menuData }) => {
     const imgData = (await imageManager.getMenuImage(5).catch(() => null)) || {};
 
-    // ── Step 0: the style's own card ──────────────────────────────────────
-    // WhatsApp does not render a productMessage as a quote preview, so the card
-    // has to travel as its own message; quoted alone it looks like any other
-    // text reply and the menu reads as one more pill list.
-    try {
-      await baileysBridge.sendProduct(sock, m.from, {
-        title:            `${displayName(menuData.botName)} · ${menuData.totalCommands} ${toSmallcaps('commands')}`,
-        description:      brand.description || `${brand.name} by ${brand.creator}`,
-        productId:        'nexora-menu',
-        currency:         'USD',
-        price:            0,
-        footer:           `${menuData.prefix}menulist`,
-        thumbnail:        imgData.buffer || imgData.source,
-        businessOwnerJid: `${String((config.owner && config.owner[0]) || '233533416608').replace(/[^0-9]/g, '')}@s.whatsapp.net`,
-      });
-    } catch (err) {
-      console.warn('[MENU product] product card failed, sending the menu only:', err.message);
-    }
     const bodyText  = `✦ ${displayName(menuData.botName)} ✦\n\n` + buildTextMenu(menuData);
     const footerText = `${displayName(menuData.botName)} • ${menuData.totalCommands} ${toSmallcaps('commands')}`;
 
@@ -85,7 +67,7 @@ export const productMenu = {
     // offerText injects a limited_time_offer object into messageParamsJson, which
     // renders as a highlighted offer banner at the top of the interactive card.
     try {
-      return await baileysBridge.sendNativeFlow(sock, m.from, {
+      return await baileysBridge.sendCtaCard(sock, m.from, {
         text:      bodyText,
         footer:    footerText,
         image:     imagePayload,

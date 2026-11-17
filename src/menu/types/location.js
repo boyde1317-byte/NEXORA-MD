@@ -3,7 +3,7 @@ import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
 import { buildFakeLiveLocationQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
-import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
+import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton, buildCtaReplyButton, buildCtaUrlButton, buildCtaCopyButton } from './buttonsCard.js';
 import brand from '../../../config/brand.js';
 import { config } from '../../../config/index.js';
 
@@ -14,7 +14,7 @@ const displayName = (name) => (name === brand.name && brand.display?.name ? bran
 /**
  * Location Menu (id: 8) — rewritten for itsliaaa 0.3.18-final fork.
  *
- * ONE message: nativeFlow interactive card (body + buttons + image header) quoted
+ * ONE message: CTA interactive card (body + buttons + image header) quoted
  * inside a fake liveLocationMessage so the reply bar shows the distinctive pulsing
  * live-location card (📍 caption + animated indicator).
  *
@@ -35,34 +35,19 @@ const displayName = (name) => (name === brand.name && brand.display?.name ? bran
  *   Tier 3 is guaranteed plain text.
  *
  * Tiers:
- *   1 → nativeFlow card (image header + buttons) + live location in reply bar
+ *   1 → CTA card (image header + buttons) + live location in reply bar
  *   2 → text + externalAdReply banner + live location in reply bar
  *   3 → guaranteed plain text + live location in reply bar
  */
 export const locationMenu = {
   id: 8,
   name: 'location',
-  description: 'nativeFlow card with image header + live location badge in the reply bar',
+  description: 'CTA card with image header + live location badge in the reply bar',
   supportedMessages: ['interactiveMessage', 'liveLocationMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData = (await imageManager.getMenuImage(8).catch(() => null)) || {};
 
-    // ── Step 0: the style's own card — a real locationMessage ─────────────
-    // Coordinates come from config.location when the owner sets a pin; the
-    // fallback is Accra city centre so the card still renders something honest.
-    try {
-      const pin = config.location || { lat: 5.6037, lng: -0.187, address: 'Accra, Ghana' };
-      await baileysBridge.sendLocationCard(sock, m.from, {
-        degreesLatitude:  pin.lat,
-        degreesLongitude: pin.lng,
-        name:             displayName(menuData.botName),
-        address:          pin.address,
-        jpegThumbnail:    imgData.thumbBuffer || undefined,
-      });
-    } catch (err) {
-      console.warn('[MENU location] location card failed, sending the menu only:', err.message);
-    }
     const menuText   = buildTextMenu(menuData);
     const footerText = `${displayName(menuData.botName)} • ${menuData.totalCommands} ${toSmallcaps('commands')}`;
 
@@ -77,9 +62,9 @@ export const locationMenu = {
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
-    // ── Tier 1: nativeFlow card (image + buttons) + live location badge ────
+    // ── Tier 1: CTA card (image + CTA rows) + live location badge ────
     try {
-      return await baileysBridge.sendButtonsCard(sock, m.from, {
+      return await baileysBridge.sendCtaCard(sock, m.from, {
         body:       menuText,
         footer:     footerText,
         title:      `✦ ${displayName(menuData.botName)} ✦`,
@@ -89,7 +74,7 @@ export const locationMenu = {
           buildPillCopyButton(`📎 ${toSmallcaps('Copy Prefix')}`, menuData.prefix),
           buildPillButton(`🤖 ${toSmallcaps('System Stats')}`, `${menuData.prefix}menu aiDynamic`),
           buildPillUrlButton(`💬 ${toSmallcaps('Contact')}`, 'https://wa.me/233533416608'),
-          buildNavigationButton(menuData.prefix),
+          buildCtaReplyButton(`\u2630 ${toSmallcaps('All Commands')}`, `${menuData.prefix}help`),
         ],
       }, { quoted: locationQuote });
     } catch (err) {

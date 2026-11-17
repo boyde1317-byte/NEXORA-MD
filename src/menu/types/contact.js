@@ -5,7 +5,7 @@ import { buildFakeContactQuote } from '../../lib/waUtils.js';
 import { config } from '../../../config/index.js';
 import brand from '../../../config/brand.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
-import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
+import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton, buildCtaReplyButton, buildCtaUrlButton, buildCtaCopyButton } from './buttonsCard.js';
 
 // Display name: the styled brand name when the bot runs under the brand
 // name, plain otherwise — a custom bot name stays exactly as configured.
@@ -14,7 +14,7 @@ const displayName = (name) => (name === brand.name && brand.display?.name ? bran
 /**
  * Contact Menu (id: 9) — rewritten for itsliaaa 0.3.18-final fork.
  *
- * ONE message: nativeFlow interactive card (image header + body + buttons) quoted
+ * ONE message: CTA interactive card (image header + body + buttons) quoted
  * inside a fake contactMessage so the reply bar shows a tappable vCard for the owner.
  *
  * Uses the fork's simple button format:
@@ -34,29 +34,19 @@ const displayName = (name) => (name === brand.name && brand.display?.name ? bran
  *   Tier 3 is bare text with the contact badge.
  *
  * Tiers:
- *   1 → nativeFlow card (image + buttons) + owner contact card in reply bar
+ *   1 → CTA card (image + buttons) + owner contact card in reply bar
  *   2 → text + externalAdReply banner + owner contact card in reply bar
  *   3 → guaranteed plain text + owner contact card in reply bar
  */
 export const contactMenu = {
   id: 9,
   name: 'contact',
-  description: 'nativeFlow card with image header + owner vCard contact badge in the reply bar',
+  description: 'CTA card with image header + owner vCard contact badge in the reply bar',
   supportedMessages: ['interactiveMessage', 'nativeFlowMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData = (await imageManager.getMenuImage(9).catch(() => null)) || {};
 
-    // ── Step 0: the style's own card — a real contactMessage ──────────────
-    try {
-      await baileysBridge.sendContactCard(sock, m.from, {
-        displayName: `${brand.creator || 'Owner'} · ${displayName(menuData.botName)}`,
-        phone:       (config.owner && config.owner[0]) || '233533416608',
-        org:         brand.name,
-      });
-    } catch (err) {
-      console.warn('[MENU contact] contact card failed, sending the menu only:', err.message);
-    }
     const ownerNumber  = (config.owner[0] || '233597514499').replace(/[^0-9]/g, '');
     const ownerName    = menuData.ownerName || brand.creator || 'Owner';
 
@@ -76,9 +66,9 @@ export const contactMenu = {
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
-    // ── Tier 1: nativeFlow card (image + buttons) + contact badge ──────────
+    // ── Tier 1: CTA card (image + CTA rows) + contact badge ──────────
     try {
-      return await baileysBridge.sendButtonsCard(sock, m.from, {
+      return await baileysBridge.sendCtaCard(sock, m.from, {
         body:       menuText,
         footer:     footerText,
         title:      `✦ ${displayName(menuData.botName)} ✦`,
@@ -88,7 +78,7 @@ export const contactMenu = {
           buildPillButton(`📋 ${toSmallcaps('Command List')}`, `${menuData.prefix}menulist`),
           buildPillCopyButton(`📎 ${toSmallcaps('Copy Prefix')}`, menuData.prefix),
           buildPillButton(`🤖 ${toSmallcaps('System Stats')}`, `${menuData.prefix}menu aiDynamic`),
-          buildNavigationButton(menuData.prefix),
+          buildCtaReplyButton(`\u2630 ${toSmallcaps('All Commands')}`, `${menuData.prefix}help`),
         ],
       }, { quoted: contactQuote });
     } catch (err) {

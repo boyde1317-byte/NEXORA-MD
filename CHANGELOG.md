@@ -41,6 +41,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   message into `stanzaId` / `participant` / `remoteJid` / `quotedMessage`, the same
   shape `enrichContext.js` uses, so those styles now quote their own card.
   Product already worked through `sendNativeFlow`, which forwards `quoted`.
+- The five card menus now send an `interactiveMessage` with CTA rows instead of
+  the `buttonsMessage` pill row. `product`, `contact`, `location`, `orderMessage`
+  and `newsletter` all send through the new `baileysBridge.sendCtaCard()`, which
+  builds body + footer + titled media header and maps each button to `cta_url`,
+  `cta_copy`, `cta_call` or `quick_reply` — the CTA layout WhatsApp draws as
+  full-width action rows. It accepts pre-built CTA buttons or the old
+  `{ text, url | copy | id }` shape, so the styles only had to change sender.
+  `sendInteractive` now folds `options.quoted` into `interactiveMessage.contextInfo`,
+  so the quoted card strip survives this path too.
+- Removed the leftover leading card message from those styles: the quote strip
+  already carries the card, so sending it twice just repeated it.
 - `a2uiSurface` now claims id 16 instead of 20: it was registered under the same
   id as `product` and won the key, so `.menu 20` silently rendered the A2UI card
   and the product style was unreachable by number.

@@ -266,3 +266,24 @@ export function buildPillCopyButton(text, copyCode) {
     },
   };
 }
+
+/* ── CTA buttons for interactiveMessage ───────────────────────────────────
+ * cards. These render as full-width CTA rows inside the card, not the pill
+ * row that buttonsMessage/nativeFlow draws. sendCtaCard() accepts them
+ * pre-built, or maps the older { text, url | copy | id } shape itself. */
+
+export function buildCtaUrlButton(text, url) {
+  return { name: 'cta_url', params: { display_text: text, url } };
+}
+
+export function buildCtaCopyButton(text, copyCode) {
+  return { name: 'cta_copy', params: { display_text: text, copy_code: copyCode } };
+}
+
+export function buildCtaReplyButton(text, id) {
+  return { name: 'quick_reply', params: { display_text: text, id } };
+}
+
+export function buildCtaCallButton(text, phone) {
+  return { name: 'cta_call', params: { display_text: text, phone_number: `+${String(phone).replace(/[^0-9]/g, '')}` } };
+}

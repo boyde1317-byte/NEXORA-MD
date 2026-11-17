@@ -5,7 +5,7 @@ import brand from '../../../config/brand.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildFakeNewsletterQuote } from '../../lib/waUtils.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
-import { buildPillButton, buildPillUrlButton, buildNavigationButton } from './buttonsCard.js';
+import { buildPillButton, buildPillUrlButton, buildNavigationButton, buildCtaReplyButton, buildCtaUrlButton, buildCtaCopyButton } from './buttonsCard.js';
 
 // Display name: the styled brand name when the bot runs under the brand
 // name, plain otherwise — a custom bot name stays exactly as configured.
@@ -14,13 +14,13 @@ const displayName = (name) => (name === brand.name && brand.display?.name ? bran
 /**
  * Newsletter Menu (id: 7)
  *
- * Uses sendButtonsCard (buttonsMessage proto) as Tier 1 for universal
+ * Uses sendCtaCard (interactiveMessage with CTA rows) as Tier 1 for universal
  * WhatsApp client compatibility. A fake newsletterAdminInviteMessage quote
  * is used for the reply bar (channel invite card). The native newsletter
  * admin invite is retained as Tier 2 when a channelJid is configured.
  *
  * Tiers:
- *   1 → sendButtonsCard with image header + newsletter quote + adReply
+ *   1 → sendCtaCard with image header + newsletter quote + adReply
  *   2 → Native newsletter admin invite card (requires channelJid)
  *   3 → imageMessage with caption
  *   4 → Guaranteed plain text
@@ -28,7 +28,7 @@ const displayName = (name) => (name === brand.name && brand.display?.name ? bran
 export const newsletterMenu = {
   id: 7,
   name: 'newsletter',
-  description: 'Channel-style pill-button card with newsletter quote + optional native invite fallback',
+  description: 'Channel-style CTA card with newsletter quote + optional native invite fallback',
   supportedMessages: ['interactiveMessage', 'buttonsMessage', 'newsletterAdminInviteMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
@@ -79,7 +79,7 @@ export const newsletterMenu = {
     // ── Tier 1: sendButtonsCard with image header + newsletter quote ──────
     if (imagePayload) {
       try {
-        return await baileysBridge.sendButtonsCard(sock, m.from, {
+        return await baileysBridge.sendCtaCard(sock, m.from, {
           body:       bodyText,
           footer:     footerText,
           title:      `\u{1F4E1} ${toSmallcaps('Official Channel')} \u{1F4E1}`,
@@ -90,7 +90,7 @@ export const newsletterMenu = {
             buildPillButton(`\u{1F4CB} ${toSmallcaps('Command List')}`,       `${menuData.prefix}menulist`),
             buildPillButton(`\u{1F916} ${toSmallcaps('System Stats')}`,       `${menuData.prefix}menu aiDynamic`),
             buildPillUrlButton(`\u{1F4E1} ${toSmallcaps('Official Channel')}`, 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326'),
-            buildNavigationButton(menuData.prefix),
+            buildCtaReplyButton(`\u2630 ${toSmallcaps('All Commands')}`, `${menuData.prefix}help`),
           ],
           contextInfo: { externalAdReply: adReply },
         }, { quoted: newsletterQuote });

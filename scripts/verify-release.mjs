@@ -14,6 +14,7 @@
  *
  * Exit code 1 on any failure, so CI can gate on it.
  */
+import { readFile } from 'node:fs/promises';
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -1223,14 +1224,20 @@ await check('every card style rides on its waUtils card', async () => {
     assert(carried.length, `the ${label} menu is quoted on nothing`);
     assert(carried[0].includes(wanted), `the ${label} menu rides on ${carried[0]}, expected ${wanted}`);
 
-    if (ownCard) {
-      const first = wire[0]?.content || {};
-      assert(first[ownCard] !== undefined,
-        `the ${label} menu leads with ${Object.keys(first).join(',')} instead of its own ${ownCard} card`);
-    }
+    // There is no separate leading card message: the strip carries the card.
+    assert(wire.length === 1, `the ${label} menu sends ${wire.length} messages, expected one CTA card`);
+
+    // The card body has to be an interactiveMessage with CTA rows. Asserted on the
+    // source because the harness has no media upload, so Tier 1 would fall through
+    // before the CTA card is ever built. buttonsMessage is the pill row Skyler
+    // rejected and must not come back.
+    const src = await readFile(join(root, `src/menu/types/${file}`), 'utf8');
+    assert(src.includes('baileysBridge.sendCtaCard('), `the ${label} card is not sent as a CTA card`);
+    assert(!src.includes('baileysBridge.sendButtonsCard('), `the ${label} card still uses the buttonsMessage pill row`);
+    assert(!src.includes('baileysBridge.sendNativeFlow('), `the ${label} card still uses nativeFlow buttons`);
   }
 
-  return '5 card styles quoted';
+  return '5 card styles ride CTA interactiveMessage cards';
 });
 
 await check('greeting product card carries the menu banner', () => {

@@ -460,9 +460,14 @@ export const baileysBridge = {
     // ── interactiveMessage.contextInfo ───────────────────────────────────
     // Placed INSIDE the interactiveMessage (not top-level messageContextInfo).
     // Enables businessMessageForwardInfo, embedded externalAdReply, stanzaId, etc.
+    // A quote passed as an option has to be folded in here: sendInteractive
+    // relays a hand-built message, so it never reaches generateWAMessageFromContent
+    // and nothing else would attach the reply strip.
+    const quotedCtx = buildQuotedContextInfo(options.quoted);
+
     let interactiveContextInfo;
-    if (contextInfo || options.businessOwnerJid) {
-      interactiveContextInfo = { ...(contextInfo || {}) };
+    if (contextInfo || options.businessOwnerJid || quotedCtx) {
+      interactiveContextInfo = { ...(quotedCtx || {}), ...(contextInfo || {}) };
       if (options.businessOwnerJid && !interactiveContextInfo.businessMessageForwardInfo) {
         interactiveContextInfo.businessMessageForwardInfo = {
           businessOwnerJid: options.businessOwnerJid,
@@ -503,6 +508,53 @@ export const baileysBridge = {
     };
 
     return await this.relayMessage(sock, jid, msgContent, options);
+  },
+
+  /**
+   * Sends an interactiveMessage card whose buttons are CTA rows (cta_url,
+   * cta_copy, cta_call, quick_reply) instead of the pill row a buttonsMessage
+   * draws. Same card anatomy as sendButtonsCard — body, footer, titled media
+   * header, quoted card strip — so callers swap the sender and nothing else.
+   *
+   * Buttons may arrive pre-built ({ name: 'cta_url', params }) or in the older
+   * { text, url | copy | id } shape, which is mapped here.
+   *
+   * @param {object} sock
+   * @param {string} jid
+   * @param {object} card  { body|text, footer, title, subtitle, thumbnail|image, buttons, contextInfo }
+   * @param {object} [options]  sendMessage/relayMessage options (quoted, businessOwnerJid, ...)
+   */
+  async sendCtaCard(sock, jid, {
+    body, text, footer, title, subtitle, thumbnail, image, buttons, contextInfo,
+  } = {}, options = {}) {
+    const media = image || thumbnail;
+
+    const toCta = (btn) => {
+      if (!btn) return null;
+      // Already a CTA/quick_reply shape.
+      if (btn.name) return { name: btn.name, params: btn.params || {} };
+      const label = btn.displayText || btn.text || btn.label || btn.buttonText?.displayText || '';
+      let params = null;
+      if (btn.nativeFlowInfo?.paramsJson) {
+        try { params = JSON.parse(btn.nativeFlowInfo.paramsJson); } catch { params = null; }
+      }
+      const url  = btn.url  || params?.url;
+      const copy = btn.copy || params?.copy_code;
+      const id   = btn.id   || params?.id || btn.buttonId;
+      if (url)  return { name: 'cta_url',  params: { display_text: label, url } };
+      if (copy) return { name: 'cta_copy', params: { display_text: label, copy_code: copy } };
+      return { name: 'quick_reply', params: { display_text: label, id: id || label } };
+    };
+
+    return await this.sendInteractive(sock, jid, {
+      body:   body || text || '',
+      footer,
+      header: (title || subtitle || media)
+        ? { title, subtitle, ...(media ? { image: media } : {}) }
+        : undefined,
+      buttons: (buttons || []).map(toCta).filter(Boolean),
+      contextInfo,
+    }, options);
   },
 
   /**

@@ -4,7 +4,7 @@ import { imageManager } from '../../images/imageManager.js';
 import { buildFakeOrderQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
-import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
+import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton, buildCtaReplyButton, buildCtaUrlButton, buildCtaCopyButton } from './buttonsCard.js';
 import brand from '../../../config/brand.js';
 import { config } from '../../../config/index.js';
 
@@ -15,12 +15,12 @@ const displayName = (name) => (name === brand.name && brand.display?.name ? bran
 /**
  * Order Message Menu (id: 14) — enhanced for rich-messages.
  *
- * Uses sendButtonsCard (buttonsMessage proto) as Tier 1 for universal
+ * Uses sendCtaCard (interactiveMessage with CTA rows) as Tier 1 for universal
  * WhatsApp client compatibility. A fake orderMessage quote is used for
  * the reply bar (business order card with thumbnail + item count).
  *
  * Tiers:
- *   1 → sendButtonsCard with image header + subtitle + embedded adReply, quoted by order card
+ *   1 → sendCtaCard with image header + subtitle + embedded adReply, quoted by order card
  *   2 → imageMessage with caption, quoted by order card
  *   3 → guaranteed plain text
  */
@@ -33,21 +33,6 @@ export const orderMessageMenu = {
   renderer: async ({ sock, m, menuData }) => {
     const imgData = (await imageManager.getMenuImage(14).catch(() => null)) || {};
 
-    // ── Step 0: the style's own card — a real orderMessage ───────────────
-    // The fork refuses an orderText payload without a thumbnail Buffer, so this
-    // only fires when the banner actually came back as bytes.
-    try {
-      await baileysBridge.sendOrderCard(sock, m.from, {
-        text:              `${displayName(menuData.botName)} · ${menuData.totalCommands} ${toSmallcaps('commands')}`,
-        orderTitle:        `${menuData.prefix}menulist`,
-        thumbnail:         imgData.buffer || imgData.thumbBuffer,
-        sellerJid:         `${String((config.owner && config.owner[0]) || '233533416608').replace(/[^0-9]/g, '')}@s.whatsapp.net`,
-        totalAmount1000:   0,
-        totalCurrencyCode: 'USD',
-      });
-    } catch (err) {
-      console.warn('[MENU order] order card skipped:', err.message);
-    }
 
     // Build richer body text with visual stat rows
     const statBlock = [
@@ -102,7 +87,7 @@ export const orderMessageMenu = {
     // ── Tier 1: sendButtonsCard with image header + subtitle + embedded adReply ──
     if (imagePayload) {
       try {
-        return await baileysBridge.sendButtonsCard(sock, m.from, {
+        return await baileysBridge.sendCtaCard(sock, m.from, {
           body:       bodyText,
           footer:     footerText,
           title:      `\u2726 ${toSmallcaps('Command Catalog')} \u2726`,
@@ -114,7 +99,7 @@ export const orderMessageMenu = {
             buildPillCopyButton(`\u{1F4CE} ${toSmallcaps('Copy Prefix')}`, menuData.prefix),
             buildPillButton(`\u{1F3A8} ${toSmallcaps('Browse Menu Styles')}`, `${menuData.prefix}menulist`),
             buildPillButton(`\u{1F916} ${toSmallcaps('System Stats')}`,       `${menuData.prefix}menu aiDynamic`),
-            buildNavigationButton(menuData.prefix),
+            buildCtaReplyButton(`\u2630 ${toSmallcaps('All Commands')}`, `${menuData.prefix}help`),
           ],
           contextInfo: { externalAdReply: adReply },
         }, { quoted: orderQuote });
