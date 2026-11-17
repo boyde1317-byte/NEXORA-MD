@@ -25,6 +25,7 @@ import { greyCopy, DIM_BODY } from '../../lib/dimCard.js';
 
 import { withChannelPill } from '../../lib/menuContext.js';
 import capabilities from '../../core/capabilities.js';
+import { baileysBridge } from '../../core/baileysBridge.js';
 import { selectMenu } from '../../lib/interactiveKit.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildTextMenu } from '../formatter.js';
@@ -81,12 +82,28 @@ export const commandDirectoryMenu = {
       }
     }
 
-    // ── Tier 2: the classic text menu (guaranteed) ─────────────────────
+    // ── Tier 2: the full command list as a grey card ───────────────────
+    // Same footer-copy treatment as every other menu, so the list still reads
+    // small and grey instead of arriving as a caption on the banner.
     const imgData = await imageManager.getMenuImage(17).catch(() => null);
-    if (imgData?.buffer || imgData?.source) {
-      const imagePayload = imgData.source?.startsWith('http')
-        ? { url: imgData.source }
-        : imgData.buffer;
+    const imagePayload = imgData?.buffer || (imgData?.source?.startsWith('http') ? { url: imgData.source } : null);
+    try {
+      return await baileysBridge.sendCtaCard(sock, m.from, {
+        dim:     true,
+        body:    buildTextMenu(menuData),
+        footer:  `${displayName(menuData.botName)} • ${toSmallcaps('every command')}`,
+        title:   `✦ ${displayName(menuData.botName)} ✦`,
+        thumbnail: imagePayload || undefined,
+        buttons: [
+          { text: `🎨 ${toSmallcaps('Menu Styles')}`, id: `${p}menulist` },
+          { text: `⚡ ${toSmallcaps('System Stats')}`, id: `${p}menu aiDynamic` },
+          { text: `📞 ${toSmallcaps('Contact Dev')}`, url: 'https://wa.me/233533416608' },
+        ],
+      }, { quoted: m });
+    } catch (err) {
+      console.warn('[MENU commandDirectory] grey card failed, sending plain text:', err.message);
+    }
+    if (imagePayload) {
       return await sock.sendMessage(m.from, {
         image: imagePayload,
         caption: buildTextMenu(menuData),

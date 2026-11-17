@@ -67,6 +67,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     contact, documentInteractive, location, moonsonCard, nativeFlow, newsletter,
     orderMessage, product, richCard. atlasMenu and galaxyMenu already did it.
   - New release check fails any menu style that puts its copy back in the body.
+  - commandDirectory's fallback was still sending the full list as an image
+    caption; it is now a grey CTA card like the rest, with the image caption kept
+    only as the last-resort path.
 - `a2uiSurface` now claims id 16 instead of 20: it was registered under the same
   id as `product` and won the key, so `.menu 20` silently rendered the A2UI card
   and the product style was unreachable by number.
