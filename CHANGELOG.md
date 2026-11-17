@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- `.start` — the "Start chatting" card from the zapo-js bases, in all four wire
+  forms so a device can settle which one the reference screenshot uses:
+  `.start` (cta_url → wa.me), `.start quick` (native-flow quick_reply),
+  `.start legacy` (buttonsMessage RESPONSE, the solid-green rendering) and
+  `.start contact` (a real vCard message, where WhatsApp paints its own green
+  action bar). Header image comes from the brand banner.
+
+### Added
 - The zapo-style green "Start chatting" pill: a native-flow `cta_url` button
   opening `wa.me/<bot>` (chosen over `open_chat`, which the device audit shows
   renders inert). `sendBrandSheet` takes `startChat: true | { label, text }`

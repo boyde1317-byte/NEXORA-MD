@@ -364,6 +364,44 @@ await check('command VIP surfaces build valid envelopes', async () => {
   return seen.join(', ');
 });
 
+await check('.start ships all four Start chatting wire forms', async () => {
+  const plugin = (await import(join(root, 'src/plugins/general/start.js'))).default;
+  const m = {
+    from: '120363000000000000@g.us',
+    key: { id: 'ORIG', remoteJid: '120363000000000000@g.us', participant: '1@s.whatsapp.net' },
+    message: { conversation: '.start' },
+    reply: { error: async (e) => { throw new Error(typeof e === 'string' ? e : 'reply.error'); } },
+  };
+
+  const run = async (args) => {
+    const sent = [];
+    const sock = {
+      user: { id: '233533416608:1@s.whatsapp.net' },
+      waUploadToServer: async () => ({ mediaUrl: 'https://mmg.whatsapp.net/x', directPath: '/x' }),
+      relayMessage: async (_j, c) => { sent.push(c); return { key: { id: 'r' } }; },
+      sendMessage: async (_j, b) => { sent.push(b); return { key: { id: 's' } }; },
+    };
+    await plugin.execute({ sock, m, args, prefix: '.' });
+    return sent[0] || {};
+  };
+
+  const cta = await run([]).then((c) => c.interactiveMessage?.nativeFlowMessage?.buttons?.[0]);
+  assert(cta?.name === 'cta_url', '.start default is not a cta_url button');
+  assert(/^https:\/\/wa\.me\/\d{8,}$/.test(JSON.parse(cta.buttonParamsJson).url), '.start cta_url has no wa.me target');
+
+  const quick = await run(['quick']).then((c) => c.interactiveMessage?.nativeFlowMessage?.buttons?.[0]);
+  assert(quick?.name === 'quick_reply', '.start quick is not a quick_reply button');
+  assert(JSON.parse(quick.buttonParamsJson).id.includes('start'), '.start quick reply id is unroutable');
+
+  const legacy = await run(['legacy']);
+  assert(legacy?.buttonsMessage?.buttons?.[0]?.type === 1, '.start legacy is not a RESPONSE button');
+
+  const contact = await run(['contact']);
+  assert(contact?.contacts?.contacts?.[0]?.vcard, '.start contact sent no vCard');
+  assert(/waid=\d{8,}/.test(contact.contacts.contacts[0].vcard), '.start contact vCard has no waid');
+  return 'cta_url / quick_reply / legacy / contact';
+});
+
 await check('.credits opens the brand sheet, not a vCard bubble', async () => {
   const { sendBrandSheet, renderSections } = await import(join(root, 'src/lib/brandSheet.js'));
   assert(/» \*/.test(renderSections([{ heading: 'H', lines: ['a', 'b'] }])), 'section renderer lost its headings');
