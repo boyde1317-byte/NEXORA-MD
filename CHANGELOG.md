@@ -5,6 +5,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- `.play` / `.ytmp4` extraction. Every keyless source behind them was dead
+  (verified live 2026-11-17): the tioo `/youtube` route answers a 20-byte
+  `{"status":true}` with no links, loader.to answers `api_key_required`,
+  cobalt instances demand a JWT, Piped/Invidious return 403 or a disabled
+  endpoint, and YouTube's own innertube player returns zero formats. `yt-dlp`
+  (already in the image for Instagram) now leads the chain, ahead of tioo and
+  loader.to, and was verified extracting real audio from the live Fly machine
+  (itag 251, 400 kB/s, no bot check from the London IP). Video is capped at
+  720p and m4a audio is preferred, so a 4K result can never be offered to
+  WhatsApp. Failures are now reported per source instead of "both sources are
+  down", and the bot check is classified with the exact cookie fix.
+
+### Added
+- `src/lib/ytdlp.js`: yt-dlp bridge used by the YouTube downloader. Cookies
+  are optional and resolve from `YOUTUBE_COOKIES_B64`, `YOUTUBE_COOKIES` or
+  `/app/data/cookies.txt`; the Fly IP does not currently need them.
+
 ### Changed
 - Style-text beautifying sweep across the remaining untouched strings
   (wording unchanged, typography only): greeting defaults and the

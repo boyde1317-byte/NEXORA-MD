@@ -178,11 +178,38 @@ export async function youtubeSearch(query) {
  * already buffer immediately, which is why we kept that contract.
  */
 export async function youtubeDownload(url, { preferMp4 = false } = {}) {
-  // ── Primary: tioo family (works again if their extractor recovers) ──
+  const reasons = [];
+
+  // ── Source 1: yt-dlp (self-hosted, already in the image) ─────────────
+  // Every keyless hosted extractor died (see src/lib/ytdlp.js), so the
+  // self-hosted extractor leads instead of trailing. Without YouTube cookies
+  // a datacenter IP gets the bot check, which is reported, not hidden.
+  let botCheck = false;
+  try {
+    const { ytdlpExtract } = await import('./ytdlp.js');
+    const out = await ytdlpExtract(url);
+    if (out.mp3 || out.mp4) {
+      return {
+        title: out.title,
+        author: out.author,
+        thumbnail: out.thumbnail,
+        duration: out.duration,
+        mp4: preferMp4 ? (out.mp4 || out.mp3) : out.mp4,
+        mp3: out.mp3,
+        source: out.usedCookies ? 'yt-dlp (cookies)' : 'yt-dlp',
+      };
+    }
+    reasons.push('yt-dlp: no downloadable stream');
+  } catch (err) {
+    if (err.code === 'BOT_CHECK') botCheck = true;
+    reasons.push(`yt-dlp: ${err.message}`);
+  }
+
+  // ── Source 2: tioo family (alive again if their extractor recovers) ───
   try {
     const data = await getJson(`/youtube?url=${encodeURIComponent(url)}`);
-    // A 200/status:true body with NO links is the new dead-extractor
-    // shape — count it as a failure instead of a success.
+    // A 200/status:true body with NO links is the dead-extractor shape —
+    // count it as a failure instead of a success.
     const alive = data?.status && (data.mp3 || data.mp4);
     if (alive) {
       return {
@@ -191,16 +218,23 @@ export async function youtubeDownload(url, { preferMp4 = false } = {}) {
         thumbnail: data.thumbnail,
         mp4: data.mp4,
         mp3: data.mp3,
+        source: 'tioo',
       };
     }
-  } catch (_) { /* primary down/empty — fall through to loader.to */ }
-
-  // ── Fallback: loader.to two-step ──────────────────────────────────
-  const viaLoader = await loaderToDownload(url, preferMp4 ? '360' : 'mp3');
-  if (!viaLoader) {
-    throw new Error('YouTube extraction is down on both sources right now (the fallback now requires an API key). Try again in a few minutes.');
+    reasons.push('tioo: answered without any link');
+  } catch (err) {
+    reasons.push(`tioo: ${err.message}`);
   }
-  return viaLoader;
+
+  // ── Source 3: loader.to two-step (needs an API key these days) ────────
+  const viaLoader = await loaderToDownload(url, preferMp4 ? '360' : 'mp3').catch(() => null);
+  if (viaLoader) return { ...viaLoader, source: 'loader.to' };
+  reasons.push('loader.to: requires an API key');
+
+  const hint = botCheck
+    ? ' YouTube is demanding a signed-in session for this server. Add cookies once: fly secrets set YOUTUBE_COOKIES_B64="$(base64 -w0 cookies.txt)"'
+    : '';
+  throw new Error(`Couldn't extract that video — ${reasons.join('; ')}.${hint}`);
 }
 
 /**

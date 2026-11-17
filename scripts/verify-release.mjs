@@ -491,6 +491,73 @@ await check('messageBuilder exposes the menu-19 techniques', async () => {
   return 'galaxy / opener pair / params / pill / viewOnce';
 });
 
+await check('yt-dlp YouTube source extracts and reports its failures', async () => {
+  const fs = await import('node:fs/promises');
+  const os = await import('node:os');
+  const stamp = process.pid;
+  const okStub = `/tmp/ytdlp-ok-${stamp}`;
+  const botStub = `/tmp/ytdlp-bot-${stamp}`;
+  const argsLog = `/tmp/ytdlp-args-${stamp}`;
+  const cookies = `/tmp/ytdlp-cookies-${stamp}.txt`;
+
+  await fs.writeFile(
+    okStub,
+    `#!/bin/sh\nprintf '%s\\n' "$@" > ${argsLog}\n` +
+      `echo '{"title":"Stub Song","uploader":"Stub","thumbnail":"https://i.ytimg.com/x.jpg","duration":200,` +
+      `"formats":[{"url":"https://rr1.googlevideo.com/a.m4a","acodec":"mp4a.40.2","vcodec":"none","abr":128,"ext":"m4a"},` +
+      `{"url":"https://rr1.googlevideo.com/a.webm","acodec":"opus","vcodec":"none","abr":160,"ext":"webm"},` +
+      `{"url":"https://rr1.googlevideo.com/v4k.mp4","acodec":"none","vcodec":"avc1","height":2160,"ext":"mp4"},` +
+      `{"url":"https://rr1.googlevideo.com/v.mp4","acodec":"none","vcodec":"avc1","height":720,"ext":"mp4"}]}'\n`,
+    { mode: 0o755 }
+  );
+  await fs.writeFile(botStub, "#!/bin/sh\necho \"ERROR: [youtube] x: Sign in to confirm you're not a bot. Use --cookies\" >&2\nexit 1\n", { mode: 0o755 });
+  await fs.writeFile(cookies, '# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t0\tSID\tstub\n');
+
+  const prevBin = process.env.YTDLP_PATH;
+  const prevCookies = process.env.YOUTUBE_COOKIES;
+  process.env.YTDLP_PATH = okStub;
+  process.env.YOUTUBE_COOKIES = cookies;
+
+  try {
+    const mod = await import(join(root, `src/lib/ytdlp.js?stub=${stamp}`));
+    mod.resetCookieCache();
+    assert(mod.resolveCookiePath() === cookies, 'cookie path was not resolved from YOUTUBE_COOKIES');
+
+    const out = await mod.ytdlpExtract('https://youtu.be/aqz-KE-bpKQ');
+    assert(out.title === 'Stub Song', 'yt-dlp extraction lost the title');
+    assert(out.mp3?.endsWith('/a.m4a'), 'yt-dlp extraction did not pick the audio stream');
+    assert(out.mp4?.endsWith('/v.mp4'), 'yt-dlp extraction did not pick the video stream');
+    assert(out.height === 720, `yt-dlp picked a ${out.height}p video instead of capping at 720p`);
+    assert(out.mp3?.endsWith('.m4a'), 'yt-dlp preferred Opus over the smaller m4a audio');
+
+    const passedArgs = await fs.readFile(argsLog, 'utf8');
+    assert(passedArgs.includes('--cookies') && passedArgs.includes(cookies), 'yt-dlp was called without the configured cookies');
+    assert(passedArgs.includes('--no-playlist'), 'yt-dlp was allowed to expand a playlist');
+
+    // The bot check must be classified, not swallowed as a generic error.
+    process.env.YTDLP_PATH = botStub;
+    const botPath = `/tmp/ytdlp-bot2-${stamp}`;
+    await fs.copyFile(botStub, botPath);
+    await fs.chmod(botPath, 0o755);
+    process.env.YTDLP_PATH = botPath;
+    let code = null;
+    try {
+      await mod.ytdlpExtract('https://youtu.be/aqz-KE-bpKQ');
+    } catch (err) {
+      code = err.code;
+    }
+    assert(code === 'BOT_CHECK', `bot check was classified as ${code} instead of BOT_CHECK`);
+    return 'audio/video pick, cookie flag, bot-check classification';
+  } finally {
+    if (prevBin === undefined) delete process.env.YTDLP_PATH; else process.env.YTDLP_PATH = prevBin;
+    if (prevCookies === undefined) delete process.env.YOUTUBE_COOKIES; else process.env.YOUTUBE_COOKIES = prevCookies;
+    await fs.rm(okStub, { force: true });
+    await fs.rm(botStub, { force: true });
+    await fs.rm(argsLog, { force: true });
+    await fs.rm(cookies, { force: true });
+  }
+});
+
 await check('sticker annotation builds a real annotation', async () => {
   const mod = await import(join(root, 'src/lib/stickerAnnotation.js'));
   const { default: sharp } = await import('sharp');
