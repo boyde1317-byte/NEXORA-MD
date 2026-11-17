@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- A2UI surfaces now ship in the v0.9 wire format, which is why the widget
+  area stayed empty while the card's own text and CTAs rendered fine. The
+  pinned fork wrapped the whole surface in one `createSurface` object with
+  `components` inside it; v0.9 allows only `surfaceId`/`catalogId` there
+  (`additionalProperties: false`) and expects the tree in a separate
+  `updateComponents` message, delivered as a message list. Every audit
+  surface and menu 20 now validate against the published v0.9 schema.
+- Button actions are wrapped as `{ functionCall: { call, args } }` instead of
+  a bare `{ call, args }`, and `ChoicePicker` options carry `label`/`value`
+  rather than `id` — both were schema violations that made the client drop
+  the surface without an error.
+- `.testa2ui probe` now sends the same card in three payload shapes
+  (wrapper, raw list, legacy single-object) so the phone can settle which
+  shape a client actually accepts.
+
 - A2UI cards were invisible on the phone: menu 20 and every `.testa2ui`
   surface were sent as a widget-only `interactiveMessage`, which relays
   fine and then paints nothing on a client that does not render the

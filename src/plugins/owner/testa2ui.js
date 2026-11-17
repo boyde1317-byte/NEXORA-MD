@@ -75,7 +75,7 @@ export default {
       sections.push({
         title: 'Batch',
         rows: [
-          { id: `${p}testa2ui probe`, title: '🎯 Probe this phone', description: '3 variants of one card — which one actually renders?' },
+          { id: `${p}testa2ui probe`, title: '🎯 Probe this phone', description: 'one surface in 3 wire shapes — which one paints the A2UI panel?' },
           { id: `${p}testa2ui check`, title: '🔍 Validate all (offline)', description: 'Run the pre-send validation, send nothing' },
           { id: `${p}testa2ui all`, title: '🚀 Send every surface', description: `${surfaces.length} cards in sequence` },
           { id: `${p}testa2ui list`, title: '📄 List ids', description: 'Text list of every audit surface' },
@@ -116,7 +116,7 @@ export default {
       for (const t of surfaces) {
         const built = buildA2ui({ components: t.build() });
         if (built.ok) {
-          lines.push(`✅ ${t.id} — ${built.surface.createSurface.components.length} nodes`);
+          lines.push(`✅ ${t.id} — ${built.components.length} nodes`);
         } else {
           failed++;
           lines.push(`❌ ${t.id} — ${built.errors.join('; ')}`);
@@ -155,42 +155,44 @@ export default {
       const shared = {
         components,
         title: 'A2UI probe',
-        subtitle: 'which variant renders?',
-        text: 'A2UI probe — this body text must be visible in every variant.',
+        subtitle: 'which payload shape renders?',
         footer: 'NEXORA A2UI probe',
       };
 
+      // Same surface, three wire shapes. The widget area shows something only
+      // for the shape this client actually parses; everything else still
+      // arrives as a normal card thanks to the CTA layer.
+      const variants = [
+        ['🅰 wrapper', 'wrapper', '{ messages: [createSurface, updateComponents] }'],
+        ['🅱 list', 'list', 'raw [createSurface, updateComponents] array'],
+        ['🅲 legacy', 'legacy', "fork's single createSurface object"],
+      ];
+
       const results = [];
-      try {
-        await sendA2uiSurface(sock, jid, { ...shared, text: '🅰 widget + 2 buttons (what menu 20 sends)' }, { quoted: m });
-        results.push('🅰 widget + buttons — sent');
-      } catch (err) {
-        results.push(`🅰 widget + buttons — FAILED: ${err.message}`);
-      }
-      await gap();
-
-      try {
-        await sendA2uiSurface(sock, jid, { ...shared, widget: false, text: '🅱 buttons only, no widget' }, { quoted: m });
-        results.push('🅱 buttons only — sent');
-      } catch (err) {
-        results.push(`🅱 buttons only — FAILED: ${err.message}`);
-      }
-      await gap();
-
-      try {
-        await sock.sendMessage(jid, { text: '🅲 plain text — this one always arrives' }, { quoted: m });
-        results.push('🅲 plain text — sent');
-      } catch (err) {
-        results.push(`🅲 plain text — FAILED: ${err.message}`);
+      for (const [label, shape, note] of variants) {
+        try {
+          await sendA2uiSurface(
+            sock,
+            jid,
+            { ...shared, shape, text: `${label} — ${note}` },
+            { quoted: m }
+          );
+          results.push(`${label} — sent`);
+        } catch (err) {
+          results.push(`${label} — FAILED: ${err.message}`);
+        }
+        await gap();
       }
 
       return m.reply(
-        `🎯 *A2UI probe sent*\n\n${results.join('\n')}\n\n` +
-          `*How to read it:*\n` +
-          `• A and B visible → the card renders; the widget is the only question.\n` +
-          `• Only B visible → this client does not paint the BloksWidget slot, so cards must keep their buttons (they do now).\n` +
-          `• Only C visible → interactive cards are being dropped on this chat; use \`${p}menu 13\` or \`${p}menu 14\` meanwhile.\n` +
-          `_Widget slot (pinned proto): ${a2uiSupported() ? 'supported' : 'NOT supported'}; surface nodes: ${built.ok ? built.surface.createSurface.components.length : 'invalid'}_`
+        `🎯 *A2UI payload probe sent*\n\n${results.join('\n')}\n\n` +
+          `*Read it like this:* the body + buttons arrive in all three (that layer is proven). ` +
+          `Whichever card also shows the A2UI panel is the shape this client parses.\n\n` +
+          `• 🅰 or 🅱 renders → we are on spec v0.9 and only the envelope was wrong.\n` +
+          `• Only 🅲 renders → this client wants the fork's legacy object.\n` +
+          `• None render → the client ignores the BloksWidget slot entirely for this account; ` +
+          `no payload shape will paint it.\n\n` +
+          `_Widget slot (pinned proto): ${a2uiSupported() ? 'supported' : 'NOT supported'}; surface nodes: ${built.ok ? built.components.length : 'invalid'}_`
       );
     }
 

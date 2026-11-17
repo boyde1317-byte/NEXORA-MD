@@ -238,6 +238,64 @@ await check('A2UI menu surface has no orphan components', () => {
   return `${components.length} nodes reachable`;
 });
 
+await check('A2UI payload matches the v0.9 wire format', () => {
+  const built = kit.buildA2ui({
+    components: [
+      kit.A2.column('root', ['t', 'lbl', 'btn']),
+      kit.A2.text('t', 'Title', 'h3'),
+      kit.A2.text('lbl', 'Open'),
+      kit.A2.urlButton('btn', 'lbl', 'https://example.com'),
+    ],
+  });
+  assert(built.ok, built.errors.join('; '));
+  const payload = built.surface;
+  const messages = payload.messages;
+  assert(Array.isArray(messages) && messages.length === 2, 'payload is not a two-message list');
+
+  const create = messages[0].createSurface;
+  assert(messages[0].version === 'v0.9', 'createSurface missing version v0.9');
+  assert(create && create.surfaceId && create.catalogId, 'createSurface missing ids');
+  // The spec forbids extra keys here (additionalProperties: false): components
+  // inside createSurface is what made every card render as nothing.
+  assert(!('components' in create), 'components leaked into createSurface');
+
+  const update = messages[1].updateComponents;
+  assert(messages[1].version === 'v0.9', 'updateComponents missing version v0.9');
+  assert(update && update.surfaceId === create.surfaceId, 'updateComponents targets another surface');
+  assert(Array.isArray(update.components) && update.components.length === 4, 'components missing');
+
+  // Button actions must be spec-shaped: { functionCall | event }, never { call }.
+  const button = update.components.find((c) => c.component === 'Button');
+  assert(button.action.functionCall, 'button action is not wrapped in functionCall');
+  assert(button.action.functionCall.call === 'openUrl', 'functionCall name lost');
+  assert(button.action.functionCall.args.url === 'https://example.com', 'functionCall url lost');
+  assert(button.action.functionCall.returnType === 'void', 'openUrl should return void');
+
+  // ChoicePicker options are { label, value } only — an `id` key is rejected.
+  for (const node of update.components) {
+    if (node.component !== 'ChoicePicker') continue;
+    for (const opt of node.options) {
+      assert(opt.value !== undefined && opt.label !== undefined, 'choice option missing label/value');
+      assert(opt.id === undefined, 'choice option still carries `id`');
+    }
+  }
+  return `${update.components.length} nodes, ${messages.length} messages`;
+});
+
+await check('A2UI shape variants stay available for A/B', () => {
+  const c = [kit.A2.column('root', ['t']), kit.A2.text('t', 'x')];
+  const wrap = kit.buildA2ui({ components: c, shape: 'wrapper' });
+  const list = kit.buildA2ui({ components: c, shape: 'list' });
+  const legacy = kit.buildA2ui({ components: c, shape: 'legacy' });
+  assert(wrap.surface.messages.length === 2, 'wrapper lost its message list');
+  assert(Array.isArray(list.surface) && list.surface.length === 2, 'list shape is not an array');
+  assert(legacy.surface.createSurface.components, 'legacy shape changed');
+  assert(kit.componentsOf(wrap.surface).length === 2, 'componentsOf(wrapper) failed');
+  assert(kit.componentsOf(list.surface).length === 2, 'componentsOf(list) failed');
+  assert(kit.componentsOf(legacy.surface).length === 2, 'componentsOf(legacy) failed');
+  return 'wrapper, list, legacy';
+});
+
 // ── Regression: an A2UI card must never be widget-only ──────────────────────
 // A widget-only interactiveMessage relays fine and then renders as an empty
 // bubble on any client that does not paint the BloksWidget slot — the exact

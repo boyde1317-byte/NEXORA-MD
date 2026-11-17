@@ -69,19 +69,144 @@ export const a2uiSupported = () => bloksWidgetSupport();
  * @param {string} [input.catalogId]   override the catalog
  * @returns {{ok: boolean, surface: object|null, errors: string[], text: string}}
  */
-export function buildA2ui({ uuid, components, surfaceId, catalogId } = {}) {
+/**
+ * Wrap a bare `{ call, args }` button action in the `functionCall` object the
+ * v0.9 catalog requires.
+ *
+ * The fork's `a2uiUrlButton()` emits `action: { call: 'openUrl', args: { url } }`,
+ * but the spec's Action type is a oneOf of `{ event }` or `{ functionCall }` —
+ * a bare `{call,args}` matches neither, so a client that validates the surface
+ * rejects the whole card (nothing renders). `openUrl` is a basic-catalog
+ * function and returns nothing, hence `returnType: 'void'`.
+ *
+ * @param {object} action
+ * @returns {object} spec-shaped action
+ */
+export function normalizeA2uiAction(action) {
+  if (!action || typeof action !== 'object') return action;
+  if (action.event || action.functionCall) return action;
+  if (typeof action.call === 'string') {
+    return {
+      functionCall: {
+        call: action.call,
+        args: action.args || {},
+        returnType: action.call === 'openUrl' ? 'void' : 'boolean',
+      },
+    };
+  }
+  return action;
+}
+
+/** Shallow-copy the tree with spec-valid button actions. */
+export function normalizeA2uiComponents(components = []) {
+  if (!Array.isArray(components)) return components;
+  return components.map((node) => {
+    if (!node || typeof node !== 'object') return node;
+    const out = { ...node };
+    if (Array.isArray(node.children)) out.children = [...node.children];
+    if (Array.isArray(node.tabs)) out.tabs = node.tabs.map((t) => ({ ...t }));
+    if (node.component === 'Button' && node.action) out.action = normalizeA2uiAction(node.action);
+    // ChoicePicker options are { label, value } in the catalog (no `id`), and
+    // `additionalProperties: false` rejects anything else. Callers that pass
+    // { id, label } (a natural guess, and what auditSurfaces did first) get
+    // their key renamed instead of the whole surface being dropped.
+    if (node.component === 'ChoicePicker' && Array.isArray(node.options)) {
+      out.options = node.options.map((opt) => {
+        if (!opt || typeof opt !== 'object') return opt;
+        if (opt.value !== undefined) return { label: opt.label, value: opt.value };
+        const { id, ...rest } = opt;
+        return { ...rest, value: rest.value ?? id ?? rest.label };
+      });
+    }
+    return out;
+  });
+}
+
+/**
+ * Payload shapes, for A/B-ing against a real client.
+ *
+ *   'wrapper' — { messages: [createSurface, updateComponents] }   ← spec v0.9
+ *   'list'    — [createSurface, updateComponents]                 ← same, raw array
+ *   'legacy'  — { version, createSurface: { …, components } }     ← what the fork
+ *               builds and what WhatsApp renders as empty (documented below)
+ */
+export const A2UI_SHAPES = ['wrapper', 'list', 'legacy'];
+export const A2UI_DEFAULT_SHAPE = 'wrapper';
+
+/** Pull the component array out of any supported payload shape. */
+export function componentsOf(payload) {
+  if (Array.isArray(payload)) {
+    const upd = payload.find((m) => m && m.updateComponents);
+    if (upd) return upd.updateComponents.components || [];
+    return payload;
+  }
+  if (payload?.messages) return componentsOf(payload.messages);
+  if (payload?.updateComponents) return payload.updateComponents.components || [];
+  if (payload?.createSurface?.components) return payload.createSurface.components;
+  return [];
+}
+
+/**
+ * Compose the wire payload for a surface.
+ *
+ * A2UI v0.9 sends components in their own `updateComponents` message — the
+ * `createSurface` message carries ONLY `surfaceId` and `catalogId`
+ * (`additionalProperties: false`), so a `components` array inside it is
+ * schema-invalid and is dropped by a validating client. That is why the fork's
+ * single-object surface (`{ version, createSurface: { …, components } }`)
+ * renders nothing on WhatsApp while the envelope around it is fine.
+ *
+ * @param {object} input
+ * @param {string} [input.uuid]
+ * @param {object[]} input.components
+ * @param {string} [input.surfaceId]
+ * @param {string} [input.catalogId]
+ * @param {'wrapper'|'list'|'legacy'} [input.shape]
+ * @returns {object|object[]} payload for bloksWidget.data
+ */
+export function buildA2uiMessages({ uuid, components, surfaceId, catalogId, shape = A2UI_DEFAULT_SHAPE } = {}) {
+  const nodes = normalizeA2uiComponents(components);
+
+  // Reuse the fork's builder only for its namespaced surface id + catalog id.
+  const base = buildA2uiSurface({ uuid, components: nodes, surfaceId, catalogId });
+  const sid = base.createSurface.surfaceId;
+  const cat = base.createSurface.catalogId;
+
+  if (shape === 'legacy') return base;
+
+  const messages = [
+    { version: A2UI_SPEC_VERSION, createSurface: { surfaceId: sid, catalogId: cat } },
+    { version: A2UI_SPEC_VERSION, updateComponents: { surfaceId: sid, components: nodes } },
+  ];
+
+  return shape === 'list' ? messages : { messages };
+}
+
+/**
+ * Compose and validate a surface.
+ *
+ * @param {object} input
+ * @param {string} [input.uuid]        surface uuid (generated when omitted)
+ * @param {object[]} input.components  A2UI component nodes, exactly one `root`
+ * @param {string} [input.surfaceId]   override the namespaced surface id
+ * @param {string} [input.catalogId]   override the catalog
+ * @param {'wrapper'|'list'|'legacy'} [input.shape]  payload shape (default wrapper)
+ * @returns {{ok: boolean, surface: object|null, components: object[], shape: string, errors: string[], text: string}}
+ */
+export function buildA2ui({ uuid, components, surfaceId, catalogId, shape = A2UI_DEFAULT_SHAPE } = {}) {
   const check = validateA2uiComponents(components);
   if (!check.ok) {
     console.warn('[a2uiKit] surface rejected before send: ' + check.errors.join('; '));
-    return { ok: false, surface: null, errors: check.errors, text: '' };
+    return { ok: false, surface: null, components: [], shape, errors: check.errors, text: '' };
   }
   let surface = null;
   try {
-    surface = buildA2uiSurface({ uuid, components, surfaceId, catalogId });
+    surface = buildA2uiMessages({ uuid, components, surfaceId, catalogId, shape });
   } catch (err) {
-    return { ok: false, surface: null, errors: [err.message], text: '' };
+    return { ok: false, surface: null, components: [], shape, errors: [err.message], text: '' };
   }
-  return { ok: true, surface, errors: [], text: surfaceToText(surface) };
+  const nodes = componentsOf(surface);
+  return { ok: true, surface, components: nodes, shape, errors: [], text: surfaceToText(surface) };
 }
 
 /**
@@ -101,11 +226,12 @@ export function attachA2ui(interactiveMessage, input, options = {}) {
 
   let surface = input;
   if (Array.isArray(input)) {
-    const built = buildA2ui({ uuid: options.uuid, components: input });
+    const built = buildA2ui({ uuid: options.uuid, components: input, shape: options.shape });
     if (!built.ok) return interactiveMessage;
     surface = built.surface;
-  } else if (input?.createSurface) {
-    const check = validateA2uiComponents(input.createSurface.components);
+  } else if (input?.createSurface || input?.updateComponents || input?.messages) {
+    // A ready payload: validate whatever components it actually carries.
+    const check = validateA2uiComponents(componentsOf(input));
     if (!check.ok) {
       console.warn('[a2uiKit] surface rejected before attach: ' + check.errors.join('; '));
       return interactiveMessage;
@@ -192,7 +318,12 @@ export function a2uiEnvelopeSpec(spec = {}) {
 export async function sendA2uiSurface(sock, jid, spec = {}, opts = {}) {
   const fallbackText = spec.text || spec.caption || spec.title || 'NEXORA';
 
-  const built = buildA2ui({ uuid: spec.uuid, components: spec.components, surfaceId: spec.surfaceId });
+  const built = buildA2ui({
+    uuid: spec.uuid,
+    components: spec.components,
+    surfaceId: spec.surfaceId,
+    shape: spec.shape,
+  });
   if (!built.ok) {
     const reason = built.errors.join('; ');
     console.warn(`[a2uiKit] falling back to text (${reason})`);
@@ -205,10 +336,19 @@ export async function sendA2uiSurface(sock, jid, spec = {}, opts = {}) {
   // makes the envelope a complete interactive card, so the body text and the
   // buttons always render and the widget is a pure enhancement on top.
   const envelope = a2uiEnvelopeSpec(spec);
+  // Ship the spec-shaped payload we built; the fork stringifies `surface`
+  // verbatim into bloksWidget.data. `warn: false` silences its own validator,
+  // which only understands the fork's (invalid) single-object shape.
+  envelope.surface = built.surface;
+  envelope.warn = false;
   if (!a2uiSupported() && envelope.widget !== false) {
     console.warn('[a2uiKit] proto cannot carry a widget — sending the card without it');
     envelope.widget = false;
   }
+
+  const nodes = built.components.length;
+  const bytes = JSON.stringify(built.surface).length;
+  console.log(`[a2uiKit] send shape=${built.shape} nodes=${nodes} bytes=${bytes} cta=${envelope.buttons.length}`);
 
   try {
     return await sock.sendMessage(jid, { a2ui: envelope }, opts);
@@ -232,7 +372,7 @@ const line = (label, value) => (value === undefined || value === null || value =
  * @returns {string}
  */
 export function surfaceToText(surface) {
-  const nodes = surface?.createSurface?.components;
+  const nodes = componentsOf(surface);
   if (!Array.isArray(nodes) || nodes.length === 0) return '';
 
   const byId = new Map();
@@ -460,8 +600,8 @@ export function auditSurfaces() {
         A2.choicePicker('p1', {
           label: 'Theme',
           options: [
-            { id: 'dark', label: 'Dark' },
-            { id: 'light', label: 'Light' },
+            { label: 'Dark', value: 'dark' },
+            { label: 'Light', value: 'light' },
           ],
           value: ['dark'],
           variant: 'mutuallyExclusive',
@@ -470,9 +610,9 @@ export function auditSurfaces() {
         A2.choicePicker('p2', {
           label: 'Categories',
           options: [
-            { id: 'ai', label: 'AI' },
-            { id: 'games', label: 'Games' },
-            { id: 'tools', label: 'Tools' },
+            { label: 'AI', value: 'ai' },
+            { label: 'Games', value: 'games' },
+            { label: 'Tools', value: 'tools' },
           ],
           value: ['ai', 'games'],
           variant: 'multipleSelection',
@@ -542,8 +682,8 @@ export function auditSurfaces() {
         A2.choicePicker('p1', {
           label: 'Tier',
           options: [
-            { id: 'free', label: 'Free' },
-            { id: 'pro', label: 'Pro' },
+            { label: 'Free', value: 'free' },
+            { label: 'Pro', value: 'pro' },
           ],
           value: ['pro'],
           variant: 'mutuallyExclusive',
