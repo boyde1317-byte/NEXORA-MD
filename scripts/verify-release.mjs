@@ -1185,23 +1185,29 @@ await check('every card style rides on its waUtils card', async () => {
     return null;
   };
 
+  // [label, file, export, quoted card, own card key on the wire]
+  // The quoted card alone is invisible to the reader (WhatsApp shows no card
+  // preview in a quote), so the style's own message type has to lead. Newsletter
+  // is the exception: it needs a channelJid to build an invite, so it keeps riding
+  // on the quote until one is configured.
   const styles = [
-    ['product', 'product.js', 'productMenu', 'productMessage'],
-    ['order', 'orderMessage.js', 'orderMessageMenu', 'orderMessage'],
-    ['contact', 'contact.js', 'contactMenu', 'contactMessage'],
-    ['location', 'location.js', 'locationMenu', 'liveLocationMessage'],
-    ['newsletter', 'newsletter.js', 'newsletterMenu', 'newsletterAdminInviteMessage'],
+    ['product', 'product.js', 'productMenu', 'productMessage', 'product'],
+    ['order', 'orderMessage.js', 'orderMessageMenu', 'orderMessage', 'orderText'],
+    ['contact', 'contact.js', 'contactMenu', 'contactMessage', 'contacts'],
+    ['location', 'location.js', 'locationMenu', 'liveLocationMessage', 'location'],
+    ['newsletter', 'newsletter.js', 'newsletterMenu', 'newsletterAdminInviteMessage', null],
   ];
 
-  for (const [label, file, exported, wanted] of styles) {
+  for (const [label, file, exported, wanted, ownCard] of styles) {
     const mod = await import(join(root, `src/menu/types/${file}`));
     const menu = mod[exported] || mod.default;
-    const relays = [];
-    const sends = [];
+    // One ordered timeline: the card styles send their own card first and then
+    // relay the interactive list, so order matters as much as content.
+    const wire = [];
     const sock = {
       user: { id: '233000000000:1@s.whatsapp.net' },
-      sendMessage: async (_jid, content, options) => { sends.push({ content, options }); return { key: { id: 'card' } }; },
-      relayMessage: async (_jid, message) => { relays.push({ message }); return { key: { id: 'card' } }; },
+      sendMessage: async (_jid, content, options) => { wire.push({ content, options }); return { key: { id: 'card' } }; },
+      relayMessage: async (_jid, message) => { wire.push({ content: message }); return { key: { id: 'card' } }; },
       waUploadToServer: async () => { throw new Error('no upload in check'); },
     };
     await menu.renderer({
@@ -1209,15 +1215,19 @@ await check('every card style rides on its waUtils card', async () => {
       m: { from: '233000000000@s.whatsapp.net' },
       menuData: { prefix: '.', botName: 'NEXORA MD', totalCommands: 17, uptime: '1h', categories: {}, ownerName: 'Moonson' },
     });
-    assert(relays.length + sends.length >= 1, `the ${label} menu sent nothing`);
+    assert(wire.length >= 1, `the ${label} menu sent nothing`);
 
-    const carried = [
-      ...relays.map((relay) => findQuoted(relay.message)),
-      ...sends.map((send) => findQuoted(send.content)
-        || (send.options?.quoted?.message ? Object.keys(send.options.quoted.message).join(',') : null)),
-    ].filter(Boolean);
+    const carried = wire.map((step) => findQuoted(step.content)
+      || (step.options?.quoted?.message ? Object.keys(step.options.quoted.message).join(',') : null))
+      .filter(Boolean);
     assert(carried.length, `the ${label} menu is quoted on nothing`);
     assert(carried[0].includes(wanted), `the ${label} menu rides on ${carried[0]}, expected ${wanted}`);
+
+    if (ownCard) {
+      const first = wire[0]?.content || {};
+      assert(first[ownCard] !== undefined,
+        `the ${label} menu leads with ${Object.keys(first).join(',')} instead of its own ${ownCard} card`);
+    }
   }
 
   return '5 card styles quoted';

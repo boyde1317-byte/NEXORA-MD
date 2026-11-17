@@ -1246,10 +1246,70 @@ export const baileysBridge = {
         productId: productId || 'product-1',
         retailerId: productId || 'retailer-1',
         currencyCode: currency || 'USD',
-        priceAmount1000: (price || 1) * 1000,
+        priceAmount1000: Math.round((price ?? 1) * 1000),
         footer: footer || '',
         ...(thumbnail ? { productImage: thumbnail } : {}),
       },
+    }, options);
+  },
+
+  /**
+   * REAL CONTACT CARD — `contactMessage` through the fork's `contacts` key.
+   *
+   * messages.js: `hasNonNullishProperty(message, 'contacts')` builds a
+   * ContactMessage for exactly one entry and a ContactsArrayMessage for more. The
+   * vCard needs the `waid` param, otherwise the number does not open a chat.
+   */
+  async sendContactCard(sock, jid, { displayName, phone, org } = {}, options = {}) {
+    const digits = String(phone || '').replace(/[^0-9]/g, '');
+    if (!digits) throw new Error('contact card needs a phone number');
+    const name = displayName || digits;
+    const vcard = [
+      'BEGIN:VCARD',
+      'VERSION:3.0',
+      `FN:${name}`,
+      ...(org ? [`ORG:${org}`] : []),
+      `TEL;type=CELL;type=VOICE;waid=${digits}:+${digits}`,
+      'END:VCARD',
+    ].join('\n');
+    return await sock.sendMessage(jid, {
+      contacts: { displayName: name, contacts: [{ displayName: name, vcard }] },
+    }, options);
+  },
+
+  /**
+   * REAL LOCATION CARD — `locationMessage` through the fork's `location` key.
+   */
+  async sendLocationCard(sock, jid, { degreesLatitude, degreesLongitude, name, address, url, jpegThumbnail } = {}, options = {}) {
+    if (typeof degreesLatitude !== 'number' || typeof degreesLongitude !== 'number') {
+      throw new Error('location card needs numeric coordinates');
+    }
+    return await sock.sendMessage(jid, {
+      location: {
+        degreesLatitude,
+        degreesLongitude,
+        ...(name ? { name } : {}),
+        ...(address ? { address } : {}),
+        ...(url ? { url } : {}),
+        ...(jpegThumbnail ? { jpegThumbnail } : {}),
+      },
+    }, options);
+  },
+
+  /**
+   * REAL ORDER CARD — the fork's `orderText` key builds orderMessage and rejects
+   * the payload unless `thumbnail` is a Buffer (messages.js: orderText branch).
+   */
+  async sendOrderCard(sock, jid, { text, thumbnail, orderTitle, sellerJid, totalAmount1000 = 0, totalCurrencyCode = 'USD', itemCount = 1 } = {}, options = {}) {
+    if (!Buffer.isBuffer(thumbnail)) throw new Error('order card needs a thumbnail Buffer');
+    return await sock.sendMessage(jid, {
+      orderText: text || '',
+      thumbnail,
+      orderTitle: orderTitle || '',
+      sellerJid: sellerJid || (sock.user?.id || '0@s.whatsapp.net'),
+      totalAmount1000,
+      totalCurrencyCode,
+      itemCount,
     }, options);
   },
 

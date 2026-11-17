@@ -165,7 +165,7 @@ export const buildMenuSections = (menuData = {}) => {
 };
 
 export const a2uiSurfaceMenu = {
-  id: 20,
+  id: 16,
   name: 'a2uiSurface',
   description: 'Rich card menu — banner, category picker and tap-to-open links',
   supportedMessages: ['interactiveMessage', 'buttonsMessage', 'extendedTextMessage'],

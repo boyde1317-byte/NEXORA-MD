@@ -6,6 +6,7 @@ import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
 import brand from '../../../config/brand.js';
+import { config } from '../../../config/index.js';
 
 // Display name: the styled brand name when the bot runs under the brand
 // name, plain otherwise — a custom bot name stays exactly as configured.
@@ -31,6 +32,22 @@ export const orderMessageMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData = (await imageManager.getMenuImage(14).catch(() => null)) || {};
+
+    // ── Step 0: the style's own card — a real orderMessage ───────────────
+    // The fork refuses an orderText payload without a thumbnail Buffer, so this
+    // only fires when the banner actually came back as bytes.
+    try {
+      await baileysBridge.sendOrderCard(sock, m.from, {
+        text:              `${displayName(menuData.botName)} · ${menuData.totalCommands} ${toSmallcaps('commands')}`,
+        orderTitle:        `${menuData.prefix}menulist`,
+        thumbnail:         imgData.buffer || imgData.thumbBuffer,
+        sellerJid:         `${String((config.owner && config.owner[0]) || '233533416608').replace(/[^0-9]/g, '')}@s.whatsapp.net`,
+        totalAmount1000:   0,
+        totalCurrencyCode: 'USD',
+      });
+    } catch (err) {
+      console.warn('[MENU order] order card skipped:', err.message);
+    }
 
     // Build richer body text with visual stat rows
     const statBlock = [

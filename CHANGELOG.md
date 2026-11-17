@@ -22,6 +22,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   check renders all five against a stub socket and asserts each one rides on its
   own card (`productMessage`, `orderMessage`, `contactMessage`,
   `liveLocationMessage`, `newsletterAdminInviteMessage`).
+- The card styles now send their own card as a **separate message before** the
+  interactive list: contact → `contactMessage`, location → `locationMessage`,
+  order → `orderMessage`, product → `productMessage`. The quoted card alone was
+  invisible (WhatsApp renders no card preview inside a quote), which is why all
+  of them still read as the same pill list on a phone. New bridge senders
+  `sendContactCard`, `sendLocationCard` and `sendOrderCard` wrap the fork's
+  `contacts` / `location` / `orderText` keys; product reuses `sendProduct`, which
+  also stopped turning a `price: 0` into a $1.00 card. Newsletter still needs a
+  `channelJid` before it can send its invite.
+- `a2uiSurface` now claims id 16 instead of 20: it was registered under the same
+  id as `product` and won the key, so `.menu 20` silently rendered the A2UI card
+  and the product style was unreachable by number.
 ### Removed
 - Menus 2 (payment), 3 (eventMessage), 10 (media), 11 (reaction) and 12
   (aiDynamic) are gone: unregistered and their type files removed. Owners who

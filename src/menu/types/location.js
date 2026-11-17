@@ -5,6 +5,7 @@ import { buildFakeLiveLocationQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
 import brand from '../../../config/brand.js';
+import { config } from '../../../config/index.js';
 
 // Display name: the styled brand name when the bot runs under the brand
 // name, plain otherwise — a custom bot name stays exactly as configured.
@@ -46,6 +47,22 @@ export const locationMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData = (await imageManager.getMenuImage(8).catch(() => null)) || {};
+
+    // ── Step 0: the style's own card — a real locationMessage ─────────────
+    // Coordinates come from config.location when the owner sets a pin; the
+    // fallback is Accra city centre so the card still renders something honest.
+    try {
+      const pin = config.location || { lat: 5.6037, lng: -0.187, address: 'Accra, Ghana' };
+      await baileysBridge.sendLocationCard(sock, m.from, {
+        degreesLatitude:  pin.lat,
+        degreesLongitude: pin.lng,
+        name:             displayName(menuData.botName),
+        address:          pin.address,
+        jpegThumbnail:    imgData.thumbBuffer || undefined,
+      });
+    } catch (err) {
+      console.warn('[MENU location] location card failed, sending the menu only:', err.message);
+    }
     const menuText   = buildTextMenu(menuData);
     const footerText = `${displayName(menuData.botName)} • ${menuData.totalCommands} ${toSmallcaps('commands')}`;
 

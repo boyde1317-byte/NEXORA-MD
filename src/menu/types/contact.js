@@ -46,6 +46,17 @@ export const contactMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData = (await imageManager.getMenuImage(9).catch(() => null)) || {};
+
+    // ── Step 0: the style's own card — a real contactMessage ──────────────
+    try {
+      await baileysBridge.sendContactCard(sock, m.from, {
+        displayName: `${brand.creator || 'Owner'} · ${displayName(menuData.botName)}`,
+        phone:       (config.owner && config.owner[0]) || '233533416608',
+        org:         brand.name,
+      });
+    } catch (err) {
+      console.warn('[MENU contact] contact card failed, sending the menu only:', err.message);
+    }
     const ownerNumber  = (config.owner[0] || '233597514499').replace(/[^0-9]/g, '');
     const ownerName    = menuData.ownerName || brand.creator || 'Owner';
 
