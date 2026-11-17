@@ -1,5 +1,6 @@
 import { greetingConfig } from '../../greetings/greetingConfig.js';
 import { db } from '../../database/db.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 
 export default {
   name: 'welcome',
@@ -17,16 +18,16 @@ export default {
     if (!opt || (opt !== 'on' && opt !== 'off')) {
       // Show both per-group and global status
       const globalStatus = greetingConfig.getEnabled() ? 'ON' : 'OFF';
-      let info = `*Global:* ${globalStatus}`;
+      let info = `*${toSmallcaps('Global')}:* ${globalStatus}`;
 
       if (m.isGroup) {
         const groupData = db.getGroup(m.from);
         const groupStatus = groupData.welcome ? 'ON' : 'OFF';
-        info = `*This Group:* ${groupStatus}\n*Global Default:* ${globalStatus}`;
+        info = `*${toSmallcaps('This Group')}:* ${groupStatus}\n*${toSmallcaps('Global Default')}:* ${globalStatus}`;
       }
 
       return await m.reply.info(
-        `${info}\n\nUsage:\n• \`${p}welcome on\` — Enable ${m.isGroup ? 'in this group' : 'globally'}\n• \`${p}welcome off\` — Disable ${m.isGroup ? 'in this group' : 'globally'}\n\nIn a group, toggles per-group. In DM, toggles the global default.`,
+        `${info}\n\n*${toSmallcaps('Usage')}:*\n• \`${p}welcome on\` — Enable ${m.isGroup ? 'in this group' : 'globally'}\n• \`${p}welcome off\` — Disable ${m.isGroup ? 'in this group' : 'globally'}\n\n_In a group, toggles per-group. In DM, toggles the global default._`,
         'WELCOME CONTROLS'
       );
     }

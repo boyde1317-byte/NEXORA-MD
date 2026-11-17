@@ -78,7 +78,7 @@ export default {
 
         await new AIRich(sock)
           .addProduct({
-            title: 'NEXORA-MD',
+            title: 'NEXORA MD',
             brand: 'System Monitor',
             price: apiLatency + ' ms',
             sale_price: latency < 400 ? 'Excellent' : 'Degraded',

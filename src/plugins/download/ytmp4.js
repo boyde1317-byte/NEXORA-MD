@@ -70,7 +70,7 @@ export default {
           }, { quoted: m });
           return await mixedCard(sock, m.from, {
             text: 'Need it as audio instead?',
-            footer: 'NEXORA-MD • YouTube Video',
+            footer: 'NEXORA MD • YouTube Video',
           }, [
             { kind: 'action', label: '🎵 Get Audio',     cmd: `${prefix}play ${query}` },
             { kind: 'action', label: '🎬 Download Another',cmd: `${prefix}ytmp4` },

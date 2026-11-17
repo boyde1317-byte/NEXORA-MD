@@ -39,11 +39,11 @@ export function channelPrivilegeLine(prefix = '.') {
 /** Full privilege block for welcome texts and info cards. */
 export function channelPrivilegeBlock(prefix = '.') {
   const c = getChannelContext();
-  return `👑 *${c.name} — Inner Circle*\nEarly drops, releases and giveaways land there first. Membership is by invite only — you're seeing this because you have the pass.\n\n🔗 ${c.invite}\n📲 Or tap *${prefix}channel* for the VIP card.`;
+  return `👑 *${c.name} — Inner Circle*\n_Early drops, releases and giveaways land there first. Membership is by invite only — you're seeing this because you have the pass._\n\n🔗 ${c.invite}\n📲 Or tap *${prefix}channel* for the VIP card.`;
 }
 
 /** Caption for the .channel invite card — the "you've been let in" voice. */
 export function channelInviteCaption(botName = 'NEXORA') {
   const c = getChannelContext();
-  return `👑 *${c.name}* — you've been let in.\n\nNot everyone gets this card. ${botName} drops, releases and member-only giveaways land on this channel first — before anywhere else.\n\nTap *Follow Channel* below to claim your spot. Keep it quiet. 🤫`;
+  return `👑 *${c.name}* — you've been let in.\n\n_Not everyone gets this card. ${botName} drops, releases and member-only giveaways land on this channel first — before anywhere else._\n\nTap *Follow Channel* below to claim your spot. Keep it quiet. 🤫`;
 }

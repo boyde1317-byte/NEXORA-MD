@@ -19,7 +19,7 @@ export const welcome3 = {
         mentionedJid: [userJid],
         externalAdReply: {
           title: isWelcome ? `Welcome to ${variables.groupName}` : `A member left ${variables.groupName}`,
-          body: 'NEXORA-MD',
+          body: 'NEXORA MD',
           mediaType: 1,
           renderLargerThumbnail: false,
           thumbnailUrl: thumbnailPic,

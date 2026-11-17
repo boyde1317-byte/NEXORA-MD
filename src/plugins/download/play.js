@@ -80,7 +80,7 @@ export default {
 
           return await mixedCard(sock, m.from, {
             text: metaParts,
-            footer: 'NEXORA-MD • YouTube Audio',
+            footer: 'NEXORA MD • YouTube Audio',
           }, [
             { kind: 'url',    label: '▶️ Watch on YouTube', url: query },
             { kind: 'action', label: '🎬 Get Video',        cmd: `${prefix}ytmp4 ${query}` },

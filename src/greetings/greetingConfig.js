@@ -8,7 +8,7 @@ const defaultGreetingConfig = {
   enabled: true,
   goodbyeEnabled: true,
   style: 5, // product card (menu banner) — styles 1-4 stay selectable
-  welcomeText: "👋 Welcome {user} to *{group}*!\n\nWe are glad to have you here. You are our {memberCount}th member! ✨\n\n👑 You made the cut — claim your Inner Circle spot: {channel}",
+  welcomeText: "👋 Welcome {user} to *{group}*!\n\n_We are glad to have you here. You are our {memberCount}th member!_ ✨\n\n👑 You made the cut — claim your Inner Circle spot: {channel}",
   goodbyeText: "😢 Goodbye {user}! We will miss you.",
   welcomeImage: "https://cdn.jsdelivr.net/gh/boyde1317-byte/NexoraFlex@main/media/brand/nexora-welcome.jpg",
   goodbyeImage: "https://cdn.jsdelivr.net/gh/boyde1317-byte/NexoraFlex@main/media/brand/nexora-goodbye.jpg"

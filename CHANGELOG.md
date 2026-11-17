@@ -5,6 +5,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Style-text beautifying sweep across the remaining untouched strings
+  (wording unchanged, typography only): greeting defaults and the
+  milestone/promotion/demotion lines speak in native-italic voice; the
+  group-join intro and greeting product-card footers use the bold-sans
+  display name; the welcome-toggle and owner cards use bold+smallcaps
+  field labels; the channel privilege block/caption italicize their
+  voice paragraph; one duel voice line matches its card's italic lines.
+  The outdated `NEXORA-MD` literal is corrected to `NEXORA MD` in all
+  remaining user-facing strings (footers, card titles, fake-quote
+  defaults); working URLs, code samples, comments, identifiers and the
+  `richTestKit` fixtures are untouched.
+- `enrichContext` default source URL now points at the renamed
+  NexoraFlex repo instead of the old NEXORA-MD URL.
+
 ### Added
 - `messageBuilder` now carries the message-building techniques menu 19
   (`src/menu/types/galaxyMenu.js`) uses, so one builder can express them:

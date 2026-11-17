@@ -134,7 +134,7 @@ export default {
           ``,
           `${toSmallcaps('Every command is one tap away: category → command → detail page.')}`,
         ].join('\n'),
-        title:    `✦ ${toSmallcaps('NEXORA-MD')} ✦`,
+        title:    `✦ ${toSmallcaps('NEXORA MD')} ✦`,
         subtitle: `${byCat.size} ${toSmallcaps('categories')} • ${totalCmds} ${toSmallcaps('commands')}`,
         footer:   `${toSmallcaps('full menu')}: ${p}menu • ${toSmallcaps('categories → commands → details')}`,
       }, `📂 ${toSmallcaps('Browse Categories')}`, [
@@ -154,8 +154,8 @@ export default {
         const shown = cmds.slice(0, 4).map(x => x.name).join(', ') + (cmds.length > 4 ? `, +${cmds.length - 4}` : '');
         return [`${categoryEmoji(c)} ${titleize(c)} (${cmds.length})`, shown];
       }),
-      headerText: '❖ NEXORA-MD Command Categories',
-      footer: `Use ${p}help for the full list • © NEXORA-MD by Aizen`,
+      headerText: '❖ NEXORA MD Command Categories',
+      footer: `Use ${p}help for the full list • © NEXORA MD by Aizen`,
     });
     if (listSent) return;
 

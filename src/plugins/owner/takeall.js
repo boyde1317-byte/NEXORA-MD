@@ -144,7 +144,7 @@ export default {
         stickers: buffers.map((buf) => ({ data: buf })),
         cover: buffers[0],
         name: toSmallcaps('nexora'),
-        publisher: 'NEXORA-MD',
+        publisher: 'NEXORA MD',
         description: `All stickers from the group • ${buffers.length} stickers`,
       });
 

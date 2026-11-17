@@ -62,7 +62,7 @@ export default {
       `${toSmallcaps('Tap a style below to switch instantly')}:`,
     ].join('\n');
 
-    const footerText = `${toSmallcaps('NEXORA-MD')} • ${toSmallcaps('Menu Style Picker')}`;
+    const footerText = `${toSmallcaps('NEXORA MD')} • ${toSmallcaps('Menu Style Picker')}`;
 
     // Build selectMenu sections — group by compatibility
     const sections = [

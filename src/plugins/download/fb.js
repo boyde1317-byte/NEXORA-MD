@@ -54,7 +54,7 @@ export default {
             ['Source',  'Facebook'],
           ],
           headerText: '🎬 Facebook Downloader',
-          footer: '© NEXORA-MD by Aizen',
+          footer: '© NEXORA MD by Aizen',
         });
         if (sent) return;
 

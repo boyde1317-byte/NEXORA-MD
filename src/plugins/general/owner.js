@@ -20,17 +20,18 @@ import brand from '../../../config/brand.js';
 import { getBrandThumbnail } from '../../lib/cosmetics.js';
 import { mixedCard } from '../../lib/interactiveKit.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 
 const OWNER_NUMBER = '233533416608';
 
 function buildCaption() {
   return (
     `👑 *${brand.name.toUpperCase()} OWNER CARD*\n\n` +
-    `Name: ${brand.creator}\n` +
-    `Role: Developer & Bot Owner\n` +
-    `Bot: ${brand.name}\n\n` +
-    `Use the buttons below to call, chat, or copy the number.\n\n` +
-    `_${brand.signature}_`
+    `*${toSmallcaps('Name')}:* ${brand.creator}\n` +
+    `*${toSmallcaps('Role')}:* Developer & Bot Owner\n` +
+    `*${toSmallcaps('Bot')}:* ${brand.name}\n\n` +
+    `_Use the buttons below to call, chat, or copy the number._\n\n` +
+    `${brand.display?.signature || brand.signature}`
   );
 }
 
@@ -77,10 +78,10 @@ export default {
     // ── Tier 3: guaranteed styled fallback (still not bare plain text) ──────
     return await sock.sendMessage(m.from, {
       text: asciiBuilder.box(`👑 ${brand.name.toUpperCase()} — OWNER CARD`, [
-        `Name: ${brand.creator}`,
-        `Role: Developer & Bot Owner`,
-        `Number: +${OWNER_NUMBER}`,
-        `WhatsApp: https://wa.me/${OWNER_NUMBER}`,
+        `*${toSmallcaps('Name')}:* ${brand.creator}`,
+        `*${toSmallcaps('Role')}:* Developer & Bot Owner`,
+        `*${toSmallcaps('Number')}:* +${OWNER_NUMBER}`,
+        `*${toSmallcaps('WhatsApp')}:* https://wa.me/${OWNER_NUMBER}`,
       ]),
     }, { quoted: m });
   }

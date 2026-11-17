@@ -27,7 +27,7 @@ export default {
         text:       `🔗 *Group Invite Link*\n\n${link}`,
         copyLabel:  '📋 Copy Link',
         copyValue:  link,
-        footer:     'NEXORA-MD',
+        footer:     'NEXORA MD',
         extraButtons: [
           { text: '🔄 Revoke Link', id: `${p}revoke` },
         ],

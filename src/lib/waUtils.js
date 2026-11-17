@@ -174,7 +174,7 @@ export function buildFakeOrderQuote({ title, thumbnail, itemCount = 1, orderId, 
         itemCount:  Number(itemCount),   // int32 — proto rejects strings
         status:     'INQUIRY',
         surface:    'CATALOG',
-        message:    title      || 'NEXORA-MD',
+        message:    title      || 'NEXORA MD',
         orderTitle: orderTitle || undefined,   // shown as bold heading above itemCount
         sellerJid:  sellerJid  || WA_JID,     // business seller JID
         token:      'AR6Nexora==',
@@ -312,7 +312,7 @@ export function buildFakeAudioQuote({ audioMessage, seconds = 9999999, ptt = tru
  * await sock.sendMessage(m.from, { text: menuText }, { quoted: fakeQuote })
  */
 export function buildFakeLocationQuote({
-  name             = 'NEXORA-MD',
+  name             = 'NEXORA MD',
   address          = 'NEXORA',
   degreesLatitude  = 6.6745,
   degreesLongitude = -1.5716,
@@ -372,7 +372,7 @@ export function buildFakeLiveLocationQuote({
       liveLocationMessage: {
         degreesLatitude,
         degreesLongitude,
-        caption:        caption || name || 'NEXORA-MD',
+        caption:        caption || name || 'NEXORA MD',
         sequenceNumber: sequenceNumber || Date.now(),  // int64 — number, not string
         jpegThumbnail:  jpegThumbnail  || undefined,
         ...(forwardingScore != null ? {
@@ -404,7 +404,7 @@ export function buildFakeTextQuote({ text, title, jpegThumbnail } = {}) {
     },
     message: {
       extendedTextMessage: {
-        text:          text          || 'NEXORA-MD',
+        text:          text          || 'NEXORA MD',
         title:         title         || undefined,
         jpegThumbnail: jpegThumbnail || undefined,
       },
@@ -432,7 +432,7 @@ export function buildFakeDocumentQuote({ title, fileName, mimetype, jpegThumbnai
     },
     message: {
       documentMessage: {
-        title:         title         || 'NEXORA-MD',
+        title:         title         || 'NEXORA MD',
         fileName:      fileName      || 'nexora.pdf',
         mimetype:      mimetype      || 'application/pdf',
         jpegThumbnail: jpegThumbnail || undefined,
@@ -547,7 +547,7 @@ export function buildFakeProductQuote({
             mimetype:      'image/jpeg',
             jpegThumbnail: jpegThumbnail || undefined,
           },
-          title:               title             || 'NEXORA-MD',
+          title:               title             || 'NEXORA MD',
           description:         description       || '',
           currencyCode,
           priceAmount1000:     Number(priceAmount1000),  // int64 — number, not string
@@ -582,7 +582,7 @@ export function buildFakeGroupInviteQuote({ groupJid, inviteCode = 'null', group
       groupInviteMessage: {
         groupJid:      groupJid      || WA_JID,
         inviteCode,
-        groupName:     groupName     || 'NEXORA-MD',
+        groupName:     groupName     || 'NEXORA MD',
         caption:       caption       || '',
         jpegThumbnail: jpegThumbnail || undefined,
       },
@@ -620,7 +620,7 @@ export function buildFakePaymentQuote({ currencyCode = 'USD', amount1000 = 1000,
         requestFrom:         WA_JID,
         // noteMessage is optional Message — wraps extendedTextMessage
         noteMessage: {
-          extendedTextMessage: { text: note || 'NEXORA-MD' },
+          extendedTextMessage: { text: note || 'NEXORA MD' },
         },
         expiryTimestamp: expiryTimestamp || (Date.now() + 86_400_000), // int64 — number
         // Money proto: value = raw amount (same as amount1000), offset = scale (1000)
@@ -659,7 +659,7 @@ export function buildFakeNewsletterQuote({ newsletterJid, newsletterName, captio
     message: {
       newsletterAdminInviteMessage: {
         newsletterJid:    newsletterJid || '120363293577041544@newsletter',
-        newsletterName:   newsletterName || 'NEXORA-MD Updates',
+        newsletterName:   newsletterName || 'NEXORA MD Updates',
         caption:          caption || 'Made with ♥️ By Aizen',
         inviteExpiration: Math.floor(Date.now() / 1000) + 86400 * 7,
       },
@@ -999,7 +999,7 @@ export async function sendStatus(sock, type = 'text', content, opts = {}) {
 export function buildMenuBanner({ imgData, adReply, botName, totalCommands, quoted } = {}) {
   // ── Fake product quote — catalog card in the reply bar (.about style) ──
   const fakeProductQuote = buildFakeProductQuote({
-    title:           botName || 'NEXORA-MD',
+    title:           botName || 'NEXORA MD',
     description:     `${totalCommands || 0} commands`,
     currencyCode:    'USD',
     priceAmount1000: 0,
@@ -1014,7 +1014,7 @@ export function buildMenuBanner({ imgData, adReply, botName, totalCommands, quot
     banner = adReply;
   } else {
     banner = {
-      title:                 botName || 'NEXORA-MD',
+      title:                 botName || 'NEXORA MD',
       body:                  `${totalCommands || 0} commands • Online`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
@@ -1058,7 +1058,7 @@ export function buildMenuBanner({ imgData, adReply, botName, totalCommands, quot
  */
 export function buildAboutContextInfo({ botName, description, thumbnail, mentionedJid } = {}) {
   const catalogQuote = buildFakeProductQuote({
-    title:           botName || 'NEXORA-MD',
+    title:           botName || 'NEXORA MD',
     description:      description || '',
     currencyCode:    'USD',
     priceAmount1000: 0,

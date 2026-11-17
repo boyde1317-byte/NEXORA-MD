@@ -60,7 +60,7 @@ export default {
           const winNum = winnerId.number || winnerId.username || '';
           return await m.reply.success(
             `⚔️ *DUEL SETTLED* ⚔️\n\n🪙 Pot: *${verdict.amount.toLocaleString()} coins*\n\n👑 *${winnerName}* takes it all!\n` +
-            `Better luck next time, ${loserName}.\n\n🏅 Winner record: *${verdict.winnerRecord}*\n\n_Type ${winNum ? `\`${p}duel @${winNum} ${verdict.amount}\`` : `\`${p}duel\``} to run it back._`);
+            `_Better luck next time, ${loserName}._\n\n🏅 Winner record: *${verdict.winnerRecord}*\n\n_Type ${winNum ? `\`${p}duel @${winNum} ${verdict.amount}\`` : `\`${p}duel\``} to run it back._`);
         } catch (err) {
           if (!err.friendly) throw err;
           return await m.reply.warn(err.message);

@@ -44,13 +44,13 @@ export default {
         `You found: ${fakeFact}.`,
         '',
         '⚠️ This is 100% fake — for laughs only.',
-        'NEXORA-MD never accesses Tor or the real dark web.',
+        'NEXORA MD never accesses Tor or the real dark web.',
       ]),
     ], { quoted: m }, { delayMs: 500 });
 
     await mixedCard(sock, m.from, {
-      text: 'Curious for real information instead?',
-      footer: 'NEXORA-MD • Just for fun',
+      text: '_Curious for real information instead?_',
+      footer: 'NEXORA MD • Just for fun',
     }, [
       { kind: 'action', label: '🔎 Real Web Search', cmd: `${prefix}search ` },
     ], { quoted: m });

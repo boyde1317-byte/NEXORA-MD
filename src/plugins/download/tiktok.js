@@ -54,7 +54,7 @@ export default {
           const sent = await sendMediaCarousel(sock, m.from, m, {
             title: `📸 ${(data.title || 'TikTok Photo Post').slice(0, 80)}`,
             images: data.images.map((u, i) => ({ url: u, title: `Slide ${i + 1}` })),
-            footer: '© NEXORA-MD by Aizen',
+            footer: '© NEXORA MD by Aizen',
           });
           if (sent) return;
 
@@ -79,7 +79,7 @@ export default {
           tableHeaders: ['Metric', 'Value'],
           tableRows: rows,
           headerText: '🎬 TikTok Downloader',
-          footer: '© NEXORA-MD by Aizen',
+          footer: '© NEXORA MD by Aizen',
         });
         if (sent) return;
 
@@ -100,7 +100,7 @@ export default {
           title: data.title || 'TikTok Video',
           headers: ['Metric', 'Value'],
           rows,
-          footer: '© NEXORA-MD by Aizen',
+          footer: '© NEXORA MD by Aizen',
         });
       } catch (err) {
         await m.reply.error(`TikTok download failed: ${err.message}`);

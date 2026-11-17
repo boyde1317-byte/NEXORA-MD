@@ -46,7 +46,7 @@ export default {
         rows: [['ping', 'general', '✅'], ['sticker', 'media', '✅']],
         tableTitle: 'Loaded Plugins',
         headerText: 'Code + Table Combo',
-        footer: 'NEXORA-MD',
+        footer: 'NEXORA MD',
       }, { quoted: m });
     } else if (type === 'maptable') {
       await mapTableCard(sock, m.from, {
@@ -56,7 +56,7 @@ export default {
         rows: [['2.5M', '225 km²']],
         tableTitle: 'City Stats',
         headerText: 'Map + Table Combo',
-        footer: 'NEXORA-MD',
+        footer: 'NEXORA MD',
       }, { quoted: m });
     } else if (type === 'textimage') {
       await textImageCard(sock, m.from, {
@@ -65,7 +65,7 @@ export default {
         caption: 'Sample Image',
         tapLinkUrl: 'https://github.com/boyde1317-byte',
         headerText: 'Text + Image Combo',
-        footer: 'NEXORA-MD',
+        footer: 'NEXORA MD',
       }, { quoted: m });
     } else if (type === 'multiimages') {
       await multiImageCard(sock, m.from, {
@@ -74,7 +74,7 @@ export default {
           { imageUrl: 'https://cdn.nekos.life/wallpaper/EU3bZjTsl9Q.png', imageText: 'Image 2' },
         ],
         headerText: 'Multi-Image Gallery',
-        footer: 'NEXORA-MD',
+        footer: 'NEXORA MD',
       }, { quoted: m });
     } else if (type === 'gridtable') {
       await gridTableCard(sock, m.from, {
@@ -84,7 +84,7 @@ export default {
         rows: [['1', '1080p']],
         tableTitle: 'Gallery Stats',
         headerText: 'Grid + Table Combo',
-        footer: 'NEXORA-MD',
+        footer: 'NEXORA MD',
       }, { quoted: m });
     } else if (type === 'dynamictable') {
       await dynamicTableCard(sock, m.from, {
@@ -94,7 +94,7 @@ export default {
         rows: [['GIF', 'Infinite']],
         tableTitle: 'GIF Info',
         headerText: 'Dynamic + Table Combo',
-        footer: 'NEXORA-MD',
+        footer: 'NEXORA MD',
       }, { quoted: m });
     } else {
       await m.reply(

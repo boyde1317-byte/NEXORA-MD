@@ -145,7 +145,7 @@ async function runRichTable(sock, m) {
       ['richResponse',    capabilities.richResponse ? '✅ Yes' : '⚠️ No', 'botForwarded'],
       ['nativeFlow',      capabilities.nativeFlow   ? '✅ Yes' : '⚠️ No', 'interactiveMsg'],
     ],
-    footer: 'NEXORA-MD Baileys fork v0.3.18',
+    footer: 'NEXORA MD Baileys fork v0.3.18',
   }, { quoted: m });
   return 'rich_table ✓';
 }

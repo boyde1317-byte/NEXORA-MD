@@ -70,9 +70,10 @@ export async function resolveMenuBanner() {
 export function buildGreetingProductCard({ text, variables = {}, isWelcome = true, banner = null, sock = null } = {}) {
   const groupName = variables.groupName || 'this group';
   const title = isWelcome ? `Welcome to ${groupName}` : `Goodbye from ${groupName}`;
+  const displayName = brand.display?.name || brand.name || 'NEXORA MD';
   const footer = isWelcome
-    ? `Member #${variables.memberCount ?? '—'} • ${brand.name || 'NEXORA MD'}`
-    : `Thanks for being here • ${brand.name || 'NEXORA MD'}`;
+    ? `Member #${variables.memberCount ?? '—'} • ${displayName}`
+    : `Thanks for being here • ${displayName}`;
 
   return {
     product: {

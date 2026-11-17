@@ -5,6 +5,7 @@ import { isBotName } from '../lib/botDetector.js';
 import { mixedCard } from '../lib/interactiveKit.js';
 import capabilities from '../core/capabilities.js';
 import { mentionLabel, resolveMentionJid } from '../lib/mentionJid.js';
+import brand from '../../config/brand.js';
 
 /**
  * Routes group participant events to the canonical greeting pipeline.
@@ -52,7 +53,7 @@ export async function handleGroupParticipantsUpdate(update, sock) {
             try { meta = await sock.groupMetadata(groupJid); } catch (_) { /* non-fatal */ }
             const intro =
               `✦ *I'm in.*\n\n` +
-              `Hey${meta?.subject ? ` *${meta.subject}*` : ' everyone'} — NEXORA-MD just landed in this group.\n\n` +
+              `Hey${meta?.subject ? ` *${meta.subject}*` : ' everyone'} — ${brand.display?.name || brand.name} just landed in this group.\n\n` +
               `Here's the 10-second tour:\n` +
               `• \`.menu\` — every command, swipeable\n` +
               `• \`.groupsettings\` — Protection Hub & group config\n` +
@@ -60,7 +61,7 @@ export async function handleGroupParticipantsUpdate(update, sock) {
               `_Group admins can tune everything with \`.groupsettings\`._`;
             try {
               if (capabilities.richResponse) {
-                await mixedCard(sock, groupJid, { text: intro, footer: 'NEXORA-MD' }, [
+                await mixedCard(sock, groupJid, { text: intro, footer: 'NEXORA MD' }, [
                   { kind: 'action', label: '📖 Menu', cmd: '.menu' },
                   { kind: 'action', label: '🛡️ Protection Hub', cmd: '.groupsettings' },
                 ]);

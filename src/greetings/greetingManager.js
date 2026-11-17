@@ -14,7 +14,7 @@ export const greetingManager = {
       if (count > 0 && (count % 50 === 0 || count === 10 || count === 100 || count === 500)) {
         const resolvedJid = await resolveMentionJid(sock, userJid, jid);
         const title = '🏆 GROUP MILESTONE REACHED';
-        const text = `Congratulations to *${metadata.subject}*!\n\nWe have reached *${count}* members! 🎉\n\nWelcome our newest member ${mentionLabel(resolvedJid)} for completing this milestone!`;
+        const text = `Congratulations to *${metadata.subject}*!\n\nWe have reached *${count}* members! 🎉\n\n_Welcome our newest member ${mentionLabel(resolvedJid)} for completing this milestone!_`;
         await sock.sendMessage(jid, { text: messageFormatter.info(text, title), mentions: [resolvedJid] });
       }
     } catch (err) {
@@ -32,7 +32,7 @@ export const greetingManager = {
       const groupName = metadata.subject || 'this group';
       for (const userJid of userJids) {
         const resolvedJid = await resolveMentionJid(sock, userJid, jid);
-        const text = `🌟 ${mentionLabel(resolvedJid)} has been promoted to *Group Admin* in *${groupName}*!\n\nShow them some respect and follow their guidelines!`;
+        const text = `🌟 ${mentionLabel(resolvedJid)} has been promoted to *Group Admin* in *${groupName}*!\n\n_Show them some respect and follow their guidelines!_`;
         // Sent with a synthetic group-invite card as the quoted context, so
         // the alert lands as a group card (name + icon + caption) rather than
         // a bare text line.
@@ -54,7 +54,7 @@ export const greetingManager = {
       const groupName = metadata.subject || 'this group';
       for (const userJid of userJids) {
         const resolvedJid = await resolveMentionJid(sock, userJid, jid);
-        const text = `⚠️ ${mentionLabel(resolvedJid)} is no longer a *Group Admin* in *${groupName}*.\n\nThey have returned to being a regular member.`;
+        const text = `⚠️ ${mentionLabel(resolvedJid)} is no longer a *Group Admin* in *${groupName}*.\n\n_They have returned to being a regular member._`;
         await sendAdminAlert(sock, jid, {
           text: messageFormatter.info(text, 'DEMOTION NOTICE'),
           resolvedJid,

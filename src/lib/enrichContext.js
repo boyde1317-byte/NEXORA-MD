@@ -29,7 +29,7 @@ import { ASSET_URLS } from '../assets/assetUrls.js';
 import { config } from '../../config/index.js';
 import brand from '../../config/brand.js';
 
-const DEFAULT_SOURCE_URL = 'https://github.com/boyde1317-byte/NEXORA-MD';
+const DEFAULT_SOURCE_URL = 'https://github.com/boyde1317-byte/NexoraFlex';
 
 // ── Thumbnail cache ─────────────────────────────────────────────────────────
 // Fetched once, reused for every subsequent call. Stored as a Buffer so it
