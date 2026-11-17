@@ -398,6 +398,17 @@ await check('.credits opens the brand sheet, not a vCard bubble', async () => {
     assert(params.description.includes(section), `${plugin.name}: sheet body missing "${section}"`);
     assert(params.phone_number.length >= 8 && !/^0+$/.test(params.phone_number), `${plugin.name}: sheet phone is bogus`);
     assert(!/wa\.me\/0{6,}/.test(params.booking_url), `${plugin.name}: CTA points at a zeroed number`);
+
+    const startChat = (im.nativeFlowMessage.buttons || [])
+      .map((b) => ({ name: b.name, params: JSON.parse(b.buttonParamsJson) }))
+      .find((b) => b.name === 'cta_url' && /Start chatting/i.test(b.params.display_text));
+    if (plugin.name === 'credits') {
+      assert(startChat, 'credits: missing the Start chatting CTA');
+      assert(/^https:\/\/wa\.me\/\d{8,}/.test(startChat.params.url), 'credits: Start chatting does not open a wa.me chat');
+    } else {
+      // .brand keeps the single-pill sheet from the proven device screenshot
+      assert(im.nativeFlowMessage.buttons.length === 1, 'brand: extra pill would change the proven card');
+    }
   }
   return 'credits + brand sheets';
 });

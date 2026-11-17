@@ -85,6 +85,10 @@ export function renderSections(sections = []) {
  * @param {string} [opts.websiteUrl]     Where the sheet's website CTA points
  * @param {string} [opts.phone]          Contact number for the sheet's Contact CTA
  * @param {object} [opts.quoted]         Quoted message (defaults to the brand contact bubble)
+ * @param {boolean|object} [opts.startChat=false] Add the zapo-style green
+ *                                        "Start chatting" CTA (a cta_url
+ *                                        button opening wa.me with the bot).
+ *                                        true, or { label, text }.
  * @param {boolean}[opts.greenBubble=false] Attach the vCard bubble as the quoted
  *                                        context. Off by default: a real
  *                                        `quoted` reply overrides it, and the
@@ -103,6 +107,7 @@ export async function sendBrandSheet(sock, jid, {
   phone,
   quoted,
   greenBubble = false,
+  startChat = false,
 } = {}) {
   const botName = brand.name;
   const d = brand.display || {};
@@ -159,6 +164,19 @@ export async function sendBrandSheet(sock, jid, {
       display_read_more: preset.readMore,
     },
   });
+
+  // The "Start chatting" pill zapo-js shows: a native-flow cta_url that opens
+  // a DM with the bot. `open_chat` renders inert on real devices (see the
+  // interactiveKit device audit), cta_url is the proven type.
+  if (startChat && numbers) {
+    const sc = typeof startChat === 'object' ? startChat : {};
+    const prefill = sc.text ? `?text=${encodeURIComponent(sc.text)}` : '';
+    card.addButton('cta_url', {
+      display_text: sc.label || '💬 Start chatting',
+      url: `https://wa.me/${numbers}${prefill}`,
+      webview_interaction: false,
+    });
+  }
 
   await card.send(jid, quoted ? { quoted } : {});
   return true;

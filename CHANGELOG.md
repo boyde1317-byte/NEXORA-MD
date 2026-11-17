@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- The zapo-style green "Start chatting" pill: a native-flow `cta_url` button
+  opening `wa.me/<bot>` (chosen over `open_chat`, which the device audit shows
+  renders inert). `sendBrandSheet` takes `startChat: true | { label, text }`
+  and `.credits` now carries it next to its sheet pill. `.brand` stays on the
+  single-pill layout from the proven screenshot.
+
+### Added
 - `src/lib/brandSheet.js` — the `.brand` full-screen sheet as a reusable
   builder (`sendBrandSheet` with `sections: [{ heading, lines }]` and named CTA
   presets). `.brand` and `.credits` both render through it, so `.credits` now

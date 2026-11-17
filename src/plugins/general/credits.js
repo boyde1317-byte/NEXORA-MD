@@ -66,6 +66,7 @@ export default {
         websiteUrl: sourceUrl,
         phone,
         quoted: m,
+        startChat: true,
       });
       return;
     } catch (err) {
