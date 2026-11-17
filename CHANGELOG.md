@@ -23,6 +23,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   read the probe list from `src/lib/galaxyBar.js`, and a release check fails the
   build if a probe exists in one place but not the other.
 
+### Added
+- **Menu 21 `atlasMenu`** (`src/menu/types/atlasMenu.js`): a menu computed from
+  the live registry instead of a hand-written catalogue. Sections are ranked by
+  real command count and rendered as an aligned monospace index in the body
+  (grey, like menu 19's footer copy, with room for columns), one command is
+  promoted to a deterministic daily spotlight, and the galaxy bar is filled with
+  real content: the spotlight as a copyable offer strip, one divider between the
+  picker and the shortcuts, and a callout teaching `.help <section>`. Buttons
+  are the multi-button opener pair plus up to six section shortcuts, all routing
+  to `.help <section>`; there are no decorative buttons. Borrowed techniques:
+  viewOnce carrier, opener pair, channel pill, banner header. Not borrowed: the
+  ASCII frame art, the hand-written info block, the 24-button stack. Menu 19 is
+  untouched.
+
 ### Fixed
 - `.play` / `.ytmp4` extraction. Every keyless source behind them was dead
   (verified live 2026-11-17): the tioo `/youtube` route answers a 20-byte

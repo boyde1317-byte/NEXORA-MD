@@ -370,6 +370,8 @@ await check('no Indonesian strings in the new card surfaces', async () => {
     'src/lib/startCard.js',
     'src/plugins/general/start.js',
     'src/plugins/general/messagebuilder.js',
+    'src/menu/types/atlasMenu.js',
+    'src/lib/galaxyBar.js',
   ];
   const banned = /\b(Hai Kak|Silakan|Pilih salah|Salin Kode|dibuat dengan|kamu|belum|sudah|gak|nggak|lanjut|selesai|Halo)\b/;
   const hits = [];
@@ -728,6 +730,95 @@ await check('galaxy bar probes are shared by .galaxybar and .testrich', async ()
   assert(bar.resolveBarProbe(bar.getBarProbe('baroffer')).buttons.length === 0, 'baroffer grew a button');
 
   return `${ids.length} probes, shared and carrier-checked`;
+});
+
+await check('atlas menu indexes the live registry', async () => {
+  const atlas = await import(join(root, `src/menu/types/atlasMenu.js?t=${Date.now()}`));
+  const bar = await import(join(root, 'src/lib/galaxyBar.js'));
+
+  assert(atlas.atlasMenu.id === 21, `atlas id is ${atlas.atlasMenu.id}`);
+  assert(typeof atlas.atlasMenu.renderer === 'function', 'atlas has no renderer');
+
+  const categories = {
+    core: [{ name: 'menu', description: 'Show the menu' }, { name: 'help', description: 'List commands' }],
+    economy: Array.from({ length: 9 }, (_, i) => ({ name: `eco${i}`, description: `Economy ${i}` })),
+    games: Array.from({ length: 4 }, (_, i) => ({ name: `game${i}`, description: `Game ${i}` })),
+    media: Array.from({ length: 2 }, (_, i) => ({ name: `media${i}`, description: `Media ${i}` })),
+  };
+
+  // Sections come out biggest first, and empty sections never appear.
+  const ranked = atlas.rankSections({ ...categories, empty: [] });
+  assert(ranked[0].name === 'economy' && ranked[0].count === 9, 'sections are not ranked by size');
+  assert(!ranked.some((s2) => s2.name === 'empty'), 'an empty section was listed');
+
+  // The spotlight is stable per day and moves across days.
+  const day = '2026-11-17';
+  const a1 = atlas.pickSpotlight(categories, day);
+  const a2 = atlas.pickSpotlight(categories, day);
+  assert(a1 && a1.name === a2.name, 'the spotlight is not deterministic');
+  assert(a1.category, 'the spotlight lost its category');
+  const moved = new Set(['2026-11-17', '2026-11-18', '2026-11-19'].map((d) => atlas.pickSpotlight(categories, d).name));
+  assert(moved.size > 1, 'the spotlight never changes between days');
+  assert(atlas.pickSpotlight({}, day) === null, 'an empty registry produced a spotlight');
+
+  // Render against a fake socket: the payload is the contract.
+  const sent = [];
+  const sock = {
+    user: { id: '233000000000:1@s.whatsapp.net' },
+    relayMessage: async (_jid, message) => { sent.push(message); },
+    waUploadToServer: async () => { throw new Error('no upload in check'); },
+  };
+  await atlas.atlasMenu.renderer({
+    sock,
+    m: { from: '233000000000@s.whatsapp.net' },
+    menuData: { prefix: '.', totalCommands: 17, categories },
+  });
+
+  assert(sent.length === 1, `atlas relayed ${sent.length} messages`);
+  const inner = sent[0].viewOnceMessage.message.interactiveMessage;
+
+  // Body: monospace index carrying the real numbers, one aligned row per section.
+  assert(inner.body.text.startsWith('```') && inner.body.text.endsWith('```'), 'index body is not fenced monospace');
+  assert(inner.body.text.includes('17 commands') && inner.body.text.includes('4 sections'), 'index header counts are wrong');
+  assert(/economy\s+9/.test(inner.body.text), 'index row lost the economy count');
+  assert(/core\s+2/.test(inner.body.text), 'index row lost the core count');
+  assert(inner.body.text.includes('spotlight'), 'index has no spotlight line');
+
+  // Footer keeps the dim hint, and no section name is invented there.
+  assert(inner.footer?.text?.includes('.help <section>'), 'footer lost the help hint');
+
+  // Bar: filled, all three slots, divider after the opener pair.
+  const parsed = bar.parseGalaxyBar(inner.nativeFlowMessage.messageParamsJson);
+  assert(bar.barSlots(inner.nativeFlowMessage.messageParamsJson).length === 3, 'atlas left a bar slot empty');
+  assert(bar.barHasCopy(inner.nativeFlowMessage.messageParamsJson), 'the bar carries no content');
+  assert(parsed.limited_time_offer.copy_code.startsWith('.'), 'the spotlight is not copyable');
+  assert(parsed.bottom_sheet.divider_indices[0] === 2, `divider sits at ${parsed.bottom_sheet.divider_indices}`);
+  assert(parsed.tap_target_configuration.description.includes('.help'), 'the callout does not teach the command');
+
+  // Buttons: opener pair first, then shortcuts that all route to .help.
+  const btns = inner.nativeFlowMessage.buttons;
+  assert(btns[0].name === 'single_select', `first button is ${btns[0].name}`);
+  assert(btns[1].name === 'call_permission_request', 'the multi-button opener pair is missing');
+  const replies = btns.slice(2);
+  assert(replies.length === 4, `expected 4 shortcuts, got ${replies.length}`);
+  for (const btn of replies) {
+    assert(btn.name === 'quick_reply', `shortcut is ${btn.name}`);
+    const params = JSON.parse(btn.buttonParamsJson);
+    assert(params.id === `.help ${params.display_text.split(' ')[1]}`, `shortcut routes to ${params.id}`);
+  }
+  const picker = JSON.parse(btns[0].buttonParamsJson);
+  assert(picker.has_multiple_buttons === true, 'the picker does not unlock multi-button mode');
+  assert(picker.sections.flatMap((s2) => s2.rows).length === 4, 'the picker does not list every section');
+
+  // An empty registry must still send, not throw.
+  sent.length = 0;
+  await atlas.atlasMenu.renderer({ sock, m: { from: '233000000000@s.whatsapp.net' }, menuData: { prefix: '.', totalCommands: 0, categories: {} } });
+  assert(sent.length === 1, 'atlas refused to render with no commands');
+  const bare = sent[0].viewOnceMessage.message.interactiveMessage;
+  assert(bare.body.text.includes('0 commands'), 'an empty registry produced a wrong count');
+  assert(!bar.barHasCopy(bar.buildGalaxyBar({})), 'the empty registry leaked copy into the bar');
+
+  return 'computed index, daily spotlight, filled bar, shortcuts to .help';
 });
 
 await check('sticker annotation builds a real annotation', async () => {

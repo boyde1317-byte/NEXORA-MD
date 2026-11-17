@@ -24,6 +24,7 @@ import moonsonCard from './types/moonsonCard.js';
 import galaxyMenu from './types/galaxyMenu.js';
 import commandDirectory from './types/commandDirectory.js';
 import a2uiSurface from './types/a2uiSurface.js';
+import atlasMenu from './types/atlasMenu.js';
 
 // Register them all statically in the manager
 menuManager.register(documentInteractive);
@@ -48,6 +49,7 @@ menuManager.menus.set('moonsoncard', moonsonCard);
 menuManager.register(galaxyMenu);
 menuManager.register(commandDirectory);
 menuManager.register(a2uiSurface);
+menuManager.register(atlasMenu);
 
 /**
  * Compiles the statistics and renders the active menu (or custom specified menu style).
