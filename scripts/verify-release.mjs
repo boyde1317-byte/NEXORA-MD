@@ -558,6 +558,56 @@ await check('yt-dlp YouTube source extracts and reports its failures', async () 
   }
 });
 
+await check('yt-dlp audio download produces a playable mp3 and cleans up', async () => {
+  const fs = await import('node:fs/promises');
+  const stamp = process.pid;
+  const stub = `/tmp/ytdlp-dl-${stamp}`;
+
+  // Stand-in for yt-dlp: honours -o and --print-to-file, writes fake audio.
+  await fs.writeFile(
+    stub,
+    `#!/bin/sh
+out=""; meta=""; mfile=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o) out="$2"; shift 2 ;;
+    --print-to-file) meta="$2"; mfile="$3"; shift 3 ;;
+    *) shift ;;
+  esac
+done
+file=$(printf '%s' "$out" | sed 's/%(ext)s/mp3/')
+printf 'ID3-STUB-AUDIO' > "$file"
+if [ -n "$mfile" ]; then
+  printf '"Stub Song"\n"Stub Artist"\n123\n"https://i.ytimg.com/x.jpg"\n' > "$mfile"
+fi
+exit 0
+`,
+    { mode: 0o755 }
+  );
+
+  const prevBin = process.env.YTDLP_PATH;
+  process.env.YTDLP_PATH = stub;
+  try {
+    const mod = await import(join(root, `src/lib/ytdlp.js?dl=${stamp}`));
+    const dl = await mod.ytdlpDownload('https://youtu.be/aqz-KE-bpKQ', { mode: 'audio' });
+    assert(dl.mimetype === 'audio/mpeg', `download mimetype was ${dl.mimetype}`);
+    assert(dl.sizeBytes > 0, 'download reported an empty file');
+    assert(dl.title === 'Stub Song', `metadata title was ${dl.title}`);
+    assert(dl.author === 'Stub Artist', `metadata author was ${dl.author}`);
+    assert(dl.duration === 123, `metadata duration was ${dl.duration}`);
+    const bytes = await fs.readFile(dl.file, 'utf8');
+    assert(bytes === 'ID3-STUB-AUDIO', 'the downloaded file was not the transcoded mp3');
+
+    await mod.cleanupDownload(dl.dir);
+    const stillThere = await fs.stat(dl.dir).then(() => true).catch(() => false);
+    assert(!stillThere, 'the download temp directory was not cleaned up');
+    return 'mp3 file, metadata, temp cleanup';
+  } finally {
+    if (prevBin === undefined) delete process.env.YTDLP_PATH; else process.env.YTDLP_PATH = prevBin;
+    await fs.rm(stub, { force: true });
+  }
+});
+
 await check('sticker annotation builds a real annotation', async () => {
   const mod = await import(join(root, 'src/lib/stickerAnnotation.js'));
   const { default: sharp } = await import('sharp');

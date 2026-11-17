@@ -1,6 +1,6 @@
 import { withReactionStatus } from '../../lib/cosmetics.js';
 import { mixedCard, selectMenu } from '../../lib/interactiveKit.js';
-import { youtubeSearch, youtubeDownload, isUrl, downloadMediaBuffer, isPlausibleMedia, whatsappAudioBuffer } from '../../lib/downloader.js';
+import { youtubeSearch, youtubeAudioBuffer, isUrl, whatsappAudioBuffer } from '../../lib/downloader.js';
 
 const MAX_RESULTS = 5;
 
@@ -23,53 +23,19 @@ export default {
       // Direct URL — resolve straight to audio.
       if (isUrl(query)) {
         try {
-          const data = await youtubeDownload(query);
-          if (!data.mp3) throw new Error('No audio stream available for that video.');
+          // youtubeAudioBuffer downloads through yt-dlp and hands back a
+          // finished mp3 — no short-lived CDN token to race, and no 60s
+          // stall from fetching a googlevideo URL with plain HTTP.
+          const audio = await youtubeAudioBuffer(query);
 
           const metaParts = [
-            `🎵 *${data.title || 'YouTube Audio'}*`,
-            data.author ? `👤 ${data.author}` : null,
-            data.duration ? `⏱️ ${data.duration}` : null,
-            data.views ? `👁️ ${data.views}` : null,
+            `🎵 *${audio.title || 'YouTube Audio'}*`,
+            audio.author ? `👤 ${audio.author}` : null,
+            audio.duration ? `⏱️ ${audio.duration}` : null,
           ].filter(Boolean).join('\n');
 
-          // Send audio first, then a single metadata card with buttons.
-          // WhatsApp can't combine audio + buttons in one message, so this
-          // is the minimum: 2 messages (audio + card).
-          //
-          // The backend's mp3 URL is a short-lived token (c.ymcdn.org links
-          // go 410 Gone quickly) — buffer it immediately, and if the token
-          // already died, grab a fresh backend link and try once more.
-          let audio;
-          const grab = async (d) => {
-            // googlevideo's edge throttles hard from a datacenter IP (measured
-            // 60-86s for a 3.5min track), so 90s was cutting off real
-            // downloads. Give the buffer room before giving up.
-            const { buffer, mimetype } = await downloadMediaBuffer(d.mp3, { timeoutMs: 180000 });
-            // The CDN's content-type is sometimes missing/generic even on a
-            // genuine audio stream, so we still fall back to audio/mpeg for
-            // those — but never for a buffer that doesn't actually look like
-            // media. That guard is what stops a "soft" error response (a 200
-            // with an HTML/JSON body instead of real bytes) from being
-            // shipped to WhatsApp as fake audio, which is what previously
-            // showed up on-device as "this audio is not available because
-            // something is wrong with the audio file".
-            if (!isPlausibleMedia(buffer)) {
-              throw new Error('the source returned something that is not audio — likely a dead or expired link');
-            }
-            return { buffer, mimetype: mimetype.startsWith('audio/') ? mimetype : 'audio/mpeg' };
-          };
-          try {
-            audio = await grab(data);
-          } catch (err) {
-            console.warn('[play] stream token expired/invalid, refetching link:', err.message);
-            audio = await grab(await youtubeDownload(query));
-          }
-
-          // The route serves Opus-in-WebM (itag 249), not an MP3. Re-encode
-          // to a container the client can actually decode before sending —
-          // otherwise the file lands as unplayable audio on the recipient's
-          // phone no matter what mimetype we stamp on it.
+          // Anything that is not already an mp3 container gets re-encoded;
+          // whatsappAudioBuffer passes audio/mpeg straight through.
           const playable = await whatsappAudioBuffer(audio.buffer, audio.mimetype);
 
           await sock.sendMessage(m.from, {
@@ -84,7 +50,7 @@ export default {
           }, [
             { kind: 'url',    label: '▶️ Watch on YouTube', url: query },
             { kind: 'action', label: '🎬 Get Video',        cmd: `${prefix}ytmp4 ${query}` },
-            { kind: 'action', label: '📝 Get Lyrics',       cmd: `${prefix}lyrics ${data.title || query}` },
+            { kind: 'action', label: '📝 Get Lyrics',       cmd: `${prefix}lyrics ${audio.title || query}` },
             { kind: 'action', label: '🎵 Play Another',     cmd: `${prefix}play` },
           ], { quoted: m });
         } catch (err) {

@@ -27,6 +27,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { readdir, mkdtemp, rm, stat, readFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 
 // Resolved per call, not at import: the path can be overridden at runtime
@@ -206,5 +207,87 @@ export async function ytdlpExtract(url, { timeoutMs = 90000 } = {}) {
     usedCookies: !!resolveCookiePath(),
   };
 }
+
+/**
+ * Download the media itself instead of handing back a stream URL.
+ *
+ * Why: a googlevideo URL only works from the IP that extracted it, and a plain
+ * HTTP GET against it from a datacenter is throttled hard — a 3.5-minute track
+ * took over 60s here and timed out, while yt-dlp pulled the same file at
+ * ~90 MiB/s because it ranges, retries and keeps the connection warm. So the
+ * audio path downloads through yt-dlp and transcodes to mp3 with the ffmpeg
+ * that is already in the image; the caller gets a file it can delete.
+ *
+ * @returns {Promise<{file,dir,mimetype,sizeBytes,title,author,thumbnail,duration}>}
+ */
+export async function ytdlpDownload(url, { mode = 'audio', maxHeight = 720, timeoutMs = 240000, tmpRoot = '/tmp' } = {}) {
+  const workdir = await mkdtemp(path.join(tmpRoot, 'nexora-yt-'));
+  const args = [
+    '--no-warnings',
+    '--ignore-config',
+    '--no-playlist',
+    '--no-progress',
+    '--socket-timeout', '20',
+    ...cookieArgs(),
+  ];
+
+  let ext;
+  if (mode === 'audio') {
+    args.push('-f', 'bestaudio/best', '-x', '--audio-format', 'mp3', '--audio-quality', '5');
+    ext = 'mp3';
+  } else {
+    args.push(
+      '-f', `bv*[height<=${maxHeight}]+ba/b[height<=${maxHeight}]/b`,
+      '--merge-output-format', 'mp4',
+    );
+    ext = 'mp4';
+  }
+
+  const metaFile = path.join(workdir, 'meta.txt');
+  args.push(
+    '--print-to-file', '%(title)j\n%(uploader)j\n%(duration)j\n%(thumbnail)j', metaFile,
+    '-o', path.join(workdir, `out.%(ext)s`),
+    url,
+  );
+
+  try {
+    await run(args, { timeoutMs });
+
+    const files = await readdir(workdir);
+    // The merged/transcoded file is the one we asked for; a leftover source
+    // container (webm/m4a) must not be handed to WhatsApp.
+    const name = files.find((f) => f === `out.${ext}`) || files.find((f) => f.endsWith(`.${ext}`));
+    if (!name) throw tagged('NO_FILE', `yt-dlp produced no ${ext} file`);
+
+    const file = path.join(workdir, name);
+    const info = await stat(file);
+    if (!info.size) throw tagged('NO_FILE', `yt-dlp produced an empty ${ext} file`);
+
+    let meta = {};
+    try {
+      const lines = (await readFile(metaFile, 'utf8')).split('\n').filter(Boolean);
+      meta = {
+        title: JSON.parse(lines[0] ?? 'null'),
+        author: JSON.parse(lines[1] ?? 'null'),
+        duration: JSON.parse(lines[2] ?? 'null'),
+        thumbnail: JSON.parse(lines[3] ?? 'null'),
+      };
+    } catch (_) { /* metadata is a nicety, the file is the deliverable */ }
+
+    return {
+      file,
+      dir: workdir,
+      mimetype: mode === 'audio' ? 'audio/mpeg' : 'video/mp4',
+      sizeBytes: info.size,
+      ...meta,
+    };
+  } catch (err) {
+    await rm(workdir, { recursive: true, force: true }).catch(() => {});
+    throw err;
+  }
+}
+
+/** Remove the working directory a download created. */
+export const cleanupDownload = (dir) => rm(dir, { recursive: true, force: true }).catch(() => {});
 
 export default ytdlpExtract;

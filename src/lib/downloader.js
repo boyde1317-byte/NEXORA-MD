@@ -238,6 +238,73 @@ export async function youtubeDownload(url, { preferMp4 = false } = {}) {
 }
 
 /**
+ * YouTube URL → ready-to-send audio buffer.
+ *
+ * Leads with a real yt-dlp download because a googlevideo URL is IP-bound and
+ * throttled: fetching it with plain HTTP from this box stalled past 60s on a
+ * 3.5-minute track, while yt-dlp pulled the same file at ~90 MiB/s. The URL
+ * route is kept as a fallback for the day a hosted extractor works again.
+ *
+ * @returns {Promise<{buffer,mimetype,title,author,thumbnail,duration,source}>}
+ */
+export async function youtubeAudioBuffer(url, { maxBytes = 48 * 1024 * 1024 } = {}) {
+  const reasons = [];
+  let botCheck = false;
+
+  try {
+    const { ytdlpDownload, cleanupDownload } = await import('./ytdlp.js');
+    const dl = await ytdlpDownload(url, { mode: 'audio' });
+    try {
+      if (dl.sizeBytes > maxBytes) {
+        throw new Error(`that track is ${(dl.sizeBytes / 1024 / 1024).toFixed(0)} MB — too heavy to send`);
+      }
+      const { readFile } = await import('node:fs/promises');
+      const buffer = await readFile(dl.file);
+      return {
+        buffer,
+        mimetype: 'audio/mpeg',
+        title: dl.title,
+        author: dl.author,
+        thumbnail: dl.thumbnail,
+        duration: dl.duration,
+        source: 'yt-dlp',
+      };
+    } finally {
+      await cleanupDownload(dl.dir);
+    }
+  } catch (err) {
+    if (err.code === 'BOT_CHECK') botCheck = true;
+    reasons.push(`yt-dlp: ${err.message}`);
+  }
+
+  // Hosted route fallback (tioo / loader.to) with the old expiry retry.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const data = await youtubeDownload(url);
+      if (!data.mp3) throw new Error('no audio stream in the response');
+      const { buffer, mimetype } = await downloadMediaBuffer(data.mp3, { timeoutMs: 180000 });
+      if (!isPlausibleMedia(buffer)) throw new Error('the source returned something that is not audio');
+      return {
+        buffer,
+        mimetype: mimetype.startsWith('audio/') ? mimetype : 'audio/mpeg',
+        title: data.title,
+        author: data.author,
+        thumbnail: data.thumbnail,
+        duration: data.duration,
+        source: data.source || 'hosted',
+      };
+    } catch (err) {
+      reasons.push(`hosted: ${err.message}`);
+    }
+  }
+
+  const hint = botCheck
+    ? ' YouTube wants a signed-in session for this server — add cookies with fly secrets set YOUTUBE_COOKIES_B64.'
+    : '';
+  throw new Error(`${reasons[0] || 'extraction failed'}${hint}`);
+}
+
+/**
  * loader.to two-step download. Returns the same shape as the tioo route
  * (mp3 in .mp3, video in .mp4) or null when the job never produced a URL.
  */
@@ -754,6 +821,7 @@ export default {
   wikiSearch,
   getLyrics,
   whatsappAudioBuffer,
+  youtubeAudioBuffer,
   sniffIsVideo,
 };
 

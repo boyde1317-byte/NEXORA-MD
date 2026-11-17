@@ -17,6 +17,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   720p and m4a audio is preferred, so a 4K result can never be offered to
   WhatsApp. Failures are now reported per source instead of "both sources are
   down", and the bot check is classified with the exact cookie fix.
+- `.play` no longer fetches the stream URL itself. A googlevideo URL is bound to
+  the extracting IP and throttled over plain HTTP: a 3.5-minute track stalled
+  past 60s from the live machine while yt-dlp pulled the same file at ~90 MiB/s.
+  The audio now downloads through yt-dlp, transcodes to mp3 with the ffmpeg in
+  the image, and is sent as a finished file, with the hosted route kept as a
+  fallback.
 
 ### Added
 - `src/lib/ytdlp.js`: yt-dlp bridge used by the YouTube downloader. Cookies
