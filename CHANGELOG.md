@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
+- Menu 14 (orderMessage) now quotes its `buildFakeOrderQuote` card on every
+  tier, as its header documents — the built quote was previously never used.
+- Menu 7 (newsletter) now quotes its `buildFakeNewsletterQuote` card on every
+  tier, as its header documents — tiers 1, 3 and 4 previously quoted the audio
+  quote or an image quote.
 - Menu 20 (product) tier 3 now quotes a productMessage card built by
   `buildFakeProductQuote` (same catalog-quote shape as buttonsCard: bot name,
   brand description, thumbnail) instead of an image quote. Tiers 1–2 unchanged.

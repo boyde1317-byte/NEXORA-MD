@@ -1,7 +1,7 @@
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
-import { buildFakeOrderQuote, buildFakeImageQuote } from '../../lib/waUtils.js';
+import { buildFakeOrderQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
@@ -100,7 +100,7 @@ export const orderMessageMenu = {
             buildNavigationButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: menuData.audioQuote || m });
+        }, { quoted: orderQuote });
       } catch (err) {
         console.warn('[MENU orderMessage] Tier 1 (sendButtonsCard + adReply + order) failed, trying image:', err.message);
       }
@@ -114,24 +114,23 @@ export const orderMessageMenu = {
           mimetype:    imgData.mimetype,
           caption:      bodyText,
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: menuData.audioQuote || m });
+        }, { quoted: orderQuote });
       } else if (imgData.source?.startsWith('http')) {
         return await sock.sendMessage(m.from, {
           image:       { url: imgData.source },
           caption:      bodyText,
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: menuData.audioQuote || m });
+        }, { quoted: orderQuote });
       }
     } catch (err) {
       console.warn('[MENU orderMessage] Tier 2 (image + order quote) failed, continuing to text:', err.message);
     }
 
-    // ── Tier 3: guaranteed plain text + fake quote + banner ───────────────
-    const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.thumbBuffer || undefined });
+    // ── Tier 3: guaranteed plain text + order quote + banner ────────────────
     return await sock.sendMessage(m.from, {
       text:        bodyText,
       contextInfo: { externalAdReply: adReply },
-    }, { quoted: fakeImgQuote });
+    }, { quoted: orderQuote });
   },
 };
 

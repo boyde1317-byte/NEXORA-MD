@@ -3,7 +3,7 @@ import { imageManager } from '../../images/imageManager.js';
 import { newsletterManager } from '../../newsletter/newsletterManager.js';
 import brand from '../../../config/brand.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
-import { buildFakeImageQuote, buildFakeNewsletterQuote } from '../../lib/waUtils.js';
+import { buildFakeNewsletterQuote } from '../../lib/waUtils.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildPillButton, buildPillUrlButton, buildNavigationButton } from './buttonsCard.js';
 
@@ -93,7 +93,7 @@ export const newsletterMenu = {
             buildNavigationButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: menuData.audioQuote || m });
+        }, { quoted: newsletterQuote });
       } catch (err) {
         console.warn('[MENU newsletter] Tier 1 (sendButtonsCard + newsletter quote) failed, trying native invite:', err.message);
       }
@@ -135,23 +135,22 @@ export const newsletterMenu = {
           image:    imgData.buffer,
           mimetype: imgData.mimetype,
           caption:   bodyText,
-        }, { quoted: menuData.audioQuote || m });
+        }, { quoted: newsletterQuote });
       } else if (imgData.source?.startsWith('http')) {
         return await sock.sendMessage(m.from, {
           image:   { url: imgData.source },
           caption:  bodyText,
-        }, { quoted: menuData.audioQuote || m });
+        }, { quoted: newsletterQuote });
       }
     } catch (err) {
       console.warn('[MENU newsletter] Tier 3 (imageMessage) failed, continuing to text:', err.message);
     }
 
-    // ── Tier 4: Guaranteed plain text + banner ────────────────────────────
-    const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData?.thumbBuffer || undefined });
+    // ── Tier 4: Guaranteed plain text + newsletter quote + banner ──────────
     return await sock.sendMessage(m.from, {
       text:        bodyText,
       contextInfo: { externalAdReply: adReply },
-    }, { quoted: fakeImgQuote });
+    }, { quoted: newsletterQuote });
   },
 };
 
