@@ -748,11 +748,12 @@ await check('popular commands come from recorded usage', async () => {
   assert(ranked.length === 2, `ranked ${ranked.length} commands: ${ranked.map((r) => r.name).join()}`);
   assert(ranked[0].name === 'play' && ranked[0].uses === 41, 'usage order broke');
   assert(ranked[1].name === 'menu', 'the tiebreak is not by name');
+  assert(ranked[0].category === 'download' && ranked[1].category === 'general', 'the ranking lost the category the row needs');
   assert(!ranked.some((r) => ['addowner', 'ghost', 'nocat', 'removed', 'zero'].includes(r.name)), 'an unlistable command reached the ranking');
   assert(rankTopCommands({}, commands).length === 0, 'an empty counter produced a ranking');
   assert(rankTopCommands(used, undefined).length === 0, 'the ranker survived a missing registry');
 
-  return 'owner/hidden/unresolved dropped, ties by name, empty stays empty';
+  return 'owner/hidden/unresolved dropped, ties by name, category carried, empty stays empty';
 });
 
 await check('atlas menu indexes the live registry', async () => {
@@ -839,10 +840,11 @@ await check('atlas menu indexes the live registry', async () => {
   const picker = JSON.parse(btns[0].buttonParamsJson);
   assert(picker.has_multiple_buttons === true, 'the picker does not unlock multi-button mode');
   assert(picker.icon === 'REVIEW', `the picker carries icon ${picker.icon}`);
-  assert(!picker.sections.some((s2) => s2.highlight_label), 'a bot with no usage claims a popular group');
+  assert(!picker.sections.some((s2) => s2.highlight_label), 'a bot with no usage grew a pill');
+  assert(!picker.sections.flatMap((s2) => s2.rows).some((r) => r.description.includes('Most used')), 'a bot with no usage marks rows as hot');
 
-  // Popular leads the picker, ranked from recorded usage, marked with menu 19's
-  // highlight pill. Rows route to the detail card, never straight into a command.
+  // Usage marks the rows already listed: no extra group, and the mark sits in the
+  // category that carries the popular commands rather than on a command row.
   sent.length = 0;
   await atlas.atlasMenu.renderer({
     sock,
@@ -851,18 +853,19 @@ await check('atlas menu indexes the live registry', async () => {
       prefix: '.',
       totalCommands: 17,
       categories,
-      topCommands: [{ name: 'play', uses: 41 }, { name: 'menu', uses: 12 }],
+      topCommands: [
+        { name: 'eco0', uses: 41, category: 'economy' },
+        { name: 'menu', uses: 12, category: 'core' },
+      ],
     },
   });
-  const popPicker = JSON.parse(sent[0].viewOnceMessage.message.interactiveMessage.nativeFlowMessage.buttons[0].buttonParamsJson);
-  assert(popPicker.sections[0].title === 'Popular', `the first group is ${popPicker.sections[0].title}`);
-  assert(popPicker.sections[0].highlight_label === 'Most used', `the popular pill reads ${popPicker.sections[0].highlight_label}`);
-  assert(popPicker.sections[0].rows.map((r) => r.id).join() === '.help play,.help menu', 'popular rows do not route to the ranked commands');
-  assert(popPicker.sections[0].rows[0].description === '41 uses', `popular row says ${popPicker.sections[0].rows[0].description}`);
-  assert(popPicker.sections[0].rows[1].description === '12 uses', 'a single use is not singular');
-  assert(popPicker.sections.length === 2, `the picker has ${popPicker.sections.length} groups with popular added`);
-  assert(popPicker.sections[1].title === brand.name, `the category block is ${popPicker.sections[1].title}`);
-  assert(popPicker.sections[1].rows.length === 4, 'the popular group ate a category row');
+  const hotPicker = JSON.parse(sent[0].viewOnceMessage.message.interactiveMessage.nativeFlowMessage.buttons[0].buttonParamsJson);
+  const hotRows = hotPicker.sections.flatMap((s2) => s2.rows);
+  assert(hotPicker.sections.length === 1, `the picker grew to ${hotPicker.sections.length} groups`);
+  assert(hotRows.length === 4, `the picker lists ${hotRows.length} rows`);
+  assert(hotRows.find((r) => r.id === '.help economy').description.endsWith('· Most used'), 'the economy row is not marked');
+  assert(hotRows.find((r) => r.id === '.help core').description.endsWith('· Most used'), 'the core row is not marked');
+  assert(!hotRows.find((r) => r.id === '.help media').description.includes('Most used'), 'an unused category is marked');
   assert(picker.sections.flatMap((s2) => s2.rows).length === 4, 'the picker does not list every section');
 
   // A registry wider than the picker used to strand sections: the tail promised

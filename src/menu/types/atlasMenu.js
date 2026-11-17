@@ -26,10 +26,10 @@
  *                             category shortcuts
  *   tap_target_configuration  the one thing a new user needs to know
  *
- * The picker leads with a Popular group: the most-run commands, ranked from the
- * counter the dispatcher persists in `db.stats.commandsUsed`, carrying menu 19's
- * highlight pill ("Most used") on its header. Real usage only, so a bot that has
- * not been driven yet shows no group rather than a guessed one.
+ * The picker carries no extra group. Categories that hold the most-run commands
+ * (ranked from the counter the dispatcher persists in `db.stats.commandsUsed`)
+ * are marked where they already sit, so the index stays as long as the registry
+ * says and a row still opens a category rather than jumping into a command.
  *
  * What it borrows from menu 19 (technique, not layout): the viewOnce carrier,
  * the opener pair that unlocks more than three buttons, the banner header.
@@ -58,8 +58,6 @@ const PICKER_BLOCKS = 10;
 const INDEX_ROWS = 9;
 /** quick_reply display_text is cut by the client past this width. */
 const LABEL_MAX = 20;
-/** Commands the Popular group carries. */
-const TOP_COMMANDS = 5;
 
 /**
  * Glyph on the section picker. The client maps a `single_select`'s `icon` name to
@@ -196,34 +194,25 @@ export const atlasMenu = {
     });
 
     // ── Buttons: one picker with every section, then the biggest shortcuts ──
-    // Popular leads: what this bot is actually used for, ahead of any category.
-    // Rows route to the detail card like every other picker row, so a tap never
-    // fires a command the user only meant to look at.
-    const popular = (menuData.topCommands || []).slice(0, TOP_COMMANDS);
-    const pickerSections = popular.length
-      ? [{
-        title: 'Popular',
-        highlight_label: 'Most used',
-        rows: popular.map((cmd) => ({
-          title: cmd.name,
-          description: `${cmd.uses} use${cmd.uses === 1 ? '' : 's'}`,
-          id: `${p}help ${cmd.name}`,
+    // No extra group: the index already lists every category, so the ones the bot
+    // is actually driven through are marked where they sit. The mark lands in the
+    // row rather than as a section pill, because `highlight_label` is a section
+    // field and a one-row group per popular category would pad the index.
+    const hot = new Set(
+      (menuData.topCommands || []).map((cmd) => cmd.category).filter(Boolean)
+    );
+    const pickerSections = [];
+    for (let i = 0; i < sections.length && pickerSections.length < PICKER_BLOCKS; i += ROWS_PER_SECTION) {
+      pickerSections.push({
+        title: i === 0 ? brand.name : `${brand.name} (cont.)`,
+        rows: sections.slice(i, i + ROWS_PER_SECTION).map((section) => ({
+          title: pickerLabel(section, sections.indexOf(section)),
+          description: `${section.count} commands${hot.has(section.name) ? ' · Most used' : ''}`,
+          id: `${p}help ${section.name}`,
         })),
-      }]
-      : [];
-
-    let pickerCategoryRows = 0;
-    const blocks = [];
-    for (let i = 0; i < sections.length && blocks.length < PICKER_BLOCKS; i += ROWS_PER_SECTION) {
-      const rows = sections.slice(i, i + ROWS_PER_SECTION).map((section) => ({
-        title: pickerLabel(section, sections.indexOf(section)),
-        description: `${section.count} commands`,
-        id: `${p}help ${section.name}`,
-      }));
-      pickerCategoryRows += rows.length;
-      blocks.push({ title: i === 0 ? brand.name : `${brand.name} (cont.)`, rows });
+      });
     }
-    pickerSections.push(...blocks);
+    const pickerCategoryRows = pickerSections.reduce((n, block) => n + block.rows.length, 0);
 
     const buttons = [
       // Opener pair: unlocks more than three buttons on clients that gate them.

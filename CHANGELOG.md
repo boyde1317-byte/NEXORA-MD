@@ -6,15 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- Menu 21 leads its picker with a Popular group: the most-run commands, ranked
-  from the counter the dispatcher persists in `db.stats.commandsUsed`, carrying
-  menu 19's `highlight_label` pill ("Most used") on the group header. Rows route
-  to `help <command>` like every other picker row, so a tap never fires a
-  command the user only meant to look at. `src/lib/topCommands.js` does the
+- Menu 21 marks the categories it is actually driven through, from the counter the
+  dispatcher persists in `db.stats.commandsUsed`. No extra group: the row that is
+  already in the index carries the mark (`07 download · 15 commands · Most used`),
+  so the picker stays one row per category and a tap still opens a category rather
+  than jumping straight into a command. The mark sits in the row because
+  `highlight_label` is a section field, and a one-row group per popular category
+  would pad the index it is meant to summarise. `src/lib/topCommands.js` does the
   ranking and drops names that no longer resolve, commands with no category, and
-  the owner and hidden buckets, so dev probes never headline a public menu. A bot
-  with no recorded usage shows no group at all.
-
+  the owner and hidden buckets, so dev probes never mark a public row. With no
+  recorded usage no row is marked.
 ### Changed
 - Menu 21's section picker carries `icon: 'REVIEW'`, the thumbs up glyph menu 19
   paints on its review picker. It sits inside the `single_select` params beside the title

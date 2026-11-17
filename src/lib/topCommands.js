@@ -29,7 +29,7 @@ export const rankTopCommands = (commandsUsed = {}, commands, limit = TOP_COMMAND
     .filter(({ uses }) => uses > 0)
     .sort((a, b) => b.uses - a.uses || a.name.localeCompare(b.name))
     .slice(0, limit)
-    .map(({ name, uses }) => ({ name, uses }));
+    .map(({ name, uses, cmd }) => ({ name, uses, category: (cmd.category || '').toLowerCase() }));
 };
 
 export default rankTopCommands;
