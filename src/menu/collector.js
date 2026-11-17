@@ -5,6 +5,7 @@ import { config } from '../../config/index.js';
 import brand from '../../config/brand.js';
 import owner from '../../config/owner.js';
 import { formatUptime } from '../lib/utils.js';
+import { rankTopCommands } from '../lib/topCommands.js';
 
 /**
  * Scans the plugin system and database stats to compile a global menu data object
@@ -55,6 +56,9 @@ export const collectMenuData = (sock) => {
     totalCommands,
     categories,
     statistics: commandsUsed,
+    // Most-used commands, ranked from the counter the dispatcher persists. The
+    // atlas picker leads with these; empty until something has been run.
+    topCommands: rankTopCommands(commandsUsed, client.commands),
     // channelJid: required by the newsletter menu for admin invite cards.
     // Set CHANNEL_JID in .env (e.g. 123456789@newsletter) to enable that tier.
     channelJid: process.env.CHANNEL_JID || config.channelJid || null,

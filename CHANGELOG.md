@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Menu 21 leads its picker with a Popular group: the most-run commands, ranked
+  from the counter the dispatcher persists in `db.stats.commandsUsed`, carrying
+  menu 19's `highlight_label` pill ("Most used") on the group header. Rows route
+  to `help <command>` like every other picker row, so a tap never fires a
+  command the user only meant to look at. `src/lib/topCommands.js` does the
+  ranking and drops names that no longer resolve, commands with no category, and
+  the owner and hidden buckets, so dev probes never headline a public menu. A bot
+  with no recorded usage shows no group at all.
+
 ### Changed
 - Menu 21's section picker carries `icon: 'REVIEW'`, the thumbs up glyph menu 19
   paints on its review picker. It sits inside the `single_select` params beside the title

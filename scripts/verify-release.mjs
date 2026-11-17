@@ -732,6 +732,29 @@ await check('galaxy bar probes are shared by .galaxybar and .testrich', async ()
   return `${ids.length} probes, shared and carrier-checked`;
 });
 
+await check('popular commands come from recorded usage', async () => {
+  const { rankTopCommands } = await import(join(root, 'src/lib/topCommands.js'));
+
+  const commands = new Map([
+    ['play', { name: 'play', category: 'download' }],
+    ['menu', { name: 'menu', category: 'general' }],
+    ['addowner', { name: 'addowner', category: 'owner' }],
+    ['ghost', { name: 'ghost', category: 'hidden' }],
+    ['nocat', { name: 'nocat', category: null }],
+  ]);
+  const used = { play: 41, menu: 12, addowner: 999, ghost: 800, nocat: 700, removed: 500, zero: 0 };
+  const ranked = rankTopCommands(used, commands, 5);
+
+  assert(ranked.length === 2, `ranked ${ranked.length} commands: ${ranked.map((r) => r.name).join()}`);
+  assert(ranked[0].name === 'play' && ranked[0].uses === 41, 'usage order broke');
+  assert(ranked[1].name === 'menu', 'the tiebreak is not by name');
+  assert(!ranked.some((r) => ['addowner', 'ghost', 'nocat', 'removed', 'zero'].includes(r.name)), 'an unlistable command reached the ranking');
+  assert(rankTopCommands({}, commands).length === 0, 'an empty counter produced a ranking');
+  assert(rankTopCommands(used, undefined).length === 0, 'the ranker survived a missing registry');
+
+  return 'owner/hidden/unresolved dropped, ties by name, empty stays empty';
+});
+
 await check('atlas menu indexes the live registry', async () => {
   const atlas = await import(join(root, `src/menu/types/atlasMenu.js?t=${Date.now()}`));
   const bar = await import(join(root, 'src/lib/galaxyBar.js'));
@@ -816,6 +839,30 @@ await check('atlas menu indexes the live registry', async () => {
   const picker = JSON.parse(btns[0].buttonParamsJson);
   assert(picker.has_multiple_buttons === true, 'the picker does not unlock multi-button mode');
   assert(picker.icon === 'REVIEW', `the picker carries icon ${picker.icon}`);
+  assert(!picker.sections.some((s2) => s2.highlight_label), 'a bot with no usage claims a popular group');
+
+  // Popular leads the picker, ranked from recorded usage, marked with menu 19's
+  // highlight pill. Rows route to the detail card, never straight into a command.
+  sent.length = 0;
+  await atlas.atlasMenu.renderer({
+    sock,
+    m: { from: '233000000000@s.whatsapp.net' },
+    menuData: {
+      prefix: '.',
+      totalCommands: 17,
+      categories,
+      topCommands: [{ name: 'play', uses: 41 }, { name: 'menu', uses: 12 }],
+    },
+  });
+  const popPicker = JSON.parse(sent[0].viewOnceMessage.message.interactiveMessage.nativeFlowMessage.buttons[0].buttonParamsJson);
+  assert(popPicker.sections[0].title === 'Popular', `the first group is ${popPicker.sections[0].title}`);
+  assert(popPicker.sections[0].highlight_label === 'Most used', `the popular pill reads ${popPicker.sections[0].highlight_label}`);
+  assert(popPicker.sections[0].rows.map((r) => r.id).join() === '.help play,.help menu', 'popular rows do not route to the ranked commands');
+  assert(popPicker.sections[0].rows[0].description === '41 uses', `popular row says ${popPicker.sections[0].rows[0].description}`);
+  assert(popPicker.sections[0].rows[1].description === '12 uses', 'a single use is not singular');
+  assert(popPicker.sections.length === 2, `the picker has ${popPicker.sections.length} groups with popular added`);
+  assert(popPicker.sections[1].title === brand.name, `the category block is ${popPicker.sections[1].title}`);
+  assert(popPicker.sections[1].rows.length === 4, 'the popular group ate a category row');
   assert(picker.sections.flatMap((s2) => s2.rows).length === 4, 'the picker does not list every section');
 
   // A registry wider than the picker used to strand sections: the tail promised
