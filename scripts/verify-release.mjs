@@ -801,7 +801,7 @@ await check('atlas menu indexes the live registry', async () => {
   assert(footer.includes('17 commands') && footer.includes('4 sections'), 'footer header counts are wrong');
   assert(/economy\s+9/.test(footer), 'footer row lost the economy count');
   assert(/core\s+2/.test(footer), 'footer row lost the core count');
-  assert(footer.includes(`\`${brand.creator}\``), 'footer lost the creator signature');
+  assert(footer.includes(brand.creator), 'footer lost the creator signature');
   assert(footer.includes('help <section>'), 'footer lost the help hint');
 
   // No prefix anywhere in the interface: a printed prefix goes stale.
@@ -811,10 +811,10 @@ await check('atlas menu indexes the live registry', async () => {
   // No rule lines or box art: dashes read as noise at footer size.
   assert(!/[─═━│┃╭╮╰╯├┤└┴┬▚▢]/.test(footer), 'the footer still draws ASCII rules');
 
-  // Never a fenced code block: the dim rows come from backticks per line.
-  assert(!footer.includes('```'), 'the footer is a code block, not dim rows');
+  // No backticks at all: the footer is plain text, so they would show literally.
+  assert(!footer.includes('`'), 'a literal backtick is showing in the footer');
   assert(!inner.body.text.includes('```'), 'the body is a code block, not a zero-width carrier');
-  const rowLines = footer.split('\n').filter((line) => /^`\d/.test(line));
+  const rowLines = footer.split('\n').filter((line) => /^\d/.test(line));
   assert(rowLines.length === 4, `expected 4 dim rows, got ${rowLines.length}`);
 
   // Bar: filled, all three slots, divider after the opener pair.

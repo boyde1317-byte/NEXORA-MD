@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- Menu 21's index rows were wrapped in single backticks, copied from menu 19's
+  footer. WhatsApp paints `footer.text` as plain text, so nothing was formatted:
+  every line arrived as a literal backtick in front of the row. The footer now
+  goes out bare, `src/menu/types/atlasMenu.js` pads the columns instead of
+  wrapping them, and the atlas check asserts no backtick survives anywhere in the
+  message.
+
 ### Added
 - Menu 21 marks the categories it is actually driven through, from the counter the
   dispatcher persists in `db.stats.commandsUsed`. No extra group: the row that is

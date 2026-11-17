@@ -10,9 +10,9 @@
  *
  * The dim look comes from the same place it comes from in menu 19: the copy
  * lives in `footer.text`, which the client paints small and grey, while the body
- * carries a single zero-width space. The index columns stay aligned because each
- * line is wrapped in single backticks, so the monospace applies to the row, not
- * to the message.
+ * carries a single zero-width space. Every line goes out bare: the footer is
+ * painted as plain text, so single backticks there are not formatting, they are
+ * just characters sitting in front of the user's rows.
  *
  * Two deliberate silences: no prefix is printed anywhere in the interface (an
  * owner knows their own prefix, and a printed one goes stale the moment it
@@ -85,17 +85,17 @@ export const rankSections = (categories = {}) =>
  * information rather than a wall of body text. The body keeps a single
  * zero-width space, which is what keeps the bubble this size at all.
  *
- * Each line is wrapped in single backticks, the trick menu 19 uses inside its
- * footer, so the columns stay monospace without turning the whole footer into a
- * code block.
+ * No backtick wrapping and no fenced block: WhatsApp paints `footer.text` as
+ * plain text, so menu 19's per-line monospace trick prints the backticks instead
+ * of rendering them. The columns are padded, not formatted.
  */
 export const buildDimIndex = (sections, { totalCommands = 0, creator = '', pickerRows = Infinity } = {}) => {
   const shown = sections.slice(0, INDEX_ROWS);
   const width = Math.max(...shown.map((s2) => s2.name.length), 4);
-  const mono = (line) => '`' + line + '`';
+  const dim = (line) => String(line);
 
   const rows = shown.map((section, i) =>
-    mono(`${String(i + 1).padStart(String(shown.length).length, '0')} ${section.name.padEnd(width)} ${String(section.count).padStart(3)}`));
+    dim(`${String(i + 1).padStart(String(shown.length).length, '0')} ${section.name.padEnd(width)} ${String(section.count).padStart(3)}`));
 
   // Only promise the picker for the sections it actually carries: with more
   // categories than the picker can hold, the tail points at `help` instead of
@@ -103,12 +103,12 @@ export const buildDimIndex = (sections, { totalCommands = 0, creator = '', picke
   const rest = sections.length - shown.length;
   const inPicker = rest > 0 ? Math.max(0, Math.min(rest, pickerRows - shown.length)) : 0;
   const tail = inPicker > 0
-    ? [mono(inPicker === rest ? `+${rest} more in the picker` : `+${inPicker} in the picker · +${rest - inPicker} via help`)]
+    ? [dim(inPicker === rest ? `+${rest} more in the picker` : `+${inPicker} in the picker · +${rest - inPicker} via help`)]
     : rest > 0
-      ? [mono(`+${rest} more · help <section>`)]
+      ? [dim(`+${rest} more · help <section>`)]
       : [];
-  const head = mono(`${brand.name} · ${totalCommands} commands · ${sections.length} sections`);
-  const signature = creator ? [mono(creator)] : [];
+  const head = dim(`${brand.name} · ${totalCommands} commands · ${sections.length} sections`);
+  const signature = creator ? [dim(creator)] : [];
 
   // Signature and hint sit outside the index rows: credit, then the only
   // instruction, and no prefix on it.
@@ -182,7 +182,10 @@ export const atlasMenu = {
         in_thread_buttons_limit: 0,
         divider_indices: [],
         list_title: 'Sections',
-        button_title: ' ',
+        // No blank trigger: a single space here paints an unlabelled button on
+        // the sheet, and `null` is dropped by the builder, so the client falls
+        // back to its own label instead.
+        button_title: null,
       },
       tap: {
         title: 'Sections open in chat',
