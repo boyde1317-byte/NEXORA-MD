@@ -5,6 +5,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- `messageBuilder` now carries the message-building techniques menu 19
+  (`src/menu/types/galaxyMenu.js`) uses, so one builder can express them:
+  `.messageParams({...})` (galaxy bar + bottom sheet + tap target),
+  `.multiButtonUnlock()` (the `has_multiple_buttons` opener pair that unlocks a
+  stack beyond three buttons), `.galaxy(cta, flowId)` (galaxy_message bar),
+  `.raw(name, params)` / `.requestContact()` (any other proto button family),
+  `.forwarded({ score })` (forward promise + channel pill), `.viewOnce()` (raw
+  relay inside a viewOnceMessage carrier) and `.jpegThumb(buffer)`. Cards using
+  any of these are relayed as a raw `interactiveMessage` instead of through the
+  fork's nativeFlow sugar; plain cards keep the proven sugar path.
+- `single_select` accepts button-level `{ icon, multi }` and section
+  `highlight_label`, as in menu 19.
+- `.mb galaxy` demos the whole menu-19 stack.
+
 ### Fixed
 - `.start` card copy is English ("Hey there", "Tap below to continue in a
   private chat"), and a release check now fails if Indonesian copy creeps into

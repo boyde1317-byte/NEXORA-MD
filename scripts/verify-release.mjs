@@ -443,6 +443,54 @@ await check('messageBuilder chains build the proven payloads', async () => {
   return 'button / legacy / list / airich';
 });
 
+await check('messageBuilder exposes the menu-19 techniques', async () => {
+  const { button } = await import(join(root, 'src/lib/messageBuilder.js'));
+  const sent = [];
+  const sock = {
+    user: { id: '233533416608:1@s.whatsapp.net' },
+    waUploadToServer: async () => ({ mediaUrl: 'https://mmg.whatsapp.net/x', directPath: '/x' }),
+    relayMessage: async (_j, c) => { sent.push(c); return { key: { id: 'r' } }; },
+    sendMessage: async (_j, b) => { sent.push(b); return { key: { id: 's' } }; },
+  };
+
+  await button(sock)
+    .body('Galaxy card')
+    .messageParams({
+      bottom_sheet: { in_thread_buttons_limit: 0, list_title: 'All', button_title: ' ' },
+      tap_target_configuration: { title: 'NEXORA', button_index: 0 },
+    })
+    .multiButtonUnlock()
+    .galaxy('top bar', '.x7')
+    .single_select('Menu', [{ title: 'Main', highlight_label: 'Crasher', rows: [{ id: '.menu', title: 'Menu' }] }], { icon: 'DOCUMENT', multi: true })
+    .raw('cta_reminder', { display_text: 'Reminder', id: 'message' })
+    .requestContact()
+    .forwarded({ score: 97410 })
+    .send('120363000000000000@g.us');
+
+  const im = sent[0]?.interactiveMessage;
+  assert(im, 'galaxy card did not relay an interactiveMessage');
+  const names = im.nativeFlowMessage.buttons.map((b) => b.name);
+  for (const required of ['single_select', 'call_permission_request', 'galaxy_message', 'cta_reminder', 'request_contact_info']) {
+    assert(names.includes(required), `menu-19 stack lost ${required}`);
+  }
+  assert(JSON.parse(im.nativeFlowMessage.buttons[1].buttonParamsJson).has_multiple_buttons, 'opener pair does not unlock multi-button mode');
+  const params = JSON.parse(im.nativeFlowMessage.messageParamsJson);
+  assert(params.bottom_sheet && params.tap_target_configuration, 'messageParamsJson lost the sheet or tap target');
+  const picker = JSON.parse(
+    im.nativeFlowMessage.buttons.find((b) => b.name === 'single_select' && b.buttonParamsJson.includes('sections')).buttonParamsJson
+  );
+  assert(picker.icon === 'DOCUMENT' && picker.has_multiple_buttons === true, 'single_select lost icon/multi flags');
+  assert(picker.sections[0].highlight_label === 'Crasher', 'single_select lost the section highlight label');
+  assert(im.contextInfo?.forwardingScore === 97410, 'forwarded() score was overwritten');
+  assert(!!im.contextInfo?.forwardedNewsletterMessageInfo, 'forwarded() dropped the channel pill');
+
+  const vo = [];
+  const sock2 = { ...sock, relayMessage: async (_j, c) => { vo.push(c); return { key: { id: 'r2' } }; } };
+  await button(sock2).body('vo').quick_reply('Ok', '.menu').viewOnce().send('120363000000000000@g.us');
+  assert(vo[0]?.viewOnceMessage?.message?.interactiveMessage, 'viewOnce() did not wrap the card');
+  return 'galaxy / opener pair / params / pill / viewOnce';
+});
+
 await check('.mb sends each builder form', async () => {
   const plugin = (await import(join(root, 'src/plugins/general/messagebuilder.js'))).default;
   const run = async (args, isGroup = false) => {
@@ -463,7 +511,7 @@ await check('.mb sends each builder form', async () => {
     return sent[0] || {};
   };
 
-  for (const variant of ['button', 'select', 'legacy', 'location', 'ai']) {
+  for (const variant of ['button', 'select', 'legacy', 'location', 'galaxy', 'ai']) {
     const out = await run([variant]);
     assert(Object.keys(out).length > 0, `.mb ${variant}: sent nothing`);
   }
@@ -471,7 +519,7 @@ await check('.mb sends each builder form', async () => {
   assert(/rejected by the server in groups/.test(listInGroup.text || ''), '.mb list in a group should refuse');
   const dmList = await run(['list'], false);
   assert(dmList.sections?.length, '.mb list in a DM should send a listMessage');
-  return 'button / select / legacy / location / ai / list';
+  return 'button / select / legacy / location / galaxy / ai / list';
 });
 
 await check('.start ships all four Start chatting wire forms', async () => {

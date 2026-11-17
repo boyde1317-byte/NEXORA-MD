@@ -23,6 +23,21 @@
  * accepts image/video headers, so a card with a location header is relayed
  * directly and its buttons converted to nativeFlow { name, params } form.
  *
+ * Menu 19 (src/menu/types/galaxyMenu.js) carries techniques the plain nativeFlow
+ * sugar cannot express. button() exposes them, and any card using one is relayed
+ * as a raw interactiveMessage instead of going through the fork:
+ *
+ *   .messageParams({ limited_time_offer, bottom_sheet, tap_target_configuration })
+ *                     → the "galaxy bar" + in-thread sheet + tap target
+ *   .multiButtonUnlock()  → the two opener buttons (`has_multiple_buttons: true`)
+ *                     that unlock a stack of more than three buttons
+ *   .galaxy(cta, flowId)  → the WhatsApp-branded galaxy_message bar
+ *   .raw(name, params)    → any other proto button family (cta_reminder,
+ *                     request_contact_info, review_and_pay, catalog, …)
+ *   .forwarded()          → isForwarded + forwardingScore + channel pill context
+ *   .viewOnce()           → relay inside a viewOnceMessage envelope
+ *   .jpegThumb(buffer)    → preview bytes on the header
+ *
  * One deliberate difference from the zapo original: listMessage is rejected by
  * the server in groups (as the original docs warn) — use .single_select() there.
  */
@@ -38,30 +53,43 @@ const toBufferOrUrl = (thumb) => thumb; // passed straight through to the fork
  */
 function toNativeButtons(buttons = []) {
   return buttons.map((b) => {
+    if (b.paramsJson !== undefined) {
+      return { name: b.name, buttonParamsJson: b.paramsJson };
+    }
     if (b.sections) {
-      return { name: 'single_select', params: { title: b.text || 'Select', sections: b.sections } };
+      return {
+        name: 'single_select',
+        buttonParamsJson: JSON.stringify({
+          title: b.text || 'Select',
+          sections: b.sections,
+          ...(b.icon ? { icon: b.icon } : {}),
+          ...(b.has_multiple_buttons ? { has_multiple_buttons: true } : {}),
+        }),
+      };
     }
     if (b.url) {
       return {
         name: 'cta_url',
-        params: {
+        buttonParamsJson: JSON.stringify({
           display_text: b.text,
           url: b.url,
           merchant_url: b.url,
-          ...(b.useWebview ? { webview_interaction: true } : {}),
-        },
+          landing_page_url: b.url,
+          webview_interaction: !!b.useWebview,
+          payment_link_preview: false,
+        }),
       };
     }
     if (b.copy !== undefined) {
-      return { name: 'cta_copy', params: { display_text: b.text, copy_code: b.copy } };
+      return { name: 'cta_copy', buttonParamsJson: JSON.stringify({ display_text: b.text, copy_code: b.copy }) };
     }
     if (b.call) {
-      return { name: 'cta_call', params: { display_text: b.text, phone_number: b.call } };
+      return { name: 'cta_call', buttonParamsJson: JSON.stringify({ display_text: b.text, phone_number: b.call }) };
     }
     if (b.sendLocation) {
-      return { name: 'send_location', params: b.sendLocation };
+      return { name: 'send_location', buttonParamsJson: JSON.stringify(b.sendLocation) };
     }
-    return { name: 'quick_reply', params: { display_text: b.text, id: b.id ?? b.text } };
+    return { name: 'quick_reply', buttonParamsJson: JSON.stringify({ display_text: b.text, id: b.id ?? b.text }) };
   });
 }
 
@@ -91,6 +119,11 @@ class ButtonBuilder extends BaseBuilder {
     this._sheet = undefined;
     this._extra = [];
     this._location = undefined;
+    this._params = undefined;
+    this._viewOnce = false;
+    this._forward = undefined;
+    this._pill = false;
+    this._jpegThumb = undefined;
   }
 
   body(text) { this._body = String(text ?? ''); return this; }
@@ -137,16 +170,24 @@ class ButtonBuilder extends BaseBuilder {
    * @param {string} title
    * @param {Array<{ title: string, rows: Array<{ id: string, title: string, description?: string }> }>} sections
    */
-  single_select(title, sections = []) {
+  single_select(title, sections = [], { icon, multi } = {}) {
     const normalized = sections.map((s, i) => ({
       title: s.title || `Section ${i + 1}`,
+      ...(s.highlight_label || s.highlightLabel
+        ? { highlight_label: s.highlight_label || s.highlightLabel }
+        : {}),
       rows: (s.rows || []).map((r) => ({
         id: r.id,
         title: r.title,
         description: r.description || '',
       })),
     }));
-    this._buttons.push({ text: title || 'Select', sections: normalized });
+    this._buttons.push({
+      text: title || 'Select',
+      sections: normalized,
+      ...(icon ? { icon } : {}),
+      ...(multi ? { has_multiple_buttons: true } : {}),
+    });
     return this;
   }
 
@@ -159,6 +200,51 @@ class ButtonBuilder extends BaseBuilder {
     this._offer = { text, url, copyCode, expiresIn };
     return this;
   }
+
+  // ── menu-19 techniques ──────────────────────────────────────────────────
+  /** Raw messageParamsJson: galaxy bar, bottom sheet, tap target, etc. */
+  messageParams(params) { this._params = { ...(this._params || {}), ...params }; return this; }
+
+  /** WhatsApp-branded galaxy_message bar (menu 19's decorative row). */
+  galaxy(flowCta, flowId = '.x7') {
+    this._buttons.push({
+      name: 'galaxy_message',
+      paramsJson: JSON.stringify({ flow_cta: flowCta, flow_message_version: '3', flow_id: flowId }),
+    });
+    return this;
+  }
+
+  /**
+   * The opener pair menu 19 uses to unlock a stack beyond three buttons:
+   * a single_select and a call_permission_request both flagged
+   * `has_multiple_buttons: true`. Call it before the rest of the stack.
+   */
+  multiButtonUnlock() {
+    this._buttons.push({ name: 'single_select', paramsJson: JSON.stringify({ has_multiple_buttons: true }) });
+    this._buttons.push({
+      name: 'call_permission_request',
+      paramsJson: JSON.stringify({ has_multiple_buttons: true }),
+    });
+    return this;
+  }
+
+  /** Any other proto button family, passed through as { name, params }. */
+  raw(name, params = {}) {
+    this._buttons.push({ name, paramsJson: typeof params === 'string' ? params : JSON.stringify(params) });
+    return this;
+  }
+
+  /** `.raw('request_contact_info')` shorthand. */
+  requestContact() { return this.raw('request_contact_info', ''); }
+
+  /** Forward attribution + optional channel pill, like every NEXORA menu. */
+  forwarded({ score = 1, pill = true } = {}) { this._forward = { score }; this._pill = !!pill; return this; }
+
+  /** Relay inside a viewOnceMessage envelope (menu 19's carrier). */
+  viewOnce(on = true) { this._viewOnce = !!on; return this; }
+
+  /** Preview bytes for the header (compressed JPEG — do not pass a full banner). */
+  jpegThumb(buffer) { this._jpegThumb = buffer; return this; }
 
   build() {
     const buttons = [...this._buttons, ...this._extra];
@@ -184,25 +270,80 @@ class ButtonBuilder extends BaseBuilder {
     };
   }
 
+  /** Anything the fork's nativeFlow sugar cannot express lands on the raw relay. */
+  _needsRawRoute() {
+    return !!(this._location || this._params || this._viewOnce || this._forward || this._jpegThumb);
+  }
+
+  /**
+   * Compose and relay the interactiveMessage by hand — the same envelope menu 19
+   * builds (contextInfo pill, messageParamsJson, viewOnce carrier, location
+   * header, preview bytes).
+   */
+  async _relayRaw(sock, jid, opts = {}) {
+    const { generateWAMessageFromContent, generateWAMessageContent } = await import('baileys');
+
+    let header = { hasMediaAttachment: false };
+    if (this._location) {
+      header = { hasMediaAttachment: false, locationMessage: this._location };
+    } else if (this._image) {
+      try {
+        const media = await generateWAMessageContent(
+          { image: typeof this._image === 'string' ? { url: this._image } : this._image },
+          { upload: sock.waUploadToServer }
+        );
+        header = { hasMediaAttachment: true, ...media };
+      } catch {
+        header = { hasMediaAttachment: false };
+      }
+    }
+    if (this._title) header.title = this._title;
+    if (this._jpegThumb) header.jpegThumbnail = this._jpegThumb;
+
+    let contextInfo;
+    if (this._forward) {
+      contextInfo = { isForwarded: true, forwardingScore: this._forward.score };
+      if (this._pill) {
+        try {
+          const { getChannelPill } = await import('./menuContext.js');
+          const pill = getChannelPill();
+          // our explicit score wins over the pill's default 1
+          if (pill) contextInfo = { ...pill, ...contextInfo };
+        } catch { /* pill is decorative */ }
+      }
+    }
+
+    const interactiveMessage = {
+      header,
+      body: { text: this._body },
+      footer: { text: this._footer || '' },
+      ...(contextInfo ? { contextInfo } : {}),
+      nativeFlowMessage: {
+        ...(this._params ? { messageParamsJson: JSON.stringify(this._params) } : {}),
+        buttons: toNativeButtons(this.build().buttons),
+        messageVersion: 1,
+      },
+    };
+
+    const content = this._viewOnce
+      ? { viewOnceMessage: { message: { interactiveMessage } } }
+      : { interactiveMessage };
+
+    const generated = generateWAMessageFromContent(jid, content, {
+      ...(sock.user?.id ? { userJid: sock.user.id } : {}),
+      ...(opts.quoted ? { quoted: opts.quoted } : {}),
+    });
+    await sock.relayMessage(jid, generated.message, { messageId: generated.key.id });
+    return generated;
+  }
+
   async send(jid, arg) {
     const opts = arg && arg.client ? arg : (arg || {});
     const sock = this._client(arg?.client ? arg : null);
     const payload = this.build();
 
-    // Location header: only the raw interactiveMessage route can carry it.
-    if (this._location) {
-      return baileysBridge.sendInteractive(sock, jid, {
-        body: payload.text,
-        footer: payload.footer,
-        header: {
-          title: payload.title || '',
-          subtitle: '',
-          // hasMediaAttachment stays false: the client routes this to the map
-          // renderer, not to a media download.
-          locationMessage: this._location,
-        },
-        buttons: toNativeButtons(payload.buttons),
-      }, opts);
+    if (this._needsRawRoute()) {
+      return this._relayRaw(sock, jid, opts);
     }
 
     return baileysBridge.sendNativeFlow(sock, jid, payload, opts);

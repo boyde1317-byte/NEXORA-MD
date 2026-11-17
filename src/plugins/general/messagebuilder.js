@@ -8,6 +8,7 @@
  *   .mb select     single_select picker (the group-safe "list")
  *   .mb legacy     legacy buttonsMessage RESPONSE buttons
  *   .mb list       real listMessage (DMs only, the server rejects it in groups)
+ *   .mb galaxy     the menu-19 stack: galaxy bar, opener pair, icons, pill
  *   .mb location   location header + buttons beneath (zapo .location() form)
  *   .mb ai         AI Rich: markdown, table, code card, suggestions
  */
@@ -69,6 +70,57 @@ export default {
             { id: `${prefix}menu`, title: '☰ Menu', description: 'Every command' },
             { id: `${prefix}ping`, title: '📡 Ping', description: 'Server stats' },
           ])
+          .send(m.from, { quoted: m });
+      }
+
+      if (variant === 'galaxy') {
+        // The menu-19 techniques, compact: messageParamsJson (galaxy bar +
+        // bottom sheet + tap target), the opener pair that unlocks a stack
+        // beyond three buttons, section icons/highlight labels, and the
+        // forwarded channel pill.
+        return await button(sock)
+          .body(`» *${name}*\n  › Every trick menu 19 uses, from the builder.`)
+          .footer(`© ${name}`)
+          .messageParams({
+            limited_time_offer: {
+              text: name,
+              url: 'https://wa.me/233533416608',
+              copy_code: prefix,
+              expiration_time: Date.now() + 86400000,
+            },
+            bottom_sheet: { in_thread_buttons_limit: 0, list_title: name, button_title: ' ' },
+            tap_target_configuration: {
+              title: name,
+              description: 'Tap a row below to explore',
+              canonical_url: 'https://wa.me/233533416608',
+              domain: 'wa.me',
+              button_index: 0,
+            },
+          })
+          .multiButtonUnlock()
+          .galaxy(`╭───「 ${name} 」───╮`, '.x7')
+          .single_select(
+            'Menu',
+            [
+              {
+                title: 'Main',
+                highlight_label: name,
+                rows: [
+                  { id: `${prefix}menu`, title: '☰ Menu', description: 'Every command' },
+                  { id: `${prefix}ping`, title: '📡 Ping', description: 'Server stats' },
+                ],
+              },
+            ],
+            { icon: 'DOCUMENT', multi: true }
+          )
+          .single_select(
+            'Info',
+            [{ title: 'Bot', rows: [{ id: `${prefix}owner`, title: '👑 Owner', description: `by ${brand.creator}` }] }],
+            { icon: 'REVIEW', multi: true }
+          )
+          .cta_url('📍 Open in Maps', 'https://maps.google.com/?q=5.6037,-0.187')
+          .galaxy('╰────────────────────────╯', `${prefix}menu`)
+          .forwarded({ score: 97410 })
           .send(m.from, { quoted: m });
       }
 
