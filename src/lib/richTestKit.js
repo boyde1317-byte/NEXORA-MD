@@ -1387,8 +1387,10 @@ export const RICH_TESTS = [
   { id: 'secret',   label: '🔒 Secret Flow Card', fn: testSecretFlow,      group: 'r14 Gems' },
   { id: 'dino',     label: '🦖 HTML Game: Dino',  fn: testHtmlGame('dino'),    group: 'r16 Gems' },
   { id: 'vipcard',  label: '👑 VIP Rich Card',   fn: testVipRichCard,       group: 'r18 Gems' },
+  { id: 'vipclean', label: '👑 VIP Rich (clean, no forward)', fn: testVipRichCardClean, group: 'r18 Gems' },
   { id: 'htmlcalc', label: '🧮 HTML Calc',        fn: testHtmlGame('calc'),    group: 'r16 Gems' },
   { id: 'monitor',  label: '📡 HTML Server Monitor', fn: testHtmlGame('monitor'), group: 'r16 Gems' },
+  { id: 'monitorclean', label: '📡 Monitor (clean, no forward)', fn: testHtmlGame('monitor', { forward: false }), group: 'r16 Gems' },
   { id: 'v2codetable',  label: '💻 V2 Code+Table',     fn: testV2CodeWithTable,     group: 'Combos V2' },
   { id: 'v2maptable',   label: '📍 V2 Map+Table',      fn: testV2MapWithTable,      group: 'Combos V2' },
   { id: 'v2textimg',    label: '🖼️ V2 Text+Image',    fn: testV2TextWithImage,     group: 'Combos V2' },
@@ -1498,12 +1500,12 @@ export async function testSecretFlow(sock, jid, quoted) {
   return 'secret flow card ✓';
 }
 
-export function testHtmlGame(game) {
+export function testHtmlGame(game, { forward = true } = {}) {
   return async (sock, jid, quoted) => {
     const { sendHtmlGame } = await import('./htmlGames.js');
-    const result = await sendHtmlGame(sock, jid, { game, quoted });
+    const result = await sendHtmlGame(sock, jid, { game, quoted, forward });
     if (!result.ok) throw new Error(result.reason);
-    return `html game "${result.game}" ✓`;
+    return `html game "${result.game}" ✓${forward ? '' : ' (clean envelope)'}`;
   };
 }
 
@@ -1511,7 +1513,11 @@ export function testHtmlGame(game) {
 // v0.3.18-r18 gem — Lady-Trish/Omegatech VIP rich card: full unified-response
 // envelope (messageSecret + forwardedAiBotMessageInfo) with 3PExt widget CTAs.
 // ─────────────────────────────────────────────────────────────────────────────
-export async function testVipRichCard(sock, jid, quoted) {
+export async function testVipRichCardClean(sock, jid, quoted) {
+  return testVipRichCard(sock, jid, quoted, { forward: false });
+}
+
+export async function testVipRichCard(sock, jid, quoted, { forward = true } = {}) {
   await sendUnifiedRich(sock, jid, {
     disclaimer: 'VIP Rich Card',
     submessages: [{ messageType: 2, messageText: '👑 NEXORA VIP Rich Card' }],

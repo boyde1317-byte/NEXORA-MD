@@ -150,11 +150,17 @@ export function hScrollSection(primitives) {
  *   mentionedJid       — array of JIDs to mention
  *   botJid             — forwardedAiBotMessageInfo.botJid (default Meta AI id)
  *   withProofs         — attach verificationMetadata cert-chain proofs
+ *   forward            — mark the card as a forwarded AI-bot message (default
+ *                        true). Set false for a "clean" envelope: the client
+ *                        treats a forwarded bot card as unverified external
+ *                        media and shows the "can't verify the security of
+ *                        this media / Download" gate, so dropping the markers
+ *                        is the lever worth testing on device.
  */
 export async function sendUnifiedRich(sock, jid, {
   sections, disclaimer = '', submessages = [], quoted = null,
   newsletter = null, mentionedJid = [], botJid = '867051314767696@bot',
-  withProofs = true, additionalNodes,
+  withProofs = true, additionalNodes, forward = true,
 } = {}) {
   if (!Array.isArray(sections) || sections.length === 0) {
     throw new Error('sendUnifiedRich: sections array required');
@@ -208,11 +214,15 @@ export async function sendUnifiedRich(sock, jid, {
                   quotedMessage: quoted.message ?? quoted,
                 }
               : { stanzaId }),
-            forwardingScore: 1,
-            isForwarded: true,
-            expiration: 7776000,
-            forwardedAiBotMessageInfo: { botJid },
-            forwardOrigin: 4,
+            ...(forward
+              ? {
+                  forwardingScore: 1,
+                  isForwarded: true,
+                  expiration: 7776000,
+                  forwardedAiBotMessageInfo: { botJid },
+                  forwardOrigin: 4,
+                }
+              : {}),
             ...(mentionedJid.length ? { mentionedJid } : {}),
             ...(newsletter
               ? {

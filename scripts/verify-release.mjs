@@ -340,6 +340,28 @@ await check('A2UI menu picker carries every category', () => {
   return `${sections.length} sections, ${sections.reduce((n, s2) => n + s2.rows.length, 0)} rows, ${menuModule.MENU_LINKS.length} links`;
 });
 
+await check('a clean rich envelope drops the forward markers', async () => {
+  const sent = [];
+  const fakeSock = { user: { id: '1@s.whatsapp.net' }, relayMessage: async (j, msg) => { sent.push(msg); return 'OK'; } };
+  const kitMod = await import(join(root, 'src/lib/vipRichKit.js'));
+
+  await kitMod.sendUnifiedRich(fakeSock, 'g@g.us', {
+    sections: [kitMod.singleSection(kitMod.markdownText('x'))], forward: false,
+  });
+  const clean = sent.at(-1).botForwardedMessage.message.richResponseMessage.contextInfo;
+  assert(clean.isForwarded === undefined, 'clean envelope still sets isForwarded');
+  assert(clean.forwardOrigin === undefined, 'clean envelope still sets forwardOrigin');
+  assert(clean.forwardedAiBotMessageInfo === undefined, 'clean envelope still claims a botJid');
+  assert(clean.stanzaId, 'clean envelope lost stanzaId');
+
+  await kitMod.sendUnifiedRich(fakeSock, 'g@g.us', {
+    sections: [kitMod.singleSection(kitMod.markdownText('x'))],
+  });
+  const forwarded = sent.at(-1).botForwardedMessage.message.richResponseMessage.contextInfo;
+  assert(forwarded.isForwarded === true && forwarded.forwardOrigin === 4, 'default envelope lost its forward markers');
+  return 'clean + forwarded';
+});
+
 await check('rich greeting card is a valid unified-response envelope', async () => {
   const sent = [];
   const fakeSock = {

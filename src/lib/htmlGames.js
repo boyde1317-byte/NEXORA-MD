@@ -109,7 +109,7 @@ function hydrateTemplate(html) {
  * @param {{ game: string, quoted?: object }} opts
  * @returns {Promise<{ ok: boolean, key?: object, reason?: string, game?: string }>}
  */
-export async function sendHtmlGame(sock, jid, { game, quoted }) {
+export async function sendHtmlGame(sock, jid, { game, quoted, forward = true }) {
   const resolved = resolveGame(game);
   if (!resolved) {
     return { ok: false, reason: `unknown game "${game}"` };
@@ -182,10 +182,14 @@ export async function sendHtmlGame(sock, jid, { game, quoted }) {
                   quotedMessage: quoted.message ?? quoted,
                 }
               : {}),
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedAiBotMessageInfo: { botJid: '867051314767696@bot' },
-            forwardOrigin: 4,
+            ...(forward
+              ? {
+                  forwardingScore: 1,
+                  isForwarded: true,
+                  forwardedAiBotMessageInfo: { botJid: '867051314767696@bot' },
+                  forwardOrigin: 4,
+                }
+              : {}),
           },
         },
       },
