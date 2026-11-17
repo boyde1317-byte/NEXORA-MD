@@ -5,6 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Menu 21's section picker carries `icon: 'REVIEW'`, the thumbs up glyph menu 19
+  paints on its review picker. It sits inside the `single_select` params beside the title
+  and rows; the client resolves the name, so a name it does not know drops the
+  icon silently instead of breaking the card.
+
+### Fixed
+- Menu 21 (`atlasMenu`) no longer strands categories. The picker was capped at
+  three ten-row blocks, so every section past the 30th was unreachable while the
+  footer tail still promised it sat in the picker. The picker now uses the
+  client's own ten-block ceiling (100 categories) and the tail counts only the
+  rows the picker actually carries, pointing at `help <section>` for the rest.
+- Atlas shortcut labels are clamped to 20 characters, the width a `quick_reply`
+  button shows, by dropping the count before the name: a long section such as
+  `groupmanagement` used to overflow the button at 22 characters.
+- Atlas picker rows print a section once: the title keeps the index rank
+  (`01 owner`) and the description keeps the count (`63 commands`), instead of
+  both lines repeating the same number.
+
 ### Added
 - `.galaxybar` (`src/plugins/general/galaxybar.js`) and `src/lib/galaxyBar.js`:
   the galaxy bar treated as an empty container rather than fixed copy. Three

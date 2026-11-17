@@ -815,7 +815,47 @@ await check('atlas menu indexes the live registry', async () => {
   }
   const picker = JSON.parse(btns[0].buttonParamsJson);
   assert(picker.has_multiple_buttons === true, 'the picker does not unlock multi-button mode');
+  assert(picker.icon === 'REVIEW', `the picker carries icon ${picker.icon}`);
   assert(picker.sections.flatMap((s2) => s2.rows).length === 4, 'the picker does not list every section');
+
+  // A registry wider than the picker used to strand sections: the tail promised
+  // rows the picker never carried. One picker row is one category, so the
+  // picker must carry all of them and the tail must count the index overflow.
+  const wide = Object.fromEntries(Array.from({ length: 40 }, (_, i) => [
+    `sec${String(i).padStart(2, '0')}`,
+    Array.from({ length: 40 - i }, (_, k) => ({ name: `c${i}_${k}`, description: 'wide' })),
+  ]));
+  sent.length = 0;
+  await atlas.atlasMenu.renderer({ sock, m: { from: '233000000000@s.whatsapp.net' }, menuData: { prefix: '.', totalCommands: 800, categories: wide } });
+  const wideInner = sent[0].viewOnceMessage.message.interactiveMessage;
+  const wideRows = JSON.parse(wideInner.nativeFlowMessage.buttons[0].buttonParamsJson).sections.flatMap((s2) => s2.rows);
+  assert(wideRows.length === 40, `picker carries ${wideRows.length} of 40 sections`);
+  assert(wideInner.footer.text.includes('+31 more in the picker'), 'the tail stopped counting the sections the index hides');
+
+  // Shortcut labels stay inside what a quick_reply button can show, and picker
+  // rows do not repeat the count the description already carries.
+  sent.length = 0;
+  await atlas.atlasMenu.renderer({
+    sock,
+    m: { from: '233000000000@s.whatsapp.net' },
+    menuData: {
+      prefix: '.',
+      totalCommands: 6,
+      categories: {
+        groupmanagement: [{ name: 'a' }, { name: 'b' }, { name: 'c' }],
+        automation: [{ name: 'd' }, { name: 'e' }],
+        economy: [{ name: 'f' }],
+      },
+    },
+  });
+  const longInner = sent[0].viewOnceMessage.message.interactiveMessage;
+  for (const btn of longInner.nativeFlowMessage.buttons.slice(2)) {
+    const params = JSON.parse(btn.buttonParamsJson);
+    assert(params.display_text.length <= 20, `shortcut label runs ${params.display_text.length} chars: ${params.display_text}`);
+  }
+  for (const row of JSON.parse(longInner.nativeFlowMessage.buttons[0].buttonParamsJson).sections.flatMap((s2) => s2.rows)) {
+    assert(!row.title.includes('·'), `picker row prints its count twice: ${row.title} / ${row.description}`);
+  }
 
   // An empty registry must still send, not throw.
   sent.length = 0;

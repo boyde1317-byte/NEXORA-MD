@@ -42,8 +42,28 @@ import { getChannelPill } from '../../lib/menuContext.js';
 const SHORTCUTS = 6;
 /** Rows a single_select section can hold before the client truncates. */
 const ROWS_PER_SECTION = 10;
+/**
+ * Picker blocks. The client holds 10 sections of 10 rows, and one row here is
+ * one category, so ten blocks cover 100 categories, which is the client's own ceiling.
+ * The old cap of three blocks silently stranded every section past the 30th
+ * while the index still promised it sat in the picker.
+ */
+const PICKER_BLOCKS = 10;
 /** Rows per index column block in the body. */
 const INDEX_ROWS = 9;
+/** quick_reply display_text is cut by the client past this width. */
+const LABEL_MAX = 20;
+
+/**
+ * Glyph on the section picker. The client maps a `single_select`'s `icon` name to
+ * its own glyph; DOCUMENT, REVIEW and PROMOTION are the three names this repo has
+ * proven on a device (menu 19, messagebuilder). REVIEW is the thumbs up, the
+ * reviewer's mark rather than the page menu 19 puts on its index, because this
+ * picker browses sections the same way menu 19's review picker does. An
+ * unrecognised name degrades to no icon rather than breaking the card, so nothing
+ * here is load bearing.
+ */
+const PICKER_ICON = 'REVIEW';
 
 /** Sections in render order: biggest first, then alphabetical for stable ties. */
 export const rankSections = (categories = {}) =>
@@ -64,7 +84,7 @@ export const rankSections = (categories = {}) =>
  * footer, so the columns stay monospace without turning the whole footer into a
  * code block.
  */
-export const buildDimIndex = (sections, { totalCommands = 0, creator = '' } = {}) => {
+export const buildDimIndex = (sections, { totalCommands = 0, creator = '', pickerRows = Infinity } = {}) => {
   const shown = sections.slice(0, INDEX_ROWS);
   const width = Math.max(...shown.map((s2) => s2.name.length), 4);
   const mono = (line) => '`' + line + '`';
@@ -72,8 +92,16 @@ export const buildDimIndex = (sections, { totalCommands = 0, creator = '' } = {}
   const rows = shown.map((section, i) =>
     mono(`${String(i + 1).padStart(String(shown.length).length, '0')} ${section.name.padEnd(width)} ${String(section.count).padStart(3)}`));
 
+  // Only promise the picker for the sections it actually carries: with more
+  // categories than the picker can hold, the tail points at `help` instead of
+  // claiming rows that are not there.
   const rest = sections.length - shown.length;
-  const tail = rest > 0 ? [mono(`+${rest} more in the picker`)] : [];
+  const inPicker = rest > 0 ? Math.max(0, Math.min(rest, pickerRows - shown.length)) : 0;
+  const tail = inPicker > 0
+    ? [mono(inPicker === rest ? `+${rest} more in the picker` : `+${inPicker} in the picker · +${rest - inPicker} via help`)]
+    : rest > 0
+      ? [mono(`+${rest} more · help <section>`)]
+      : [];
   const head = mono(`${brand.name} · ${totalCommands} commands · ${sections.length} sections`);
   const signature = creator ? [mono(creator)] : [];
 
@@ -83,7 +111,27 @@ export const buildDimIndex = (sections, { totalCommands = 0, creator = '' } = {}
   return [head, ...rows, ...tail, '', ...(signature.length ? [...signature, ''] : []), hint].join('\n');
 };
 
-const catLabel = (section, i) => `${String(i + 1).padStart(2, '0')} ${section.name} · ${section.count}`;
+const rank = (i) => String(i + 1).padStart(2, '0');
+
+/**
+ * Picker row title. The old title carried the count and the row description
+ * repeated it, so every row said the same number twice. The index rank stays,
+ * so the row still ties back to its line in the footer.
+ */
+const pickerLabel = (section, i) => `${rank(i)} ${section.name}`;
+
+/**
+ * Shortcut label, clamped to what a quick_reply button can actually show.
+ * A long category name used to overflow the label and lose the tail; the count
+ * is dropped before the name is, and the rank always survives.
+ */
+const catLabel = (section, i) => {
+  const full = `${rank(i)} ${section.name} · ${section.count}`;
+  if (full.length <= LABEL_MAX) return full;
+  const ranked = `${rank(i)} ${section.name}`;
+  if (ranked.length <= LABEL_MAX) return ranked;
+  return ranked.slice(0, LABEL_MAX - 1).trimEnd() + '…';
+};
 
 export const atlasMenu = {
   id: 21,
@@ -142,11 +190,11 @@ export const atlasMenu = {
 
     // ── Buttons: one picker with every section, then the biggest shortcuts ──
     const pickerSections = [];
-    for (let i = 0; i < sections.length && pickerSections.length < 3; i += ROWS_PER_SECTION) {
+    for (let i = 0; i < sections.length && pickerSections.length < PICKER_BLOCKS; i += ROWS_PER_SECTION) {
       pickerSections.push({
         title: i === 0 ? brand.name : `${brand.name} (cont.)`,
         rows: sections.slice(i, i + ROWS_PER_SECTION).map((section) => ({
-          title: catLabel(section, sections.indexOf(section)),
+          title: pickerLabel(section, sections.indexOf(section)),
           description: `${section.count} commands`,
           id: `${p}help ${section.name}`,
         })),
@@ -158,6 +206,7 @@ export const atlasMenu = {
       {
         name: 'single_select',
         buttonParamsJson: JSON.stringify({
+          icon: PICKER_ICON,
           title: 'All sections',
           sections: pickerSections,
           has_multiple_buttons: true,
@@ -184,7 +233,11 @@ export const atlasMenu = {
       // in the footer, not from wrapping the message in a code block.
       body: { text: BAR_ZWSP },
       footer: {
-        text: buildDimIndex(sections, { totalCommands: menuData.totalCommands, creator }),
+        text: buildDimIndex(sections, {
+          totalCommands: menuData.totalCommands,
+          creator,
+          pickerRows: pickerSections.reduce((n, block) => n + block.rows.length, 0),
+        }),
       },
       nativeFlowMessage: {
         messageParamsJson: JSON.stringify(withDivider),
