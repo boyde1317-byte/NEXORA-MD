@@ -340,7 +340,7 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.setprefix` | prefix | Set custom command prefix(es) |
 | `.settheme` | theme, style | Changes the global active bot design theme (Owner Only) |
 | `.setthumbnail` | thumbnail, thumb | Enable/disable menu thumbnails or save the replied image as the menu thumbnail |
-| `.setwelcome` | stylewelcome, wcstyle | Set greeting layout style (1 = Image, 2 = Document Card, 3 = Interactive, 4 = Minimal) |
+| `.setwelcome` | stylewelcome, wcstyle | Set greeting layout style (1 = Image, 2 = Document Card, 3 = Interactive, 4 = Minimal, 5 = Product Card — menu banner, the default) |
 | `.setwelcomeimage` | setwcimg, wcimg | Set custom background image for welcome cards (image or URL) |
 | `.setwelcometext` | setwctext, wctext | Set custom text for welcome notifications |
 | `.status` | story, sendstatus, broadcaststatus | Sends a WhatsApp Status (Story) to contacts or groups |

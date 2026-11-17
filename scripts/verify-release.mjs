@@ -193,6 +193,7 @@ await check('validation rejects the failures seen on device', () => {
 section('Menus');
 
 const menuModule = await import(join(root, 'src/menu/types/a2uiSurface.js'));
+const greetingCard = await import(join(root, 'src/greetings/greetingStyles/welcome5.js'));
 const galaxy = await import(join(root, 'src/menu/types/galaxyMenu.js'));
 
 const fakeMenuData = {
@@ -336,6 +337,55 @@ await check('A2UI menu picker carries every category', () => {
   }
   assert(menuModule.MENU_LINKS.length === 3, 'menu 20 lost a link button');
   return `${sections.length} sections, ${sections.reduce((n, s2) => n + s2.rows.length, 0)} rows, ${menuModule.MENU_LINKS.length} links`;
+});
+
+await check('greeting product card carries the menu banner', () => {
+  const banner = Buffer.from([0xff, 0xd8, 0xff, 0xdb]);
+  const card = greetingCard.buildGreetingProductCard({
+    text: '👋 Welcome @254712345678 to *NEXORA HQ* — member #42',
+    variables: { groupName: 'NEXORA HQ', memberCount: 42, mentionJid: '254712345678@s.whatsapp.net' },
+    isWelcome: true,
+    banner,
+    sock: { user: { id: '233533416608:12@s.whatsapp.net' } },
+  });
+  assert(card.product, 'payload is not a productMessage');
+  assert(card.product.title.includes('NEXORA HQ'), 'product title lost the group name');
+  assert(card.product.description.includes('Welcome'), 'greeting copy missing from description');
+  assert(card.image === banner, 'menu banner not attached');
+  assert(card.body && card.footer.includes('#42'), 'body/footer lost the member count');
+  assert(card.mentions?.[0] === '254712345678@s.whatsapp.net', 'mention dropped');
+  assert(card.businessOwnerJid === '233533416608@s.whatsapp.net', 'businessOwnerJid not the session number');
+
+  const bye = greetingCard.buildGreetingProductCard({
+    text: 'Bye', variables: { groupName: 'NEXORA HQ', memberCount: 42 }, isWelcome: false,
+  });
+  assert(bye.product.title.startsWith('Goodbye'), 'goodbye card is not a goodbye');
+  assert(bye.image === undefined, 'goodbye without a banner should not attach one');
+  return 'welcome + goodbye';
+});
+
+await check('greeting product card ships as a productMessage', async () => {
+  const built = await fork.generateWAMessageContent(
+    greetingCard.buildGreetingProductCard({
+      text: '👋 Welcome @1 to *G*',
+      variables: { groupName: 'G', memberCount: 3, mentionJid: '1@s.whatsapp.net' },
+      isWelcome: true,
+      banner: Buffer.from([0xff, 0xd8, 0xff, 0xdb]),
+      sock: { user: { id: '999@s.whatsapp.net' } },
+    }),
+    { upload: async () => ({ url: 'https://mmg.whatsapp.net/x' }) }
+  );
+  const type = Object.keys(built).find((k) => k === 'productMessage');
+  assert(type, `generated ${Object.keys(built)[0]} instead of productMessage`);
+  assert(built.productMessage.product?.title, 'product snapshot missing');
+  assert(built.productMessage.contextInfo?.mentionedJid?.length === 1, 'mention lost on the wire');
+  return `productMessage, ${Object.keys(built.productMessage).length} fields`;
+});
+
+await check('greeting style default is the product card', () => {
+  const cfg = JSON.parse(readFileSync(join(root, 'database/greeting.json'), 'utf-8'));
+  assert(cfg.style === 5, `database/greeting.json ships style ${cfg.style}`);
+  return 'style 5';
 });
 
 await check('A2UI menu renders a text fallback', () => {

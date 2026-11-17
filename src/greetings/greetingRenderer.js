@@ -6,6 +6,7 @@ import { welcome1 } from './greetingStyles/welcome1.js';
 import { welcome2 } from './greetingStyles/welcome2.js';
 import { welcome3 } from './greetingStyles/welcome3.js';
 import { welcome4 } from './greetingStyles/welcome4.js';
+import { welcome5 } from './greetingStyles/welcome5.js';
 import { db } from '../database/db.js';
 import { mentionLabel, resolveMentionJid } from '../lib/mentionJid.js';
 
@@ -18,7 +19,8 @@ const STYLES = {
   1: welcome1,
   2: welcome2,
   3: welcome3,
-  4: welcome4
+  4: welcome4,
+  5: welcome5
 };
 
 // Anti-spam: rapid joins in one group are collapsed into a SINGLE combined
@@ -188,7 +190,8 @@ export const greetingRenderer = {
         userMention,
         groupName,
         memberCount,
-        profilePicUrl
+        profilePicUrl,
+        mentionJid: userJid
       };
 
       // 4. Select style based on active style ID
@@ -205,14 +208,14 @@ export const greetingRenderer = {
       }
 
       // 5. Message Capability Safeguards & Fallbacks
-      const messageType = Object.keys(payload).find(key => ['image', 'document', 'text'].includes(key));
+      const messageType = Object.keys(payload).find(key => ['product', 'image', 'document', 'text'].includes(key));
       const capability = messageCapability[`${messageType}Message`] || {};
 
       // If the selected message type is unsupported, fall back to simple text layout
       if (messageType && !capability) {
         console.log(`[GREETING RENDERER] Fallback triggered. Unsupported message type: ${messageType}`);
         payload = {
-          text: payload.caption || payload.text,
+          text: payload.caption || payload.text || payload.body || 'Welcome!',
           mentions: [userJid]
         };
       }

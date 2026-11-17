@@ -1,4 +1,14 @@
 export const messageCapability = {
+  // Product cards (.product, greeting style 5) — image + title + price, no
+  // inline mention markup, so the greeting also carries `mentions`.
+  productMessage: {
+    caption: false,
+    thumbnail: true,
+    mentions: true,
+    externalAdReply: false,
+    interactiveHeaders: false
+  },
+
   imageMessage: {
     caption: true,
     thumbnail: true,

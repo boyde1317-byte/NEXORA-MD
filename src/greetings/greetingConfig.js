@@ -7,7 +7,7 @@ const GREETING_DB_PATH = path.join(process.cwd(), 'database', 'greeting.json');
 const defaultGreetingConfig = {
   enabled: true,
   goodbyeEnabled: true,
-  style: 4,
+  style: 5, // product card (menu banner) — styles 1-4 stay selectable
   welcomeText: "👋 Welcome {user} to *{group}*!\n\nWe are glad to have you here. You are our {memberCount}th member! ✨\n\n👑 You made the cut — claim your Inner Circle spot: {channel}",
   goodbyeText: "😢 Goodbye {user}! We will miss you.",
   welcomeImage: "https://cdn.jsdelivr.net/gh/boyde1317-byte/NexoraFlex@main/media/brand/nexora-welcome.jpg",

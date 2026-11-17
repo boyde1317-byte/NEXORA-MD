@@ -5,7 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Fixed
+### Added
+- Welcome and goodbye greetings can render as a WhatsApp **product card**
+  (style 5, now the default): the menu banner as the card image, the greeting
+  copy as the description, the group and member number in body and footer.
+  Same payload shape `.product` sends, so it renders wherever that does, and
+  the @mention still travels in `mentions`. Pick another layout with
+  `.setwelcome 1-4`.
+
 - **Menu 20 renders again.** The A2UI route was a dead end: `InteractiveMessage
   .bloksWidget` (proto tag 66) does not exist in WhatsApp's proto — upstream
   WAProto defines header/body/footer plus the shop/collection/nativeFlow/
