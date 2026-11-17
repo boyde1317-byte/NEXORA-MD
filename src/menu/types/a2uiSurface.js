@@ -1,20 +1,25 @@
 import { A2, buildA2ui, sendA2uiSurface, surfaceToText } from '../../lib/a2uiKit.js';
+import { selectMenu } from '../../lib/interactiveKit.js';
 import { buildTextMenu } from '../formatter.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
 
 /**
- * A2UI Surface Menu (id: 20) — the v0.9 BloksWidget menu.
+ * Menu 20 — the rich card menu (pick it with `.setmenu 20`).
  *
- * Sends one native card composed locally and rendered by the client:
- *   - banner image, title and a live stats block
- *   - Tabs: Commands (every category with its count), Top (busiest commands),
- *     Links (channel / panel / repo)
- *   - a List of the busiest categories, tap-to-open URLs via A2UI buttons
+ * NOTE ON NAMING: this started as an A2UI v0.9 BloksWidget menu. That slot is
+ * not part of WhatsApp's protocol — `InteractiveMessage.bloksWidget` (tag 66)
+ * exists only in the fork's hand-edited proto, so a real client drops it and
+ * the card arrives empty apart from its own text and CTAs. What the client
+ * does paint is a native-flow card, which is what the renderer sends now:
+ *   - the brand banner in the card header
+ *   - a stats body (commands, categories, uptime) written from the surface
+ *   - a category picker: one section per category, a row per command
+ *   - three link buttons (panel, channel, repo)
  *
- * The component tree is built with the fork's A2UI builders and validated
- * before send (a2uiKit). If the proto cannot carry a widget, or the surface
- * fails validation, the renderer falls back to the plain-text menu — a menu
- * is never left empty.
+ * The A2UI component tree is still built and validated (it is the source of
+ * the body text and of the `.testa2ui` payload audit), but it is no longer
+ * what carries the menu. If the card send throws, the plain-text menu is the
+ * fallback, so a menu is never left empty.
  *
  * Pick it with `.setmenu 20` / `.menu a2uiSurface`.
  */
@@ -127,32 +132,77 @@ export const buildA2uiMenuSpec = (menuData = {}) => ({
   ],
 });
 
+/** The three link buttons every menu card carries. */
+export const MENU_LINKS = [
+  { text: 'Open panel', url: PANEL_URL },
+  { text: 'Channel', url: CHANNEL_URL },
+  { text: 'GitHub', url: GITHUB_URL },
+];
+
+/**
+ * The picker the renderer sends: one section per category, each row opening
+ * that category's help page. Native-flow lists cap out at 10 rows per section
+ * and about 3 sections in practice, so the busiest categories lead.
+ *
+ * @param {object} menuData  collectMenuData() output
+ * @returns {Array<{title: string, rows: Array<{id: string, title: string, description: string}>}>}
+ */
+export const buildMenuSections = (menuData = {}) => {
+  const prefix = menuData.prefix || '.';
+  const categories = menuData.categories || {};
+  const names = Object.keys(categories)
+    .sort((a, b) => (categories[b]?.length || 0) - (categories[a]?.length || 0))
+    .slice(0, 3);
+
+  return names.map((cat) => ({
+    title: `${cat.toUpperCase()} — ${categories[cat].length} commands`,
+    rows: categories[cat].slice(0, 10).map((cmd) => ({
+      id: `${prefix}help ${cat}`,
+      title: `${prefix}${cmd.name}`,
+      description: String(cmd.description || '').slice(0, 70) || cat,
+    })),
+  }));
+};
+
 export const a2uiSurfaceMenu = {
   id: 20,
   name: 'a2uiSurface',
-  description: 'A2UI v0.9 BloksWidget menu — native card with banner, tabs, category list and tap-to-open links',
-  supportedMessages: ['interactiveMessage', 'bloksWidget', 'extendedTextMessage'],
+  description: 'Rich card menu — banner, category picker and tap-to-open links',
+  supportedMessages: ['interactiveMessage', 'buttonsMessage', 'extendedTextMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const jid = m.from || m.key?.remoteJid || m.chat;
     const fallbackText = buildTextMenu(menuData);
 
-    const components = buildA2uiMenuComponents(menuData);
-    const built = buildA2ui({ components });
-
-    // Validate before send: an invalid surface dies on the device with no
-    // error the bot can see, so the text menu is the safer answer.
+    // The A2UI v0.9 surface is composed and validated on every render, but it
+    // is NOT what the card renders: `InteractiveMessage.bloksWidget` (proto tag
+    // 66) does not exist in WhatsApp's proto — upstream WAProto lists header/
+    // body/footer + the shop/collection/nativeFlow/carousel oneof and nothing
+    // else — so the client drops the unknown field. Only the envelope shows up,
+    // which is why this menu used to arrive as bare text plus CTAs.
+    //
+    // So the menu is built from what the client actually paints: a native-flow
+    // single-select list (one section per category) with the brand banner and
+    // the three link buttons. The surface text is reused as the body.
+    const built = buildA2ui({ components: buildA2uiMenuComponents(menuData) });
     if (!built.ok) {
       console.warn('[a2uiSurface] surface rejected — text menu:', built.errors.join('; '));
-      return sock.sendMessage(jid, { text: fallbackText }, { quoted: m });
     }
 
-    // The card ships with real, tappable CTAs. They are not decoration: a
-    // widget-only envelope renders as an empty bubble on clients that do not
-    // paint the BloksWidget slot (the exact "menu 20 does nothing" report), so
-    // the links must also exist as native-flow buttons. The surface still
-    // carries them inside the widget for clients that render it.
-    return sendA2uiSurface(sock, jid, buildA2uiMenuSpec(menuData), { quoted: m });
+    try {
+      return await selectMenu(
+        sock,
+        jid,
+        { text: built.ok ? built.text : fallbackText, footer: `${menuData.botName || 'NEXORA MD'} • tap to browse` },
+        '📚 Browse commands',
+        buildMenuSections(menuData),
+        MENU_LINKS,
+        { quoted: m }
+      );
+    } catch (err) {
+      console.warn('[a2uiSurface] interactive card failed — text menu:', err.message);
+      return sock.sendMessage(jid, { text: fallbackText }, { quoted: m });
+    }
   },
 };
 

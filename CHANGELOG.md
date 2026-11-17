@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- **Menu 20 renders again.** The A2UI route was a dead end: `InteractiveMessage
+  .bloksWidget` (proto tag 66) does not exist in WhatsApp's proto — upstream
+  WAProto defines header/body/footer plus the shop/collection/nativeFlow/
+  carousel oneof and nothing else — so every surface was dropped by the client
+  and the card arrived as bare text plus CTAs. Menu 20 now ships a native-flow
+  card the client actually paints: brand banner, stats body, a category
+  picker (one section per category, a row per command, tap opens
+  `.help <category>`) and the three link buttons. The A2UI payload is still
+  composed and schema-validated; it is simply not what carries the menu.
+- README and `.testa2ui` now say plainly that the widget slot is fork-only
+  and that the audit covers payloads, not device rendering.
+
+### Fixed (earlier)
 - A2UI surfaces now ship in the v0.9 wire format, which is why the widget
   area stayed empty while the card's own text and CTAs rendered fine. The
   pinned fork wrapped the whole surface in one `createSurface` object with

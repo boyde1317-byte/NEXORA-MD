@@ -324,6 +324,20 @@ await check('A2UI menu card ships CTAs', () => {
   return `${spec.buttons.length} buttons, ${envelope.components.length} nodes`;
 });
 
+await check('A2UI menu picker carries every category', () => {
+  const sections = menuModule.buildMenuSections(fakeMenuData);
+  const catCount = Object.keys(fakeMenuData.categories).length;
+  assert(sections.length === Math.min(3, catCount), `picker sent ${sections.length} sections for ${catCount} categories`);
+  for (const section of sections) {
+    assert(section.rows.length > 0, `section ${section.title} has no rows`);
+    for (const row of section.rows) {
+      assert(row.id.startsWith(fakeMenuData.prefix || '.'), `row id ${row.id} is not a command`);
+    }
+  }
+  assert(menuModule.MENU_LINKS.length === 3, 'menu 20 lost a link button');
+  return `${sections.length} sections, ${sections.reduce((n, s2) => n + s2.rows.length, 0)} rows, ${menuModule.MENU_LINKS.length} links`;
+});
+
 await check('A2UI menu renders a text fallback', () => {
   const built = kit.buildA2ui({ components: menuModule.buildA2uiMenuComponents(fakeMenuData) });
   assert(built.text.includes('Commands'), 'fallback text missing the stats block');

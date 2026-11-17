@@ -32,7 +32,7 @@ Built on a **pinned private Baileys fork** ([`boyde1317-byte/baileys#v0.3.18-r22
 - **Media pickers with thumbnails**: `.play` / `.ytmp4` single-selects show the YouTube thumbnail as the card header
 - **Interactive approval cards**: pairing requests and server orders land in the super owner's DM with native Approve / Deny buttons
 - **LaTeX, maps, tables, galleries** as native cards (`.math`, `.locate`, `.weather`, `.pin`)
-- **A2UI v0.9 surfaces** — locally composed native cards (`InteractiveMessage.bloksWidget`): tabs, lists, icons, images, modals, tap-to-open buttons and form inputs. Every surface is validated before send and falls back to text, so a card the client cannot parse never replaces the message
+- **A2UI v0.9 surface layer (payloads only)** — locally composed v0.9 surfaces, validated against the published schema before send. Heads-up: `InteractiveMessage.bloksWidget` (proto tag 66) is not in WhatsApp's proto, so a real client drops the widget and paints only the card's own text and buttons. Menu 20 therefore renders as a native-flow card; `.testa2ui` audits the payloads themselves
 - Rollback to plain-text mode with `NEXORA_RICH_RESPONSE=0`; audit any device with `.testrich` (15 message types), `.testa2ui` (18 A2UI components) or `.testmessage`
 - **Sticker → command mapping**: tap a sticker and it runs its mapped command
 
@@ -349,7 +349,7 @@ Commands work with any configured prefix (`.` is the default). **181 commands** 
 | `.takeall` | packall, stealpack | Bundle all stickers in this group into a sticker pack named nexora (styled font) |
 | `.testmessage` | testmsg, msgdebug | Test all interactive message types via a native WA list picker |
 | `.testrich` | testrichmsg, richdebug | 🧪 Test party for OURIN-baileys rich message generators (V1 + V2) |
-| `.testa2ui` | a2uitest | 🧪 A2UI v0.9 surface audit — one card per catalog component, plus `check` (validate offline) and `all` (send every surface) |
+| `.testa2ui` | a2uitest | 🧪 A2UI v0.9 payload audit — one card per catalog component, plus `check` (validate offline), `probe` (three wire shapes) and `all` (send every surface) |
 | `.unban` | pardon | Unban a user |
 | `.viewstatus` | vs, statuslist, fetchstatus | Views WhatsApp Status updates from contacts |
 | `.welcome` | wc | Toggle welcome messages on or off (per-group or global) |

@@ -6,6 +6,13 @@
  * `check` runs the same validation the send path uses, without sending
  * anything — run it first, then sweep the components on a real phone.
  *
+ * HONEST LIMIT: `InteractiveMessage.bloksWidget` (tag 66) is not part of
+ * WhatsApp's protocol — upstream WAProto knows header/body/footer plus the
+ * shop/collection/nativeFlow/carousel oneof and nothing else — so a real
+ * client drops the widget and paints only the envelope. These surfaces are
+ * therefore a payload audit (schema-valid, sent, received), not a check that
+ * a phone will draw the component tree.
+ *
  * Usage:
  *   .testa2ui            → picker with every audit surface
  *   .testa2ui <id>       → send that one surface (text fallback if it fails)
@@ -123,7 +130,8 @@ export default {
         }
       }
       lines.push(
-        `\n*Widget slot:* ${a2uiSupported() ? 'supported' : 'NOT supported by the pinned proto'}` +
+        `\n*Widget slot:* ${a2uiSupported() ? 'in the fork proto only' : 'absent from the proto'}` +
+          `\n*Note:* WhatsApp has no bloksWidget field, so cards render as plain interactive messages.` +
           `\n*Summary:* ${surfaces.length - failed} passed, ${failed} failed`
       );
       return m.reply(lines.join('\n'));
