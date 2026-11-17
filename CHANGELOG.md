@@ -22,15 +22,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   check renders all five against a stub socket and asserts each one rides on its
   own card (`productMessage`, `orderMessage`, `contactMessage`,
   `liveLocationMessage`, `newsletterAdminInviteMessage`).
-- The card styles now send their own card as a **separate message before** the
-  interactive list: contact → `contactMessage`, location → `locationMessage`,
-  order → `orderMessage`, product → `productMessage`. The quoted card alone was
-  invisible (WhatsApp renders no card preview inside a quote), which is why all
-  of them still read as the same pill list on a phone. New bridge senders
-  `sendContactCard`, `sendLocationCard` and `sendOrderCard` wrap the fork's
-  `contacts` / `location` / `orderText` keys; product reuses `sendProduct`, which
-  also stopped turning a `price: 0` into a $1.00 card. Newsletter still needs a
-  `channelJid` before it can send its invite.
+- The card styles send their own card as a **separate message before** the
+  interactive list and no longer quote anything: contact → `contactMessage`,
+  location → `locationMessage`, order → `orderMessage`, product →
+  `productMessage`. The quoted reply was the problem: it sat on top of every menu
+  above the banner and the buttons, so all of them read as the same message. A
+  quote shows no card preview on WhatsApp, so the card had to become a message of
+  its own. New bridge senders `sendContactCard`, `sendLocationCard` and
+  `sendOrderCard` wrap the fork's `contacts` / `location` / `orderText` keys;
+  product reuses `sendProduct`, which also stopped turning `price: 0` into a
+  $1.00 card. The dead quote builders were removed from those four files.
+  Newsletter keeps its quote for now: its invite needs a `channelJid` before it
+  can be sent as a card.
 - `a2uiSurface` now claims id 16 instead of 20: it was registered under the same
   id as `product` and won the key, so `.menu 20` silently rendered the A2UI card
   and the product style was unreachable by number.

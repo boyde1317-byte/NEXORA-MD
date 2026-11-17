@@ -1,7 +1,6 @@
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
-import { buildFakeProductQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import brand from '../../../config/brand.js';
 import { config } from '../../../config/index.js';
@@ -70,17 +69,6 @@ export const productMenu = {
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
-    // Product card in the reply bar — same catalog-quote shape as buttonsCard.
-    // Built once, quoted by every tier.
-    const fakeProductQuote = buildFakeProductQuote({
-      title: menuData.botName,
-      description: brand.description || `${brand.name} by ${brand.creator}`,
-      currencyCode: 'BTC',
-      priceAmount1000: 100000000,
-      businessOwnerJid: '0@s.whatsapp.net',
-      jpegThumbnail: imgData.thumbBuffer || undefined,
-    });
-
     // ── Tier 1: nativeFlow with offer overlay ─────────────────────────────
     // offerText injects a limited_time_offer object into messageParamsJson, which
     // renders as a highlighted offer banner at the top of the interactive card.
@@ -99,7 +87,7 @@ export const productMenu = {
           { text: `🤖 ${toSmallcaps('System Stats')}`,       id:   `${menuData.prefix}menu aiDynamic` },
           { text: `🎨 ${toSmallcaps('Browse Menu Styles')}`, id:   `${menuData.prefix}menulist` },
         ],
-      }, { quoted: fakeProductQuote });
+      });
     } catch (err) {
       console.warn('[MENU product] Tier 1 (offer overlay) failed, trying image banner:', err.message);
     }
@@ -120,7 +108,7 @@ export const productMenu = {
           mimetype:    imgData.mimetype,
           caption:     bodyText,
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: fakeProductQuote });
+        });
       } else if (imgData.source?.startsWith('http')) {
         adReply.thumbnailUrl = imgData.source;
 
@@ -129,7 +117,7 @@ export const productMenu = {
           image:       { url: imgData.source },
           caption:     bodyText,
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: fakeProductQuote });
+        });
       }
     } catch (err) {
       console.warn('[MENU product] Tier 2 (image banner) failed, falling back to text:', err.message);
@@ -153,7 +141,7 @@ export const productMenu = {
     return await sock.sendMessage(m.from, {
       text:        bodyText,
       contextInfo: { externalAdReply: fallbackAdReply },
-    }, { quoted: fakeProductQuote });
+    });
   },
 };
 

@@ -1185,20 +1185,20 @@ await check('every card style rides on its waUtils card', async () => {
     return null;
   };
 
-  // [label, file, export, quoted card, own card key on the wire]
-  // The quoted card alone is invisible to the reader (WhatsApp shows no card
-  // preview in a quote), so the style's own message type has to lead. Newsletter
-  // is the exception: it needs a channelJid to build an invite, so it keeps riding
-  // on the quote until one is configured.
+  // [label, file, export, own card key on the wire, quoted card it may still use]
+  // A quoted card is invisible to the reader (WhatsApp shows no card preview in a
+  // quote), so the style's own message type has to lead and the quote is gone
+  // entirely. Newsletter is the exception: its invite needs a channelJid, so until
+  // one is configured it still rides on its quote.
   const styles = [
-    ['product', 'product.js', 'productMenu', 'productMessage', 'product'],
-    ['order', 'orderMessage.js', 'orderMessageMenu', 'orderMessage', 'orderText'],
-    ['contact', 'contact.js', 'contactMenu', 'contactMessage', 'contacts'],
-    ['location', 'location.js', 'locationMenu', 'liveLocationMessage', 'location'],
-    ['newsletter', 'newsletter.js', 'newsletterMenu', 'newsletterAdminInviteMessage', null],
+    ['product', 'product.js', 'productMenu', 'product', null],
+    ['order', 'orderMessage.js', 'orderMessageMenu', 'orderText', null],
+    ['contact', 'contact.js', 'contactMenu', 'contacts', null],
+    ['location', 'location.js', 'locationMenu', 'location', null],
+    ['newsletter', 'newsletter.js', 'newsletterMenu', null, 'newsletterAdminInviteMessage'],
   ];
 
-  for (const [label, file, exported, wanted, ownCard] of styles) {
+  for (const [label, file, exported, ownCard, quoted] of styles) {
     const mod = await import(join(root, `src/menu/types/${file}`));
     const menu = mod[exported] || mod.default;
     // One ordered timeline: the card styles send their own card first and then
@@ -1220,13 +1220,16 @@ await check('every card style rides on its waUtils card', async () => {
     const carried = wire.map((step) => findQuoted(step.content)
       || (step.options?.quoted?.message ? Object.keys(step.options.quoted.message).join(',') : null))
       .filter(Boolean);
-    assert(carried.length, `the ${label} menu is quoted on nothing`);
-    assert(carried[0].includes(wanted), `the ${label} menu rides on ${carried[0]}, expected ${wanted}`);
-
     if (ownCard) {
       const first = wire[0]?.content || {};
       assert(first[ownCard] !== undefined,
         `the ${label} menu leads with ${Object.keys(first).join(',')} instead of its own ${ownCard} card`);
+      assert(!carried.length,
+        `the ${label} menu still quotes ${carried[0]}; the quote sits on top of the card and makes every style look alike`);
+    }
+    if (quoted) {
+      assert(carried.length, `the ${label} menu is quoted on nothing`);
+      assert(carried[0].includes(quoted), `the ${label} menu rides on ${carried[0]}, expected ${quoted}`);
     }
   }
 

@@ -1,7 +1,6 @@
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
-import { buildFakeOrderQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { buildNavigationButton, buildPillButton, buildPillUrlButton, buildPillCopyButton } from './buttonsCard.js';
@@ -67,22 +66,6 @@ export const orderMessageMenu = {
       ? { url: imgData.source }
       : (imgData.buffer || undefined);
 
-    // ── Build order-quote thumbnail ────────────────────────────────────────
-    // Use the small mock thumbnail for the quoted message (not the full-size
-    // buffer) to avoid inflating the quoted message proto. The full image is
-    // uploaded separately by sendButtonsCard for the card header.
-    let orderQuote;
-    try {
-      orderQuote = buildFakeOrderQuote({
-        orderId:    'NEXORA-CMD-PACK',
-        itemCount:  menuData.totalCommands,
-        thumbnail:  imgData.thumbnail || undefined,
-        title:      menuData.botName,
-      });
-    } catch (_) {
-      orderQuote = menuData.audioQuote || m;
-    }
-
     // Build embedded externalAdReply
     const adReply = {
       title:                 `\u2726 ${displayName(menuData.botName)} \u2726`,
@@ -117,7 +100,7 @@ export const orderMessageMenu = {
             buildNavigationButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: orderQuote });
+        });
       } catch (err) {
         console.warn('[MENU orderMessage] Tier 1 (sendButtonsCard + adReply + order) failed, trying image:', err.message);
       }
@@ -131,13 +114,13 @@ export const orderMessageMenu = {
           mimetype:    imgData.mimetype,
           caption:      bodyText,
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: orderQuote });
+        });
       } else if (imgData.source?.startsWith('http')) {
         return await sock.sendMessage(m.from, {
           image:       { url: imgData.source },
           caption:      bodyText,
           contextInfo: { externalAdReply: adReply },
-        }, { quoted: orderQuote });
+        });
       }
     } catch (err) {
       console.warn('[MENU orderMessage] Tier 2 (image + order quote) failed, continuing to text:', err.message);
@@ -147,7 +130,7 @@ export const orderMessageMenu = {
     return await sock.sendMessage(m.from, {
       text:        bodyText,
       contextInfo: { externalAdReply: adReply },
-    }, { quoted: orderQuote });
+    });
   },
 };
 
