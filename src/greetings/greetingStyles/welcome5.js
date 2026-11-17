@@ -3,7 +3,6 @@ import { greetingConfig } from '../greetingConfig.js';
 import { imageManager } from '../../images/imageManager.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
 import brand from '../../../config/brand.js';
-import { sendGreetingRich } from '../../lib/richCards.js';
 
 /**
  * Style 5 — Product card.
@@ -96,32 +95,16 @@ export function buildGreetingProductCard({ text, variables = {}, isWelcome = tru
 
 export const welcome5 = {
   id: 5,
-  name: 'Product Card (rich)',
+  name: 'Product Card',
 
-  async render({ sock, jid, variables, isWelcome }) {
+  async render({ sock, variables, isWelcome }) {
     const template = isWelcome
       ? greetingConfig.getWelcomeText()
       : greetingConfig.getGoodbyeText();
     const text = greetingBuilder.buildText(template, variables);
 
-    // The unified-response envelope is the proven render path (it is what
-    // `.vipcard` paints on device): product card with the menu banner, the
-    // greeting copy as markdown, a CTA shelf and channel chips. When the
-    // envelope is unavailable, fall back to the plain product card.
-    try {
-      await sendGreetingRich(sock, jid, {
-        text,
-        isWelcome,
-        groupName: variables.groupName,
-        memberCount: variables.memberCount,
-        mentionedJid: variables.mentionJid ? [variables.mentionJid] : [],
-      });
-      return null; // already sent
-    } catch (err) {
-      console.warn('[GREETING] rich card failed, using product card:', err.message);
-    }
-
     const banner = await resolveMenuBanner();
+
     return buildGreetingProductCard({ text, variables, isWelcome, banner, sock });
   },
 };

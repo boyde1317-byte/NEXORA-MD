@@ -207,12 +207,6 @@ export const greetingRenderer = {
         payload = await welcome4.render({ sock, jid, userJid, variables, isWelcome });
       }
 
-      // Styles that send their own envelope (the rich card) return null.
-      if (!payload) {
-        console.log(`[GREETING RENDERER] Style ${activeStyleId} delivered its own card for ${jid}`);
-        return;
-      }
-
       // 5. Message Capability Safeguards & Fallbacks
       const messageType = Object.keys(payload).find(key => ['product', 'image', 'document', 'text'].includes(key));
       const capability = messageCapability[`${messageType}Message`] || {};

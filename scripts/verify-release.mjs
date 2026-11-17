@@ -194,7 +194,6 @@ section('Menus');
 
 const menuModule = await import(join(root, 'src/menu/types/a2uiSurface.js'));
 const greetingCard = await import(join(root, 'src/greetings/greetingStyles/welcome5.js'));
-const richCards = await import(join(root, 'src/lib/richCards.js'));
 const galaxy = await import(join(root, 'src/menu/types/galaxyMenu.js'));
 
 const fakeMenuData = {
@@ -338,82 +337,6 @@ await check('A2UI menu picker carries every category', () => {
   }
   assert(menuModule.MENU_LINKS.length === 3, 'menu 20 lost a link button');
   return `${sections.length} sections, ${sections.reduce((n, s2) => n + s2.rows.length, 0)} rows, ${menuModule.MENU_LINKS.length} links`;
-});
-
-await check('a clean rich envelope drops the forward markers', async () => {
-  const sent = [];
-  const fakeSock = { user: { id: '1@s.whatsapp.net' }, relayMessage: async (j, msg) => { sent.push(msg); return 'OK'; } };
-  const kitMod = await import(join(root, 'src/lib/vipRichKit.js'));
-
-  await kitMod.sendUnifiedRich(fakeSock, 'g@g.us', {
-    sections: [kitMod.singleSection(kitMod.markdownText('x'))], forward: false,
-  });
-  const clean = sent.at(-1).botForwardedMessage.message.richResponseMessage.contextInfo;
-  assert(clean.isForwarded === undefined, 'clean envelope still sets isForwarded');
-  assert(clean.forwardOrigin === undefined, 'clean envelope still sets forwardOrigin');
-  assert(clean.forwardedAiBotMessageInfo === undefined, 'clean envelope still claims a botJid');
-  assert(clean.stanzaId, 'clean envelope lost stanzaId');
-
-  await kitMod.sendUnifiedRich(fakeSock, 'g@g.us', {
-    sections: [kitMod.singleSection(kitMod.markdownText('x'))],
-  });
-  const forwarded = sent.at(-1).botForwardedMessage.message.richResponseMessage.contextInfo;
-  assert(forwarded.isForwarded === true && forwarded.forwardOrigin === 4, 'default envelope lost its forward markers');
-  return 'clean + forwarded';
-});
-
-await check('rich greeting card is a valid unified-response envelope', async () => {
-  const sent = [];
-  const fakeSock = {
-    user: { id: '233533416608:12@s.whatsapp.net' },
-    relayMessage: async (jid, msg, opts) => { sent.push({ jid, msg, opts }); return 'OK'; },
-  };
-  await richCards.sendGreetingRich(fakeSock, 'g@g.us', {
-    text: '👋 Welcome @254712345678 to *NEXORA HQ*',
-    isWelcome: true,
-    groupName: 'NEXORA HQ',
-    memberCount: 42,
-    mentionedJid: ['254712345678@s.whatsapp.net'],
-  });
-
-  assert(sent.length === 1, `expected one relay, got ${sent.length}`);
-  const msg = sent[0].msg;
-  const envelope = msg.botForwardedMessage?.message?.richResponseMessage;
-  assert(envelope, 'no richResponseMessage in the envelope');
-  assert(msg.messageContextInfo?.messageSecret, 'messageSecret missing (client renders nothing without it)');
-  assert(msg.messageContextInfo?.botMetadata?.botResponseId, 'botResponseId missing');
-  assert(envelope.contextInfo?.forwardedAiBotMessageInfo?.botJid, 'botJid missing');
-  assert(envelope.contextInfo?.forwardOrigin === 4, 'forwardOrigin must be 4');
-
-  const decoded = JSON.parse(Buffer.from(envelope.unifiedResponse.data, 'base64').toString());
-  const sections = decoded.sections;
-  assert(sections.length === 4, `expected 4 sections, saw ${sections.length}`);
-
-  const product = sections[0].view_model.primitive;
-  assert(product.__typename === 'GenAIProductItemCardPrimitive', 'first section is not a product card');
-  assert(product.title.includes('NEXORA HQ'), 'product card lost the group name');
-  assert(String(product.image?.url || '').includes('nexora-banner'), 'product card is not using the menu banner');
-
-  const body = sections[1].view_model.primitive;
-  assert(body.__typename === 'GenAIMarkdownTextUXPrimitive', 'body is not markdown');
-  assert(body.text.includes('Welcome'), 'greeting copy missing');
-  assert(sections[2].view_model.__typename === 'GenAIHScrollLayoutViewModel', 'CTA shelf missing');
-  assert(envelope.contextInfo.mentionedJid?.[0] === '254712345678@s.whatsapp.net', 'mention dropped');
-  return `${sections.length} sections + secret`;
-});
-
-await check('rich intro card covers the group it joined', async () => {
-  const sent = [];
-  const fakeSock = {
-    user: { id: '233533416608@s.whatsapp.net' },
-    relayMessage: async (jid, msg) => { sent.push(msg); return 'OK'; },
-  };
-  await richCards.sendIntroRich(fakeSock, 'g@g.us', { text: "✦ I'm in. Here's the tour.", groupName: 'Test Group' });
-  const envelope = sent[0].botForwardedMessage.message.richResponseMessage;
-  const decoded = JSON.parse(Buffer.from(envelope.unifiedResponse.data, 'base64').toString());
-  assert(decoded.sections[0].view_model.primitive.title.includes('Test Group'), 'intro card does not name the group');
-  assert(decoded.sections[1].view_model.primitive.text.includes('tour'), 'intro copy missing');
-  return `${decoded.sections.length} sections`;
 });
 
 await check('greeting product card carries the menu banner', () => {

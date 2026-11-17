@@ -6,28 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- A "clean" rich envelope for testing the download gate. AI-rich cards are
-  marked `isForwarded` + `forwardOrigin: 4` + `forwardedAiBotMessageInfo`,
-  which is what makes the client treat them as unverified external media and
-  show "WhatsApp can't verify the security of this media / Download" instead
-  of painting the card. `sendUnifiedRich({ forward: false })` (and
-  `sendHtmlGame` with the same flag) drops those markers.
-  `.testrich vipclean` and `.testrich monitorclean` send the clean variants
-  so a phone can settle whether the gate lifts — and whether the card still
-  renders at all without them.
-
-- The VIP unified-response card (`.vipcard`'s envelope) now backs real
-  surfaces instead of a showcase. New `src/lib/richCards.js` composes
-  product card + markdown + 3PExt CTA shelf + pills, and two display-only
-  surfaces use it: the greeting style 5 card (menu banner as the product
-  image, greeting copy as markdown, channel/support chips, mention intact)
-  and the intro card the bot posts when it is added to a group. Both keep
-  their older fallbacks, so a failed envelope degrades instead of vanishing.
-  Fits: greetings, bot intro, announcements, about/credits/status boards,
-  rank showcases. Not a fit: surfaces where a tap must run a command (menu
-  picker, `.shop`) — 3PExt CTAs are toast-only, those stay on native-flow
-  buttons.
-
 - Welcome and goodbye greetings can render as a WhatsApp **product card**
   (style 5, now the default): the menu banner as the card image, the greeting
   copy as the description, the group and member number in body and footer.
