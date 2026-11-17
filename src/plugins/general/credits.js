@@ -15,6 +15,7 @@ import { sendCreditsRich } from '../../lib/vipSurfaces.js';
 import { capabilities } from '../../core/capabilities.js';
 import { buildNavigationButton } from '../../menu/types/buttonsCard.js';
 import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
+import { buildBrandContactQuote } from '../../lib/brandContact.js';
 import credits from '../../core/credits.js';
 import brand from '../../../config/brand.js';
 import { config } from '../../../config/index.js';
@@ -48,6 +49,17 @@ export default {
       sourceUrl:      'https://github.com/boyde1317-byte/NEXORA-MD',
     });
 
+    // The green contact bubble `.brand` shows: the bot's own vCard as the
+    // quoted context, so the reply bar paints a contact card above the sheet.
+    const contactQuote = buildBrandContactQuote();
+    const contactContext = {
+      ...contextInfo,
+      stanzaId:      contactQuote.key.id,
+      participant:   contactQuote.key.participant,
+      remoteJid:     contactQuote.key.remoteJid,
+      quotedMessage: contactQuote.message,
+    };
+
     const buttons = [
       { displayText: '\u{1F4AC} Contact Dev', id: `${p}owner`, type: 1 },
       { displayText: '\u2139\uFE0F About',     id: `${p}about`, type: 1 },
@@ -61,7 +73,7 @@ export default {
         markdown: credits.getFullCredits(),
         title: d.name || brand.name,
         subtitle: d.tagline || 'The people behind the bot',
-        quoted: m,
+        quoted: contactQuote,
       });
       return;
     } catch (err) {
@@ -77,7 +89,7 @@ export default {
           title:      d.name || brand.name,
           subtitle:   `v${brand.version}`,
           buttons,
-          contextInfo,
+          contextInfo: contactContext,
         }, { quoted: m });
       } catch (err) {
         console.warn('[credits] Tier 1 (buttonsCard) failed:', err.message);
@@ -87,7 +99,7 @@ export default {
     // Tier 2: plain text with enrichment
     return await sock.sendMessage(m.from, {
       text:         credits.getFullCredits(),
-      contextInfo,
+      contextInfo:  contactContext,
     }, { quoted: m });
   },
 };

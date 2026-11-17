@@ -26,6 +26,7 @@ import { Button } from '../../lib/moonsonKit.js';
 import brand from '../../../config/brand.js';
 import owner from '../../../config/owner.js';
 import { config } from '../../../config/index.js';
+import { buildBrandContactQuote } from '../../lib/brandContact.js';
 
 export default {
   name: 'brand',
@@ -84,16 +85,9 @@ export default {
         `  › Bots · Automation · Digital Solutions\n\n` +
         `_Tap the button below for full details._`;
 
-      // Status-quoted contact card (same reply-bar effect Moonson uses)
-      const vcard = [
-        'BEGIN:VCARD',
-        'VERSION:3.0',
-        `N:${botName} Bot`,
-        `FN:${botName} Bot`,
-        `ORG:${botName};`,
-        `TEL;type=CELL;type=VOICE;waid=${phone}:+${phone}`,
-        'END:VCARD',
-      ].join('\r\n');
+      // Status-quoted contact card (same reply-bar effect Moonson uses) —
+      // shared with .credits via lib/brandContact.js.
+      const contactQuote = buildBrandContactQuote({ botName, phone });
 
       const card = new Button(sock)
         .setTitle(`🖥️ ${displayName}`)
@@ -104,12 +98,7 @@ export default {
           stanzaId: 'StatusBiz',
           participant: '0@s.whatsapp.net',
           remoteJid: 'status@broadcast',
-          quotedMessage: {
-            contactMessage: {
-              displayName: botName,
-              vcard,
-            },
-          },
+          quotedMessage: contactQuote.message,
         });
 
       // booking_confirmation — the same button type Moonson's .brand uses

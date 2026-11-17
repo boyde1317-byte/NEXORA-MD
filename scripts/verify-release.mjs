@@ -364,6 +364,48 @@ await check('command VIP surfaces build valid envelopes', async () => {
   return seen.join(', ');
 });
 
+await check('ping defaults to the in-chat html monitor', async () => {
+  const ping = (await import(join(root, 'src/plugins/general/ping.js'))).default;
+  const relayed = [];
+  const sock = {
+    user: { id: '233533416608:1@s.whatsapp.net' },
+    sendMessage: async () => ({ key: { id: 'K1' } }),
+    relayMessage: async (_jid, content) => { relayed.push(content); return 'MID'; },
+  };
+  const m = {
+    from: '120363000000000000@g.us',
+    key: { id: 'ORIG', remoteJid: '120363000000000000@g.us', participant: '1@s.whatsapp.net' },
+    message: { conversation: '.ping' },
+    reply: async () => {},
+  };
+
+  await ping.execute({ m, sock, args: [] });
+  const rf = relayed.at(-1)?.botForwardedMessage?.message?.richResponseMessage;
+  assert(rf, 'default ping relayed no rich message');
+  const data = JSON.parse(Buffer.from(rf.unifiedResponse.data, 'base64').toString());
+  const primitive = data.sections[0].view_model.primitive;
+  assert(primitive.__typename === 'GenAIaeacdsnwHtmlPrimitive', 'default ping is not the html primitive');
+  assert(!/%[A-Z_]+%/.test(primitive.payload), 'monitor template left unhydrated placeholders');
+  assert(/Server Monitor/i.test(rf.submessages?.[0]?.messageText || ''), 'monitor submessage title missing');
+
+  relayed.length = 0;
+  await ping.execute({ m, sock, args: ['text'] });
+  assert(relayed.length === 0, '.ping text still relayed a card');
+  return 'html default, text opt-out';
+});
+
+await check('.credits card carries the brand contact bubble', async () => {
+  const { buildBrandContactQuote } = await import(join(root, 'src/lib/brandContact.js'));
+  const { sendCreditsRich } = await import(join(root, 'src/lib/vipSurfaces.js'));
+  const relayed = [];
+  const sock = { user: { id: '1@s.whatsapp.net' }, relayMessage: async (_j, c) => { relayed.push(c); return 'MID'; } };
+  await sendCreditsRich(sock, 'g@g.us', { markdown: 'body', title: 'NEXORA-MD', quoted: buildBrandContactQuote() });
+  const ctx = relayed[0]?.botForwardedMessage?.message?.richResponseMessage?.contextInfo;
+  assert(ctx?.quotedMessage?.contactMessage, 'credits card lost the contact bubble');
+  assert(/waid=\d{8,}/.test(ctx.quotedMessage.contactMessage.vcard || ''), 'contact vcard has no waid');
+  return 'contact bubble';
+});
+
 await check('admin alerts quote a group invite card', async () => {
   const adminAlert = await import(join(root, 'src/greetings/adminAlert.js'));
 

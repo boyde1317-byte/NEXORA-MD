@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- `.ping` defaults to the in-chat HTML server monitor (`GenAIaeacdsnwHtmlPrimitive`
+  with live latency / memory / cpu hydrated into the vendored template) instead
+  of the product-card monitor. `.ping card` still sends the AIRich system card,
+  `.ping text` the classic personality ping, and each style falls through to the
+  next when a relay is refused. Footer no longer hardcodes the old author name.
+
+### Added
+- `src/lib/brandContact.js` — the green contact bubble from `.brand` as a shared
+  helper (`buildBrandContactQuote`). `.credits` now carries it on the VIP card
+  (and on its button-card / text tiers), so the reply bar paints the bot's
+  contact card above the sheet; `.brand` uses the same helper instead of its
+  own inline vCard.
+
 ### Added
 - Promote and demote announcements arrive as group cards: the alert text is
   sent with a synthetic `groupInviteMessage` as its quoted context

@@ -1,8 +1,14 @@
 /**
- * ping.js — .ping — Moonson msping replica (device-audited rich combo):
- * AIRich product card acting as a system monitor (price = latency ms)
- * with latency / memory / cpu sections, falling back to the classic
- * fake-quote personality ping if rich is off or the relay fails.
+ * ping.js — .ping — three styles, html by default:
+ *
+ *   html   (default) in-chat Server Monitor webview (GenAIaeacdsnwHtmlPrimitive)
+ *                    with live latency / memory / cpu read from the host
+ *   card            Moonson msping replica — AIRich product card as a system
+ *                    monitor (price = latency ms) with latency/memory/cpu
+ *   text            classic fake-quote personality ping
+ *
+ * Each style falls through to the next if its relay is refused, so a client
+ * that cannot paint the HTML card still gets a working ping.
  */
 
 import os from 'os';
@@ -10,6 +16,8 @@ import { client } from '../../core/client.js';
 import { sendFakeQuote } from '../../lib/waUtils.js';
 import { getRandomResponse } from '../../nexora-messages.js';
 import { AIRich } from '../../lib/NIXCODE.js';
+import { sendHtmlGame } from '../../lib/htmlGames.js';
+import brand from '../../../config/brand.js';
 import capabilities from '../../core/capabilities.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
 
@@ -25,7 +33,12 @@ export default {
   category: 'general',
   description: 'Measures the response speed of the bot.',
   cooldown: 2000,
-  execute: async ({ m, sock }) => {
+  execute: async ({ m, sock, args }) => {
+    const styleArg = (args?.[0] || '').toLowerCase();
+    const style = ['html', 'card', 'rich', 'text', 'classic'].includes(styleArg)
+      ? (styleArg === 'rich' ? 'card' : styleArg === 'classic' ? 'text' : styleArg)
+      : 'html';
+
     const start = Date.now();
     // Fake WhatsApp-branded quote bar gives the "measuring" step a radar-ping feel
     const sent = await sendFakeQuote(sock, m.from, '⚡ _Calculating latency..._', '📡 Ping', { quoted: m });
@@ -37,8 +50,19 @@ export default {
     else                    pool = 'ping_slow';
     const comment = getRandomResponse(pool, latency);
 
-    // ── Rich tier: Moonson msping replica (product card system monitor) ──
-    if (capabilities.richResponse) {
+    // ── Tier 1 (default): in-chat HTML server monitor ──
+    if (style === 'html') {
+      try {
+        const res = await sendHtmlGame(sock, m.from, { game: 'monitor', quoted: m });
+        if (res?.ok) return;
+        console.warn('[ping] html tier refused:', res?.reason || 'unknown');
+      } catch (err) {
+        console.warn('[ping] html tier failed:', err.message);
+      }
+    }
+
+    // ── Tier 2: Moonson msping replica (product card system monitor) ──
+    if (style !== 'text' && capabilities.richResponse) {
       try {
         const t0 = performance.now();
         await fetch('https://httpbin.org/get', { signal: AbortSignal.timeout(5000) }).catch(() => null);
@@ -80,7 +104,7 @@ export default {
               '› Load  : **' + cpuLoad.toFixed(2) + '**'
           )
           .addTip('_' + comment.replace(/[*_]/g, '') + '_')
-          .setFooter('© NEXORA-MD by Aizen')
+          .setFooter(`© ${brand.name} by ${brand.display?.creator || brand.creator}`)
           .send(m.from, { quoted: m });
         return;
       } catch (err) {
