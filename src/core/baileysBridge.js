@@ -257,6 +257,38 @@ function hasNativeFlowContent(messageContent) {
  * This encapsulates all raw Baileys structures and methods so that
  * the rest of the menu and bot system doesn't rely on raw protobuf constructs.
  */
+/**
+ * A quote renders only when WhatsApp can resolve the stanza it points at, so
+ * `options.quoted` has to be a real message — the result of an earlier send,
+ * `{ key, message }` — never a fabricated proto. relayMessage() skips
+ * generateWAMessageFromContent, so the contextInfo the fork would have built has
+ * to be assembled here by hand.
+ */
+const buildQuotedContextInfo = (quoted) => {
+  const message = quoted && quoted.message;
+  const stanzaId = quoted && quoted.key && quoted.key.id;
+  if (!message || !stanzaId) return null;
+  // A live socket hands back the generated proto ({ contactMessage: {...} }), but
+  // a caller may also pass the raw payload it sent ({ contacts: {...} }), so map
+  // the fork's input keys as a fallback.
+  const INPUT_TO_PROTO = {
+    contacts:    'contactMessage',
+    location:    'locationMessage',
+    orderText:   'orderMessage',
+    product:     'productMessage',
+    nativeFlow:  'interactiveMessage',
+    buttons:     'buttonsMessage',
+  };
+  const protoType = Object.keys(message).find((key) => key.endsWith('Message'))
+    || INPUT_TO_PROTO[Object.keys(message)[0]];
+  if (!protoType) return null;
+  return {
+    stanzaId,
+    participant: quoted.key.participant || quoted.key.remoteJid,
+    quotedMessage: { [protoType]: message[protoType] || message },
+  };
+};
+
 export const baileysBridge = {
   /**
    * Simple wrapper for sending a message using Baileys sock
@@ -1145,6 +1177,11 @@ export const baileysBridge = {
       }
     }
 
+    // options.quoted is the card this list belongs to: quoting the real stanza
+    // puts that card in the reply strip, which is what makes each style read as
+    // its own card instead of a generic quoted line.
+    const quotedCtx = buildQuotedContextInfo(options.quoted);
+
     const msgContent = {
       buttonsMessage: {
         contentText:   body || '',
@@ -1160,7 +1197,9 @@ export const baileysBridge = {
         // viewOnce intentionally omitted — buttonsMessage IS the persistent menu card.
         // Setting viewOnce:true would make it self-destruct after one tap, which
         // is wrong for a menu. Only use viewOnce on single-use cards (about, result cards).
-        ...(contextInfo ? { contextInfo } : {}),
+        ...(contextInfo || quotedCtx
+          ? { contextInfo: { ...(quotedCtx || {}), ...(contextInfo || {}) } }
+          : {}),
         // Accepts TWO input shapes so callers can mix plain buttons with
         // pre-built ones (e.g. buildNavigationButton()'s raw nativeFlowInfo
         // button from menu/types/buttonsCard.js):

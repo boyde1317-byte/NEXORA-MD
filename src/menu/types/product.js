@@ -45,8 +45,9 @@ export const productMenu = {
     // WhatsApp does not render a productMessage as a quote preview, so the card
     // has to travel as its own message; quoted alone it looks like any other
     // text reply and the menu reads as one more pill list.
+    let cardQuote = null;
     try {
-      await baileysBridge.sendProduct(sock, m.from, {
+      cardQuote = await baileysBridge.sendProduct(sock, m.from, {
         title:            `${displayName(menuData.botName)} · ${menuData.totalCommands} ${toSmallcaps('commands')}`,
         description:      brand.description || `${brand.name} by ${brand.creator}`,
         productId:        'nexora-menu',
@@ -87,7 +88,7 @@ export const productMenu = {
           { text: `🤖 ${toSmallcaps('System Stats')}`,       id:   `${menuData.prefix}menu aiDynamic` },
           { text: `🎨 ${toSmallcaps('Browse Menu Styles')}`, id:   `${menuData.prefix}menulist` },
         ],
-      });
+      }, { quoted: cardQuote });
     } catch (err) {
       console.warn('[MENU product] Tier 1 (offer overlay) failed, trying image banner:', err.message);
     }

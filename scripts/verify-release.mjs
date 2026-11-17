@@ -1191,14 +1191,14 @@ await check('every card style rides on its waUtils card', async () => {
   // entirely. Newsletter is the exception: its invite needs a channelJid, so until
   // one is configured it still rides on its quote.
   const styles = [
-    ['product', 'product.js', 'productMenu', 'product', null],
-    ['order', 'orderMessage.js', 'orderMessageMenu', 'orderText', null],
-    ['contact', 'contact.js', 'contactMenu', 'contacts', null],
-    ['location', 'location.js', 'locationMenu', 'location', null],
-    ['newsletter', 'newsletter.js', 'newsletterMenu', null, 'newsletterAdminInviteMessage'],
+    ['product', 'product.js', 'productMenu', 'product', null, 'productMessage'],
+    ['order', 'orderMessage.js', 'orderMessageMenu', 'orderText', null, 'orderMessage'],
+    ['contact', 'contact.js', 'contactMenu', 'contacts', null, 'contactMessage'],
+    ['location', 'location.js', 'locationMenu', 'location', null, 'locationMessage'],
+    ['newsletter', 'newsletter.js', 'newsletterMenu', null, 'newsletterAdminInviteMessage', null],
   ];
 
-  for (const [label, file, exported, ownCard, quoted] of styles) {
+  for (const [label, file, exported, ownCard, quoted, quotedProto] of styles) {
     const mod = await import(join(root, `src/menu/types/${file}`));
     const menu = mod[exported] || mod.default;
     // One ordered timeline: the card styles send their own card first and then
@@ -1206,8 +1206,8 @@ await check('every card style rides on its waUtils card', async () => {
     const wire = [];
     const sock = {
       user: { id: '233000000000:1@s.whatsapp.net' },
-      sendMessage: async (_jid, content, options) => { wire.push({ content, options }); return { key: { id: 'card' } }; },
-      relayMessage: async (_jid, message) => { wire.push({ content: message }); return { key: { id: 'card' } }; },
+      sendMessage: async (_jid, content, options) => { wire.push({ content, options }); return { key: { id: 'CARDSTANZA' }, message: content }; },
+      relayMessage: async (_jid, message, options) => { wire.push({ content: message, options }); return { key: { id: 'LIST' } }; },
       waUploadToServer: async () => { throw new Error('no upload in check'); },
     };
     await menu.renderer({
@@ -1224,8 +1224,23 @@ await check('every card style rides on its waUtils card', async () => {
       const first = wire[0]?.content || {};
       assert(first[ownCard] !== undefined,
         `the ${label} menu leads with ${Object.keys(first).join(',')} instead of its own ${ownCard} card`);
-      assert(!carried.length,
-        `the ${label} menu still quotes ${carried[0]}; the quote sits on top of the card and makes every style look alike`);
+
+      // The list reply has to quote THAT card's real stanza. A fabricated quote
+      // carries no stanzaId, so WhatsApp cannot resolve it and every style ends up
+      // with the same dead strip on top.
+      const list = wire[wire.length - 1];
+      const ctx = list.content?.buttonsMessage?.contextInfo || list.content?.contextInfo || null;
+      const quotedCtx = ctx || list.options?.quoted || null;
+      assert(quotedCtx, `the ${label} list carries no quote pointing at its card`);
+      if (ctx) {
+        assert(ctx.stanzaId === 'CARDSTANZA',
+          `the ${label} list quotes stanza ${ctx.stanzaId || 'none'}, not the card it just sent`);
+        assert(ctx.quotedMessage?.[quotedProto] !== undefined,
+          `the ${label} list quotes no ${quotedProto}, so the strip cannot render its card`);
+      } else {
+        assert(quotedCtx.key?.id === 'CARDSTANZA',
+          `the ${label} list quotes something other than the card it just sent`);
+      }
     }
     if (quoted) {
       assert(carried.length, `the ${label} menu is quoted on nothing`);

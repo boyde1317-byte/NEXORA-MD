@@ -47,8 +47,9 @@ export const contactMenu = {
     const imgData = (await imageManager.getMenuImage(9).catch(() => null)) || {};
 
     // ── Step 0: the style's own card — a real contactMessage ──────────────
+    let cardQuote = null;
     try {
-      await baileysBridge.sendContactCard(sock, m.from, {
+      cardQuote = await baileysBridge.sendContactCard(sock, m.from, {
         displayName: `${brand.creator || 'Owner'} · ${displayName(menuData.botName)}`,
         phone:       (config.owner && config.owner[0]) || '233533416608',
         org:         brand.name,
@@ -83,7 +84,7 @@ export const contactMenu = {
           buildPillButton(`🤖 ${toSmallcaps('System Stats')}`, `${menuData.prefix}menu aiDynamic`),
           buildNavigationButton(menuData.prefix),
         ],
-      });
+      }, { quoted: cardQuote });
     } catch (err) {
       console.warn('[MENU contact] Tier 1 (nativeFlow + image + contact quote) failed, trying adReply:', err.message);
     }

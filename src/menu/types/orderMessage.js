@@ -35,8 +35,9 @@ export const orderMessageMenu = {
     // ── Step 0: the style's own card — a real orderMessage ───────────────
     // The fork refuses an orderText payload without a thumbnail Buffer, so this
     // only fires when the banner actually came back as bytes.
+    let cardQuote = null;
     try {
-      await baileysBridge.sendOrderCard(sock, m.from, {
+      cardQuote = await baileysBridge.sendOrderCard(sock, m.from, {
         text:              `${displayName(menuData.botName)} · ${menuData.totalCommands} ${toSmallcaps('commands')}`,
         orderTitle:        `${menuData.prefix}menulist`,
         thumbnail:         imgData.buffer || imgData.thumbBuffer,
@@ -100,7 +101,7 @@ export const orderMessageMenu = {
             buildNavigationButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },
-        });
+        }, { quoted: cardQuote });
       } catch (err) {
         console.warn('[MENU orderMessage] Tier 1 (sendButtonsCard + adReply + order) failed, trying image:', err.message);
       }

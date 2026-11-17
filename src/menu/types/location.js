@@ -50,9 +50,10 @@ export const locationMenu = {
     // ── Step 0: the style's own card — a real locationMessage ─────────────
     // Coordinates come from config.location when the owner sets a pin; the
     // fallback is Accra city centre so the card still renders something honest.
+    let cardQuote = null;
     try {
       const pin = config.location || { lat: 5.6037, lng: -0.187, address: 'Accra, Ghana' };
-      await baileysBridge.sendLocationCard(sock, m.from, {
+      cardQuote = await baileysBridge.sendLocationCard(sock, m.from, {
         degreesLatitude:  pin.lat,
         degreesLongitude: pin.lng,
         name:             displayName(menuData.botName),
@@ -87,7 +88,7 @@ export const locationMenu = {
           buildPillUrlButton(`💬 ${toSmallcaps('Contact')}`, 'https://wa.me/233533416608'),
           buildNavigationButton(menuData.prefix),
         ],
-      });
+      }, { quoted: cardQuote });
     } catch (err) {
       console.warn('[MENU location] Tier 1 (nativeFlow + image + location quote) failed, trying adReply:', err.message);
     }
