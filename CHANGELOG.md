@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
+- Menu 21's card copy is warmer and shorter: the counts line is now just the bot
+  name, the pitch is `Just hanging out here. What’s up?`, the owner rows read
+  `Made by` / `DM` / `Our channel`, and the hint reads `Need something? Try help
+  <section> · menulist`. The picker button reads `Browse sections`, rows read
+  `N to explore` with no usage mark, shortcuts carry the count in parentheses,
+  and the bar reads `Take a look around` / `Need a little help?`.
+- Menu 21's bot name renders in the display style on the footer name line, the
+  picker section titles and the bar offer, and the owner-row labels and picker
+  button title render in small caps. Greeting, pitch, hint, row text, shortcuts
+  and the copy affordance stay plain.
+### Changed
 - Menu 21 no longer prints the category listing in the card. The numbered index
   and its `+N more in the picker` tail are gone; the picker below the card is the
   only place sections are listed, and it still carries every one of them. The card

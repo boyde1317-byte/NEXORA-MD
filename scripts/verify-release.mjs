@@ -759,6 +759,7 @@ await check('popular commands come from recorded usage', async () => {
 await check('atlas menu indexes the live registry', async () => {
   const atlas = await import(join(root, `src/menu/types/atlasMenu.js?t=${Date.now()}`));
   const bar = await import(join(root, 'src/lib/galaxyBar.js'));
+  const { toSmallcaps } = await import(join(root, 'src/lib/smallcaps.js'));
   const { default: brand } = await import(join(root, `config/brand.js?t=${Date.now()}`));
 
   assert(atlas.atlasMenu.id === 21, `atlas id is ${atlas.atlasMenu.id}`);
@@ -798,7 +799,7 @@ await check('atlas menu indexes the live registry', async () => {
   // The dim look: body is a single zero-width space, the copy lives in footer.text.
   assert(inner.body.text === '\u200b', `body is ${JSON.stringify(inner.body.text)} — copy leaked out of the footer`);
   const footer = inner.footer?.text || '';
-  assert(footer.includes('17 commands') && footer.includes('4 sections'), 'footer header counts are wrong');
+  assert(footer.includes(brand.display.name), 'footer lost the bot name line');
   // The listing lives in the picker, not in the card: no category rows here.
   assert(!/^\d+ /m.test(footer), 'the card still lists categories');
   assert(!footer.includes('more in the picker'), 'the card still promises picker rows');
@@ -815,18 +816,18 @@ await check('atlas menu indexes the live registry', async () => {
   }
   assert(atlas.greetingFor(new Date('2026-11-17T07:30:00Z'), 'Skyler Gayle') === '🌄 Good morning, Skyler', 'the greeting does not use the first name');
 
-  // What the bot is: the counts, then the one catchy line.
-  assert(/^NEXORA MD · 17 commands · 4 sections$/m.test(footer), 'the counts line moved or changed');
-  assert(/^Downloads, AI, media and group control, one command away\.$/m.test(footer), 'the catch line is missing');
+  // What the bot is: the name, then the one catchy line.
+  assert(footer.split('\n').includes(brand.display.name), 'the bot name line moved or changed');
+  assert(/^Just hanging out here\. What’s up\?$/m.test(footer), 'the catch line is missing');
 
-  // Owner details closed as labelled rows, one value per line.
-  assert(/^Owner {2,}Moonson$/m.test(footer), 'the owner row is missing');
-  assert(/^Chat {2,}wa\.me\/\d+$/m.test(footer), 'the chat row is missing');
-  assert(/^Channel {2,}whatsapp\.com\/channel\//m.test(footer), 'the channel row is missing');
+  // Owner details closed as labelled rows, one value per line, labels in small caps.
+  assert(new RegExp(`^${toSmallcaps('Made by')} {2,}Moonson$`, 'm').test(footer), 'the owner row is missing');
+  assert(new RegExp(`^${toSmallcaps('DM')} {2,}wa\\.me/\\d+$`, 'm').test(footer), 'the chat row is missing');
+  assert(new RegExp(`^${toSmallcaps('Our channel')} {2,}whatsapp\\.com/channel/`, 'm').test(footer), 'the channel row is missing');
 
   // No prefix anywhere in the interface: a printed prefix goes stale.
-  assert(!/^[!.\/]help/m.test(footer), 'the hint still prints a prefix');
-  assert(!footer.includes('menulist ·') === false || !/[!.\/]menulist/.test(footer), 'menulist still prints a prefix');
+  assert(!/^[!./]help/m.test(footer), 'the hint still prints a prefix');
+  assert(!footer.includes('menulist ·') === false || !/[!./]menulist/.test(footer), 'menulist still prints a prefix');
 
   // No rule lines or box art: dashes read as noise at footer size.
   assert(!/[─═━│┃╭╮╰╯├┤└┴┬▚▢]/.test(footer), 'the footer still draws ASCII rules');
@@ -842,7 +843,7 @@ await check('atlas menu indexes the live registry', async () => {
   assert(parsed.limited_time_offer.copy_code === brand.creator, `bar copy_code is ${parsed.limited_time_offer.copy_code}`);
   assert(parsed.limited_time_offer.url.includes('whatsapp.com/channel'), 'the bar lost the channel link');
   assert(parsed.bottom_sheet.divider_indices[0] === 2, `divider sits at ${parsed.bottom_sheet.divider_indices}`);
-  assert(parsed.tap_target_configuration.description.startsWith('help'), 'the callout prints a prefix');
+  assert(!/^[!./]/.test(parsed.tap_target_configuration.description), 'the callout prints a prefix');
 
   // Buttons: opener pair first, then shortcuts that all route to .help.
   const btns = inner.nativeFlowMessage.buttons;
@@ -861,8 +862,8 @@ await check('atlas menu indexes the live registry', async () => {
   assert(!picker.sections.some((s2) => s2.highlight_label), 'a bot with no usage grew a pill');
   assert(!picker.sections.flatMap((s2) => s2.rows).some((r) => r.description.includes('Most used')), 'a bot with no usage marks rows as hot');
 
-  // Usage marks the rows already listed: no extra group, and the mark sits in the
-  // category that carries the popular commands rather than on a command row.
+  // Usage no longer marks rows: the picker lists every section plainly, and the
+  // mark is gone rather than moved to a group or a pill.
   sent.length = 0;
   await atlas.atlasMenu.renderer({
     sock,
@@ -881,15 +882,13 @@ await check('atlas menu indexes the live registry', async () => {
   const hotRows = hotPicker.sections.flatMap((s2) => s2.rows);
   assert(hotPicker.sections.length === 1, `the picker grew to ${hotPicker.sections.length} groups`);
   assert(hotRows.length === 4, `the picker lists ${hotRows.length} rows`);
-  assert(hotRows.find((r) => r.id === '.help economy').description.endsWith('· Most used'), 'the economy row is not marked');
-  assert(hotRows.find((r) => r.id === '.help core').description.endsWith('· Most used'), 'the core row is not marked');
-  assert(!hotRows.find((r) => r.id === '.help media').description.includes('Most used'), 'an unused category is marked');
+  assert(!hotRows.some((r) => r.description.includes('Most used')), 'a usage mark came back');
+  assert(hotRows.find((r) => r.id === '.help economy').description === '9 to explore', 'the economy row lost its count');
   assert(picker.sections.flatMap((s2) => s2.rows).length === 4, 'the picker does not list every section');
 
   // A registry wider than the picker used to strand sections behind a tail that
   // promised rows the picker never carried. One picker row is one category, so
-  // the picker must carry all of them, and the card must count them without
-  // listing any of them.
+  // the picker must carry all of them, and the card must list none of them.
   const wide = Object.fromEntries(Array.from({ length: 40 }, (_, i) => [
     `sec${String(i).padStart(2, '0')}`,
     Array.from({ length: 40 - i }, (_, k) => ({ name: `c${i}_${k}`, description: 'wide' })),
@@ -899,7 +898,7 @@ await check('atlas menu indexes the live registry', async () => {
   const wideInner = sent[0].viewOnceMessage.message.interactiveMessage;
   const wideRows = JSON.parse(wideInner.nativeFlowMessage.buttons[0].buttonParamsJson).sections.flatMap((s2) => s2.rows);
   assert(wideRows.length === 40, `picker carries ${wideRows.length} of 40 sections`);
-  assert(wideInner.footer.text.includes('· 40 sections'), 'the counts line lost the section total');
+  assert(wideInner.footer.text.includes(brand.display.name), 'the wide render lost the bot name line');
   assert(!/^\d+ /m.test(wideInner.footer.text), 'the card still lists the wide registry');
 
   // Shortcut labels stay inside what a quick_reply button can show, and picker
@@ -933,10 +932,10 @@ await check('atlas menu indexes the live registry', async () => {
   assert(sent.length === 1, 'atlas refused to render with no commands');
   const bare = sent[0].viewOnceMessage.message.interactiveMessage;
   assert(bare.body.text === '\u200b', 'the empty render moved copy out of the footer');
-  assert((bare.footer?.text || '').includes('0 commands'), 'an empty registry produced a wrong count');
+  assert((bare.footer?.text || '').includes(brand.display.name), 'an empty registry lost the bot name line');
   assert(!bar.barHasCopy(bar.buildGalaxyBar({})), 'the empty registry leaked copy into the bar');
 
-  return 'dim footer index, no prefix, no ASCII rules, creator signature';
+  return 'dim footer greeting, no prefix, no ASCII rules, creator signature';
 });
 
 await check('sticker annotation builds a real annotation', async () => {

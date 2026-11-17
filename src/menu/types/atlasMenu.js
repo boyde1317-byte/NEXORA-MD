@@ -39,6 +39,7 @@
 import { generateWAMessageFromContent, generateWAMessageContent } from 'baileys';
 import brand from '../../../config/brand.js';
 import owner from '../../../config/owner.js';
+import { toSmallcaps } from '../../lib/smallcaps.js';
 import { buildGalaxyBar, BAR_ZWSP } from '../../lib/galaxyBar.js';
 
 const CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326';
@@ -68,6 +69,9 @@ const LABEL_MAX = 20;
  * here is load bearing.
  */
 const PICKER_ICON = 'REVIEW';
+
+/** Styled bot name; a custom bot name stays plain. */
+const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
 
 /** Sections in render order: biggest first, then alphabetical for stable ties. */
 export const rankSections = (categories = {}) =>
@@ -115,7 +119,7 @@ export const greetingFor = (now = new Date(), name = '') => {
 };
 
 /** The one line the bot says about itself, under the greeting. */
-const CATCH_LINE = 'Downloads, AI, media and group control, one command away.';
+const CATCH_LINE = 'Just hanging out here. What’s up?';
 
 /**
  * The menu copy.
@@ -145,27 +149,28 @@ export const buildMenuCopy = (
     description = CATCH_LINE,
     ownerNumber = '',
     channelUrl = '',
+    botName = brand.name,
   } = {}
 ) => {
   const dim = (line) => String(line);
 
-  const counts = dim(`${brand.name} · ${totalCommands} commands · ${sections.length} sections`);
+  const counts = dim(`${displayName(botName)}`);
   const say = [counts, description ? dim(description) : ''].filter(Boolean);
 
   // Owner details as rows: label padded so the values line up under each other.
   const fields = [
-    ['Owner', creator],
-    ['Chat', ownerNumber ? `wa.me/${ownerNumber}` : ''],
-    ['Channel', String(channelUrl || '').replace(/^https?:\/\//, '')],
-  ].filter(([, value]) => Boolean(value));
+  ['Made by', creator],
+  ['DM', ownerNumber ? `wa.me/${ownerNumber}` : ''],
+  ['Our channel', String(channelUrl || '').replace(/^https?:\/\//, '')],
+].filter(([, value]) => Boolean(value));
   const labelWidth = Math.max(...fields.map(([label]) => label.length), 0);
-  const ownerRows = fields.map(([label, value]) => dim(`${label.padEnd(labelWidth)}  ${value}`));
+  const ownerRows = fields.map(([label, value]) => dim(`${toSmallcaps(label.padEnd(labelWidth))}  ${value}`));
 
   const blocks = [
     greeting ? [dim(greeting)] : [],
     say,
     ownerRows,
-    [dim('help <section> · menulist')],
+    [dim('Need something? Try help <section> · menulist')],
   ].filter((block) => block.length);
 
   return blocks.map((block) => block.join('\n')).join('\n\n');
@@ -186,7 +191,7 @@ const pickerLabel = (section, i) => `${rank(i)} ${section.name}`;
  * is dropped before the name is, and the rank always survives.
  */
 const catLabel = (section, i) => {
-  const full = `${rank(i)} ${section.name} · ${section.count}`;
+  const full = `${rank(i)} ${section.name} (${section.count})`;
   if (full.length <= LABEL_MAX) return full;
   const ranked = `${rank(i)} ${section.name}`;
   if (ranked.length <= LABEL_MAX) return ranked;
@@ -196,7 +201,7 @@ const catLabel = (section, i) => {
 export const atlasMenu = {
   id: 21,
   name: 'atlasMenu',
-  description: 'Atlas — index computed from the live plugin registry, daily spotlight, filled galaxy bar',
+  description: 'Atlas — your little corner of WhatsApp.',
   supportedMessages: ['interactiveMessage', 'nativeFlowMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
@@ -204,6 +209,7 @@ export const atlasMenu = {
     const p = menuData.prefix || '.';
     const sections = rankSections(menuData.categories);
     const creator = brand.creator;
+    const botName = menuData.botName || brand.name;
     const pill = getChannelPill();
 
     // ── Banner header: upload the style image, fall back to no header ──
@@ -228,7 +234,7 @@ export const atlasMenu = {
 
     const messageParamsJson = buildGalaxyBar({
       offer: {
-        text: brand.name,
+        text: displayName(botName),
         copy_code: creator,
         url: CHANNEL_URL,
         expiration_time: midnight.getTime(),
@@ -236,15 +242,15 @@ export const atlasMenu = {
       sheet: {
         in_thread_buttons_limit: 0,
         divider_indices: [],
-        list_title: 'Sections',
+        list_title: 'Take a look around',
         // No blank trigger: a single space here paints an unlabelled button on
         // the sheet, and `null` is dropped by the builder, so the client falls
         // back to its own label instead.
         button_title: null,
       },
       tap: {
-        title: 'Sections open in chat',
-        description: 'help <section> lists every command in it',
+        title: 'Need a little help?',
+description: 'Pick a section and see what’s inside',
         canonical_url: '',
         domain: '',
         button_index: 0,
@@ -262,10 +268,10 @@ export const atlasMenu = {
     const pickerSections = [];
     for (let i = 0; i < sections.length && pickerSections.length < PICKER_BLOCKS; i += ROWS_PER_SECTION) {
       pickerSections.push({
-        title: i === 0 ? brand.name : `${brand.name} (cont.)`,
+        title: i === 0 ? displayName(botName) : `${displayName(botName)} (cont.)`,
         rows: sections.slice(i, i + ROWS_PER_SECTION).map((section) => ({
           title: pickerLabel(section, sections.indexOf(section)),
-          description: `${section.count} commands${hot.has(section.name) ? ' · Most used' : ''}`,
+          description: `${section.count} to explore${hot.has(section.name) ? '' : ''}`,
           id: `${p}help ${section.name}`,
         })),
       });
@@ -277,7 +283,7 @@ export const atlasMenu = {
         name: 'single_select',
         buttonParamsJson: JSON.stringify({
           icon: PICKER_ICON,
-          title: 'All sections',
+          title: toSmallcaps('Browse sections'),
           sections: pickerSections,
           has_multiple_buttons: true,
         }),
@@ -310,6 +316,7 @@ export const atlasMenu = {
           description: CATCH_LINE,
           ownerNumber: owner.ownerNumber,
           channelUrl: CHANNEL_URL,
+          botName,
         }),
       },
       nativeFlowMessage: {
