@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Menu 20 (product) tier 3 now quotes a productMessage card built by
+  `buildFakeProductQuote` (same catalog-quote shape as buttonsCard: bot name,
+  brand description, thumbnail) instead of an image quote. Tiers 1–2 unchanged.
 ### Removed
 - Menus 2 (payment), 3 (eventMessage), 10 (media), 11 (reaction) and 12
   (aiDynamic) are gone: unregistered and their type files removed. Owners who

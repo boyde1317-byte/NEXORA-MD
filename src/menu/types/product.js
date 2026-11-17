@@ -1,7 +1,7 @@
 import { baileysBridge } from '../../core/baileysBridge.js';
 import { buildTextMenu } from '../formatter.js';
 import { imageManager } from '../../images/imageManager.js';
-import { buildFakeImageQuote } from '../../lib/waUtils.js';
+import { buildFakeProductQuote } from '../../lib/waUtils.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
 import brand from '../../../config/brand.js';
 
@@ -104,8 +104,17 @@ export const productMenu = {
       console.warn('[MENU product] Tier 2 (image banner) failed, falling back to text:', err.message);
     }
 
-    // ── Tier 3: guaranteed plain text + fake quote + banner ───────────────
-    const fakeImgQuote = buildFakeImageQuote({ jpegThumbnail: imgData.thumbBuffer || undefined });
+    // ── Tier 3: guaranteed plain text + fake product quote + banner ─────────
+    // Same catalog-quote shape as buttonsCard: the quoted reply bar shows a
+    // product card with the bot name.
+    const fakeProductQuote = buildFakeProductQuote({
+      title: menuData.botName,
+      description: brand.description || `${brand.name} by ${brand.creator}`,
+      currencyCode: 'BTC',
+      priceAmount1000: 100000000,
+      businessOwnerJid: '0@s.whatsapp.net',
+      jpegThumbnail: imgData.thumbBuffer || undefined,
+    });
     const fallbackAdReply = {
       title:                 `✦ ${displayName(menuData.botName)} ✦`,
       body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} • ${menuData.uptime}`,
@@ -123,7 +132,7 @@ export const productMenu = {
     return await sock.sendMessage(m.from, {
       text:        bodyText,
       contextInfo: { externalAdReply: fallbackAdReply },
-    }, { quoted: fakeImgQuote });
+    }, { quoted: fakeProductQuote });
   },
 };
 
