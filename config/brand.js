@@ -1,10 +1,10 @@
 export default {
   name: "NEXORA MD",
-  creator: "Aizen",
-  signature: "By Aizen",
+  creator: "Moonson",
+  signature: "By Moonson",
   version: "2.2.2",
   description: "Next Generation WhatsApp Multi-Device Framework",
-  copyright: "© NEXORA MD 2.2 - By Aizen",
+  copyright: "© NEXORA MD 2.2 - By Moonson",
   core: "Nexora Core v2",
   engine: "Nexora Engine v2",
   ui: "Nexora Flow v2",
@@ -25,10 +25,10 @@ export default {
   // (src/plugins/utility/styletext.js).
   display: {
     name: "𝗡𝗘𝗫𝗢𝗥𝗔 𝗠𝗗",
-    creator: "𝓐𝓲𝔃𝓮𝓷",
-    signature: "𝓑𝔂 𝓐𝓲𝔃𝓮𝓷",
+    creator: "𝓜𝓸𝓸𝓷𝓼𝓸𝓷",
+    signature: "𝓑𝔂 𝓜𝓸𝓸𝓷𝓼𝓸𝓷",
     description: "𝘕𝘦𝘹𝘵 𝘎𝘦𝘯𝘦𝘳𝘢𝘵𝘪𝘰𝘯 𝘞𝘩𝘢𝘵𝘴𝘈𝘱𝘱 𝘔𝘶𝘭𝘵𝘪-𝘋𝘦𝘷𝘪𝘤𝘦 𝘍𝘳𝘢𝘮𝘦𝘸𝘰𝘳𝘬",
-    copyright: "© ɴᴇxᴏʀᴀ ᴍᴅ 2.2 - ʙʏ ᴀɪᴢᴇɴ",
+    copyright: "© ɴᴇxᴏʀᴀ ᴍᴅ 2.2 - ʙʏ ᴍᴏᴏɴꜱᴏɴ",
     core: "ɴᴇxᴏʀᴀ ᴄᴏʀᴇ ᴠ2",
     engine: "ɴᴇxᴏʀᴀ ᴇɴɢɪɴᴇ ᴠ2",
     ui: "ɴᴇxᴏʀᴀ ꜰʟᴏᴡ ᴠ2",

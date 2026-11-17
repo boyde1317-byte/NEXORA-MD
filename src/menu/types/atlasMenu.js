@@ -3,19 +3,25 @@
  *
  * Every other style in this folder carries a fixed catalogue: the same ASCII
  * block, the same button wall, the same count on line 3, whether the bot has 12
- * commands or 300. Atlas inverts that. The body is built at render time from
+ * commands or 300. Atlas inverts that. The index is built at render time from
  * `menuData.categories`: sections sorted by size, each with its real command
- * count, and one command promoted to a daily spotlight. Nothing here is a
- * hand-written list, so a new plugin appears in the menu the moment it loads.
+ * count. Nothing here is a hand-written list, so a new plugin appears in the
+ * menu the moment it loads.
  *
- * The dim look is kept, but earned differently. Menu 19 puts its copy in
- * `footer`, which the client paints small and grey. Atlas puts its index in the
- * body inside a monospace fence, which paints grey too but has room for aligned
- * columns — the index needs them, the footer does not.
+ * The dim look comes from the same place it comes from in menu 19: the copy
+ * lives in `footer.text`, which the client paints small and grey, while the body
+ * carries a single zero-width space. The index columns stay aligned because each
+ * line is wrapped in single backticks, so the monospace applies to the row, not
+ * to the message.
+ *
+ * Two deliberate silences: no prefix is printed anywhere in the interface (an
+ * owner knows their own prefix, and a printed one goes stale the moment it
+ * changes), and no rule lines or box art (a row of dashes reads as noise at
+ * footer size, which is the opposite of what this menu is for).
  *
  * The bar is filled rather than decorative:
- *   limited_time_offer        the spotlight command, copy_code holds it so a
- *                             tap puts the command on the clipboard
+ *   limited_time_offer        the bot name, linking to the channel, with the
+ *                             creator on the copy affordance
  *   bottom_sheet              one divider between the sections picker and the
  *                             category shortcuts
  *   tap_target_configuration  the one thing a new user needs to know
@@ -27,7 +33,9 @@
  */
 import { generateWAMessageFromContent, generateWAMessageContent } from 'baileys';
 import brand from '../../../config/brand.js';
-import { buildGalaxyBar } from '../../lib/galaxyBar.js';
+import { buildGalaxyBar, BAR_ZWSP } from '../../lib/galaxyBar.js';
+
+const CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326';
 import { getChannelPill } from '../../lib/menuContext.js';
 
 /** How many category shortcuts sit under the picker. */
@@ -45,47 +53,34 @@ export const rankSections = (categories = {}) =>
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
 /**
- * Pick the spotlight command for a date.
+ * The dim index.
  *
- * Deterministic: the same day always promotes the same command, so the menu
- * does not flicker between renders, and the pick is exposed for tests. It
- * walks the alphabetised command list, which spreads the picks across sections
- * instead of favouring whichever category happens to be largest.
+ * The copy lives in `footer.text`, the same field menu 19 uses and the same
+ * reason: the client paints it small and grey, so the menu reads as quiet
+ * information rather than a wall of body text. The body keeps a single
+ * zero-width space, which is what keeps the bubble this size at all.
+ *
+ * Each line is wrapped in single backticks, the trick menu 19 uses inside its
+ * footer, so the columns stay monospace without turning the whole footer into a
+ * code block.
  */
-export const pickSpotlight = (categories = {}, dateKey = new Date().toISOString().slice(0, 10)) => {
-  const pool = rankSections(categories)
-    .flatMap((section) => section.commands.map((cmd) => ({ ...cmd, category: section.name })))
-    .sort((a, b) => a.name.localeCompare(b.name));
-  if (!pool.length) return null;
-
-  let seed = 7;
-  for (const ch of String(dateKey)) seed = (seed * 31 + ch.codePointAt(0)) % 100000;
-  return pool[seed % pool.length];
-};
-
-/** The monospace index. Grey on the client, aligned by column. */
-export const buildIndex = (sections, { prefix = '.', totalCommands = 0, spotlight = null } = {}) => {
+export const buildDimIndex = (sections, { totalCommands = 0, creator = '' } = {}) => {
   const shown = sections.slice(0, INDEX_ROWS);
-  const width = Math.max(...shown.map((s) => s.name.length), 4);
-  const numberWidth = String(shown.length).length;
+  const width = Math.max(...shown.map((s2) => s2.name.length), 4);
+  const mono = (line) => '`' + line + '`';
 
-  const lines = shown.map((section, i) => {
-    const n = String(i + 1).padStart(numberWidth, '0');
-    return ` ${n}  ${section.name.padEnd(width)}  ${String(section.count).padStart(3)}`;
-  });
+  const rows = shown.map((section, i) =>
+    mono(`${String(i + 1).padStart(String(shown.length).length, '0')} ${section.name.padEnd(width)} ${String(section.count).padStart(3)}`));
 
   const rest = sections.length - shown.length;
-  const tail = rest > 0 ? [` +${rest} more sections in the picker`] : [];
+  const tail = rest > 0 ? [mono(`+${rest} more in the picker`)] : [];
+  const head = mono(`${brand.name} · ${totalCommands} commands · ${sections.length} sections`);
+  const signature = creator ? [mono(creator)] : [];
 
-  const head = ` ${brand.name} index · ${totalCommands} commands · ${sections.length} sections`;
-  const foot = spotlight
-    ? [`\n spotlight  ${prefix}${spotlight.name} — ${String(spotlight.description || '').slice(0, 38)}`]
-    : [];
-
-  // Fence on its own line: WhatsApp paints the whole block grey, which is the
-  // dim look, and keeps the columns monospaced.
-  const block = [head, ' ' + '─'.repeat(Math.min(head.length - 1, 40)), ...lines, ...tail, ...foot];
-  return '```\n' + block.join('\n') + '\n```';
+  // Signature and hint sit outside the index rows: credit, then the only
+  // instruction, and no prefix on it.
+  const hint = 'help <section> · menulist';
+  return [head, ...rows, ...tail, '', ...(signature.length ? [...signature, ''] : []), hint].join('\n');
 };
 
 const catLabel = (section, i) => `${String(i + 1).padStart(2, '0')} ${section.name} · ${section.count}`;
@@ -100,7 +95,7 @@ export const atlasMenu = {
     const jid = m.from || m.key?.remoteJid || m.chat;
     const p = menuData.prefix || '.';
     const sections = rankSections(menuData.categories);
-    const spotlight = pickSpotlight(menuData.categories);
+    const creator = brand.creator;
     const pill = getChannelPill();
 
     // ── Banner header: upload the style image, fall back to no header ──
@@ -124,14 +119,12 @@ export const atlasMenu = {
     midnight.setUTCHours(24, 0, 0, 0);
 
     const messageParamsJson = buildGalaxyBar({
-      offer: spotlight
-        ? {
-            text: `Spotlight · ${p}${spotlight.name}`,
-            copy_code: `${p}${spotlight.name}`,
-            url: '',
-            expiration_time: midnight.getTime(),
-          }
-        : {},
+      offer: {
+        text: brand.name,
+        copy_code: creator,
+        url: CHANNEL_URL,
+        expiration_time: midnight.getTime(),
+      },
       sheet: {
         in_thread_buttons_limit: 0,
         divider_indices: [],
@@ -140,7 +133,7 @@ export const atlasMenu = {
       },
       tap: {
         title: 'Sections open in chat',
-        description: `${p}help <section> lists every command in it`,
+        description: 'help <section> lists every command in it',
         canonical_url: '',
         domain: '',
         button_index: 0,
@@ -187,9 +180,11 @@ export const atlasMenu = {
 
     const interactiveMessage = {
       header,
-      body: { text: buildIndex(sections, { prefix: p, totalCommands: menuData.totalCommands, spotlight }) },
+      // Body is one zero-width space: the dim look comes from putting the copy
+      // in the footer, not from wrapping the message in a code block.
+      body: { text: BAR_ZWSP },
       footer: {
-        text: [`${p}help <section> · ${p}menulist to switch style`, `install · v${brand.version}`].join('\n'),
+        text: buildDimIndex(sections, { totalCommands: menuData.totalCommands, creator }),
       },
       nativeFlowMessage: {
         messageParamsJson: JSON.stringify(withDivider),

@@ -26,16 +26,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 - **Menu 21 `atlasMenu`** (`src/menu/types/atlasMenu.js`): a menu computed from
   the live registry instead of a hand-written catalogue. Sections are ranked by
-  real command count and rendered as an aligned monospace index in the body
-  (grey, like menu 19's footer copy, with room for columns), one command is
-  promoted to a deterministic daily spotlight, and the galaxy bar is filled with
-  real content: the spotlight as a copyable offer strip, one divider between the
-  picker and the shortcuts, and a callout teaching `.help <section>`. Buttons
-  are the multi-button opener pair plus up to six section shortcuts, all routing
-  to `.help <section>`; there are no decorative buttons. Borrowed techniques:
+  real command count and rendered as an aligned dim index in `footer.text`
+  (menu 19's field choice, one backtick per row so columns stay monospace, and a
+  zero-width body). The bar is filled with real content: the bot name on the
+  channel link with the creator on the copy affordance, one divider between the
+  picker and the shortcuts, and a callout teaching `help <section>`. Buttons are
+  the multi-button opener pair plus up to six section shortcuts, all routing to
+  `.help <section>`; there are no decorative buttons. No prefix is printed
+  anywhere in the interface and there is no ASCII rule or box art. Borrowed techniques:
   viewOnce carrier, opener pair, channel pill, banner header. Not borrowed: the
   ASCII frame art, the hand-written info block, the 24-button stack. Menu 19 is
   untouched.
+- `config/brand.js`: creator and signature are now **Moonson** (was Aizen), so
+  every surface that reads the brand object credits the current owner.
 
 ### Fixed
 - `.play` / `.ytmp4` extraction. Every keyless source behind them was dead

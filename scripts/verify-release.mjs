@@ -735,6 +735,7 @@ await check('galaxy bar probes are shared by .galaxybar and .testrich', async ()
 await check('atlas menu indexes the live registry', async () => {
   const atlas = await import(join(root, `src/menu/types/atlasMenu.js?t=${Date.now()}`));
   const bar = await import(join(root, 'src/lib/galaxyBar.js'));
+  const { default: brand } = await import(join(root, `config/brand.js?t=${Date.now()}`));
 
   assert(atlas.atlasMenu.id === 21, `atlas id is ${atlas.atlasMenu.id}`);
   assert(typeof atlas.atlasMenu.renderer === 'function', 'atlas has no renderer');
@@ -751,15 +752,8 @@ await check('atlas menu indexes the live registry', async () => {
   assert(ranked[0].name === 'economy' && ranked[0].count === 9, 'sections are not ranked by size');
   assert(!ranked.some((s2) => s2.name === 'empty'), 'an empty section was listed');
 
-  // The spotlight is stable per day and moves across days.
-  const day = '2026-11-17';
-  const a1 = atlas.pickSpotlight(categories, day);
-  const a2 = atlas.pickSpotlight(categories, day);
-  assert(a1 && a1.name === a2.name, 'the spotlight is not deterministic');
-  assert(a1.category, 'the spotlight lost its category');
-  const moved = new Set(['2026-11-17', '2026-11-18', '2026-11-19'].map((d) => atlas.pickSpotlight(categories, d).name));
-  assert(moved.size > 1, 'the spotlight never changes between days');
-  assert(atlas.pickSpotlight({}, day) === null, 'an empty registry produced a spotlight');
+  // No command spotlight: the menu never advertises a random toggle as news.
+  assert(!('pickSpotlight' in atlas), 'the command spotlight is back');
 
   // Render against a fake socket: the payload is the contract.
   const sent = [];
@@ -777,23 +771,36 @@ await check('atlas menu indexes the live registry', async () => {
   assert(sent.length === 1, `atlas relayed ${sent.length} messages`);
   const inner = sent[0].viewOnceMessage.message.interactiveMessage;
 
-  // Body: monospace index carrying the real numbers, one aligned row per section.
-  assert(inner.body.text.startsWith('```') && inner.body.text.endsWith('```'), 'index body is not fenced monospace');
-  assert(inner.body.text.includes('17 commands') && inner.body.text.includes('4 sections'), 'index header counts are wrong');
-  assert(/economy\s+9/.test(inner.body.text), 'index row lost the economy count');
-  assert(/core\s+2/.test(inner.body.text), 'index row lost the core count');
-  assert(inner.body.text.includes('spotlight'), 'index has no spotlight line');
+  // The dim look: body is a single zero-width space, the copy lives in footer.text.
+  assert(inner.body.text === '\u200b', `body is ${JSON.stringify(inner.body.text)} — copy leaked out of the footer`);
+  const footer = inner.footer?.text || '';
+  assert(footer.includes('17 commands') && footer.includes('4 sections'), 'footer header counts are wrong');
+  assert(/economy\s+9/.test(footer), 'footer row lost the economy count');
+  assert(/core\s+2/.test(footer), 'footer row lost the core count');
+  assert(footer.includes(`\`${brand.creator}\``), 'footer lost the creator signature');
+  assert(footer.includes('help <section>'), 'footer lost the help hint');
 
-  // Footer keeps the dim hint, and no section name is invented there.
-  assert(inner.footer?.text?.includes('.help <section>'), 'footer lost the help hint');
+  // No prefix anywhere in the interface: a printed prefix goes stale.
+  assert(!/^[!.\/]help/m.test(footer), 'the hint still prints a prefix');
+  assert(!footer.includes('menulist ·') === false || !/[!.\/]menulist/.test(footer), 'menulist still prints a prefix');
+
+  // No rule lines or box art: dashes read as noise at footer size.
+  assert(!/[─═━│┃╭╮╰╯├┤└┴┬▚▢]/.test(footer), 'the footer still draws ASCII rules');
+
+  // Never a fenced code block: the dim rows come from backticks per line.
+  assert(!footer.includes('```'), 'the footer is a code block, not dim rows');
+  assert(!inner.body.text.includes('```'), 'the body is a code block, not a zero-width carrier');
+  const rowLines = footer.split('\n').filter((line) => /^`\d/.test(line));
+  assert(rowLines.length === 4, `expected 4 dim rows, got ${rowLines.length}`);
 
   // Bar: filled, all three slots, divider after the opener pair.
   const parsed = bar.parseGalaxyBar(inner.nativeFlowMessage.messageParamsJson);
   assert(bar.barSlots(inner.nativeFlowMessage.messageParamsJson).length === 3, 'atlas left a bar slot empty');
   assert(bar.barHasCopy(inner.nativeFlowMessage.messageParamsJson), 'the bar carries no content');
-  assert(parsed.limited_time_offer.copy_code.startsWith('.'), 'the spotlight is not copyable');
+  assert(parsed.limited_time_offer.copy_code === brand.creator, `bar copy_code is ${parsed.limited_time_offer.copy_code}`);
+  assert(parsed.limited_time_offer.url.includes('whatsapp.com/channel'), 'the bar lost the channel link');
   assert(parsed.bottom_sheet.divider_indices[0] === 2, `divider sits at ${parsed.bottom_sheet.divider_indices}`);
-  assert(parsed.tap_target_configuration.description.includes('.help'), 'the callout does not teach the command');
+  assert(parsed.tap_target_configuration.description.startsWith('help'), 'the callout prints a prefix');
 
   // Buttons: opener pair first, then shortcuts that all route to .help.
   const btns = inner.nativeFlowMessage.buttons;
@@ -815,10 +822,11 @@ await check('atlas menu indexes the live registry', async () => {
   await atlas.atlasMenu.renderer({ sock, m: { from: '233000000000@s.whatsapp.net' }, menuData: { prefix: '.', totalCommands: 0, categories: {} } });
   assert(sent.length === 1, 'atlas refused to render with no commands');
   const bare = sent[0].viewOnceMessage.message.interactiveMessage;
-  assert(bare.body.text.includes('0 commands'), 'an empty registry produced a wrong count');
+  assert(bare.body.text === '\u200b', 'the empty render moved copy out of the footer');
+  assert((bare.footer?.text || '').includes('0 commands'), 'an empty registry produced a wrong count');
   assert(!bar.barHasCopy(bar.buildGalaxyBar({})), 'the empty registry leaked copy into the bar');
 
-  return 'computed index, daily spotlight, filled bar, shortcuts to .help';
+  return 'dim footer index, no prefix, no ASCII rules, creator signature';
 });
 
 await check('sticker annotation builds a real annotation', async () => {
