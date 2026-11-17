@@ -364,6 +364,75 @@ await check('command VIP surfaces build valid envelopes', async () => {
   return seen.join(', ');
 });
 
+await check('messageBuilder chains build the proven payloads', async () => {
+  const { button, legacyButton, listMessage, airich } = await import(join(root, 'src/lib/messageBuilder.js'));
+
+  const card = button().body('Pick').footer('f').title('T')
+    .quick_reply('Ok', '.menu')
+    .cta_url('Open', 'https://x.y', { webview: true })
+    .cta_copy('Copy', 'Z1')
+    .build();
+  assert(card.buttons.length === 3, 'button(): expected 3 buttons');
+  assert(card.buttons[0].id === '.menu', 'button(): quick_reply lost its id');
+  assert(card.buttons[1].useWebview === true, 'button(): cta_url lost webview');
+  assert(card.buttons[2].copy === 'Z1', 'button(): cta_copy lost the code');
+
+  const withPicker = button().body('m')
+    .single_select('Open', [{ title: 'Main', rows: [{ id: '.a', title: 'A' }] }])
+    .bottom_sheet({ listTitle: 'All', buttonTitle: 'See all' })
+    .limited_time_offer({ text: '50%', url: 'https://x.y', copyCode: 'OFF' })
+    .build();
+  assert(withPicker.buttons[0].sections[0].rows[0].id === '.a', 'single_select(): rows lost');
+  assert(withPicker.optionText === 'See all' && withPicker.offerCode === 'OFF', 'overlays lost');
+
+  const legacy = legacyButton().body('o').button('yes', 'Yes').build();
+  assert(legacy.buttons[0].type === 1 && legacy.buttons[0].displayText === 'Yes', 'legacyButton(): wrong button shape');
+
+  const list = listMessage().title('M').body('p').section('Main', [{ id: 'a', title: 'A' }]).build();
+  assert(list.sections[0].rows[0].title === 'A', 'listMessage(): sections lost');
+
+  const rich = airich().text('# Halo').table([['A', 'B'], ['1', '2']]).code('js', 'const a = 1').suggest(['next']).build();
+  assert(/^\| A \| B \|/m.test(rich.markdown), 'airich(): pipe table not built');
+  assert(/```js\nconst a = 1\n```/.test(rich.markdown), 'airich(): code block not built');
+  assert(rich.suggest[0] === 'next', 'airich(): suggestions lost');
+
+  let threw = false;
+  try { button().build(); } catch { threw = true; }
+  assert(threw, 'button(): empty card should throw');
+  return 'button / legacy / list / airich';
+});
+
+await check('.mb sends each builder form', async () => {
+  const plugin = (await import(join(root, 'src/plugins/general/messagebuilder.js'))).default;
+  const run = async (args, isGroup = false) => {
+    const sent = [];
+    const sock = {
+      user: { id: '233533416608:1@s.whatsapp.net' },
+      waUploadToServer: async () => ({ mediaUrl: 'https://mmg.whatsapp.net/x', directPath: '/x' }),
+      relayMessage: async (_j, c) => { sent.push(c); return { key: { id: 'r' } }; },
+      sendMessage: async (_j, b) => { sent.push(b); return { key: { id: 's' } }; },
+    };
+    const m = {
+      from: '120363000000000000@g.us',
+      key: { id: 'ORIG', remoteJid: '120363000000000000@g.us', participant: '1@s.whatsapp.net' },
+      message: { conversation: '.mb' },
+      reply: { error: async (msg) => { sent.push({ text: String(msg) }); } },
+    };
+    await plugin.execute({ sock, m, args, prefix: '.', isGroup });
+    return sent[0] || {};
+  };
+
+  for (const variant of ['button', 'select', 'legacy', 'ai']) {
+    const out = await run([variant]);
+    assert(Object.keys(out).length > 0, `.mb ${variant}: sent nothing`);
+  }
+  const listInGroup = await run(['list'], true);
+  assert(/rejected by the server in groups/.test(listInGroup.text || ''), '.mb list in a group should refuse');
+  const dmList = await run(['list'], false);
+  assert(dmList.sections?.length, '.mb list in a DM should send a listMessage');
+  return 'button / select / legacy / ai / list';
+});
+
 await check('.start ships all four Start chatting wire forms', async () => {
   const plugin = (await import(join(root, 'src/plugins/general/start.js'))).default;
   const m = {

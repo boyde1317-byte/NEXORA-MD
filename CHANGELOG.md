@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- `src/lib/messageBuilder.js` — chain-method message builder, a port of
+  KYYDIW's zapo "Message Builder" (MIT © 2026 Ripki Dwi Putra / kyyinfinite,
+  github.com/kyyinfinite/kyyinfinite/message.md) re-pointed at our Baileys
+  fork. `button()` (quick_reply / cta_url / cta_copy / cta_call /
+  single_select / bottom_sheet / limited_time_offer / send_location, header
+  title + thumb), `legacyButton()` (buttonsMessage RESPONSE),
+  `listMessage()` (legacy list, DMs only) and `airich()` (markdown, pipe
+  tables, code cards, tips, suggestions, footer). Each has `.build()` and
+  `.send(jid, { quoted })`.
+- `.mb` — demo command for the builder: `.mb`, `.mb select`, `.mb legacy`,
+  `.mb list`, `.mb ai`.
+
+### Notes
+- Two deliberate deviations from the zapo original: `.location()` emits a
+  proven `send_location` button (the fork has no location *header* slot and a
+  native-flow header there renders blank), and `listMessage` refuses in groups
+  where the server rejects it, pointing at `.mb select`.
+
+### Added
 - `.start` — the "Start chatting" card from the zapo-js bases, in all four wire
   forms so a device can settle which one the reference screenshot uses:
   `.start` (cta_url → wa.me), `.start quick` (native-flow quick_reply),
