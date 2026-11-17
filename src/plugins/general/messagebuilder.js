@@ -8,6 +8,7 @@
  *   .mb select     single_select picker (the group-safe "list")
  *   .mb legacy     legacy buttonsMessage RESPONSE buttons
  *   .mb list       real listMessage (DMs only, the server rejects it in groups)
+ *   .mb location   location header + buttons beneath (zapo .location() form)
  *   .mb ai         AI Rich: markdown, table, code card, suggestions
  */
 
@@ -68,6 +69,17 @@ export default {
             { id: `${prefix}menu`, title: '☰ Menu', description: 'Every command' },
             { id: `${prefix}ping`, title: '📡 Ping', description: 'Server stats' },
           ])
+          .send(m.from, { quoted: m });
+      }
+
+      if (variant === 'location') {
+        return await button(sock)
+          .title('Location header')
+          .body(`» *${name}* — location header\n  › The map sits above the body, buttons beneath it.`)
+          .footer(`© ${name}`)
+          .location({ latitude: 5.6037, longitude: -0.187, name: `${brand.name} HQ`, address: 'Accra, Ghana' })
+          .quick_reply('☰ Menu', `${prefix}menu`)
+          .cta_url('📍 Open in Maps', 'https://maps.google.com/?q=5.6037,-0.187')
           .send(m.from, { quoted: m });
       }
 

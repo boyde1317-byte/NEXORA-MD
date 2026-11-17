@@ -24,10 +24,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `.mb list`, `.mb ai`.
 
 ### Notes
-- Two deliberate deviations from the zapo original: `.location()` emits a
-  proven `send_location` button (the fork has no location *header* slot and a
-  native-flow header there renders blank), and `listMessage` refuses in groups
-  where the server rejects it, pointing at `.mb select`.
+- `.location()` keeps the zapo form: a location *header* above the body with the
+  buttons beneath it. The fork's nativeFlow sugar only accepts image/video
+  headers, so a location card is relayed as a raw `interactiveMessage`
+  (`hasMediaAttachment: false`) and its buttons are converted to nativeFlow
+  `{ name, params }`. `.locationButton()` still emits the explicit
+  `send_location` button. `.mb location` demos the header.
+- `listMessage` refuses in groups where the server rejects it, pointing at
+  `.mb select`.
 
 ### Added
 - `.start` — the "Start chatting" card from the zapo-js bases, in all four wire

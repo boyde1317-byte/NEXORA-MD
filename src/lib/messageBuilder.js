@@ -16,16 +16,54 @@
  *   listMessage()  sock.sendMessage({ title, text, sections, buttonText })
  *   airich()       aiRichReply.sendAIRichReply   (richResponseMessage)
  *
- * Deliberate differences from the zapo original, because our fork proves them:
- *   • .location() adds a proven `send_location` button; the fork has no
- *     location *header* slot, and a native-flow header there renders blank.
- *   • listMessage is rejected by the server in groups (same as the original
- *     docs warn) — use .single_select() there.
+ * .location({ latitude, longitude, name, address }) keeps the zapo semantics: a
+ * location *header* on the interactive message, rendered above the body with
+ * the buttons beneath it. That needs the raw `interactiveMessage` route
+ * (baileysBridge.sendInteractive) because the fork's nativeFlow sugar only
+ * accepts image/video headers, so a card with a location header is relayed
+ * directly and its buttons converted to nativeFlow { name, params } form.
+ *
+ * One deliberate difference from the zapo original: listMessage is rejected by
+ * the server in groups (as the original docs warn) — use .single_select() there.
  */
 import { baileysBridge } from '../core/baileysBridge.js';
 import { sendAIRichReply, buildAIMarkdownMessage } from './aiRichReply.js';
 
 const toBufferOrUrl = (thumb) => thumb; // passed straight through to the fork
+
+/**
+ * Declarative button -> nativeFlow { name, params } form, for the raw
+ * interactiveMessage route (the fork does the same mapping internally, but
+ * only on its own sugar path).
+ */
+function toNativeButtons(buttons = []) {
+  return buttons.map((b) => {
+    if (b.sections) {
+      return { name: 'single_select', params: { title: b.text || 'Select', sections: b.sections } };
+    }
+    if (b.url) {
+      return {
+        name: 'cta_url',
+        params: {
+          display_text: b.text,
+          url: b.url,
+          merchant_url: b.url,
+          ...(b.useWebview ? { webview_interaction: true } : {}),
+        },
+      };
+    }
+    if (b.copy !== undefined) {
+      return { name: 'cta_copy', params: { display_text: b.text, copy_code: b.copy } };
+    }
+    if (b.call) {
+      return { name: 'cta_call', params: { display_text: b.text, phone_number: b.call } };
+    }
+    if (b.sendLocation) {
+      return { name: 'send_location', params: b.sendLocation };
+    }
+    return { name: 'quick_reply', params: { display_text: b.text, id: b.id ?? b.text } };
+  });
+}
 
 class BaseBuilder {
   constructor(sock) { this._sock = sock; }
@@ -52,6 +90,7 @@ class ButtonBuilder extends BaseBuilder {
     this._offer = undefined;
     this._sheet = undefined;
     this._extra = [];
+    this._location = undefined;
   }
 
   body(text) { this._body = String(text ?? ''); return this; }
@@ -59,11 +98,31 @@ class ButtonBuilder extends BaseBuilder {
   title(text) { this._title = text ? String(text) : undefined; return this; }
   thumb(media) { this._image = toBufferOrUrl(media); return this; }
 
-  /** Proven replacement for zapo's location header. */
+  /**
+   * Location header, the way the zapo builder does it: rendered above the body
+   * with the buttons beneath. Kept out of the button list on purpose.
+   * @param {{ latitude: number, longitude: number, name?: string, address?: string }} loc
+   */
   location({ latitude, longitude, name, address } = {}) {
+    this._location = {
+      degreesLatitude: Number(latitude),
+      degreesLongitude: Number(longitude),
+      ...(name ? { name: String(name) } : {}),
+      ...(address ? { address: String(address) } : {}),
+    };
+    return this;
+  }
+
+  /** Explicit `send_location` button, when a header is not what you want. */
+  locationButton(text = '📍 Send location', loc = {}) {
     this._extra.push({
-      text: 'send_location',
-      sendLocation: { degreesLatitude: latitude, degreesLongitude: longitude, name, address },
+      text,
+      sendLocation: {
+        degreesLatitude: Number(loc.latitude),
+        degreesLongitude: Number(loc.longitude),
+        ...(loc.name ? { name: String(loc.name) } : {}),
+        ...(loc.address ? { address: String(loc.address) } : {}),
+      },
     });
     return this;
   }
@@ -121,13 +180,32 @@ class ButtonBuilder extends BaseBuilder {
       ...(this._sheet
         ? { optionText: this._sheet.buttonTitle, optionTitle: this._sheet.listTitle }
         : {}),
+      ...(this._location ? { location: this._location } : {}),
     };
   }
 
   async send(jid, arg) {
     const opts = arg && arg.client ? arg : (arg || {});
     const sock = this._client(arg?.client ? arg : null);
-    return baileysBridge.sendNativeFlow(sock, jid, this.build(), opts);
+    const payload = this.build();
+
+    // Location header: only the raw interactiveMessage route can carry it.
+    if (this._location) {
+      return baileysBridge.sendInteractive(sock, jid, {
+        body: payload.text,
+        footer: payload.footer,
+        header: {
+          title: payload.title || '',
+          subtitle: '',
+          // hasMediaAttachment stays false: the client routes this to the map
+          // renderer, not to a media download.
+          locationMessage: this._location,
+        },
+        buttons: toNativeButtons(payload.buttons),
+      }, opts);
+    }
+
+    return baileysBridge.sendNativeFlow(sock, jid, payload, opts);
   }
 }
 

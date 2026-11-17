@@ -415,6 +415,28 @@ await check('messageBuilder chains build the proven payloads', async () => {
   assert(/```js\nconst a = 1\n```/.test(rich.markdown), 'airich(): code block not built');
   assert(rich.suggest[0] === 'next', 'airich(): suggestions lost');
 
+  // .location() keeps the zapo form: a location *header*, not a button.
+  const sent = [];
+  const sock = {
+    user: { id: '233533416608:1@s.whatsapp.net' },
+    relayMessage: async (_j, c) => { sent.push(c); return { key: { id: 'r' } }; },
+    sendMessage: async (_j, b) => { sent.push(b); return { key: { id: 's' } }; },
+  };
+  await button(sock)
+    .body('Location header')
+    .location({ latitude: 5.6037, longitude: -0.187, name: 'HQ', address: 'Accra' })
+    .quick_reply('Ok', '.menu')
+    .send('120363000000000000@g.us');
+  const loc = sent[0]?.interactiveMessage;
+  assert(loc?.header?.locationMessage?.degreesLatitude === 5.6037, '.location() sent no location header');
+  assert(loc.header.locationMessage.address === 'Accra', '.location() lost the address');
+  assert(loc.header.hasMediaAttachment === false, '.location() header should not be a media attachment');
+  assert(loc.nativeFlowMessage.buttons[0].name === 'quick_reply', '.location() lost its buttons');
+  assert(
+    !JSON.stringify(loc.nativeFlowMessage).includes('send_location'),
+    '.location() should not emit a send_location button'
+  );
+
   let threw = false;
   try { button().build(); } catch { threw = true; }
   assert(threw, 'button(): empty card should throw');
@@ -441,7 +463,7 @@ await check('.mb sends each builder form', async () => {
     return sent[0] || {};
   };
 
-  for (const variant of ['button', 'select', 'legacy', 'ai']) {
+  for (const variant of ['button', 'select', 'legacy', 'location', 'ai']) {
     const out = await run([variant]);
     assert(Object.keys(out).length > 0, `.mb ${variant}: sent nothing`);
   }
@@ -449,7 +471,7 @@ await check('.mb sends each builder form', async () => {
   assert(/rejected by the server in groups/.test(listInGroup.text || ''), '.mb list in a group should refuse');
   const dmList = await run(['list'], false);
   assert(dmList.sections?.length, '.mb list in a DM should send a listMessage');
-  return 'button / select / legacy / ai / list';
+  return 'button / select / legacy / location / ai / list';
 });
 
 await check('.start ships all four Start chatting wire forms', async () => {
