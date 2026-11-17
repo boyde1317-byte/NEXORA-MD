@@ -21,6 +21,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   NexoraFlex repo instead of the old NEXORA-MD URL.
 
 ### Added
+- `src/lib/stickerAnnotation.js`: sticker annotation, the technique behind the
+  zapo `ReactImg` sample. It is `messageContextInfo.messageAssociation` with
+  `associationType: 11` (`STICKER_ANNOTATION` in WAProto — `STATUS_REACTION` is
+  18, and a real reaction is `reactionMessage` with no association). Clients
+  that support associations paint the sticker on the parent message; others
+  show it as a normal sticker. The sticker is resized to 512x512 WebP and
+  *uploaded* first (`generateWAMessageContent` + `waUploadToServer`), because
+  relaying a bare `url` leaves the client with a grey placeholder — which is
+  why the sample never renders. `.mb annotate` demos it on the command message.
+
+### Added
 - `messageBuilder` now carries the message-building techniques menu 19
   (`src/menu/types/galaxyMenu.js`) uses, so one builder can express them:
   `.messageParams({...})` (galaxy bar + bottom sheet + tap target),

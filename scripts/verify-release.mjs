@@ -491,6 +491,47 @@ await check('messageBuilder exposes the menu-19 techniques', async () => {
   return 'galaxy / opener pair / params / pill / viewOnce';
 });
 
+await check('sticker annotation builds a real annotation', async () => {
+  const mod = await import(join(root, 'src/lib/stickerAnnotation.js'));
+  const { default: sharp } = await import('sharp');
+
+  const png = await sharp({
+    create: { width: 64, height: 64, channels: 4, background: { r: 0, g: 128, b: 0, alpha: 1 } },
+  }).png().toBuffer();
+  const webp = await mod.toStickerWebp(png);
+  assert(webp.length > 0 && webp.slice(8, 12).toString() === 'WEBP', 'toStickerWebp did not emit WebP');
+
+  const sent = [];
+  const sock = {
+    user: { id: '233533416608:1@s.whatsapp.net' },
+    waUploadToServer: async () => ({ mediaUrl: 'https://mmg.whatsapp.net/x', directPath: '/x' }),
+    relayMessage: async (_j, c) => { sent.push(c); return { key: { id: 'r' } }; },
+  };
+  await mod.annotateWithSticker(sock, '120363000000000000@g.us', {
+    parentKey: { remoteJid: '120363000000000000@g.us', fromMe: false, id: 'PARENT123' },
+    image: png,
+  });
+
+  const msg = sent[0];
+  const assoc = msg?.messageContextInfo?.messageAssociation;
+  assert(assoc?.associationType === 11, 'annotation associationType is not 11 (STICKER_ANNOTATION)');
+  assert(assoc.parentMessageKey?.id === 'PARENT123', 'annotation lost the parent message key');
+  // The sample's plain-URL sticker never renders: the media has to be uploaded.
+  for (const field of ['url', 'mediaKey', 'fileSha256', 'fileEncSha256', 'directPath']) {
+    assert(msg.stickerMessage?.[field], `annotation sticker is missing ${field} (media not uploaded)`);
+  }
+  assert(msg.stickerMessage.mimetype === 'image/webp', 'annotation sticker is not image/webp');
+
+  let refusedUploaded = false;
+  try { mod.buildAnnotationMessage({ parentKey: { id: 'x' } }); } catch { refusedUploaded = true; }
+  assert(refusedUploaded, 'buildAnnotationMessage accepted a missing sticker');
+  let refusedParent = false;
+  try { mod.buildAnnotationMessage({ stickerMessage: {} }); } catch { refusedParent = true; }
+  assert(refusedParent, 'buildAnnotationMessage accepted a missing parent key');
+
+  return 'associationType 11 + uploaded media';
+});
+
 await check('.mb sends each builder form', async () => {
   const plugin = (await import(join(root, 'src/plugins/general/messagebuilder.js'))).default;
   const run = async (args, isGroup = false) => {

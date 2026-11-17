@@ -10,10 +10,12 @@
  *   .mb list       real listMessage (DMs only, the server rejects it in groups)
  *   .mb galaxy     the menu-19 stack: galaxy bar, opener pair, icons, pill
  *   .mb location   location header + buttons beneath (zapo .location() form)
+ *   .mb annotate   sticker annotation (STICKER_ANNOTATION on the command message)
  *   .mb ai         AI Rich: markdown, table, code card, suggestions
  */
 
 import { button, legacyButton, listMessage, airich } from '../../lib/messageBuilder.js';
+import { annotateWithSticker } from '../../lib/stickerAnnotation.js';
 import brand from '../../../config/brand.js';
 
 export default {
@@ -133,6 +135,25 @@ export default {
           .quick_reply('☰ Menu', `${prefix}menu`)
           .cta_url('📍 Open in Maps', 'https://maps.google.com/?q=5.6037,-0.187')
           .send(m.from, { quoted: m });
+      }
+
+      if (variant === 'annotate' || variant === 'sticker') {
+        // A sticker tied to this command message via messageAssociation
+        // (associationType 11 = STICKER_ANNOTATION). Clients that support the
+        // association paint it on the message itself; others show a plain
+        // sticker, which is the honest result either way.
+        const { imageManager } = await import('../../images/imageManager.js');
+        const img = await imageManager.getMenuImage(19);
+        if (!img?.buffer) {
+          return await m.reply.error?.('No banner image available to build the sticker from.');
+        }
+        const sent = await annotateWithSticker(sock, m.from, {
+          parentKey: m.key,
+          image: img.buffer,
+          quoted: m,
+        });
+        console.log('[mb] sticker annotation relayed as', sent?.key?.id);
+        return sent;
       }
 
       if (variant === 'ai') {
