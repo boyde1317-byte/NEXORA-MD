@@ -45,7 +45,7 @@ export const contactMenu = {
   supportedMessages: ['interactiveMessage', 'nativeFlowMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
-    const imgData      = await imageManager.getMenuImage(9);
+    const imgData = (await imageManager.getMenuImage(9).catch(() => null)) || {};
     const ownerNumber  = (config.owner[0] || '233597514499').replace(/[^0-9]/g, '');
     const ownerName    = menuData.ownerName || brand.creator || 'Owner';
 

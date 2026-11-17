@@ -1170,6 +1170,59 @@ await check('admin alerts quote a group invite card', async () => {
   return 'promote + demote';
 });
 
+await check('every card style rides on its waUtils card', async () => {
+  // The card is the whole point of these styles: the bubble each menu replies on
+  // has to be the product / order / contact / location / newsletter card, not the
+  // incoming message. The bridge builds the message with `quoted` and then relays
+  // it, so the card lands as contextInfo.quotedMessage on what actually goes out.
+  const findQuoted = (value, depth = 0) => {
+    if (!value || typeof value !== 'object' || depth > 8) return null;
+    if (value.quotedMessage) return Object.keys(value.quotedMessage).join(',');
+    for (const inner of Object.values(value)) {
+      const hit = findQuoted(inner, depth + 1);
+      if (hit) return hit;
+    }
+    return null;
+  };
+
+  const styles = [
+    ['product', 'product.js', 'productMenu', 'productMessage'],
+    ['order', 'orderMessage.js', 'orderMessageMenu', 'orderMessage'],
+    ['contact', 'contact.js', 'contactMenu', 'contactMessage'],
+    ['location', 'location.js', 'locationMenu', 'liveLocationMessage'],
+    ['newsletter', 'newsletter.js', 'newsletterMenu', 'newsletterAdminInviteMessage'],
+  ];
+
+  for (const [label, file, exported, wanted] of styles) {
+    const mod = await import(join(root, `src/menu/types/${file}`));
+    const menu = mod[exported] || mod.default;
+    const relays = [];
+    const sends = [];
+    const sock = {
+      user: { id: '233000000000:1@s.whatsapp.net' },
+      sendMessage: async (_jid, content, options) => { sends.push({ content, options }); return { key: { id: 'card' } }; },
+      relayMessage: async (_jid, message) => { relays.push({ message }); return { key: { id: 'card' } }; },
+      waUploadToServer: async () => { throw new Error('no upload in check'); },
+    };
+    await menu.renderer({
+      sock,
+      m: { from: '233000000000@s.whatsapp.net' },
+      menuData: { prefix: '.', botName: 'NEXORA MD', totalCommands: 17, uptime: '1h', categories: {}, ownerName: 'Moonson' },
+    });
+    assert(relays.length + sends.length >= 1, `the ${label} menu sent nothing`);
+
+    const carried = [
+      ...relays.map((relay) => findQuoted(relay.message)),
+      ...sends.map((send) => findQuoted(send.content)
+        || (send.options?.quoted?.message ? Object.keys(send.options.quoted.message).join(',') : null)),
+    ].filter(Boolean);
+    assert(carried.length, `the ${label} menu is quoted on nothing`);
+    assert(carried[0].includes(wanted), `the ${label} menu rides on ${carried[0]}, expected ${wanted}`);
+  }
+
+  return '5 card styles quoted';
+});
+
 await check('greeting product card carries the menu banner', () => {
   const banner = Buffer.from([0xff, 0xd8, 0xff, 0xdb]);
   const card = greetingCard.buildGreetingProductCard({

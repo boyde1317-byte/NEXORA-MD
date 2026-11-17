@@ -39,7 +39,7 @@ export const productMenu = {
   supportedMessages: ['interactiveMessage', 'nativeFlowMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
-    const imgData   = await imageManager.getMenuImage(5);
+    const imgData = (await imageManager.getMenuImage(5).catch(() => null)) || {};
     const bodyText  = `✦ ${displayName(menuData.botName)} ✦\n\n` + buildTextMenu(menuData);
     const footerText = `${displayName(menuData.botName)} • ${menuData.totalCommands} ${toSmallcaps('commands')}`;
 

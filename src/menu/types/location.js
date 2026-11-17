@@ -45,7 +45,7 @@ export const locationMenu = {
   supportedMessages: ['interactiveMessage', 'liveLocationMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
-    const imgData    = await imageManager.getMenuImage(8);
+    const imgData = (await imageManager.getMenuImage(8).catch(() => null)) || {};
     const menuText   = buildTextMenu(menuData);
     const footerText = `${displayName(menuData.botName)} • ${menuData.totalCommands} ${toSmallcaps('commands')}`;
 

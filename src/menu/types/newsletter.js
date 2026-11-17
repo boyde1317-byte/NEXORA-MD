@@ -32,7 +32,7 @@ export const newsletterMenu = {
   supportedMessages: ['interactiveMessage', 'buttonsMessage', 'newsletterAdminInviteMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
-    const imgData = await imageManager.getMenuImage(7);
+    const imgData = (await imageManager.getMenuImage(7).catch(() => null)) || {};
 
     const textContent = buildTextMenu(menuData);
     const bodyText =

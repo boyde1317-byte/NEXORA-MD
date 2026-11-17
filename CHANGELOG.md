@@ -15,6 +15,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `buildFakeProductQuote` (same catalog-quote shape as buttonsCard: bot name,
   brand description, thumbnail) on every tier, instead of the audio quote or
   an image quote.
+- The five card styles (20 product, 14 order, 9 contact, 8 location, 7
+  newsletter) no longer lose the whole menu when the banner image cannot be
+  fetched: `imageManager.getMenuImage()` is guarded in each, so a CDN failure
+  degrades to a text-only card instead of throwing out of the renderer. A new
+  check renders all five against a stub socket and asserts each one rides on its
+  own card (`productMessage`, `orderMessage`, `contactMessage`,
+  `liveLocationMessage`, `newsletterAdminInviteMessage`).
 ### Removed
 - Menus 2 (payment), 3 (eventMessage), 10 (media), 11 (reaction) and 12
   (aiDynamic) are gone: unregistered and their type files removed. Owners who

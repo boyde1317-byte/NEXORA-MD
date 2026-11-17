@@ -30,7 +30,7 @@ export const orderMessageMenu = {
   supportedMessages: ['interactiveMessage', 'buttonsMessage', 'orderMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
-    const imgData = await imageManager.getMenuImage(14);
+    const imgData = (await imageManager.getMenuImage(14).catch(() => null)) || {};
 
     // Build richer body text with visual stat rows
     const statBlock = [
