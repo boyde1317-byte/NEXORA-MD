@@ -364,6 +364,44 @@ await check('command VIP surfaces build valid envelopes', async () => {
   return seen.join(', ');
 });
 
+await check('.credits opens the brand sheet, not a vCard bubble', async () => {
+  const { sendBrandSheet, renderSections } = await import(join(root, 'src/lib/brandSheet.js'));
+  assert(/» \*/.test(renderSections([{ heading: 'H', lines: ['a', 'b'] }])), 'section renderer lost its headings');
+
+  const creditsPlugin = (await import(join(root, 'src/plugins/general/credits.js'))).default;
+  const brandPlugin = (await import(join(root, 'src/plugins/general/brand.js'))).default;
+  const m = {
+    from: '120363000000000000@g.us',
+    key: { id: 'ORIG', remoteJid: '120363000000000000@g.us', participant: '1@s.whatsapp.net' },
+    message: { conversation: '.credits' },
+    reply: { error: async () => {} },
+  };
+
+  for (const [plugin, pill, section] of [
+    [creditsPlugin, 'View Credits', 'Developed By'],
+    [brandPlugin, 'View Brand Details', 'Who We Are'],
+  ]) {
+    const out = [];
+    const sock = {
+      user: { id: '233533416608:1@s.whatsapp.net' },
+      relayMessage: async (_jid, content) => { out.push(content); return { key: { id: 'X' } }; },
+      sendMessage: async (_jid, body) => { out.push(body); return { key: { id: 'Y' } }; },
+    };
+    await plugin.execute({ sock, m, args: [], prefix: '.' });
+
+    const im = out[0]?.interactiveMessage;
+    assert(im, `${plugin.name}: no interactiveMessage`);
+    const btn = im.nativeFlowMessage?.buttons?.[0];
+    assert(btn?.name === 'booking_confirmation', `${plugin.name}: not a booking sheet`);
+    const params = JSON.parse(btn.buttonParamsJson);
+    assert(params.display_text.includes(pill), `${plugin.name}: wrong pill label`);
+    assert(params.description.includes(section), `${plugin.name}: sheet body missing "${section}"`);
+    assert(params.phone_number.length >= 8 && !/^0+$/.test(params.phone_number), `${plugin.name}: sheet phone is bogus`);
+    assert(!/wa\.me\/0{6,}/.test(params.booking_url), `${plugin.name}: CTA points at a zeroed number`);
+  }
+  return 'credits + brand sheets';
+});
+
 await check('ping defaults to the in-chat html monitor', async () => {
   const ping = (await import(join(root, 'src/plugins/general/ping.js'))).default;
   const relayed = [];

@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- `src/lib/brandSheet.js` — the `.brand` full-screen sheet as a reusable
+  builder (`sendBrandSheet` with `sections: [{ heading, lines }]` and named CTA
+  presets). `.brand` and `.credits` both render through it, so `.credits` now
+  opens the same sheet with a green "Contact Dev" CTA instead of arriving as a
+  card with a cosmetic vCard bubble above it.
+
+### Fixed
+- Sheets no longer ship `wa.me/000000000000` when `PAIRING_PHONE` /
+  `OWNER_NUMBERS` are unset: the contact number resolves from the live
+  session's own JID first, then config, and an all-zero value is rejected.
+  `.brand`'s group link also falls back to the support group instead of the
+  zeroed wa.me URL.
+
 ### Changed
 - `.ping` defaults to the in-chat HTML server monitor (`GenAIaeacdsnwHtmlPrimitive`
   with live latency / memory / cpu hydrated into the vendored template) instead
