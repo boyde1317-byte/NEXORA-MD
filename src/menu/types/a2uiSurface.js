@@ -1,3 +1,4 @@
+import { greyCopy, DIM_BODY } from '../../lib/dimCard.js';
 import { A2, buildA2ui, sendA2uiSurface, surfaceToText } from '../../lib/a2uiKit.js';
 import { selectMenu } from '../../lib/interactiveKit.js';
 import { buildTextMenu } from '../formatter.js';
@@ -193,7 +194,10 @@ export const a2uiSurfaceMenu = {
       return await selectMenu(
         sock,
         jid,
-        { text: built.ok ? built.text : fallbackText, footer: `${menuData.botName || 'NEXORA MD'} • tap to browse` },
+        {
+          text: DIM_BODY,
+          footer: greyCopy(built.ok ? built.text : fallbackText, `${menuData.botName || 'NEXORA MD'} • tap to browse`).footer,
+        },
         '📚 Browse commands',
         buildMenuSections(menuData),
         MENU_LINKS,

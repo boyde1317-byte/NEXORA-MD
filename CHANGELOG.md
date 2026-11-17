@@ -52,6 +52,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   so the quoted card strip survives this path too.
 - Removed the leftover leading card message from those styles: the quote strip
   already carries the card, so sending it twice just repeated it.
+- Every menu style now paints its copy grey, menu 21's way. The menu text moves
+  out of `interactiveMessage`/`buttonsMessage` body into `footer.text`, which
+  WhatsApp renders small and grey, and the body carries a single zero-width space
+  so the bubble keeps its size. Long footers were verified on device to render in
+  full, so nothing is trimmed.
+  - New `src/lib/dimCard.js` (`greyCopy`, `DIM_BODY`): moves copy into the footer,
+    keeping any existing footer line below it.
+  - `sendInteractive`, `sendCtaCard`, `sendNativeFlow`, `sendButtonsCard` and
+    `sendCarousel` accept `dim: true` and do the move themselves, so a style only
+    passes the flag. a2uiSurface, commandDirectory and moonsonCard build their own
+    proto and call `greyCopy()` directly.
+  - Opted in: a2uiSurface, bottomSheet, buttonsCard, carousel, commandDirectory,
+    contact, documentInteractive, location, moonsonCard, nativeFlow, newsletter,
+    orderMessage, product, richCard. atlasMenu and galaxyMenu already did it.
+  - New release check fails any menu style that puts its copy back in the body.
 - `a2uiSurface` now claims id 16 instead of 20: it was registered under the same
   id as `product` and won the key, so `.menu 20` silently rendered the A2UI card
   and the product style was unreachable by number.

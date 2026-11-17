@@ -88,6 +88,7 @@ export const orderMessageMenu = {
     if (imagePayload) {
       try {
         return await baileysBridge.sendCtaCard(sock, m.from, {
+          dim: true,
           body:       bodyText,
           footer:     footerText,
           title:      `\u2726 ${toSmallcaps('Command Catalog')} \u2726`,

@@ -68,6 +68,7 @@ export const productMenu = {
     // renders as a highlighted offer banner at the top of the interactive card.
     try {
       return await baileysBridge.sendCtaCard(sock, m.from, {
+        dim: true,
         text:      bodyText,
         footer:    footerText,
         image:     imagePayload,

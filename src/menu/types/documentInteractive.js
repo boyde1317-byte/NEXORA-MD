@@ -68,6 +68,7 @@ export const documentInteractiveMenu = {
     if (capabilities.interactive && imagePayload) {
       try {
         return await baileysBridge.sendButtonsCard(sock, m.from, {
+          dim: true,
           body:       bodyText,
           footer:     footerText,
           title:      `\u2726 ${displayName(menuData.botName)} ${toSmallcaps('Menu')} \u2726`,
@@ -92,6 +93,7 @@ export const documentInteractiveMenu = {
     if (capabilities.nativeFlow) {
       try {
         return await baileysBridge.sendNativeFlow(sock, m.from, {
+          dim: true,
           text:    bodyText,
           footer:  footerText,
           image:   imagePayload,

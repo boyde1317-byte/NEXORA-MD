@@ -1,3 +1,4 @@
+import { greyCopy, DIM_BODY } from '../../lib/dimCard.js';
 import capabilities from '../../core/capabilities.js';
 import { Button } from '../../lib/moonsonKit.js';
 import { buildTextMenu } from '../formatter.js';
@@ -44,8 +45,9 @@ export const moonsonCardMenu = {
     const card = new Button(sock)
       .setTitle(`✦ ${displayName(menuData.botName)} ✦`)
       .setSubtitle(`${menuData.totalCommands} ${toSmallcaps('commands')} │ ${menuData.uptime}`)
-      .setBody(bodyText)
-      .setFooter(`${toSmallcaps('Powered by')} ${displayName(menuData.botName)}`)
+      // Grey copy: the menu text rides in the footer, the body stays blank.
+      .setBody(DIM_BODY)
+      .setFooter(greyCopy(bodyText, `${toSmallcaps('Powered by')} ${displayName(menuData.botName)}`).footer)
       .setContextInfo(buildAboutContextInfo({
         botName: menuData.botName,
         description: `${menuData.totalCommands} commands`,

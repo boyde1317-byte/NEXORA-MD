@@ -89,6 +89,7 @@ export const bottomSheetMenu = {
     if (capabilities.nativeFlow) {
       try {
         return await baileysBridge.sendNativeFlow(sock, m.from, {
+          dim: true,
           text:        bodyText,
           footer:      footerText,
           image:       imagePayload,
@@ -105,6 +106,7 @@ export const bottomSheetMenu = {
     if (capabilities.interactive && imagePayload) {
       try {
         return await baileysBridge.sendInteractive(sock, m.from, {
+          dim: true,
           body:    bodyText,
           footer:  footerText,
           header:  {
@@ -129,6 +131,7 @@ export const bottomSheetMenu = {
     if (capabilities.nativeFlow) {
       try {
         return await baileysBridge.sendNativeFlow(sock, m.from, {
+          dim: true,
           text:    bodyText,
           footer:  footerText,
           image:   imagePayload,

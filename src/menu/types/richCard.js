@@ -87,6 +87,7 @@ export const richCardMenu = {
     if (capabilities.nativeFlow) {
       try {
         return await baileysBridge.sendButtonsCard(sock, m.from, {
+          dim: true,
           body:      bodyText,
           footer:    footerText,
           title:     displayName(menuData.botName),
@@ -129,6 +130,7 @@ export const richCardMenu = {
     try {
       if (capabilities.nativeFlow) {
         return await baileysBridge.sendInteractive(sock, m.from, {
+          dim: true,
           body:    bodyText,
           footer:  footerText,
           header:  {

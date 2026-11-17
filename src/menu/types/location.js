@@ -65,6 +65,7 @@ export const locationMenu = {
     // ── Tier 1: CTA card (image + CTA rows) + live location badge ────
     try {
       return await baileysBridge.sendCtaCard(sock, m.from, {
+        dim: true,
         body:       menuText,
         footer:     footerText,
         title:      `✦ ${displayName(menuData.botName)} ✦`,

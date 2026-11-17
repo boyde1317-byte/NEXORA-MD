@@ -61,6 +61,7 @@ export const nativeFlowMenu = {
     if (capabilities.interactive && imagePayload) {
       try {
         return await baileysBridge.sendButtonsCard(sock, m.from, {
+          dim: true,
           body:       bodyText,
           footer:     footerText,
           title:      `\u{1F31F} ${displayName(menuData.botName)} \u2726`,
@@ -84,6 +85,7 @@ export const nativeFlowMenu = {
     // ── Tier 2: nativeFlow buttons with image header (simple declarative) ──
     try {
       return await baileysBridge.sendNativeFlow(sock, m.from, {
+        dim: true,
         text:    bodyText,
         footer:  footerText,
         title:   `\u{1F31F} ${displayName(menuData.botName)} \u2726`,

@@ -151,6 +151,7 @@ export const buttonsCardMenu = {
       ];
 
       return await baileysBridge.sendButtonsCard(sock, m.from, {
+        dim: true,
         body:       bodyText,
         footer:     footerText,
         title:      displayName,
@@ -214,6 +215,7 @@ export const buttonsCardMenu = {
       };
 
       return await baileysBridge.sendButtonsCard(sock, m.from, {
+        dim: true,
         body:       bodyText,
         footer:     footerText,
         title:      displayName,

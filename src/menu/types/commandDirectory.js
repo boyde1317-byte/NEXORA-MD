@@ -1,3 +1,4 @@
+import { greyCopy, DIM_BODY } from '../../lib/dimCard.js';
 /**
  * @file src/menu/types/commandDirectory.js
  *
@@ -64,10 +65,10 @@ export const commandDirectoryMenu = {
         ].join('\n');
 
         return await selectMenu(sock, m.from, {
-          text:     bodyText,
+          text:     DIM_BODY,
           title:    `✦ ${toSmallcaps('Command Directory')} ✦`,
           subtitle: `${toSmallcaps('categories')} → ${toSmallcaps('commands')} → ${toSmallcaps('details')}`,
-          footer:   `${displayName(menuData.botName)} • ${toSmallcaps('tap a category to browse')}`,
+          footer:   greyCopy(bodyText, `${displayName(menuData.botName)} • ${toSmallcaps('tap a category to browse')}`).footer,
         }, `📂 ${toSmallcaps('Browse Categories')}`, [
           { title: toSmallcaps('Categories'), rows },
         ], [

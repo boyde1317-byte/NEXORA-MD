@@ -80,6 +80,7 @@ export const newsletterMenu = {
     if (imagePayload) {
       try {
         return await baileysBridge.sendCtaCard(sock, m.from, {
+          dim: true,
           body:       bodyText,
           footer:     footerText,
           title:      `\u{1F4E1} ${toSmallcaps('Official Channel')} \u{1F4E1}`,

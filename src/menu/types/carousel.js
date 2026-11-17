@@ -82,6 +82,7 @@ export const carouselMenu = {
       });
 
       return await baileysBridge.sendCarousel(sock, m.from, {
+        dim:   true,
         text:  headerText,
         cards,
       }, { quoted: menuData.audioQuote || m });
@@ -102,6 +103,7 @@ export const carouselMenu = {
         catButtons.push({ text: `\u{1F4CB} ${toSmallcaps('View Menu')}`, id: `${menuData.prefix}menu` });
       }
       return await baileysBridge.sendNativeFlow(sock, m.from, {
+        dim: true,
         text:    `${headerText}\n\n` + buildTextMenu(menuData),
         footer:  `${displayName(menuData.botName)} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`,
         title:   '\u{1F3A0} ' + toSmallcaps('COMMAND CATEGORIES'),

@@ -69,6 +69,7 @@ export const contactMenu = {
     // ── Tier 1: CTA card (image + CTA rows) + contact badge ──────────
     try {
       return await baileysBridge.sendCtaCard(sock, m.from, {
+        dim: true,
         body:       menuText,
         footer:     footerText,
         title:      `✦ ${displayName(menuData.botName)} ✦`,

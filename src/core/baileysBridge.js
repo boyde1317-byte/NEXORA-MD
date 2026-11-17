@@ -211,6 +211,7 @@ function _formatV2Sections(sections, outSections) {
   }
   return text.trim();
 }
+import { greyCopy } from '../lib/dimCard.js';
 import { randomBytes, randomUUID } from 'node:crypto';
 
 /**
@@ -445,7 +446,10 @@ export const baileysBridge = {
    * @param {string}  [options.businessOwnerJid]    Shorthand: sets businessMessageForwardInfo
    * @param {boolean} [options.aiMessage]           Add supportPayload → Meta AI badge
    */
-  async sendInteractive(sock, jid, { body, footer, header, buttons, contextInfo }, options = {}) {
+  async sendInteractive(sock, jid, { body, footer, header, buttons, contextInfo, dim }, options = {}) {
+    // dim: paint the copy small and grey (menu 21's look) — body goes empty,
+    // the text moves into footer.text.
+    if (dim) ({ body, footer } = greyCopy(body, footer));
     // ── Header media upload ───────────────────────────────────────────────
     let headerImageMessage = header?.imageMessage;
     if (!headerImageMessage && header?.image) {
@@ -525,8 +529,9 @@ export const baileysBridge = {
    * @param {object} [options]  sendMessage/relayMessage options (quoted, businessOwnerJid, ...)
    */
   async sendCtaCard(sock, jid, {
-    body, text, footer, title, subtitle, thumbnail, image, buttons, contextInfo,
+    body, text, footer, title, subtitle, thumbnail, image, buttons, contextInfo, dim,
   } = {}, options = {}) {
+    if (dim) ({ body, footer } = greyCopy(body || text, footer));
     const media = image || thumbnail;
 
     const toCta = (btn) => {
@@ -737,11 +742,13 @@ export const baileysBridge = {
    * Sends an advanced Native Flow interactive message with quick replies, buttons, urls
    */
   async sendNativeFlow(sock, jid, {
+    dim,
     text, footer, title, image, video,
     buttons,
     offerText, offerUrl, offerCode, offerExpiry,
     optionText, optionTitle,
   }, options = {}) {
+    if (dim) ({ body: text, footer } = greyCopy(text, footer));
     // Route through sock.sendMessage → generateWAMessageContent (nativeFlow path).
     //
     // Button format — use the fork's simple declarative style (prepareNativeFlowButtons).
@@ -1186,8 +1193,10 @@ export const baileysBridge = {
    * @param {object} [options]           sendMessage/relayMessage options (quoted, etc.)
    */
   async sendButtonsCard(sock, jid, {
+    dim,
     body, footer, title, subtitle, thumbnail, buttons, contextInfo,
   }, options = {}) {
+    if (dim) ({ body, footer } = greyCopy(body, footer));
     // ── Fetch + resize thumbnail to 300x300 (like BIGST4CK's NIXCODE builder) ──
     let jpegThumbnail = null;
     if (thumbnail) {
@@ -1263,7 +1272,8 @@ export const baileysBridge = {
     return await this.relayMessage(sock, jid, msgContent, options);
   },
 
-  async sendCarousel(sock, jid, { text, footer, cards }, options = {}) {
+  async sendCarousel(sock, jid, { text, footer, cards, dim }, options = {}) {
+    if (dim) ({ body: text, footer } = greyCopy(text, footer));
     // FORK QUIRK (lib/Utils/messages.js): the carousel branch is selected via
     // `hasNonNullishProperty(message, 'cards')` — it checks for a *top-level*
     // `cards` array, not a nested `carousel.cards`. Wrapping cards in an outer

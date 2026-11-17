@@ -1240,6 +1240,31 @@ await check('every card style rides on its waUtils card', async () => {
   return '5 card styles ride CTA interactiveMessage cards';
 });
 
+await check('every menu style keeps its copy in the grey footer', async () => {
+  // Menu 21's look, now the house style: the copy sits in footer.text, which
+  // WhatsApp paints small and grey, and the body is a zero-width space. Long
+  // footers render whole on device, so nothing is trimmed. Menu 19 and 21 are
+  // the two that already did this by hand; every other style has to opt in.
+  const dir = join(root, 'src/menu/types');
+  const handrolled = ['galaxyMenu.js', 'atlasMenu.js'];
+  const styles = readdirSync(dir).filter((f) => f.endsWith('.js'));
+  let checked = 0;
+  for (const file of styles) {
+    const src = await readFile(join(dir, file), 'utf8');
+    if (!src.includes('renderer')) continue;
+    if (handrolled.includes(file)) {
+      assert(src.includes('footer'), `${file} lost its footer copy`);
+      checked += 1;
+      continue;
+    }
+    const grey = src.includes('dim: true') || src.includes('greyCopy(') || src.includes('DIM_BODY');
+    assert(grey, `${file} still paints its menu copy in the body instead of the grey footer`);
+    checked += 1;
+  }
+  assert(checked >= 15, `only ${checked} menu styles were checked`);
+  return `${checked} styles grey`;
+});
+
 await check('greeting product card carries the menu banner', () => {
   const banner = Buffer.from([0xff, 0xd8, 0xff, 0xdb]);
   const card = greetingCard.buildGreetingProductCard({
