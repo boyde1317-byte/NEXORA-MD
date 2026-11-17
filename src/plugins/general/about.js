@@ -35,6 +35,8 @@ import { client } from '../../core/client.js';
 import { formatUptime } from '../../lib/utils.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
 import { sendInfoCard } from '../../lib/infoCard.js';
+import { sendAboutRich } from '../../lib/vipSurfaces.js';
+import capabilities from '../../core/capabilities.js';
 import { buildNavigationButton } from '../../menu/types/buttonsCard.js';
 import brand from '../../../config/brand.js';
 import { config } from '../../../config/index.js';
@@ -173,6 +175,23 @@ export default {
       { displayText: '\u2665 Store', id: `${p}shop`, type: 1 },
       buildNavigationButton(p),
     ];
+
+    // ── VIP rich card first: this command only displays, so the toast-only
+    // CTAs cost nothing, and the card reads better than a button card ───────
+    if (capabilities.richResponse !== false) {
+      try {
+        await sendAboutRich(sock, m.from, {
+          markdown: footerText,
+          body: bodyText,
+          footer: `${d.name || brand.name} v${brand.version}`,
+          status: serverStatus ? `🟢 ${serverStatus}` : '🟢 Online',
+          quoted: m,
+        });
+        return;
+      } catch (err) {
+        console.warn('[about] VIP card failed, using the info card:', err.message);
+      }
+    }
 
     // ── Send info card (product quote + buttonsCard + tiers) ───────────────
     return await sendInfoCard(sock, m.from, {

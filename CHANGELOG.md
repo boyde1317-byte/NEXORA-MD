@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- VIP unified-response cards on the commands that fit: `.stats`, `.about` and
+  `.credits` now send the `.vipcard` envelope (product card + markdown + CTA
+  shelf + link chips) via `src/lib/vipSurfaces.js`, each falling back to its
+  previous card if the envelope fails. Greetings stay on the plain product
+  card with the menu banner, as before.
+
+### Added
 - Welcome and goodbye greetings can render as a WhatsApp **product card**
   (style 5, now the default): the menu banner as the card image, the greeting
   copy as the description, the group and member number in body and footer.

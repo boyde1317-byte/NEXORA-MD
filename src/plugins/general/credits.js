@@ -11,6 +11,7 @@
  */
 
 import { baileysBridge } from '../../core/baileysBridge.js';
+import { sendCreditsRich } from '../../lib/vipSurfaces.js';
 import { capabilities } from '../../core/capabilities.js';
 import { buildNavigationButton } from '../../menu/types/buttonsCard.js';
 import { buildEnrichedContextInfo } from '../../lib/enrichContext.js';
@@ -52,6 +53,20 @@ export default {
       { displayText: '\u2139\uFE0F About',     id: `${p}about`, type: 1 },
       buildNavigationButton(p),
     ];
+
+    // Tier 0: VIP rich card — this command only displays, so the toast-only
+    // CTAs inside the envelope cost nothing.
+    try {
+      await sendCreditsRich(sock, m.from, {
+        markdown: credits.getFullCredits(),
+        title: d.name || brand.name,
+        subtitle: d.tagline || 'The people behind the bot',
+        quoted: m,
+      });
+      return;
+    } catch (err) {
+      console.warn('[credits] VIP card failed, using the button card:', err.message);
+    }
 
     // Tier 1: sendButtonsCard
     if (capabilities.nativeFlow) {

@@ -11,6 +11,7 @@ import { formatUptime} from '../../lib/utils.js';
 import brand from '../../../config/brand.js';
 import capabilities from '../../core/capabilities.js';
 import { baileysBridge } from '../../core/baileysBridge.js';
+import { sendStatsRich } from '../../lib/vipSurfaces.js';
 
 
 import { buildEnrichedContextInfo} from '../../lib/enrichContext.js';
@@ -104,6 +105,38 @@ export default {
         ],
       },
     ];
+
+    // ── VIP tier: unified-response card (product card + markdown + shelf) ──
+    // Display-only command, so the toast-only 3PExt CTAs cost nothing here.
+    if (capabilities.richResponse) {
+      try {
+        const top = topCommands
+          .map(([name, s2], i) => `${i + 1}. *${name}* — ${s2.executions} uses${s2.errors > 0 ? ` (${s2.errors} err)` : ''}`)
+          .join('\n');
+        const markdown =
+          `🟢 *Status:* ${connected ? 'Online' : 'Disconnected'}\n` +
+          `🤖 *Bot:* ${botName} (${botNumber})\n` +
+          `⏱️ *Uptime:* ${uptime}\n\n` +
+          `🧠 *Heap:* ${Math.round(mem.heapUsed / 1024 / 1024)} / ${Math.round(mem.heapTotal / 1024 / 1024)} MB (${heapPct}%)\n` +
+          `📈 *RSS:* ${rssMb} MB\n\n` +
+          `🧩 *Plugins:* ${pluginsLoaded} commands, ${aliasesCount} aliases\n` +
+          `⚙️ *Executions:* ${totalExecutions.toLocaleString()} · errors: ${totalErrors.toLocaleString()}\n` +
+          (top ? `\n🏆 *Top commands*\n${top}\n` : '') +
+          `\n👥 *Users:* ${users.toLocaleString()} · *Groups:* ${groups.toLocaleString()}\n` +
+          `🚫 *Banned:* ${bannedUsers} · 💎 *Premium:* ${premiumUsers}\n\n` +
+          `📦 ${brand.name} v${brand.version} · ${process.platform} ${process.arch}`;
+
+        await sendStatsRich(sock, m.from, {
+          markdown,
+          headline: connected ? '✅ Online' : '❌ Offline',
+          title: `${brand.name} Statistics`,
+          quoted: m,
+        });
+        return;
+      } catch (err) {
+        console.warn('[stats] VIP card failed, trying the table:', err.message);
+      }
+    }
 
     // ── Rich tier: native V2 table (GenATableUXPrimitive — sendRichTable) ─
     if (capabilities.richResponse) {

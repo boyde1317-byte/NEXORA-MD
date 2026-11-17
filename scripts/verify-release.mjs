@@ -339,6 +339,31 @@ await check('A2UI menu picker carries every category', () => {
   return `${sections.length} sections, ${sections.reduce((n, s2) => n + s2.rows.length, 0)} rows, ${menuModule.MENU_LINKS.length} links`;
 });
 
+await check('command VIP surfaces build valid envelopes', async () => {
+  const sent = [];
+  const fakeSock = { user: { id: '1@s.whatsapp.net' }, relayMessage: async (j, m) => { sent.push(m); return 'OK'; } };
+  const surfaces = await import(join(root, 'src/lib/vipSurfaces.js'));
+
+  await surfaces.sendStatsRich(fakeSock, 'g@g.us', { markdown: '🟢 *Status:* Online', headline: '✅ Online' });
+  await surfaces.sendAboutRich(fakeSock, 'g@g.us', { markdown: '*» USER*', body: 'About', status: '🟢 Online' });
+  await surfaces.sendCreditsRich(fakeSock, 'g@g.us', { markdown: '💻 *Developer:* x' });
+
+  assert(sent.length === 3, `expected 3 cards, relayed ${sent.length}`);
+  const seen = [];
+  for (const msg of sent) {
+    const env = msg.botForwardedMessage?.message?.richResponseMessage;
+    assert(env, 'a command card is not a richResponseMessage');
+    assert(msg.messageContextInfo?.messageSecret, 'a command card is missing messageSecret');
+    const decoded = JSON.parse(Buffer.from(env.unifiedResponse.data, 'base64').toString());
+    const first = decoded.sections[0].view_model.primitive;
+    assert(first.__typename === 'GenAIProductItemCardPrimitive', 'first section is not the product card');
+    assert(first.image?.url, 'product card has no image');
+    assert(decoded.sections.some((s2) => s2.view_model.primitive?.__typename === 'GenAIMarkdownTextUXPrimitive'), 'no markdown body');
+    seen.push(msg.messageContextInfo.botMetadata.messageDisclaimerText);
+  }
+  return seen.join(', ');
+});
+
 await check('greeting product card carries the menu banner', () => {
   const banner = Buffer.from([0xff, 0xd8, 0xff, 0xdb]);
   const card = greetingCard.buildGreetingProductCard({
