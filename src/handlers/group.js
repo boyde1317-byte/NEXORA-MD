@@ -3,6 +3,7 @@ import { db } from '../database/db.js';
 import { getLinkedBotPhones } from '../core/sessionManager.js';
 import { isBotName } from '../lib/botDetector.js';
 import { mixedCard } from '../lib/interactiveKit.js';
+import { sendIntroRich } from '../lib/richCards.js';
 import capabilities from '../core/capabilities.js';
 import { mentionLabel, resolveMentionJid } from '../lib/mentionJid.js';
 
@@ -59,13 +60,21 @@ export async function handleGroupParticipantsUpdate(update, sock) {
               `• \`.remind 30m <text>\` — reminders that survive restarts\n\n` +
               `_Group admins can tune everything with \`.groupsettings\`._`;
             try {
-              if (capabilities.richResponse) {
-                await mixedCard(sock, groupJid, { text: intro, footer: 'NEXORA-MD' }, [
-                  { kind: 'action', label: '📖 Menu', cmd: '.menu' },
-                  { kind: 'action', label: '🛡️ Protection Hub', cmd: '.groupsettings' },
-                ]);
-              } else {
-                await sock.sendMessage(groupJid, { text: intro });
+              // Rich unified-response card first (product card + tour + shelf);
+              // the button card and plain text stay as fallbacks so the intro
+              // is never lost.
+              try {
+                await sendIntroRich(sock, groupJid, { text: intro, groupName: meta?.subject || 'this group' });
+              } catch (err) {
+                console.warn('[GROUP] intro rich card failed, using button card:', err.message);
+                if (capabilities.richResponse) {
+                  await mixedCard(sock, groupJid, { text: intro, footer: 'NEXORA-MD' }, [
+                    { kind: 'action', label: '📖 Menu', cmd: '.menu' },
+                    { kind: 'action', label: '🛡️ Protection Hub', cmd: '.groupsettings' },
+                  ]);
+                } else {
+                  await sock.sendMessage(groupJid, { text: intro });
+                }
               }
             } catch (_) {
               await sock.sendMessage(groupJid, { text: intro }).catch(() => {});
