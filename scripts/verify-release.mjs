@@ -1241,6 +1241,33 @@ await check('every card style rides on its waUtils card', async () => {
   return '5 card styles ride CTA interactiveMessage cards';
 });
 
+await check('menu 24 builds the receipt card', async () => {
+  // The YONO-style card: one interactiveMessage, a review_and_pay button, and the
+  // whole listing in the footer. Checked pure so no socket is involved.
+  const { buildReceiptCard, buildReceiptListing } = await import(join(root, 'src/menu/types/yonoMenu.js'));
+  const categories = { general: [{ name: 'menu' }, { name: 'ping' }], games: [{ name: 'game' }] };
+
+  const listed = buildReceiptListing(categories);
+  assert(listed.total === 3, `listing counted ${listed.total} commands, expected 3`);
+  assert(listed.footer.includes('┌─────┤⁺₊⊹ GENERAL ⊹₊⁺├─────┘'), 'category header missing from the listing');
+  assert(listed.footer.includes("❖> '.menu"), 'commands missing from the listing');
+
+  const card = buildReceiptCard({ categories, botName: 'NEXORA MD', ownerNumber: '233533416608', ownerUsername: 'moonson3' });
+  const im = card.interactiveMessage;
+  assert(im.body.text.includes('Categories'), 'receipt body lost its title');
+  assert(im.footer.text.includes("❖> '.ping"), 'receipt footer lost the listing');
+  assert(im.nativeFlowMessage.buttons[0].name === 'review_and_pay', 'receipt button is not review_and_pay');
+  const params = JSON.parse(im.nativeFlowMessage.buttons[0].buttonParamsJson);
+  assert(params.total_amount.value === 0, 'receipt is not a zero-value request');
+  const account = params.payment_settings[0].payment_account;
+  assert(account.institution_name.includes('Total: 3 Commands'), 'command total missing from the account block');
+  assert(account.beneficiary_name.includes('@moonson3'), 'beneficiary is not the owner username');
+  assert(!/wa\.me\/\d/.test(account.beneficiary_name), 'beneficiary prints a phone number');
+  assert(card.messageContextInfo.messageSecret.length === 32, 'messageSecret is not 32 bytes');
+  assert(card.interactiveMessage.contextInfo.stanzaId.startsWith('BAE5'), 'quote key is not synthetic');
+  return 'receipt card wired';
+});
+
 await check('akoya engine builds every game from one runtime', async () => {
   // The Akoya port vendors a single runtime plus a config per game, so a broken
   // config or a leftover {{PLACEHOLDER}} only shows up at send time without this.
@@ -1283,7 +1310,7 @@ await check('every menu style keeps its copy in the grey footer', async () => {
   // footers render whole on device, so nothing is trimmed. Menu 19 and 21 are
   // the two that already did this by hand; every other style has to opt in.
   const dir = join(root, 'src/menu/types');
-  const handrolled = ['galaxyMenu.js', 'atlasMenu.js'];
+  const handrolled = ['galaxyMenu.js', 'atlasMenu.js', 'yonoMenu.js'];
   const styles = readdirSync(dir).filter((f) => f.endsWith('.js'));
   let checked = 0;
   for (const file of styles) {

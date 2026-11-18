@@ -74,6 +74,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   pair 1.5x, at a 10-credit bet with 100 to start. Credits persist per device,
   a broke player is refilled to 100, and tap or space spins (tapping mid-spin
   snaps it to the result). Registry is now 23 games.
+- Menu 24 (`yonoReceipt`) is the YONO BOT receipt card, wired in on request so
+  it can be judged on a real device: one interactiveMessage whose only button is
+  `review_and_pay`, the full box-drawn command listing in `footer.text`, and the
+  command count in the payment account's institution name. Deliberate departures
+  from the original: fresh 32-byte messageSecret per message, owner username as
+  the beneficiary instead of the phone number, a synthetic BAE5 quote key instead
+  of an unresolvable stanza, and a plain-text fallback if the sheet is refused.
+  Delete `src/menu/types/yonoMenu.js` and its two lines in `src/menu/index.js` to
+  back it out; nothing else depends on it.
 - Every menu style now paints its copy grey, menu 21's way. The menu text moves
   out of `interactiveMessage`/`buttonsMessage` body into `footer.text`, which
   WhatsApp renders small and grey, and the body carries a single zero-width space
