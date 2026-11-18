@@ -69,6 +69,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   username lives in `config/owner.js` as `ownerUsername` (env `OWNER_USERNAME`,
   default `moonson3`), and the release check fails if the card prints a numeric
   wa.me link again.
+- New game: 777 Slots (`slots`), a three-reel, one-payline machine on the Akoya
+  engine. Middle row pays: three sevens 25x, any triple 8x, two sevens 4x, any
+  pair 1.5x, at a 10-credit bet with 100 to start. Credits persist per device,
+  a broke player is refilled to 100, and tap or space spins (tapping mid-spin
+  snaps it to the result). Registry is now 23 games.
 - Every menu style now paints its copy grey, menu 21's way. The menu text moves
   out of `interactiveMessage`/`buttonsMessage` body into `footer.text`, which
   WhatsApp renders small and grey, and the body carries a single zero-width space

@@ -667,6 +667,115 @@ input{flex:2;padding:11px;border-radius:11px;border:1px solid rgba(255,255,255,.
   };
 
   // ─────────── shell ───────────
+  // slots: three reels, one payline, chase the three sevens
+  M.slots = {
+    init: function (s) {
+      s.bet = G.bet || 10;
+      s.credits = G.credits || 100;
+      try {
+        var saved = parseInt(localStorage.getItem('nexora:slots') || '', 10);
+        if (isFinite(saved)) s.credits = saved;
+      } catch (e) {}
+      s.sym = ['7\uFE0F\u20E3', '\uD83D\uDC8E', '\uD83D\uDD14', '\u2B50', '\uD83C\uDF52', '\uD83C\uDF52', '\uD83C\uDF4B', '\uD83C\uDF4B', '\uD83C\uDF40', '\uD83C\uDF40'];
+      s.reel = 72;
+      s.top = 20;
+      s.strip = [M.slots.pick(), M.slots.pick(), M.slots.pick()];
+      s.final = null;
+      s.spinning = false;
+      s.t = 0;
+      s.stop = [0.7, 1.05, 1.4];
+      s.msg = 'Tap SPIN to play';
+      s.win = 0;
+      s.flash = 0;
+      s.btn = { x: W / 2 - 84, y: s.top + s.reel * 3 + 12, w: 168, h: 44 };
+      writeScore(s.credits);
+      saveBest(s.credits);
+    },
+    pick: function () {
+      return [Math.floor(Math.random() * 10), Math.floor(Math.random() * 10), Math.floor(Math.random() * 10)];
+    },
+    spin: function (s) {
+      if (s.spinning) return;
+      if (s.credits < s.bet) { s.credits = 100; s.msg = 'Refilled to 100'; }
+      s.credits -= s.bet;
+      s.final = [M.slots.pick(), M.slots.pick(), M.slots.pick()];
+      s.spinning = true;
+      s.t = 0;
+      s.win = 0;
+      s.msg = 'Spinning\u2026';
+      writeScore(s.credits);
+    },
+    settle: function (s) {
+      s.spinning = false;
+      s.strip = s.final;
+      var a = s.sym[s.final[0][1]], b = s.sym[s.final[1][1]], c = s.sym[s.final[2][1]];
+      var sevens = [a, b, c].filter(function (x) { return x === s.sym[0]; }).length;
+      var mult = 0;
+      if (sevens === 3) mult = 25;
+      else if (a === b && b === c) mult = 8;
+      else if (sevens === 2) mult = 4;
+      else if (a === b || b === c || a === c) mult = 1.5;
+      if (mult > 0) {
+        s.win = Math.round(s.bet * mult);
+        s.credits += s.win;
+        s.msg = (mult >= 25 ? '\uD83C\uDF89 777 JACKPOT' : mult >= 8 ? '\uD83C\uDF89 Triple' : 'Win') + ' +' + s.win;
+        s.flash = 1;
+        beep();
+      } else {
+        s.win = 0;
+        s.msg = 'No line, spin again';
+      }
+      if (s.credits < s.bet) s.credits = 100;
+      try { localStorage.setItem('nexora:slots', String(s.credits)); } catch (e) {}
+      writeScore(s.credits);
+      saveBest(s.credits);
+    },
+    step: function (s, dt) {
+      if (s.flash > 0) s.flash = Math.max(0, s.flash - dt);
+      if (!s.spinning) return;
+      s.t += dt;
+      if (s.t >= s.stop[2]) M.slots.settle(s);
+    },
+    draw: function (s) {
+      var reelW = 112, gapx = 16, x0 = (W - (reelW * 3 + gapx * 2)) / 2, cellH = s.reel;
+      for (var i = 0; i < 3; i++) {
+        var rx = x0 + i * (reelW + gapx);
+        ctx.fillStyle = 'rgba(255,255,255,.04)';
+        ctx.fillRect(rx, s.top, reelW, cellH * 3);
+        ctx.strokeStyle = 'rgba(127,178,255,.22)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(rx + 0.5, s.top + 0.5, reelW - 1, cellH * 3 - 1);
+        var face = (s.spinning && s.t < s.stop[i]) ? M.slots.pick() : ((s.final && !s.spinning) || s.spinning ? s.final[i] : s.strip[i]);
+        for (var r = 0; r < 3; r++) {
+          ctx.font = '32px system-ui';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#e8eefc';
+          ctx.fillText(s.sym[face[r]], rx + reelW / 2, s.top + cellH * r + cellH / 2 + 11);
+        }
+      }
+      var midY = s.top + cellH * 1.5;
+      ctx.strokeStyle = s.flash > 0 ? accent : 'rgba(245,197,66,.75)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x0 - 8, midY); ctx.lineTo(x0 + reelW * 3 + gapx * 2 + 8, midY); ctx.stroke();
+      var b = s.btn;
+      ctx.fillStyle = s.spinning ? 'rgba(255,255,255,.10)' : accent;
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.fillStyle = s.spinning ? '#8fa6c9' : '#08111f';
+      ctx.font = '800 17px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(s.spinning ? 'SPINNING' : 'SPIN', b.x + b.w / 2, b.y + b.h / 2 + 6);
+      ctx.fillStyle = '#8fa6c9';
+      ctx.font = '600 12px system-ui';
+      ctx.fillText(s.msg + '  \u00B7  bet ' + s.bet, W / 2, H - 6);
+      ctx.textAlign = 'left';
+    },
+    tap: function (s) {
+      if (s.spinning) s.t = Math.max(s.t, s.stop[2] - 0.05);
+      else M.slots.spin(s);
+      return true;
+    }
+  };
+
   var mech = M[G.mech];
   if (!mech) { document.body.innerHTML = '<p style="color:#fff;font:14px system-ui">Unknown game.</p>'; return; }
   var state = {};

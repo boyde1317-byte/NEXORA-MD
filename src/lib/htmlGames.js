@@ -122,6 +122,7 @@ export const HTML_GAMES = {
   "snake": { file: 'akoya-games.json', title: "Snake 🐍", desc: "Swipe to steer, eat the apple", engine: true },
   "sonic": { file: 'akoya-games.json', title: "Sonic Sprint 🦔", desc: "Endless runner, tap to jump", engine: true },
   "stickman": { file: 'akoya-games.json', title: "Stickman Run 🏃", desc: "One tap, endless rooftops", engine: true },
+  slots:        { file: 'akoya-games.json', title: '777 Slots 🎰', desc: 'Three reels, one payline, chase the sevens', engine: true },
   "tebakangka": { file: 'akoya-games.json', title: "Guess the Number 🎲", desc: "1 to 100 in seven tries", engine: true, alias: "guess" },
   "tetris": { file: 'akoya-games.json', title: "Tetris 🟦", desc: "Stack, rotate, clear a row", engine: true },
 };

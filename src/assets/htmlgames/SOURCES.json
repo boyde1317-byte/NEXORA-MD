@@ -32,7 +32,7 @@
       "rebranded": true
     },
     "calc.html": {
-      "source": "inline payload string in Moongod.js (case \"calc\") \u2014 no remote file; source of truth is the payload literal itself",
+      "source": "inline payload string in Moongod.js (case \"calc\") — no remote file; source of truth is the payload literal itself",
       "localSha256": "fb00f3da49b2a510687584f23752a1632fe91fd84c42846161c5050ca29a072a",
       "upstreamSha256": "87c8abfea3dff3012bbe03606a77a4586e1f445b9af45d8545a4d4e8fdbfc9ae",
       "rebranded": true
@@ -51,12 +51,12 @@
     },
     "akoya-runtime.html": {
       "source": "private:github:boyde1317-byte/Akoya-MD@8227ca2a7320faf77042de6d8c619465b59ddc8d#assets/htmlgames",
-      "localSha256": "3e2300a86a2618389130ec047d655d289847d8a4754bf5cb741d7fb26e191ec9",
-      "note": "Shared Akoya engine runtime. Upstream: every file in that repo assets/htmlgames/ is this same document with a different config, so it was lifted once, rebranded, and parameterised."
+      "localSha256": "77dafaf6e7019fb6b514a230ce8ade4b474ea3bdae78fefe60e0f40c59cd66c3",
+      "note": "NEXORA divergence from Akoya-MD 8227ca2a7320: M.slots (777 slots) added locally, accents applied to canvas drawing. Upstream hash no longer applies; local pin only."
     },
     "akoya-games.json": {
       "source": "private:github:boyde1317-byte/Akoya-MD@8227ca2a7320faf77042de6d8c619465b59ddc8d#assets/htmlgames",
-      "localSha256": "32c5b54c410c800ae46902b39969fb8558d19a55b6836d512c30b61de89733ee",
+      "localSha256": "6e73ee0999ddb70799246a39fe5257f3c81fa17e1d65fae574d9c6e3d489ba20",
       "note": "One config per Akoya game (name, title, description, mech, accent, mechanic parameters). The 15 games differ only in this block."
     }
   }

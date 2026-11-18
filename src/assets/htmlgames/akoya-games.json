@@ -134,5 +134,14 @@
     "desc": "Stack, rotate, clear a row",
     "mech": "tetrix",
     "accent": "#3b82f6"
+  },
+  "slots": {
+    "name": "slots",
+    "title": "777 Slots 🎰",
+    "desc": "Three reels, one payline, chase the sevens",
+    "mech": "slots",
+    "accent": "#f5c542",
+    "bet": 10,
+    "credits": 100
   }
 }

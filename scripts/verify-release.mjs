@@ -1246,7 +1246,7 @@ await check('akoya engine builds every game from one runtime', async () => {
   // config or a leftover {{PLACEHOLDER}} only shows up at send time without this.
   const mod = await import(join(root, 'src/lib/htmlGames.js'));
   const engine = Object.entries(mod.HTML_GAMES).filter(([, m]) => m.engine);
-  assert(engine.length === 15, `${engine.length} akoya games registered, expected 15`);
+  assert(engine.length === 16, `${engine.length} akoya games registered, expected 16`);
   const mechs = new Set();
   for (const [key, meta] of engine) {
     const html = mod.buildAkoyaPayload(key);
