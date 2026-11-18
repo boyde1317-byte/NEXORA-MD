@@ -52,6 +52,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   so the quoted card strip survives this path too.
 - Removed the leftover leading card message from those styles: the quote strip
   already carries the card, so sending it twice just repeated it.
+- 15 Akoya-engine games ported in, as one runtime plus configs: `.game` now lists
+  22 payloads (dino, chess, mbim, plane, ttc, calc, monitor plus racing, arrow,
+  sonic, stickman, geometry, flappy, snake, snake-rimba, tetris, mahjong,
+  memory-match, puzzle, angrybirds, mortal, tebakangka). The upstream ships 15
+  near-identical ~30 KB documents, each the same 28.6 KB engine with a different
+  `window.__GAME` block, so the engine is vendored once (`akoya-runtime.html`)
+  and rendered per game from `akoya-games.json`: ~31 KB of source instead of
+  ~450 KB, and 10 real mechanics (dodge, runner, snake, pairs, flap, tetrix,
+  slide, guess, sling, duel). Accent colours are now applied in the canvas too,
+  which the upstream only did in CSS. Both files are pinned in SOURCES.json with
+  the private Akoya-MD commit they came from, and a release check fails on an
+  unfilled placeholder, an unknown mechanic, or any network call in a payload.
 - Menu 21's DM row prints the owner's WhatsApp username (`wa.me/@moonson3`)
   instead of the phone number, so the card no longer exposes the number. The
   username lives in `config/owner.js` as `ownerUsername` (env `OWNER_USERNAME`,

@@ -63,6 +63,38 @@ function loadPayload(file) {
   return payload;
 }
 
+// ── Akoya-engine games ──────────────────────────────────────────────────────
+// One shared runtime plus a config per game. The payload is assembled on send
+// instead of being vendored fifteen times: ~31 KB of source for 15 games rather
+// than ~450 KB of near-identical documents.
+const AKOYA_FILES = { template: 'akoya-runtime.html', configs: 'akoya-games.json' };
+let akoyaTemplateCache;
+let akoyaConfigCache;
+
+function loadAkoya() {
+  if (!akoyaTemplateCache) {
+    akoyaTemplateCache = fs.readFileSync(path.join(GAMES_DIR, AKOYA_FILES.template), 'utf-8');
+  }
+  if (!akoyaConfigCache) {
+    akoyaConfigCache = JSON.parse(fs.readFileSync(path.join(GAMES_DIR, AKOYA_FILES.configs), 'utf-8'));
+  }
+  return { template: akoyaTemplateCache, configs: akoyaConfigCache };
+}
+
+/**
+ * Assemble one Akoya-engine game: the shared runtime with its own config, title
+ * and accent colour dropped in. Throws when the key has no config.
+ */
+export function buildAkoyaPayload(key) {
+  const { template, configs } = loadAkoya();
+  const cfg = configs[key];
+  if (!cfg) throw new Error(`no akoya config for "${key}"`);
+  return template
+    .replace('{{CONFIG}}', JSON.stringify(cfg))
+    .replaceAll('{{TITLE}}', cfg.title)
+    .replaceAll('{{ACCENT}}', cfg.accent || '#2f6bff');
+}
+
 /**
  * Registry of vendored HTML payloads.
  * `template: true` → payload contains %VARS% replaced with live host stats.
@@ -75,6 +107,23 @@ export const HTML_GAMES = {
   ttc:     { file: 'ttc.html',     title: 'Tic-Tac-Toe Premium ❌⭕', desc: 'Classic 3-in-a-row' },
   calc:    { file: 'calc.html',    title: 'NEXORA Calc 🧮',       desc: 'Full calculator in chat' },
   monitor: { file: 'monitor.html', title: 'Server Monitor 📡',    desc: 'Live bot host stats', template: true, alias: 'serverinfo' },
+
+  // Akoya engine — one runtime, 15 configs (assembled by buildAkoyaPayload)
+  "angrybirds": { file: 'akoya-games.json', title: "Angry Birds 🐦", desc: "Pull back, let go, flatten the pigs", engine: true },
+  "arrow": { file: 'akoya-games.json', title: "Arrow Dodge ➡️", desc: "Four lanes of incoming arrows", engine: true },
+  "flappy": { file: 'akoya-games.json', title: "Flappy Bird 🐤", desc: "Tap through the gaps", engine: true },
+  "geometry": { file: 'akoya-games.json', title: "Geometry Dash 🔺", desc: "Jump the spikes, keep the beat", engine: true },
+  "mahjong": { file: 'akoya-games.json', title: "Mahjong Pairs 🀄", desc: "Match the tiles in pairs", engine: true },
+  "memory-match": { file: 'akoya-games.json', title: "Memory Match 🃏", desc: "Eight pairs, one memory", engine: true },
+  "mortal": { file: 'akoya-games.json', title: "Mortal Duel ⚔️", desc: "Strike on the green, dodge the rest", engine: true },
+  "puzzle": { file: 'akoya-games.json', title: "Slide Puzzle 🧩", desc: "Order the tiles 1 to 8", engine: true },
+  "racing": { file: 'akoya-games.json', title: "Turbo Racing 🏁", desc: "Three lanes, no brakes", engine: true },
+  "snake-rimba": { file: 'akoya-games.json', title: "Snake Rimba 🌿", desc: "The jungle variant", engine: true, alias: "rimba" },
+  "snake": { file: 'akoya-games.json', title: "Snake 🐍", desc: "Swipe to steer, eat the apple", engine: true },
+  "sonic": { file: 'akoya-games.json', title: "Sonic Sprint 🦔", desc: "Endless runner, tap to jump", engine: true },
+  "stickman": { file: 'akoya-games.json', title: "Stickman Run 🏃", desc: "One tap, endless rooftops", engine: true },
+  "tebakangka": { file: 'akoya-games.json', title: "Guess the Number 🎲", desc: "1 to 100 in seven tries", engine: true, alias: "guess" },
+  "tetris": { file: 'akoya-games.json', title: "Tetris 🟦", desc: "Stack, rotate, clear a row", engine: true },
 };
 
 function resolveGame(name) {
@@ -118,7 +167,7 @@ export async function sendHtmlGame(sock, jid, { game, quoted }) {
 
   let payload;
   try {
-    payload = loadPayload(meta.file);
+    payload = meta.engine ? buildAkoyaPayload(key) : loadPayload(meta.file);
   } catch (_) {
     return { ok: false, reason: `payload missing: ${meta.file}` };
   }

@@ -1,5 +1,5 @@
 {
-  "_comment": "Source-of-truth manifest for the vendored GenAIaeacdsnwHtmlPrimitive game payloads. upstreamSha256 pins the byte-faithful original (provenance); localSha256 pins our NEXORA-rebranded copy (owner-directed 2026-10-22: third-party developer names removed from rendered payloads). scripts/verify-htmlgames-sources.mjs checks localSha256 for local integrity and upstreamSha256 for upstream drift; when upstream changes, re-apply the rebrand and re-pin both hashes. We vendor instead of hot-linking so a third-party repo can never swap the payloads the bot renders.",
+  "_comment": "Source-of-truth manifest for the vendored GenAIaeacdsnwHtmlPrimitive game payloads. upstreamSha256 pins the byte-faithful original (provenance); localSha256 pins our NEXORA-rebranded copy (owner-directed 2026-10-22: third-party developer names removed from rendered payloads). scripts/verify-htmlgames-sources.mjs checks localSha256 for local integrity and upstreamSha256 for upstream drift; when upstream changes, re-apply the rebrand and re-pin both hashes. We vendor instead of hot-linking so a third-party repo can never swap the payloads the bot renders. Akoya-engine games are stored as one runtime plus a config file and assembled at send time (buildAkoyaPayload); those two files are pinned here instead of 15 rendered copies.",
   "files": {
     "chess.html": {
       "source": "https://raw.githubusercontent.com/kyouantzy/data/refs/heads/main/chess.html",
@@ -32,7 +32,7 @@
       "rebranded": true
     },
     "calc.html": {
-      "source": "inline payload string in Moongod.js (case \"calc\") — no remote file; source of truth is the payload literal itself",
+      "source": "inline payload string in Moongod.js (case \"calc\") \u2014 no remote file; source of truth is the payload literal itself",
       "localSha256": "fb00f3da49b2a510687584f23752a1632fe91fd84c42846161c5050ca29a072a",
       "upstreamSha256": "87c8abfea3dff3012bbe03606a77a4586e1f445b9af45d8545a4d4e8fdbfc9ae",
       "rebranded": true
@@ -48,6 +48,16 @@
       "localSha256": "abc1a6587c7a5079a8604a9d2f633ef30dbb560ad9999e6f0cc0d53b2488a078",
       "upstreamSha256": "abc1a6587c7a5079a8604a9d2f633ef30dbb560ad9999e6f0cc0d53b2488a078",
       "rebranded": false
+    },
+    "akoya-runtime.html": {
+      "source": "private:github:boyde1317-byte/Akoya-MD@8227ca2a7320faf77042de6d8c619465b59ddc8d#assets/htmlgames",
+      "localSha256": "3e2300a86a2618389130ec047d655d289847d8a4754bf5cb741d7fb26e191ec9",
+      "note": "Shared Akoya engine runtime. Upstream: every file in that repo assets/htmlgames/ is this same document with a different config, so it was lifted once, rebranded, and parameterised."
+    },
+    "akoya-games.json": {
+      "source": "private:github:boyde1317-byte/Akoya-MD@8227ca2a7320faf77042de6d8c619465b59ddc8d#assets/htmlgames",
+      "localSha256": "32c5b54c410c800ae46902b39969fb8558d19a55b6836d512c30b61de89733ee",
+      "note": "One config per Akoya game (name, title, description, mech, accent, mechanic parameters). The 15 games differ only in this block."
     }
   }
 }

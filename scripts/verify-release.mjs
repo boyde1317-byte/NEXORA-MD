@@ -1241,6 +1241,26 @@ await check('every card style rides on its waUtils card', async () => {
   return '5 card styles ride CTA interactiveMessage cards';
 });
 
+await check('akoya engine builds every game from one runtime', async () => {
+  // The Akoya port vendors a single runtime plus a config per game, so a broken
+  // config or a leftover {{PLACEHOLDER}} only shows up at send time without this.
+  const mod = await import(join(root, 'src/lib/htmlGames.js'));
+  const engine = Object.entries(mod.HTML_GAMES).filter(([, m]) => m.engine);
+  assert(engine.length === 15, `${engine.length} akoya games registered, expected 15`);
+  const mechs = new Set();
+  for (const [key, meta] of engine) {
+    const html = mod.buildAkoyaPayload(key);
+    assert(!/\{\{[A-Z]+\}\}/.test(html), `${key} ships an unfilled template placeholder`);
+    assert(!/https?:\/\//.test(html), `${key} reaches the network from inside the webview`);
+    const cfg = JSON.parse(html.match(/window\.__GAME = (\{.*?\});/)[1]);
+    assert(cfg.name === key, `${key} builds a config named ${cfg.name}`);
+    assert(html.includes(meta.title), `${key} does not carry its registered title`);
+    mechs.add(cfg.mech);
+  }
+  assert(mechs.size >= 10, `only ${mechs.size} distinct mechanics across ${engine.length} games`);
+  return `${engine.length} games, ${mechs.size} mechanics`;
+});
+
 await check('menu 21 points at the owner username, not the number', async () => {
   // The DM row used to print the owner's phone number. It now shows the
   // WhatsApp username instead, so the menu never exposes the number.

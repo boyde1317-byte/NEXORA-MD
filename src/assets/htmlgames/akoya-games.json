@@ -1,0 +1,138 @@
+{
+  "angrybirds": {
+    "name": "angrybirds",
+    "title": "Angry Birds 🐦",
+    "desc": "Pull back, let go, flatten the pigs",
+    "mech": "sling",
+    "accent": "#2f6bff"
+  },
+  "arrow": {
+    "name": "arrow",
+    "title": "Arrow Dodge ➡️",
+    "desc": "Four lanes of incoming arrows",
+    "mech": "dodge",
+    "accent": "#a78bfa",
+    "lanes": 4,
+    "speed": 2.9
+  },
+  "flappy": {
+    "name": "flappy",
+    "title": "Flappy Bird 🐤",
+    "desc": "Tap through the gaps",
+    "mech": "flap",
+    "accent": "#ffd166",
+    "gap": 98
+  },
+  "geometry": {
+    "name": "geometry",
+    "title": "Geometry Dash 🔺",
+    "desc": "Jump the spikes, keep the beat",
+    "mech": "runner",
+    "accent": "#ffd166",
+    "speed": 5.8
+  },
+  "mahjong": {
+    "name": "mahjong",
+    "title": "Mahjong Pairs 🀄",
+    "desc": "Match the tiles in pairs",
+    "mech": "pairs",
+    "symbols": [
+      "🀄",
+      "🀅",
+      "🀆",
+      "🀇",
+      "🀈",
+      "🀉",
+      "🀊",
+      "🀋"
+    ],
+    "accent": "#2f6bff"
+  },
+  "memory-match": {
+    "name": "memory-match",
+    "title": "Memory Match 🃏",
+    "desc": "Eight pairs, one memory",
+    "mech": "pairs",
+    "symbols": [
+      "🍇",
+      "🍋",
+      "🍑",
+      "🥝",
+      "🍒",
+      "🥥",
+      "🍍",
+      "🫐"
+    ],
+    "accent": "#2f6bff"
+  },
+  "mortal": {
+    "name": "mortal",
+    "title": "Mortal Duel ⚔️",
+    "desc": "Strike on the green, dodge the rest",
+    "mech": "duel",
+    "accent": "#2f6bff"
+  },
+  "puzzle": {
+    "name": "puzzle",
+    "title": "Slide Puzzle 🧩",
+    "desc": "Order the tiles 1 to 8",
+    "mech": "slide",
+    "accent": "#8b5cf6"
+  },
+  "racing": {
+    "name": "racing",
+    "title": "Turbo Racing 🏁",
+    "desc": "Three lanes, no brakes",
+    "mech": "dodge",
+    "accent": "#ff5f6d",
+    "lanes": 3,
+    "speed": 3.4
+  },
+  "snake-rimba": {
+    "name": "snake-rimba",
+    "title": "Snake Rimba 🌿",
+    "desc": "The jungle variant",
+    "mech": "snake",
+    "accent": "#ff9f43",
+    "alias": "rimba"
+  },
+  "snake": {
+    "name": "snake",
+    "title": "Snake 🐍",
+    "desc": "Swipe to steer, eat the apple",
+    "mech": "snake",
+    "accent": "#2ecc71"
+  },
+  "sonic": {
+    "name": "sonic",
+    "title": "Sonic Sprint 🦔",
+    "desc": "Endless runner, tap to jump",
+    "mech": "runner",
+    "accent": "#2f6bff",
+    "speed": 5.2
+  },
+  "stickman": {
+    "name": "stickman",
+    "title": "Stickman Run 🏃",
+    "desc": "One tap, endless rooftops",
+    "mech": "runner",
+    "accent": "#e8eefc",
+    "speed": 4.6
+  },
+  "tebakangka": {
+    "name": "tebakangka",
+    "title": "Guess the Number 🎲",
+    "desc": "1 to 100 in seven tries",
+    "mech": "guess",
+    "tries": 7,
+    "alias": "guess",
+    "accent": "#2f6bff"
+  },
+  "tetris": {
+    "name": "tetris",
+    "title": "Tetris 🟦",
+    "desc": "Stack, rotate, clear a row",
+    "mech": "tetrix",
+    "accent": "#3b82f6"
+  }
+}
