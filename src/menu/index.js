@@ -20,6 +20,7 @@ import commandDirectory from './types/commandDirectory.js';
 import a2uiSurface from './types/a2uiSurface.js';
 import atlasMenu from './types/atlasMenu.js';
 import yonoMenu from './types/yonoMenu.js';
+import a2uiWidgetMenu from './types/a2uiWidgetMenu.js';
 
 // Register them all statically in the manager
 menuManager.register(documentInteractive);
@@ -40,6 +41,7 @@ menuManager.register(commandDirectory);
 menuManager.register(a2uiSurface);
 menuManager.register(atlasMenu);
 menuManager.register(yonoMenu);
+menuManager.register(a2uiWidgetMenu);
 
 /**
  * Compiles the statistics and renders the active menu (or custom specified menu style).

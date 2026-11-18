@@ -29,6 +29,7 @@ import {
   A2UI,
   A2UI_BASIC_CATALOG,
   A2UI_VERSION,
+  A2UI_WIDGET_TYPE,
   CATALOG_COMPONENT_NAMES,
   bloksWidgetSupport,
   buildA2uiSurface,
@@ -48,6 +49,9 @@ export const A2UI_CATALOG = A2UI_BASIC_CATALOG;
 
 /** Surface spec version (v0.9). */
 export const A2UI_SPEC_VERSION = A2UI_VERSION;
+
+/** The widget type the client keys an A2UI surface off ('im_a2ui'). */
+export { A2UI_WIDGET_TYPE };
 
 /**
  * True when the pinned proto can carry a BloksWidget. Cached inside the fork,
@@ -130,7 +134,7 @@ export function normalizeA2uiComponents(components = []) {
  *   'legacy'  — { version, createSurface: { …, components } }     ← what the fork
  *               builds and what WhatsApp renders as empty (documented below)
  */
-export const A2UI_SHAPES = ['wrapper', 'list', 'legacy'];
+export const A2UI_SHAPES = ['wrapper', 'list', 'legacy', 'inline'];
 export const A2UI_DEFAULT_SHAPE = 'wrapper';
 
 /** Pull the component array out of any supported payload shape. */
@@ -173,6 +177,17 @@ export function buildA2uiMessages({ uuid, components, surfaceId, catalogId, shap
   const cat = base.createSurface.catalogId;
 
   if (shape === 'legacy') return base;
+
+  // `inline` is the shape a live client actually paints (ALYA BOT's level card):
+  // ONE createSurface message carrying the components, not a createSurface
+  // followed by updateComponents. The two-message form leaves the surface empty
+  // on clients that only read createSurface, which is why our card came up blank.
+  if (shape === 'inline') {
+    return {
+      version: A2UI_SPEC_VERSION,
+      createSurface: { surfaceId: surfaceId || sid, catalogId: cat, components: nodes },
+    };
+  }
 
   const messages = [
     { version: A2UI_SPEC_VERSION, createSurface: { surfaceId: sid, catalogId: cat } },

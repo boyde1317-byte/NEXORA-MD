@@ -99,6 +99,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   fallback. The BloksWidget surface stays composed and validated for
   `.testa2ui`, but it is not what carries the menu: proto tag 66 is not in
   WhatsApp's proto, which is why the old card arrived empty.
+- Root cause of the blank A2UI card, found in ALYA BOT's `level` handler: it
+  ships ONE `createSurface` message with the components inline. Ours sent
+  `createSurface` then a separate `updateComponents`, so a client that only reads
+  createSurface paints an empty surface. `a2uiKit.buildA2uiMessages` gained
+  `shape: 'inline'` for that form, and menu 25 (`a2uiWidget`) reproduces the
+  ALYA card exactly: `bloksWidget { uuid, type: im_a2ui, data, fallback }` on a
+  bare surface id with the a2ui.org basic catalog. Body is the zero-width dim
+  body and the copy sits in the footer, per the house style. Menu 16 keeps the
+  rich card that is known to paint.
 - Every menu style now paints its copy grey, menu 21's way. The menu text moves
   out of `interactiveMessage`/`buttonsMessage` body into `footer.text`, which
   WhatsApp renders small and grey, and the body carries a single zero-width space

@@ -1241,6 +1241,38 @@ await check('every card style rides on its waUtils card', async () => {
   return '5 card styles ride CTA interactiveMessage cards';
 });
 
+await check('a2ui widget card carries the surface inline', async () => {
+  // The blank-card bug: our surface used createSurface + updateComponents, and a
+  // client that only reads createSurface paints nothing. ALYA BOT ships ONE
+  // message with the components inline, and that renders.
+  const mod = await import(join(root, 'src/menu/types/a2uiWidgetMenu.js'));
+  const wire = [];
+  const sock = { user: { id: 'x:1@s.whatsapp.net' }, relayMessage: async (j, msg) => { wire.push(msg); return { key: { id: 'w' } }; } };
+  await mod.a2uiWidgetMenu.renderer({
+    sock, m: { from: 'x@s.whatsapp.net' },
+    menuData: { prefix: '.', botName: 'NEXORA MD', totalCommands: 287, uptime: '2h', categories: { general: [], ai: [], games: [] } },
+  });
+  const card = wire[0].interactiveMessage;
+  const widget = card.bloksWidget;
+  assert(widget, 'the card carries no bloksWidget');
+  assert(widget.type === 'im_a2ui', `widget type is ${widget.type}`);
+  const data = JSON.parse(widget.data);
+  assert(data.version && data.createSurface, 'surface is not a v0.9 createSurface message');
+  assert(Array.isArray(data.createSurface.components) && data.createSurface.components.length > 3, 'createSurface carries no inline components');
+  assert(!data.messages && !data.updateComponents, 'surface still uses the two-message form that paints empty');
+  assert(data.createSurface.surfaceId === 'nexora-menu', 'surface id is namespaced');
+  assert(data.createSurface.catalogId.endsWith('/v0_9/catalogs/basic/catalog.json'), 'wrong catalog');
+  const rootNode = data.createSurface.components.find((c) => c.id === 'root');
+  assert(rootNode && rootNode.component === 'Column', 'root is not a Column');
+  for (const child of rootNode.children) {
+    assert(data.createSurface.components.some((c) => c.id === child), `dangling child ${child}`);
+  }
+  assert(widget.fallback && widget.fallback.length > 40, 'no text fallback');
+  assert(card.body.text.replace(/[\u200b\s]/g, '') === '', 'the body is not the zero-width dim body');
+  assert(card.footer.text.includes('help <category>'), 'the footer lost the menu copy');
+  return `${data.createSurface.components.length} components inline`;
+});
+
 await check('menu 24 builds the receipt card', async () => {
   // The YONO-style card: one interactiveMessage, a review_and_pay button, and the
   // whole listing in the footer. Checked pure so no socket is involved.
