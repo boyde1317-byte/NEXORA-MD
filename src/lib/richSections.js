@@ -185,6 +185,21 @@ export class RichSections {
     return this._upsert(opts.id, { layout: layout('Single', item) }, opts);
   }
 
+  /** An action block: label/kind/state rows the client paints as buttons. */
+  addWidget(widget = {}, opts = {}) {
+    return this._upsert(opts.id, { layout: layout('Single', { ...widget, __typename: 'GenAIWidgetPrimitive' }) }, opts);
+  }
+
+  /** The closing action line ("Visit channel"), painted after the sections. */
+  addFooterAction(action = {}, opts = {}) {
+    return this._upsert(opts.id, { layout: layout('Single', { ...action, __typename: 'GenAIFooterActionPrimitive' }) }, opts);
+  }
+
+  /** A plain metadata line, the same primitive setFooter appends. */
+  addMetadata(text, opts = {}) {
+    return this._upsert(opts.id, { layout: layout('Single', { text: String(text || ''), __typename: 'GenAIMetadataTextPrimitive' }) }, opts);
+  }
+
   addSearch(sources = [], opts = {}) {
     const mapped = sources.map((s) => ({ ...s, __typename: 'GenAISearchResultPrimitive' }));
     return this._upsert(opts.id, { layout: layout('Single', mapped) }, opts);

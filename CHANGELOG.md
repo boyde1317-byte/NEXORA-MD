@@ -83,6 +83,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   of an unresolvable stanza, and a plain-text fallback if the sheet is refused.
   Delete `src/menu/types/yonoMenu.js` and its two lines in `src/menu/index.js` to
   back it out; nothing else depends on it.
+- `richSections.js` gained the three primitives the Yono level card uses:
+  `addWidget` (GenAIWidgetPrimitive action rows), `addFooterAction`
+  (GenAIFooterActionPrimitive) and `addMetadata` (a plain metadata line). That
+  card is a rich response, not a Bloks surface: body text, then the action,
+  then a closing metadata line, with the bold bot name coming from
+  `botMetadata.messageDisclaimerText`.
 - New `src/lib/richSections.js`: the AI-bot rich response card (Rem Bot / YONO
   DEV's AIRich, ported). Sections are addressable, so a card can be edited in
   place with `sendEdit()` instead of sending another bubble. Primitives: markdown
