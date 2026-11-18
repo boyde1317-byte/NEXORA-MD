@@ -42,8 +42,8 @@ export const productMenu = {
   renderer: async ({ sock, m, menuData }) => {
     const imgData = (await imageManager.getMenuImage(5).catch(() => null)) || {};
 
-    const bodyText  = `✦ ${displayName(menuData.botName)} ✦\n\n` + buildTextMenu(menuData);
-    const footerText = `${displayName(menuData.botName)} • ${menuData.totalCommands} ${toSmallcaps('commands')}`;
+    const bodyText  = `` + buildTextMenu(menuData);
+    const footerText = `Relax And Live 🗽`;
 
     // Resolve image payload: prefer the { url } form — WA fetches it directly,
     // no local buffer download/re-upload round trip. Buffer is only a fallback

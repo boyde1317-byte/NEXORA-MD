@@ -14,7 +14,7 @@ export const getGreeting = () => {
   return "Late night, huh? I'm here. 🌙";
 };
 
-export const divider = '─────────────────────────';
+export const divider = '──────────────────';
 
 /**
  * Formats a clean standard listing of all commands, grouped by category using layout modernization

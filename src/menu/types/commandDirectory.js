@@ -57,24 +57,26 @@ export const commandDirectoryMenu = {
         }));
 
         const bodyText = [
-          `✦ ${displayName(menuData.botName)} ✦`,
-          ``,
-          `👑 ${toSmallcaps('Owner')}: *${menuData.ownerName}*  •  ⏱ ${toSmallcaps('Uptime')}: *${menuData.uptime}*`,
-          `⚡ ${toSmallcaps('Prefix')}: *${p}*  •  📦 *${byCat.size}* ${toSmallcaps('categories')}  •  *${menuData.totalCommands}* ${toSmallcaps('commands')}`,
-          ``,
-          `📂 _Tap "Browse Categories" and pick a section — every command is one tap away, with its own detail page via .help_`,
+  `${displayName(menuData.botName)}`,
+  ``,
+  `👑 ${toSmallcaps('Owner')}: *Monsoon*`,
+  `⏱ ${toSmallcaps('Uptime')}: *${menuData.uptime}*`,
+  `⚡ ${toSmallcaps('Prefix')}: *.*`,
+  `📦 *${byCat.size}* ${toSmallcaps('categories')}   *${menuData.totalCommands}* ${toSmallcaps('commands')}`,
+  ``,
+          `_Browse Categories, pick a section, and you're good to go. Tap .help for the full details._`,
         ].join('\n');
 
         return await selectMenu(sock, m.from, {
           text:     DIM_BODY,
-          title:    `✦ ${toSmallcaps('Command Directory')} ✦`,
-          subtitle: `${toSmallcaps('categories')} → ${toSmallcaps('commands')} → ${toSmallcaps('details')}`,
-          footer:   greyCopy(bodyText, `${displayName(menuData.botName)} • ${toSmallcaps('tap a category to browse')}`).footer,
-        }, `📂 ${toSmallcaps('Browse Categories')}`, [
+          title:    ` ${toSmallcaps('I am Alive')}`,
+          subtitle: ``,
+          footer:   greyCopy(bodyText, `🐶Having fun?`).footer,
+        }, `${toSmallcaps('Browse Categories')}`, [
           { title: toSmallcaps('Categories'), rows },
         ], [
-          { label: `🎨 ${toSmallcaps('Menu Styles')}`, cmd: `${p}menulist` },
-          { label: `📜 ${toSmallcaps('Full Text List')}`,   cmd: `${p}menu 1` },
+          { label: `${toSmallcaps('Menu Styles')}`, cmd: `${p}menulist` },
+          { label: `${toSmallcaps('Full Text List')}`,   cmd: `${p}menu 1` },
           { label: `🏓 ${toSmallcaps('Ping')}`,          cmd: `${p}ping` },
         ], { quoted: m });
       } catch (err) {

@@ -43,8 +43,8 @@ export const moonsonCardMenu = {
     }
 
     const card = new Button(sock)
-      .setTitle(`✦ ${displayName(menuData.botName)} ✦`)
-      .setSubtitle(`${menuData.totalCommands} ${toSmallcaps('commands')} │ ${menuData.uptime}`)
+      .setTitle(`${displayName(menuData.botName)}`)
+      .setSubtitle(`${menuData.uptime}`)
       // Grey copy: the menu text rides in the footer, the body stays blank.
       .setBody(DIM_BODY)
       .setFooter(greyCopy(bodyText, `${toSmallcaps('Powered by')} ${displayName(menuData.botName)}`).footer)

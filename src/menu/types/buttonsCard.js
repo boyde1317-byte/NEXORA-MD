@@ -90,7 +90,7 @@ export function buildNavigationButton(prefix) {
 export const buttonsCardMenu = {
   id: 5,
   name: 'buttonsCard',
-  description: 'Grey-text buttons card with high-quality thumbnail header, live time, and tappable pill buttons',
+  description: 'Grey-text buttons card.',
   supportedMessages: ['buttonsMessage'],
 
   renderer: async ({ sock, m, menuData }) => {

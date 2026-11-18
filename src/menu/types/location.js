@@ -49,10 +49,10 @@ export const locationMenu = {
     const imgData = (await imageManager.getMenuImage(8).catch(() => null)) || {};
 
     const menuText   = buildTextMenu(menuData);
-    const footerText = `${displayName(menuData.botName)} • ${menuData.totalCommands} ${toSmallcaps('commands')}`;
+    const footerText = `🪸 Your Guardian`;
 
     const locationQuote = buildFakeLiveLocationQuote({
-      caption: `📍 ${displayName(menuData.botName || brand.name)} — ${toSmallcaps('Bot Command')} ✦`,
+      caption: `🕸 ${displayName(menuData.botName || brand.name)} — Alive`,
     });
 
     // Resolve image payload: prefer the { url } form — WA fetches it directly,
@@ -72,9 +72,7 @@ export const locationMenu = {
         thumbnail:  imagePayload,
         buttons: [
           buildPillButton(`📋 ${toSmallcaps('Command List')}`, `${menuData.prefix}menulist`),
-          buildPillCopyButton(`📎 ${toSmallcaps('Copy Prefix')}`, menuData.prefix),
           buildPillButton(`🤖 ${toSmallcaps('System Stats')}`, `${menuData.prefix}menu aiDynamic`),
-          buildPillUrlButton(`💬 ${toSmallcaps('Contact')}`, 'https://wa.me/233533416608'),
           buildCtaReplyButton(`\u2630 ${toSmallcaps('All Commands')}`, `${menuData.prefix}help`),
         ],
       }, { quoted: locationQuote });

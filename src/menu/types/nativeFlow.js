@@ -28,13 +28,13 @@ const displayName = (name) => (name === brand.name && brand.display?.name ? bran
 export const nativeFlowMenu = {
   id: 4,
   name: 'nativeFlow',
-  description: 'Advanced Native Flow \u2014 interactive card with embedded ad-reply, URL links, clipboard copy, quick-reply',
+  description: 'Advanced Native Flow \u2014 interactive card.',
   supportedMessages: ['interactiveMessage', 'nativeFlowMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData    = await imageManager.getMenuImage(4);
-    const bodyText   = `\u26A1 ${displayName(menuData.botName)} ${toSmallcaps('Menu')}\n\n` + buildTextMenu(menuData);
-    const footerText = `${displayName(menuData.botName)} \u2502 ${toSmallcaps('Native Flow Active')}`;
+    const bodyText   = `${toSmallcaps('Menu')}\n\n` + buildTextMenu(menuData);
+    const footerText = `${toSmallcaps('I am here!🕸')}`;
 
     // Resolve image payload
     const imagePayload = imgData.source?.startsWith('http')
@@ -43,7 +43,7 @@ export const nativeFlowMenu = {
 
     // Build embedded externalAdReply for the interactive card
     const adReply = {
-      title:                 `\u2726 ${displayName(menuData.botName)} \u2726`,
+      title:                 `${displayName(menuData.botName)}`,
       body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Prefix')}: ${menuData.prefix}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
@@ -64,15 +64,12 @@ export const nativeFlowMenu = {
           dim: true,
           body:       bodyText,
           footer:     footerText,
-          title:      `\u{1F31F} ${displayName(menuData.botName)} \u2726`,
-          subtitle:   `${toSmallcaps('Native Flow')} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`,
+          title:      `N E X O R A  M D`,
+          subtitle:   `moonson made it ⚡ `,
           thumbnail:  imagePayload,
           buttons: [
-            buildPillUrlButton(`\u{1F4AC} ${toSmallcaps('Contact Developer')}`, 'https://wa.me/233533416608'),
-            buildPillUrlButton(`\u{1F4E1} ${toSmallcaps('Official Channel')}`, 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326'),
-            buildPillCopyButton(`\u{1F4CE} ${toSmallcaps('Copy Prefix')}`, menuData.prefix),
-            buildPillButton(`\u{1F916} ${toSmallcaps('System Stats')}`,       `${menuData.prefix}menu aiDynamic`),
-            buildPillButton(`\u{1F3A8} ${toSmallcaps('Change Menu Style')}`,   `${menuData.prefix}menulist`),
+            buildPillButton(`${toSmallcaps('System Stats')}`,       `${menuData.prefix}ping`),
+            buildPillButton(`${toSmallcaps('Change Menu Style')}`,   `${menuData.prefix}menulist`),
             buildNavigationButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },

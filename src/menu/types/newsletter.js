@@ -36,17 +36,15 @@ export const newsletterMenu = {
 
     const textContent = buildTextMenu(menuData);
     const bodyText =
-      `\u2726 ${displayName(menuData.botName)} ${toSmallcaps('Menu')} \u2726\n\n` +
-      `_Verified Partner \u2502 Official Channel_\n` +
-      `\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n` +
-      `\u{1F4CB} *${toSmallcaps('System Brief')}*\n` +
+      `` +
+      `*${toSmallcaps('System Brief')}*\n` +
       `\u2022 *${toSmallcaps('Status')}:* Optimal\n` +
       `\u2022 *${toSmallcaps('Framework')}:* Baileys\n` +
       `\u2022 *${toSmallcaps('Total Commands')}:* ${menuData.totalCommands}\n` +
       `\u2022 *${toSmallcaps('System Uptime')}:* ${menuData.uptime}\n\n` +
       textContent;
 
-    const footerText = `${displayName(menuData.botName)} \u2502 ${toSmallcaps('Newsletter')}`;
+    const footerText = `Fun All Day 🪸`;
 
     // Resolve image payload
     const imagePayload = imgData.source?.startsWith('http')
@@ -55,15 +53,15 @@ export const newsletterMenu = {
 
     // Build fake newsletter quote for reply bar
     const newsletterQuote = buildFakeNewsletterQuote({
-      newsletterJid:   menuData.channelJid || '120363293577041544@newsletter',
+      newsletterJid:   menuData.channelJid || '120363406397452589@newsletter',
       newsletterName:  `${brand.name} Updates`,
-      caption:         `Made with \u2665\uFE0F By Aizen`,
+      caption:         `Moonson made this with \u2665\uFE0F`,
     });
 
     // Build embedded externalAdReply
     const adReply = {
-      title:                 `\u{1F4E1} ${displayName(menuData.botName)} ${toSmallcaps('Channel')} \u{1F4E1}`,
-      body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Official')}`,
+      title:                 `${displayName(menuData.botName)}`,
+      body:                  ``,
       sourceUrl:             'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326',
       mediaType:             1,
       renderLargerThumbnail: true,
@@ -83,14 +81,13 @@ export const newsletterMenu = {
           dim: true,
           body:       bodyText,
           footer:     footerText,
-          title:      `\u{1F4E1} ${toSmallcaps('Official Channel')} \u{1F4E1}`,
+          title:      `Feel The Breeze 🌬`,
           subtitle:   `${toSmallcaps('Commands')}: ${menuData.totalCommands} \u2502 ${toSmallcaps('Uptime')}: ${menuData.uptime}`,
           thumbnail:  imagePayload,
           buttons: [
-            buildPillButton(`\u{1F3D1} ${toSmallcaps('Ping Speed')}`,        `${menuData.prefix}ping`),
-            buildPillButton(`\u{1F4CB} ${toSmallcaps('Command List')}`,       `${menuData.prefix}menulist`),
-            buildPillButton(`\u{1F916} ${toSmallcaps('System Stats')}`,       `${menuData.prefix}menu aiDynamic`),
-            buildPillUrlButton(`\u{1F4E1} ${toSmallcaps('Official Channel')}`, 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326'),
+            buildPillButton(` ${toSmallcaps('Ping Speed')}`,        `${menuData.prefix}ping`),
+            buildPillButton(` ${toSmallcaps('Command List')}`,       `${menuData.prefix}help`),
+            buildPillButton(`${toSmallcaps('System Stats')}`,       `${menuData.prefix}menu aiDynamic`),
             buildCtaReplyButton(`\u2630 ${toSmallcaps('All Commands')}`, `${menuData.prefix}help`),
           ],
           contextInfo: { externalAdReply: adReply },

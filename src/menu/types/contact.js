@@ -41,17 +41,17 @@ const displayName = (name) => (name === brand.name && brand.display?.name ? bran
 export const contactMenu = {
   id: 9,
   name: 'contact',
-  description: 'CTA card with image header + owner vCard contact badge in the reply bar',
+  description: 'CTA card with image header.',
   supportedMessages: ['interactiveMessage', 'nativeFlowMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData = (await imageManager.getMenuImage(9).catch(() => null)) || {};
 
-    const ownerNumber  = (config.owner[0] || '233597514499').replace(/[^0-9]/g, '');
-    const ownerName    = menuData.ownerName || brand.creator || 'Owner';
+    const ownerNumber  = (config.owner[0] || '233533416608').replace(/[^0-9]/g, '');
+    const ownerName    = menuData.ownerName || brand.creator || 'Monsoon';
 
     const menuText   = buildTextMenu(menuData);
-    const footerText = `${displayName(menuData.botName)} • ${menuData.totalCommands} ${toSmallcaps('commands')}`;
+    const footerText = `🪶 Wandering Lately?`;
 
     // Contact card in the reply bar — tappable vCard showing the owner's name.
     const contactQuote = buildFakeContactQuote({
@@ -72,13 +72,11 @@ export const contactMenu = {
         dim: true,
         body:       menuText,
         footer:     footerText,
-        title:      `✦ ${displayName(menuData.botName)} ✦`,
+        title: `Hey, welcome in 👋`,
         thumbnail:  imagePayload,
         buttons: [
-          buildPillUrlButton(`💬 ${toSmallcaps('Message')} ${ownerName}`, `https://wa.me/${ownerNumber}`),
           buildPillButton(`📋 ${toSmallcaps('Command List')}`, `${menuData.prefix}menulist`),
-          buildPillCopyButton(`📎 ${toSmallcaps('Copy Prefix')}`, menuData.prefix),
-          buildPillButton(`🤖 ${toSmallcaps('System Stats')}`, `${menuData.prefix}menu aiDynamic`),
+          buildPillButton(`🤖 ${toSmallcaps('System Stats')}`, `${menuData.prefix}ping`),
           buildCtaReplyButton(`\u2630 ${toSmallcaps('All Commands')}`, `${menuData.prefix}help`),
         ],
       }, { quoted: contactQuote });

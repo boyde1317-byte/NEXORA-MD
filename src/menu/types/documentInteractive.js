@@ -36,8 +36,8 @@ export const documentInteractiveMenu = {
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData    = await imageManager.getMenuImage(1);
-    const footerText = footerManager.getFooter() || `${displayName(menuData.botName)} \u2502 ${toSmallcaps('Uptime')}: ${menuData.uptime}`;
-    const bodyText   = `\u2726 ${displayName(menuData.botName)} \u2726\n\n` + buildTextMenu(menuData);
+    const footerText = footerManager.getFooter() || `${toSmallcaps('Uptime')}: ${menuData.uptime}`;
+    const bodyText = buildTextMenu(menuData);
 
     // Resolve image payload: prefer the { url } form \u2014 WA fetches it directly,
     // no local buffer download/re-upload round trip. Buffer is only a fallback
@@ -48,7 +48,7 @@ export const documentInteractiveMenu = {
 
     // Build the embedded externalAdReply for double visual impact
     const adReply = {
-      title:                 `\u2726 ${displayName(menuData.botName)} \u2726`,
+      title:                 ` ${displayName(menuData.botName)}`,
       body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Interactive Card')}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
@@ -71,15 +71,13 @@ export const documentInteractiveMenu = {
           dim: true,
           body:       bodyText,
           footer:     footerText,
-          title:      `\u2726 ${displayName(menuData.botName)} ${toSmallcaps('Menu')} \u2726`,
-          subtitle:   `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Uptime')}: ${menuData.uptime}`,
+          title:      `${toSmallcaps('Menu')}`,
+          subtitle:   `${toSmallcaps('Uptime')}: ${menuData.uptime}`,
           thumbnail:  imagePayload,
           buttons: [
-            buildPillButton(`\u{1F4CB} ${toSmallcaps('Switch Menu Style')}`, `${menuData.prefix}menulist`),
-            buildPillButton(`\u26A1 ${toSmallcaps('System Info')}`,        `${menuData.prefix}menu aiDynamic`),
-            buildPillButton(`\u{1F3D1} ${toSmallcaps('Ping Bot')}`,           `${menuData.prefix}ping`),
-            buildPillUrlButton(`\u{1F4AC} ${toSmallcaps('Contact Developer')}`, 'https://wa.me/233533416608'),
-            buildPillCopyButton(`\u{1F4CE} ${toSmallcaps('Copy Prefix')}`, menuData.prefix),
+            buildPillButton(` ${toSmallcaps('Switch Menu Style')}`, `${menuData.prefix}menulist`),
+            buildPillButton(`${toSmallcaps('System Info')}`,        `${menuData.prefix}menu aiDynamic`),
+            buildPillButton(`${toSmallcaps('Ping Bot')}`,           `${menuData.prefix}ping`),
             buildNavigationButton(menuData.prefix),
           ],
           contextInfo: { externalAdReply: adReply },

@@ -27,7 +27,7 @@ const displayName = (name) => (name === brand.name && brand.display?.name ? bran
 export const orderMessageMenu = {
   id: 14,
   name: 'orderMessage',
-  description: 'Interactive card + image header + embedded ad-reply, quoted inside a business order card',
+  description: 'Interactive card.',
   supportedMessages: ['interactiveMessage', 'buttonsMessage', 'orderMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
@@ -36,7 +36,7 @@ export const orderMessageMenu = {
 
     // Build richer body text with visual stat rows
     const statBlock = [
-      `\u2726 ${displayName(menuData.botName)} ${toSmallcaps('Command Catalog')} \u2726`,
+      ``,
       '',
       asciiBuilder.statRow('Total Commands', menuData.totalCommands),
       asciiBuilder.statRow('Prefix', menuData.prefix),
@@ -45,7 +45,7 @@ export const orderMessageMenu = {
     ].join('\n');
 
     const bodyText = statBlock + buildTextMenu(menuData);
-    const footerText = `${displayName(menuData.botName)} \u2502 ${menuData.totalCommands} ${toSmallcaps('commands')}`;
+    const footerText = `Stay Alive 🦕`;
 
     // ── Resolve image payload once ─────────────────────────────────────────
     const imagePayload = imgData.source?.startsWith('http')
@@ -70,7 +70,7 @@ export const orderMessageMenu = {
 
     // Build embedded externalAdReply
     const adReply = {
-      title:                 `\u2726 ${displayName(menuData.botName)} \u2726`,
+      title:                 ` ${displayName(menuData.botName)}`,
       body:                  `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Order Card')}`,
       sourceUrl:             'https://wa.me/233533416608',
       mediaType:             1,
@@ -91,13 +91,10 @@ export const orderMessageMenu = {
           dim: true,
           body:       bodyText,
           footer:     footerText,
-          title:      `\u2726 ${toSmallcaps('Command Catalog')} \u2726`,
+          title:      ``,
           subtitle:   `${menuData.totalCommands} ${toSmallcaps('commands')} \u2502 ${toSmallcaps('Prefix')}: ${menuData.prefix}`,
           thumbnail:  imagePayload,
           buttons: [
-            buildPillUrlButton(`\u{1F4AC} ${toSmallcaps('Contact Developer')}`, 'https://wa.me/233533416608'),
-            buildPillUrlButton(`\u{1F4E1} ${toSmallcaps('Official Channel')}`, 'https://whatsapp.com/channel/0029Vb7eSHf42Dcmdd3XA326'),
-            buildPillCopyButton(`\u{1F4CE} ${toSmallcaps('Copy Prefix')}`, menuData.prefix),
             buildPillButton(`\u{1F3A8} ${toSmallcaps('Browse Menu Styles')}`, `${menuData.prefix}menulist`),
             buildPillButton(`\u{1F916} ${toSmallcaps('System Stats')}`,       `${menuData.prefix}menu aiDynamic`),
             buildCtaReplyButton(`\u2630 ${toSmallcaps('All Commands')}`, `${menuData.prefix}help`),

@@ -10,9 +10,9 @@ const MAX_CAROUSEL_CARDS = 10;
 
 // Category-specific emoji mapping for richer card headers
 const CATEGORY_EMOJIS = {
-  ai: '\u{1F916}', anime: '\u{1F3A8}', download: '\u{1F4E5}', economy: '\u{1FA9}',
-  fun: '\u{1F3B6}', games: '\u{1F3AE}', general: '\u{1F4CB}', group: '\u{1F465}',
-  media: '\u{1F3AC}', owner: '\u{1F511}', utility: '\u{1F527}', web: '\u{1F310}',
+  ai: '', anime: '', download: '', economy: '',
+  fun: '', games: '', general: '', group: '',
+  media: '', owner: '', utility: '', web: '',
 };
 
 /**
@@ -38,16 +38,18 @@ const displayName = (name) => (name === brand.name && brand.display?.name ? bran
 export const carouselMenu = {
   id: 6,
   name: 'carousel',
-  description: 'Swipeable category cards \u2014 rich per-card headers with emoji icons, command previews, and action buttons',
+  description: 'Swipeable category cards rich per-card headers.',
   supportedMessages: ['interactiveMessage', 'carouselMessage'],
 
   renderer: async ({ sock, m, menuData }) => {
     const imgData = await imageManager.getMenuImage(6);
 
     const headerText =
-      `\u{1F3A0} ${displayName(menuData.botName)} ${toSmallcaps('Carousel Control')} \u{1F3A0}\n\n` +
-      `_Swipe sideways through the cards below to browse command modules:_\n` +
-      `_Each card shows top commands \u2014 tap to explore more._`;
+      `${displayName(menuData.botName)} ${toSmallcaps('Carousel Menu')}\n\n` +
+      `▰▰▰▰▰▰▰▰▰▰▰\n' +
+'_Swipe through the cards to explore._\n' +
+'_See what catches your eye and tap to dive in._\n' +
+'▰▰▰▰▰▰▰▰▰▰▰`;
 
     const categories = Object.keys(menuData.categories).sort();
 
@@ -64,16 +66,16 @@ export const carouselMenu = {
 
       const cards = capped.map((cat, idx) => {
         const cmds     = menuData.categories[cat];
-        const emoji    = CATEGORY_EMOJIS[cat] || '\u{1F4C2}';
-        const cmdList  = cmds.map(c => `\u2022 \`${menuData.prefix}${c.name}\``).slice(0, 5).join('\n');
-        const overflow = cmds.length > 5 ? `\n  \u2502 +${cmds.length - 5} ${toSmallcaps('more')}` : '';
+        const emoji    = CATEGORY_EMOJIS[cat] || '';
+        const cmdList  = cmds.map(c => `${c.name}`).slice(0, 5).join('\n');
+        const overflow = cmds.length > 5 ? `\n +${cmds.length - 5} ${toSmallcaps('more')}` : '';
 
         return {
-          caption:   `${emoji} *${toSmallcaps(cat + ' Command Pack')}*\n\n${cmdList}${overflow}\n\n${toSmallcaps('Total')}: ${cmds.length} ${toSmallcaps('commands')}`,
-          footer:    `\u2726 ${toSmallcaps('Card')} ${idx + 1}/${capped.length} \u2502 ${displayName(menuData.botName)}`,
+          caption:   `${emoji} *${toSmallcaps(cat + ' Commands 📃 ')}*\n\n${cmdList}${overflow}\n\n${toSmallcaps('Total')}: ${cmds.length} ${toSmallcaps('commands')}`,
+          footer:    `${toSmallcaps('Swipe ➜ ')} ${idx + 1}/${capped.length}`,
           nativeFlow: [
-            { text: `⚡ ${toSmallcaps(cat)}`, id: `${menuData.prefix}help ${cat}` },
-            { text: `\u{1F916} ${toSmallcaps('Stats')}`, id: `${menuData.prefix}menu aiDynamic` },
+            { text: `${toSmallcaps(cat)}`, id: `${menuData.prefix}help ${cat}` },
+            { text: `${toSmallcaps('Stats')}`, id: `${menuData.prefix}ping` },
           ],
           ...(imgData.source?.startsWith('http')
             ? { image: { url: imgData.source } }
@@ -93,7 +95,7 @@ export const carouselMenu = {
     // ── Tier 2: nativeFlow category picker ───────────────────────────────
     try {
       const catButtons = categories.slice(0, 10).map(cat => {
-        const emoji = CATEGORY_EMOJIS[cat] || '\u{1F4C2}';
+        const emoji = CATEGORY_EMOJIS[cat] || '';
         return {
           text: `${emoji} ${toSmallcaps(cat)} (${menuData.categories[cat].length})`,
           id:   `${menuData.prefix}help ${cat}`,
