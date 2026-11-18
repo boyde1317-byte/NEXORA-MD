@@ -83,6 +83,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   of an unresolvable stanza, and a plain-text fallback if the sheet is refused.
   Delete `src/menu/types/yonoMenu.js` and its two lines in `src/menu/index.js` to
   back it out; nothing else depends on it.
+- New `src/lib/richSections.js`: the AI-bot rich response card (Rem Bot / YONO
+  DEV's AIRich, ported). Sections are addressable, so a card can be edited in
+  place with `sendEdit()` instead of sending another bubble. Primitives: markdown
+  text, code (tokenised), table, follow-up pills, image, search, product, post,
+  reel. Same `botForwardedMessage` envelope our html games already prove renders.
+- Menu 16 sends that rich card first — markdown intro, category table, six
+  follow-up pills, metadata footer — and keeps the native-flow picker as the
+  fallback. The BloksWidget surface stays composed and validated for
+  `.testa2ui`, but it is not what carries the menu: proto tag 66 is not in
+  WhatsApp's proto, which is why the old card arrived empty.
 - Every menu style now paints its copy grey, menu 21's way. The menu text moves
   out of `interactiveMessage`/`buttonsMessage` body into `footer.text`, which
   WhatsApp renders small and grey, and the body carries a single zero-width space

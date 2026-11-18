@@ -1288,6 +1288,41 @@ await check('akoya engine builds every game from one runtime', async () => {
   return `${engine.length} games, ${mechs.size} mechanics`;
 });
 
+await check('menu 16 rides the AI rich response card', async () => {
+  // The BloksWidget surface never renders on a real client; the AI rich response
+  // does. Menu 16 now sends that card first: markdown intro, category table,
+  // follow-up pills, metadata footer, all inside botForwardedMessage.
+  const mod = await import(join(root, 'src/menu/types/a2uiSurface.js'));
+  const { RichSections, decodeRichCard } = await import(join(root, 'src/lib/richSections.js'));
+  const cats = { general: new Array(9).fill({ name: 'g' }), ai: new Array(4).fill({ name: 'a' }) };
+  const wire = [];
+  const sock = {
+    user: { id: '233533416608:1@s.whatsapp.net' },
+    relayMessage: async (jid, message) => { wire.push(message); return { key: { id: 'w' } }; },
+  };
+  await mod.sendRichMenu(sock, '233533416608@s.whatsapp.net', {
+    prefix: '.', botName: 'NEXORA MD', totalCommands: 13, uptime: '1h', categories: cats,
+  });
+  const card = wire[0];
+  assert(card?.botForwardedMessage?.message?.richResponseMessage, 'menu 16 did not send a botForwardedMessage rich response');
+  const decoded = decodeRichCard(card);
+  assert(decoded.sections.length === 4, `expected 4 sections, got ${decoded.sections.length}`);
+  assert(decoded.primitives.includes('GenATableUXPrimitive'), 'no category table');
+  assert(decoded.primitives.includes('GenAIFollowUpSuggestionPillPrimitive'), 'no follow-up pills');
+  assert(decoded.primitives.includes('GenAIMarkdownTextUXPrimitive'), 'no markdown intro');
+  assert(card.messageContextInfo.botMetadata.messageDisclaimerText.includes('NEXORA MD'), 'bot disclaimer lost the name');
+
+  // Editing keeps the same message id, so a live card can be mutated in place.
+  const rich = new RichSections(sock);
+  rich.setTitle('t').addText('first', { id: 'a' });
+  const sent = await rich.send('233533416608@s.whatsapp.net');
+  rich.addText('second', { insertAt: 'a', id: 'b' });
+  const edited = await rich.sendEdit();
+  assert(sent.key.id === edited.key.id, 'sendEdit opened a new message instead of editing');
+  assert(decodeRichCard(edited.message).sections.length === 2, 'edit did not add its section');
+  return '4 sections, editable in place';
+});
+
 await check('menu 21 points at the owner username, not the number', async () => {
   // The DM row used to print the owner's phone number. It now shows the
   // WhatsApp username instead, so the menu never exposes the number.

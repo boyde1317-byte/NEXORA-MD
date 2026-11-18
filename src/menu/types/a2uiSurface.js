@@ -1,6 +1,7 @@
 import { greyCopy, DIM_BODY } from '../../lib/dimCard.js';
 import { A2, buildA2ui, sendA2uiSurface, surfaceToText } from '../../lib/a2uiKit.js';
 import { selectMenu } from '../../lib/interactiveKit.js';
+import { RichSections } from '../../lib/richSections.js';
 import { buildTextMenu } from '../formatter.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
 
@@ -165,6 +166,45 @@ export const buildMenuSections = (menuData = {}) => {
   }));
 };
 
+/**
+ * Content of the rich card, pure. The surface text feeds the markdown block, the
+ * category counts become a table, and the busiest categories become follow-up
+ * pills that post the matching `.help <category>` command when tapped.
+ */
+export const buildRichMenu = (menuData = {}) => {
+  const prefix = menuData.prefix || '.';
+  const categories = menuData.categories || {};
+  const ranked = Object.keys(categories)
+    .sort((a, b) => (categories[b]?.length || 0) - (categories[a]?.length || 0));
+  const total = menuData.totalCommands ?? ranked.reduce((n, c) => n + (categories[c]?.length || 0), 0);
+  return {
+    title: `${menuData.botName || 'NEXORA MD'} • ${total} commands`,
+    text: [
+      `✦ **${menuData.botName || 'NEXORA MD'}** ✦`,
+      `${total} commands across ${ranked.length} categories`,
+      menuData.uptime ? `up ${menuData.uptime}` : null,
+    ].filter(Boolean).join('\n'),
+    table: [
+      ['Category', 'Commands'],
+      ...ranked.slice(0, 6).map((c) => [c, String(categories[c]?.length || 0)]),
+    ],
+    suggest: ranked.slice(0, 6).map((c) => `${prefix}help ${c}`),
+    footer: `${prefix}help <category> • ${prefix}menulist for styles`,
+  };
+};
+
+/** Send the menu as the AI-bot rich response. Throws so the caller can fall back. */
+export const sendRichMenu = async (sock, jid, menuData = {}) => {
+  const card = buildRichMenu(menuData);
+  const rich = new RichSections(sock)
+    .setTitle(card.title)
+    .addText(card.text, { id: 'intro' })
+    .addTable(card.table, { id: 'categories', insertAt: 'intro' })
+    .addSuggest(card.suggest, { id: 'picks', insertAt: 'categories' })
+    .setFooter(card.footer);
+  return await rich.send(jid);
+};
+
 export const a2uiSurfaceMenu = {
   id: 16,
   name: 'a2uiSurface',
@@ -188,6 +228,12 @@ export const a2uiSurfaceMenu = {
     const built = buildA2ui({ components: buildA2uiMenuComponents(menuData) });
     if (!built.ok) {
       console.warn('[a2uiSurface] surface rejected — text menu:', built.errors.join('; '));
+    }
+
+    try {
+      return await sendRichMenu(sock, jid, menuData);
+    } catch (err) {
+      console.warn('[a2uiSurface] rich card failed, picker fallback:', err.message);
     }
 
     try {
