@@ -108,6 +108,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   bare surface id with the a2ui.org basic catalog. Body is the zero-width dim
   body and the copy sits in the footer, per the house style. Menu 16 keeps the
   rich card that is known to paint.
+- Menu 25's fallback is now a card, not a command dump. A2UI surfaces only paint
+  once the account is on WhatsApp's rollout: tested 19 Nov, the same card fell
+  back on the old account and painted on the new one. So `bloksWidget.fallback`
+  carries a brand line, command/category counts, one row per category with its
+  count, and the two hints (331 chars for 14 categories) instead of the whole
+  text menu.
 - Every menu style now paints its copy grey, menu 21's way. The menu text moves
   out of `interactiveMessage`/`buttonsMessage` body into `footer.text`, which
   WhatsApp renders small and grey, and the body carries a single zero-width space

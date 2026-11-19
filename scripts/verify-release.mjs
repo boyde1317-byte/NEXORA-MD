@@ -1268,6 +1268,10 @@ await check('a2ui widget card carries the surface inline', async () => {
     assert(data.createSurface.components.some((c) => c.id === child), `dangling child ${child}`);
   }
   assert(widget.fallback && widget.fallback.length > 40, 'no text fallback');
+  // Clients without the A2UI rollout show this string instead of the surface, so
+  // it has to read as a card: counts, one row per category, no command dump.
+  assert(widget.fallback.includes('categories'), 'fallback is not the compact card');
+  assert(widget.fallback.length < 1500, `fallback is ${widget.fallback.length} chars — too long to read as a card`);
   assert(card.body.text.replace(/[\u200b\s]/g, '') === '', 'the body is not the zero-width dim body');
   assert(card.footer.text.includes('help <category>'), 'the footer lost the menu copy');
   return `${data.createSurface.components.length} components inline`;

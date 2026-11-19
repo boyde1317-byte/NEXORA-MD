@@ -24,7 +24,6 @@ import { generateWAMessageFromContent } from 'baileys';
 import brand from '../../../config/brand.js';
 import { buildA2uiMessages, A2UI_WIDGET_TYPE } from '../../lib/a2uiKit.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
-import { buildTextMenu } from '../formatter.js';
 import { DIM_BODY, greyCopy } from '../../lib/dimCard.js';
 
 const displayName = (name) => (name === brand.name && brand.display?.name ? brand.display.name : name);
@@ -76,7 +75,23 @@ const renderer = async ({ sock, m, menuData }) => {
   const p = menuData.prefix || '.';
   const name = displayName(menuData.botName || brand.name || 'NEXORA MD');
   const surface = buildWidgetSurface(menuData);
-  const fallback = `✦ ${name} ✦\n${menuData.totalCommands ?? '—'} commands\n\n${buildTextMenu(menuData)}`.slice(0, 4000);
+  // Clients only paint an A2UI surface once the account is on the rollout — an
+  // older account shows `fallback` instead (seen 19 Nov: fallback on the old
+  // account, painted on the new one). So the fallback is a card in its own right:
+  // brand line, counts, one row per category, and the two hints. No per-command
+  // dump, which is what made the old fallback unreadable.
+  const ranked = Object.keys(menuData.categories || {})
+    .sort((a, b) => (menuData.categories[b]?.length || 0) - (menuData.categories[a]?.length || 0));
+  const fallback = [
+    `✦ ${name} ✦`,
+    `${menuData.totalCommands ?? '—'} commands • ${ranked.length} categories • prefix ${p}`,
+    '',
+    ...ranked.slice(0, 12).map((cat, i) => `${String(i + 1).padStart(2, '0')} · ${cat.toUpperCase()} · ${menuData.categories[cat].length}`),
+    ...(ranked.length > 12 ? [`… +${ranked.length - 12} more`] : []),
+    '',
+    `Send ${p}help <category> to open one`,
+    `${p}menulist for the other menu styles`,
+  ].join('\n').slice(0, 1400);
 
   const message = {
     messageContextInfo: { messageSecret: crypto.randomBytes(32) },
