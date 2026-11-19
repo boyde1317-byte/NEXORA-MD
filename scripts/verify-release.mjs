@@ -1811,6 +1811,29 @@ section('Docs');
 
 const brand = (await import(join(root, 'config/brand.js'))).default;
 
+await check('crm archive is wired and owner-only', async () => {
+  // .crm / .insp / .adn / .relay dump raw protos, other people's messages and
+  // recovered edits, so the plugin must stay owner-gated and the store must
+  // leave ordinary messages untouched.
+  const plugin = (await import(join(root, 'src/plugins/owner/crm.js'))).default;
+  assert(plugin.name === 'crm', 'the crm plugin is not registered');
+  const reachable = [plugin.name, ...(plugin.aliases || [])];
+  for (const cmd of ['crm', 'crm2', 'insp', 'adn', 'relay', 'lastchat', 'crmstats']) {
+    assert(reachable.includes(cmd), `missing .${cmd}`);
+  }
+  assert(plugin.permissions?.owner === true, 'the crm plugin is not owner-only');
+
+  const store = await import(join(root, 'src/lib/crmStore.js'));
+  for (const fn of ['bindCrmStore', 'saveMessage', 'loadMessage', 'saveNode', 'loadNode', 'recentIds', 'crmStats', 'decryptSecretEnvelope']) {
+    assert(typeof store[fn] === 'function', `crmStore.${fn} is missing`);
+  }
+  const plain = { key: { id: 'x' }, message: { conversation: 'hi' } };
+  assert(store.decryptSecretEnvelope(plain) === plain, 'plain messages are being rewritten');
+  const orphan = { key: { id: 'y' }, message: { secretEncryptedMessage: { targetMessageKey: { id: 'missing' }, secretEncType: 2, encPayload: '', encIv: '' } } };
+  assert(store.decryptSecretEnvelope(orphan) === orphan, 'an unopenable edit was not passed through');
+  return 'owner-gated, 7 commands, store API complete';
+});
+
 await check('brand version matches package.json', () => {
   assert(brand.version === pkg.version, `brand ${brand.version} vs package ${pkg.version}`);
   return pkg.version;

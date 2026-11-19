@@ -22,6 +22,7 @@ import { client } from './client.js';
 import { connectionMonitor } from './connectionMonitor.js';
 import { filterCrashPayloads } from './payloadSanitizer.js';
 import { getLinkedBotPhones } from './sessionManager.js';
+import { bindCrmStore } from '../lib/crmStore.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -394,6 +395,9 @@ export async function connectToWhatsApp() {
   });
 
   // ── Incoming messages ─────────────────────────────────────────────────────
+  // Archive every message + stanza for the owner's .crm inspection commands.
+  try { bindCrmStore(sock); } catch (err) { console.warn('[crm] store not bound:', err.message); }
+
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     if (chatUpdate.type !== 'notify') return;
 

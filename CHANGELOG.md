@@ -114,6 +114,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   carries a brand line, command/category counts, one row per category with its
   count, and the two hints (331 chars for 14 categories) instead of the whole
   text menu.
+- The CRM is in: `src/lib/crmStore.js` archives every message the bot sends or
+  receives (protobuf, base64) plus the raw stanza node, append-only JSONL per chat
+  under `data/crm/` with an in-memory index, 4000 messages / 1500 nodes retained.
+  No new dependency. `bindCrmStore(sock)` hooks `messages.upsert`, `ws 'CB:message'`
+  and wraps `sendMessage`/`relayMessage` once per socket, in `connection.js`.
+- Owner-only `src/plugins/owner/crm.js`: `.crm` (reply → ready-to-run relay
+  script as .js), `.crm2` (same, inline code card), `.insp` (raw payload + stanza
+  tree as .json), `.adn` (just the biz/native-flow nodes), `.lastchat`, `.crmstats`.
+- `decryptSecretEnvelope()` recovers edited and deleted messages: WhatsApp sends
+  those as `secretEncryptedMessage` (AES-256-GCM, key = HKDF-SHA256 over the
+  TARGET message's 32-byte messageSecret with context "Message Edit" / "Event
+  Edit" / "Poll Edit"). Since the archive kept that secret, the plaintext is
+  recoverable. Covered by `scripts/crm-selftest.mjs`, which builds a real
+  MESSAGE_EDIT envelope and asserts recovery.
 - Every menu style now paints its copy grey, menu 21's way. The menu text moves
   out of `interactiveMessage`/`buttonsMessage` body into `footer.text`, which
   WhatsApp renders small and grey, and the body carries a single zero-width space
