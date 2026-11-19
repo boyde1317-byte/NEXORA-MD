@@ -128,6 +128,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Edit" / "Poll Edit"). Since the archive kept that secret, the plaintext is
   recoverable. Covered by `scripts/crm-selftest.mjs`, which builds a real
   MESSAGE_EDIT envelope and asserts recovery.
+- Gallery card technique (`src/lib/galleryCard.js`), from Rem Bot's Pinterest
+  command: every image is inlined as a base64 data URI into a small HTML viewer
+  and shipped as a `GenAIaeacdsnwHtmlPrimitive` in the AI rich response, so the
+  card is self-contained and needs no network at render time. Budget enforced
+  while collecting (20 images, 500 KB, failures skipped). `.gallery` puts URL
+  images or a replied image into it; any plugin can call `sendGalleryCard()`.
+- `.sfp` (`src/plugins/owner/sfp.js`), the Rem Bot save-plugin port: reply to
+  code with `.sfp media/name.js` and it is written into `src/plugins` after a
+  real `node --check` pass. Owner-only, refuses `..` paths, refuses to overwrite
+  without `--force`, strips WhatsApp's stray code fences, and points at
+  `.reload <name>` to apply. Aliased `.spf` because that is how it gets typed.
 - Every menu style now paints its copy grey, menu 21's way. The menu text moves
   out of `interactiveMessage`/`buttonsMessage` body into `footer.text`, which
   WhatsApp renders small and grey, and the body carries a single zero-width space

@@ -1834,6 +1834,55 @@ await check('crm archive is wired and owner-only', async () => {
   return 'owner-gated, 7 commands, store API complete';
 });
 
+await check('gallery card inlines images and stays inside the budget', async () => {
+  const g = await import(join(root, 'src/lib/galleryCard.js'));
+  // A fake fetch: two small images, one oversize, one 404 — the oversize and the
+  // failure must be dropped, never pushed in anyway.
+  const png = Buffer.alloc(1200, 7);
+  const big = Buffer.alloc(600 * 1024, 9);
+  const fakeFetch = async (url) => {
+    if (url.includes('404')) return { ok: false, status: 404 };
+    const body = url.includes('big') ? big : png;
+    return { ok: true, status: 200, headers: { get: () => 'image/png' }, arrayBuffer: async () => body };
+  };
+  const items = await g.collectGalleryDataUris(
+    ['https://x/1.png', 'https://x/big.png', 'https://x/2.png', 'https://x/404.png'],
+    { fetchImpl: fakeFetch }
+  );
+  assert(items.length === 2, `kept ${items.length} images, expected 2`);
+  assert(items.every((i) => i.uri.startsWith('data:image/png;base64,')), 'images are not inlined');
+  assert(items.reduce((n, i) => n + i.size, 0) <= g.GALLERY_LIMITS.bytes, 'over the byte budget');
+
+  const html = g.buildGalleryHtml({ title: '<script>x</script>', hint: 'h', items });
+  assert(html.includes('data:image/png;base64,'), 'the viewer does not inline the images');
+  assert(!html.includes('<script>x</script>'), 'the title was not escaped');
+  assert(html.includes("getElementById('next')"), 'the viewer has no next control');
+
+  const message = g.buildGalleryMessage({ title: 'T', items });
+  const decoded = JSON.parse(Buffer.from(message.botForwardedMessage.message.richResponseMessage.unifiedResponse.data, 'base64').toString());
+  const prims = decoded.sections.map((s) => s.view_model.primitive.__typename);
+  assert(prims.includes('GenAIaeacdsnwHtmlPrimitive'), 'no HTML primitive in the card');
+  assert(message.messageContextInfo.messageSecret.length === 32, 'no fresh message secret');
+
+  const plugin = (await import(join(root, 'src/plugins/media/gallery.js'))).default;
+  assert(plugin.name === 'gallery' && plugin.category === 'media', 'the gallery command is not wired');
+  return `${items.length} inlined, 2 rejected, viewer + command ok`;
+});
+
+await check('sfp saves a plugin only when the code parses', async () => {
+  const sfp = (await import(join(root, 'src/plugins/owner/sfp.js'))).default;
+  assert(sfp.name === 'sfp' && sfp.permissions?.owner === true, 'sfp is not owner-only');
+  const mod = await import(join(root, 'src/plugins/owner/sfp.js'));
+  assert(mod.extractSource({ text: '```js\nexport default {}\n```' }).startsWith('export default'), 'fences are not stripped');
+  assert(mod.validatePluginSource('export default { name: "x", execute: async () => {} }').ok, 'valid plugin rejected');
+  const broken = mod.validatePluginSource('export default { name: ');
+  assert(!broken.ok && broken.reason, 'broken plugin accepted');
+  assert(!mod.validatePluginSource('const x = 1;').ok, 'a plugin without export default was accepted');
+  assert(mod.resolveTarget('media/x.js')?.endsWith('src/plugins/media/x.js'), 'relative path not resolved');
+  assert(mod.resolveTarget('../../etc/passwd') === null, 'path escape allowed');
+  return 'owner-gated, syntax-checked, no path escape';
+});
+
 await check('brand version matches package.json', () => {
   assert(brand.version === pkg.version, `brand ${brand.version} vs package ${pkg.version}`);
   return pkg.version;
