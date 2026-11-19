@@ -109,6 +109,10 @@ export const HTML_GAMES = {
   monitor: { file: 'monitor.html', title: 'Server Monitor 📡',    desc: 'Live bot host stats', template: true, alias: 'serverinfo' },
 
   // Akoya engine — one runtime, 15 configs (assembled by buildAkoyaPayload)
+  pool:        { file: 'pool.html', title: '8 Ball Pool 🎱', desc: 'Wide arena, small pockets, drag to aim' },
+  piano:       { file: 'piano.html', title: 'Piano Composer 🎹', desc: 'Tap notes, build a track, replay it' },
+  doom:        { file: 'doom.html', title: 'Doom Strike 👹', desc: 'Top-down shooter, survive the waves' },
+  dashwide:    { file: 'dashwide.html', title: 'Geometry Dash Wide 🔺', desc: 'Jump the spikes in widescreen' },
   "angrybirds": { file: 'akoya-games.json', title: "Angry Birds 🐦", desc: "Pull back, let go, flatten the pigs", engine: true },
   "arrow": { file: 'akoya-games.json', title: "Arrow Dodge ➡️", desc: "Four lanes of incoming arrows", engine: true },
   "flappy": { file: 'akoya-games.json', title: "Flappy Bird 🐤", desc: "Tap through the gaps", engine: true },

@@ -58,6 +58,26 @@
       "source": "private:github:boyde1317-byte/Akoya-MD@8227ca2a7320faf77042de6d8c619465b59ddc8d#assets/htmlgames",
       "localSha256": "6e73ee0999ddb70799246a39fe5257f3c81fa17e1d65fae574d9c6e3d489ba20",
       "note": "One config per Akoya game (name, title, description, mech, accent, mechanic parameters). The 15 games differ only in this block."
+    },
+    "pool.html": {
+      "source": "private:github:boyde1317-byte/rem-bot@backup-bot.zip (YONO DEV)",
+      "localSha256": "006e3f4fb81dafd59fe7b2b5a9d945755657880a061da0298584b97fda09124a",
+      "note": "Ported from Rem Bot; Indonesian/Arabic UI strings translated to English, YONO branding replaced with NEXORA."
+    },
+    "piano.html": {
+      "source": "private:github:boyde1317-byte/rem-bot@backup-bot.zip (YONO DEV)",
+      "localSha256": "5ab333032c1a19dee1ec8ae8d011a9941bd4d56a1a1e9e059938e9c0a0af7ca9",
+      "note": "Ported from Rem Bot; Indonesian/Arabic UI strings translated to English, YONO branding replaced with NEXORA."
+    },
+    "doom.html": {
+      "source": "private:github:boyde1317-byte/rem-bot@backup-bot.zip (YONO DEV)",
+      "localSha256": "dfe6d95a8ba060635e2b9b9349982df28ed26e1c9c607042bce071b0b95dbe03",
+      "note": "Ported from Rem Bot; Indonesian/Arabic UI strings translated to English, YONO branding replaced with NEXORA."
+    },
+    "dashwide.html": {
+      "source": "private:github:boyde1317-byte/rem-bot@backup-bot.zip (YONO DEV)",
+      "localSha256": "11ca59711ec11e0d76559be287f5a1b549c9ca3b9ffbf7f6e7fcc545c8a67b25",
+      "note": "Ported from Rem Bot; Indonesian/Arabic UI strings translated to English, YONO branding replaced with NEXORA."
     }
   }
 }
