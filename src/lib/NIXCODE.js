@@ -1182,6 +1182,83 @@ class AIRich extends BaseBuilder {
 		return this;
 	}
 
+	/** Rem-compatible compact entity card. */
+	addEntity(data = {}) {
+		const items = Array.isArray(data) ? data : [data];
+		if (!items.every((item) => item && typeof item === 'object' && !Array.isArray(item))) {
+			throw new TypeError('Entity items must be an object or an array of objects');
+		}
+		this._submessages.push({
+			messageType: 2,
+			messageText: items.map((item) => item.title || '').filter(Boolean).join(' • '),
+		});
+		const entities = items.map((item) => ({
+			title: item.title || '',
+			subtitle: item.subtitle || '',
+			secondary_subtitle: item.secondary || item.secondary_subtitle || '',
+			entity_id: item.id || item.entity_id || '',
+			entity_url: item.url || (item.id ? `https://wa.me/${item.id}` : ''),
+			entity_type: item.entity_type || 'PAGE',
+			action_type: item.action_type || 'FOLLOW',
+			is_verified: !!(item.verified || item.is_verified),
+			image: {
+				url: item.imageUrl || item.image_url || item.image || '',
+				url_fallback: item.imageUrl || item.image_url || item.image || '',
+			},
+			__typename: 'GenAICompactEntityPrimitive',
+		}));
+		this._sections.push(AIRich.newLayout(items.length > 1 ? 'HScroll' : 'Single', items.length > 1 ? entities : entities[0]));
+		return this;
+	}
+
+	/** Raw widget primitive used by Rem's menu3 multi-widget surfaces. */
+	addMultiWidgets(widgets = []) {
+		if (!Array.isArray(widgets)) throw new TypeError('Widgets must be an array');
+		const primitives = widgets.map((widget) => ({
+			__typename: 'GenAI3PExtWidgetPrimitive',
+			header: { __typename: 'GenAI3PExtWidgetStandardHeader', title: String(widget.title || '') },
+			body: {
+				__typename: 'GenAI3PExtCalendarEventList',
+				sections: [],
+				ctas: (widget.buttons || []).map((button) => ({
+					__typename: 'GenAI3PExtWidgetCTA',
+					label: String(button.label || button.text || ''),
+					state: 'PENDING',
+					kind: button.kind || 'OTHER',
+					tool_call_id: button.id || button.command || '',
+					toast: { __typename: 'GenAI3PExtWidgetToast', label: String(button.label || button.text || '') },
+				})),
+			},
+		}));
+		this._sections.push(AIRich.newLayout('HScroll', primitives));
+		return this;
+	}
+
+	/** Footer URL actions from Rem's menu3 builder. */
+	addFooterLinks(links = []) {
+		if (!Array.isArray(links)) throw new TypeError('Footer links must be an array');
+		this._sections.push(AIRich.newLayout('HScroll', links.map((link) => ({
+			__typename: 'GenAIFooterActionPrimitive',
+			cta_text: String(link.text || link.label || ''),
+			cta_type: 'OPEN_URL',
+			cta_url: String(link.url || ''),
+		}))));
+		return this;
+	}
+
+	/** Raw HTML mini-app primitive used by Rem's game/search cards. */
+	addHtml(html, { trustedSources = [], url = '' } = {}) {
+		if (typeof html !== 'string') throw new TypeError('HTML payload must be a string');
+		this._submessages.push({ messageType: 2, messageText: '[ HTML CARD FALLBACK ]' });
+		this._sections.push(AIRich.newLayout('Single', {
+			payload: html,
+			...(url ? { url } : {}),
+			trusted_sources: trustedSources,
+			__typename: 'GenAIaeacdsnwHtmlPrimitive',
+		}));
+		return this;
+	}
+
 	addTip(text) {
 		this._submessages.push({
 			messageType: 2,

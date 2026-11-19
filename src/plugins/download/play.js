@@ -6,7 +6,7 @@ const MAX_RESULTS = 5;
 
 export default {
   name: 'play',
-  aliases: ['yta', 'ytmp3'],
+  aliases: ['yta', 'ytmp3', 'yts', 'ytsearch', 'youtubesearch'],
   category: 'download',
   description: 'Search & download YouTube audio. Usage: .play <song name or YouTube URL>',
   cooldown: 8000,
