@@ -127,7 +127,16 @@ export default {
 
     // Rem reads the quoted message directly. The archive is optional
     // enrichment for recovered edits and stanza nodes, never a prerequisite.
-    const directQuoted = m.quoted?.fakeObj || {
+    const directQuoted = m.quoted?.message || m.quoted?.msg
+      ? {
+        key: {
+          ...(m.quoted?.key || {}),
+          id: targetId,
+          remoteJid: m.quoted?.key?.remoteJid || jid,
+        },
+        message: m.quoted?.message || m.quoted?.msg,
+      }
+      : m.quoted?.fakeObj || {
       key: {
         ...(m.quoted?.key || {}),
         id: targetId,
@@ -137,13 +146,17 @@ export default {
     };
     let archived = loadMessage(targetId, jid);
     if (!archived) archived = loadMessage(targetId);
-    const sourceMessage = archived || directQuoted;
-    const sourceKind = archived ? 'archive' : 'live quoted message';
+    const hasDirectPayload = Object.keys(directQuoted.message || {}).length > 0;
+    const sourceMessage = hasDirectPayload ? directQuoted : archived;
+    const sourceKind = hasDirectPayload ? 'live quoted message' : 'archive';
+    if (!sourceMessage) {
+      return m.reply(`Could not read the replied message: ${targetId}`);
+    }
     const asObject = proto.WebMessageInfo.toObject(proto.WebMessageInfo.fromObject(sourceMessage), {
       enums: Number, longs: Number, bytes: String, defaults: false,
     });
     const recovered = decryptSecretEnvelope(asObject);
-    const rawNode = archived ? (loadNode(targetId, jid) || loadNode(targetId)) : null;
+    const rawNode = hasDirectPayload ? null : (loadNode(targetId, jid) || loadNode(targetId));
     const bizNodes = collectBizNodes(rawNode);
     const message = normalizeForRelay(recovered.message);
     const meta = [
