@@ -21,7 +21,6 @@
  *   the media combos (textimage/multiimages/gridtable/dynamictable —
  *   nixcode primitives).
  */
-import { baileysBridge } from '../../core/baileysBridge.js';
 import capabilities from '../../core/capabilities.js';
 import {
   selectMenu, actionCard, mixedCard,
@@ -260,7 +259,7 @@ async function runDynamicTable(sock, m) {
 
 export default {
   name: 'testmessage',
-  aliases: ['testmsg', 'msgdebug'],
+  aliases: ['testmsg', 'msgdebug', 'tesbtn', 'testbtn', 'btnnoxm', 'tesbtnflow'],
   category: 'owner',
   description: 'Test all interactive message types via a native WA list picker.',
   permissions: { owner: true },

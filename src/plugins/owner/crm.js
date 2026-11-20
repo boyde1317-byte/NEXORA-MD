@@ -11,7 +11,7 @@
  * Owner-only: this exposes raw protos, other people's messages, and recovered
  * edits. The archive itself lives in src/lib/crmStore.js.
  */
-import { proto } from 'baileys';
+import { generateMessageIDV2, proto } from 'baileys';
 import { loadMessage, loadNode, recentIds, crmStats, decryptSecretEnvelope } from '../../lib/crmStore.js';
 import { RichSections } from '../../lib/richSections.js';
 
@@ -85,14 +85,12 @@ function collectBizNodes(node, depth = 0, out = []) {
   return out;
 }
 
-const snippet = (value, max = 12000) => {
-  const text = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
-  return text.length > max ? `${text.slice(0, max)}\n… (${text.length - max} more chars)` : text;
-};
-
 export default {
   name: 'crm',
-  aliases: ['crm2', 'insp', 'adn', 'relay', 'lastchat', 'crmstats'],
+  aliases: [
+    'crm2', 'insp', 'adn', 'relay', 'lastchat', 'crmstats',
+    'ocrm', 'ocrm2', 'oinsp', 'oadn', 'orelay', 'olastchat',
+  ],
   category: 'owner',
   description: 'Inspect the replied message: .crm (relay script), .insp (raw), .adn (nodes), .crm2 (inline), .lastchat, .crmstats',
   permissions: { owner: true },
@@ -100,7 +98,15 @@ export default {
 
   execute: async ({ sock, m, args, command }) => {
     const jid = m.from;
-    const cmd = String(command || 'crm').toLowerCase();
+    const rawCmd = String(command || 'crm').toLowerCase();
+    const cmd = ({
+      ocrm: 'crm',
+      ocrm2: 'crm2',
+      oinsp: 'insp',
+      oadn: 'adn',
+      orelay: 'relay',
+      olastchat: 'lastchat',
+    })[rawCmd] || rawCmd;
 
     if (cmd === 'crmstats') {
       const stats = crmStats();
@@ -119,28 +125,42 @@ export default {
       return m.reply('Reply to a message first, then send .crm / .insp / .adn.');
     }
 
+    // Rem reads the quoted message directly. The archive is optional
+    // enrichment for recovered edits and stanza nodes, never a prerequisite.
+    const directQuoted = m.quoted?.fakeObj || {
+      key: {
+        ...(m.quoted?.key || {}),
+        id: targetId,
+        remoteJid: m.quoted?.key?.remoteJid || jid,
+      },
+      message: m.quoted?.message || m.quoted?.msg || { conversation: m.quoted?.text || '' },
+    };
     let archived = loadMessage(targetId, jid);
     if (!archived) archived = loadMessage(targetId);
-    if (!archived) {
-      return m.reply(`Not in the archive: ${targetId}\n\nOnly messages this bot has seen since the archive started are recoverable.`);
-    }
-
-    const asObject = proto.WebMessageInfo.toObject(proto.WebMessageInfo.fromObject(archived), {
+    const sourceMessage = archived || directQuoted;
+    const sourceKind = archived ? 'archive' : 'live quoted message';
+    const asObject = proto.WebMessageInfo.toObject(proto.WebMessageInfo.fromObject(sourceMessage), {
       enums: Number, longs: Number, bytes: String, defaults: false,
     });
     const recovered = decryptSecretEnvelope(asObject);
-    const rawNode = loadNode(targetId, jid) || loadNode(targetId);
+    const rawNode = archived ? (loadNode(targetId, jid) || loadNode(targetId)) : null;
     const bizNodes = collectBizNodes(rawNode);
     const message = normalizeForRelay(recovered.message);
     const meta = [
       `id: ${targetId}`,
       `chat: ${jid}`,
+      `source: ${sourceKind}`,
       `from: ${(asObject.key?.participant || asObject.key?.remoteJid || '-').split('@')[0]}`,
       `type: ${Object.keys(message || {})[0] || '-'}`,
-      rawNode ? `node: ${rawNode.tag || '-'} (${(rawNode.content || []).length} children)` : 'node: not archived',
+      rawNode ? `node: ${rawNode.tag || '-'} (${(rawNode.content || []).length} children)` : 'node: not available from live quote',
       bizNodes.length ? `biz nodes: ${bizNodes.length}` : 'biz nodes: none',
       recovered.__decryptedFrom ? `recovered: decrypted ${recovered.__decryptedFrom}` : null,
     ].filter(Boolean).join('\n');
+
+    if (rawCmd === 'orelay') {
+      await sock.relayMessage(jid, message, { messageId: generateMessageIDV2() });
+      return m.reply(`Relayed ${targetId} directly.\nPayload type: ${Object.keys(message || {})[0] || 'unknown'}`);
+    }
 
     if (cmd === 'insp') {
       const payload = JSON.stringify({ message, node: rawNode || null }, null, 2);
