@@ -40,6 +40,21 @@ function normalizeForRelay(content) {
   return node;
 }
 
+/** Find the deepest original message quoted inside a relay confirmation. */
+function findNestedQuotedPayload(node, depth = 0) {
+  if (!node || typeof node !== 'object' || depth > 8) return null;
+  const nested = node.contextInfo?.quotedMessage
+    || node.messageContextInfo?.quotedMessage
+    || node.botForwardedMessage?.message?.richResponseMessage?.contextInfo?.quotedMessage;
+  if (!nested) return null;
+  return findNestedQuotedPayload(nested, depth + 1) || nested;
+}
+
+function isRelayConfirmation(message) {
+  const text = message?.extendedTextMessage?.text || message?.conversation || '';
+  return text.includes('Raw message resent') && text.includes('Payload type:');
+}
+
 /** Buffers cannot survive JSON.stringify — turn them into a literal we can paste. */
 function toJsLiteral(value, indent = 2, depth = 0) {
   const pad = ' '.repeat(indent * depth);
@@ -127,14 +142,15 @@ export default {
 
     // Rem reads the quoted message directly. The archive is optional
     // enrichment for recovered edits and stanza nodes, never a prerequisite.
-    const directQuoted = m.quoted?.message || m.quoted?.msg
+    const directPayload = m.quoted?.message || m.quoted?.msg;
+    const directMessage = directPayload
       ? {
         key: {
           ...(m.quoted?.key || {}),
           id: targetId,
           remoteJid: m.quoted?.key?.remoteJid || jid,
         },
-        message: m.quoted?.message || m.quoted?.msg,
+        message: directPayload,
       }
       : m.quoted?.fakeObj || {
       key: {
@@ -144,6 +160,13 @@ export default {
       },
       message: m.quoted?.message || m.quoted?.msg || { conversation: m.quoted?.text || '' },
     };
+    const nestedOriginal = (isRelayConfirmation(directMessage.message)
+      || !!directMessage.message?.botForwardedMessage)
+      ? findNestedQuotedPayload(directMessage.message)
+      : null;
+    const directQuoted = nestedOriginal
+      ? { ...directMessage, message: nestedOriginal }
+      : directMessage;
     let archived = loadMessage(targetId, jid);
     if (!archived) archived = loadMessage(targetId);
     const hasDirectPayload = Object.keys(directQuoted.message || {}).length > 0;
