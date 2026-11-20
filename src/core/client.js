@@ -6,6 +6,27 @@ import { walkDirSync } from '../lib/utils.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
+/** Adapt Rem-style `export default handler` plugins to Nexora's contract. */
+function adaptLegacyHandler(handler, filePath) {
+  if (typeof handler !== 'function' || !handler.command) return handler;
+  const name = path.basename(filePath, path.extname(filePath)).toLowerCase();
+  return {
+    name,
+    aliases: [],
+    category: handler.tags?.[0] || 'legacy',
+    description: Array.isArray(handler.help) ? handler.help[0] : `${name} legacy plugin`,
+    permissions: handler.owner ? { owner: true } : undefined,
+    execute: async ({ m, sock, args, prefix, command }) => handler(m, {
+      conn: sock,
+      text: args?.join(' ') || '',
+      args: args || [],
+      command: command || name,
+      usedPrefix: prefix || '.',
+      prefix: prefix || '.',
+    }),
+  };
+}
+
 export const client = {
   commands:  new Map(),
   aliases:   new Map(),
@@ -15,6 +36,7 @@ export const client = {
   // ── Plugin lifecycle tracking ──────────────────────────────────────────────
   _pluginStats: new Map(),
   _pluginContext: null,
+  _pluginLoadFailures: [],
 
   /**
    * Get per-plugin usage statistics.
@@ -89,7 +111,7 @@ export const client = {
         const isDev = process.env.NODE_ENV === 'development';
         const importUrl = isDev ? `${fileUrl.href}?t=${Date.now()}` : fileUrl.href;
         const mod    = await import(importUrl);
-        const plugin = mod.default;
+        const plugin = adaptLegacyHandler(mod.default, filePath);
 
         if (!plugin || typeof plugin !== 'object') {
           const reason = 'No default export found';
@@ -213,6 +235,7 @@ export const client = {
         console.warn(`    ✗ ${file} — ${reason}`);
       }
     }
+    this._pluginLoadFailures = failed;
     console.log(`===========================\n`);
   },
 

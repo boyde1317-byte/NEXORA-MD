@@ -128,6 +128,13 @@ export default {
         if (loaded) {
           return await m.reply.success(`Loaded saved plugin \`${relativeFile}\` as \`${loaded[0]}\`.`);
         }
+        const failure = (client._pluginLoadFailures || [])
+          .find((item) => path.normalize(item.file) === path.normalize(relativeFile));
+        if (failure) {
+          return await m.reply.error(
+            `Found \`${relativeFile}\`, but it could not be loaded.\n\n${failure.reason}`
+          );
+        }
       }
 
       return await m.reply.error(
