@@ -10,9 +10,32 @@
  *   .reload all          — reload every plugin
  *   .reload              — show usage
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { client } from '../../core/client.js';
 import { asciiBuilder } from '../../ui/asciiBuilder.js';
 import { toSmallcaps } from '../../lib/smallcaps.js';
+
+const PLUGINS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+function findPluginFile(target) {
+  const requested = target.replace(/\\/g, '/').replace(/^\/+|\.js$/gi, '');
+  const direct = path.resolve(PLUGINS_DIR, `${requested}.js`);
+  if (direct.startsWith(`${PLUGINS_DIR}${path.sep}`) && fs.existsSync(direct)) return direct;
+
+  const wanted = `${path.basename(requested)}.js`;
+  const found = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const candidate = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(candidate);
+      else if (entry.isFile() && entry.name.toLowerCase() === wanted.toLowerCase()) found.push(candidate);
+    }
+  };
+  walk(PLUGINS_DIR);
+  return found.length === 1 ? found[0] : null;
+}
 
 export default {
   name: 'reload',
@@ -90,6 +113,21 @@ export default {
         return await m.reply.success(
           `Reloaded category \`${toSmallcaps(target)}\` — ${results.success}/${categoryPlugins.length} succeeded${results.fail > 0 ? `, ${results.fail} failed` : ''}.`
         );
+      }
+
+      // .sfp can create a plugin after startup. Discover that file and run a
+      // full loader pass so `.reload pong` works even before `pong` exists in
+      // the command/alias registry. A relative path such as
+      // `.reload owner/pong.js` is accepted too.
+      const savedFile = findPluginFile(target);
+      if (savedFile) {
+        await client.loadPlugins();
+        const relativeFile = path.relative(PLUGINS_DIR, savedFile);
+        const loaded = [...(client._loadedPlugins || [])]
+          .find(([, record]) => path.resolve(record.filePath) === path.resolve(savedFile));
+        if (loaded) {
+          return await m.reply.success(`Loaded saved plugin \`${relativeFile}\` as \`${loaded[0]}\`.`);
+        }
       }
 
       return await m.reply.error(
