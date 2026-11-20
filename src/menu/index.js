@@ -2,7 +2,7 @@ import { menuManager } from './manager.js';
 import { runWithFallback } from './fallback.js';
 import { collectMenuData } from './collector.js';
 
-// Import all 19 menu types
+// Import all 21 menu types
 import documentInteractive from './types/documentInteractive.js';
 import nativeFlow from './types/nativeFlow.js';
 import bottomSheet from './types/bottomSheet.js';
@@ -22,6 +22,8 @@ import atlasMenu from './types/atlasMenu.js';
 import yonoMenu from './types/yonoMenu.js';
 import a2uiWidgetMenu from './types/a2uiWidgetMenu.js';
 import zapoMenu from './types/zapoMenu.js';
+import airichMenu from './types/airichMenu.js';
+import photoFlowMenu from './types/photoFlowMenu.js';
 
 // Register them all statically in the manager
 menuManager.register(documentInteractive);
@@ -44,6 +46,8 @@ menuManager.register(atlasMenu);
 menuManager.register(yonoMenu);
 menuManager.register(a2uiWidgetMenu);
 menuManager.register(zapoMenu);
+menuManager.register(airichMenu);
+menuManager.register(photoFlowMenu);
 
 /**
  * Compiles the statistics and renders the active menu (or custom specified menu style).

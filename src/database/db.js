@@ -95,6 +95,110 @@ export const db = {
         level: 0,
         streak: 0,
         lastDaily: null,
+        // ── Bulk port (2026-11-20): premium + monthly reward ──
+        premiumTime: 0, // epoch ms when premium expires; 0 = none (null = permanent, set by .addprem)
+        lastmonthly: null, // .monthly claim timestamp
+        // ── Bulk port (2026-11-20): RPG user fields ──
+        health: 100,
+        stamina: 100,
+        registered: false,
+        name: '',
+        age: 0,
+        regTime: 0,
+        limit: 0,
+        tiketcoin: 0,
+        pet: 0,
+        fullatm: 0,
+        // RPG cooldown timestamps (0 = never)
+        lastadventure: 0,
+        lasthunt: 0,
+        lastfishing: 0,
+        lastduel: 0,
+        lastwar: 0,
+        lastdungeon: 0,
+        lastmining: 0,
+        lastbansos: 0,
+        lastclaim: 0,
+        lastweekly: 0,
+        lastnebang: 0,
+        lastmulung: 0,
+        lastnguli: 0,
+        // RPG materials
+        wood: 0,
+        rock: 0,
+        iron: 0,
+        string: 0,
+        coal: 0,
+        diamond: 0,
+        emerald: 0,
+        gold: 0,
+        trash: 0,
+        potion: 0,
+        botol: 0,
+        kaleng: 0,
+        kardus: 0,
+        // RPG tools (count + durability)
+        pickaxe: 0,
+        pickaxedurability: 0,
+        sword: 0,
+        sworddurability: 0,
+        axe: 0,
+        axedurability: 0,
+        fishingrod: 0,
+        fishingroddurability: 0,
+        armor: 0,
+        armordurability: 0,
+        atm: 0,
+        // RPG crates
+        common: 0,
+        uncommon: 0,
+        mythic: 0,
+        legendary: 0,
+        // RPG animals (coop livestock; sapi/babi/ayam double as cooking ingredients)
+        banteng: 0,
+        harimau: 0,
+        gajah: 0,
+        kambing: 0,
+        panda: 0,
+        buaya: 0,
+        kerbau: 0,
+        sapi: 0,
+        monyet: 0,
+        babihutan: 0,
+        babi: 0,
+        ayam: 0,
+        // RPG fruits
+        pisang: 0,
+        anggur: 0,
+        mangga: 0,
+        jeruk: 0,
+        apel: 0,
+        // RPG raw food ingredients
+        chicken: 0,
+        beef: 0,
+        pork: 0,
+        fish: 0,
+        catfish: 0,
+        tilapia: 0,
+        pomfret: 0,
+        shrimp: 0,
+        whale: 0,
+        crab: 0,
+        // RPG cooked dishes
+        grilledchicken: 0,
+        friedchicken: 0,
+        chickenopor: 0,
+        chickencurry: 0,
+        steak: 0,
+        rendang: 0,
+        roastpork: 0,
+        grilledfish: 0,
+        grilledcatfish: 0,
+        grilledtilapia: 0,
+        grilledpomfret: 0,
+        grilledshrimp: 0,
+        grilledwhale: 0,
+        grilledcrab: 0,
       };
     }
     // Normalize corrupt numeric fields. A legacy or hand-edited record can
@@ -125,6 +229,13 @@ export const db = {
         mute: false,
         warnings: {},
         createdAt: Date.now(),
+        // ── Bulk port (2026-11-20) ──
+        isBanned: false, // .banchat/.unbanchat; enforced in src/handlers/message.js
+        nsfw: false, // adult search/download gates (ph2/ph3/phsearch/pornhubdl); no .nsfw toggle yet
+        welcomeEnabled: true, // .welcome2 toggle; the greeting renderer does not read it yet (follow-up)
+        byeText: null, // .setbye; the greeting renderer does not read it yet (follow-up)
+        promoteText: null, // .setpromote; same
+        demoteText: null, // .setdemote; same
       };
     }
     return _data.groups[jid];

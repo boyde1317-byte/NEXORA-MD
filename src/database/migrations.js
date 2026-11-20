@@ -157,6 +157,135 @@ export const migrations = [
         data.settings.sudoOwners = [];
       }
     }
+  },
+  {
+    id: 8,
+    name: 'addBulkPortFields',
+    up(data) {
+      // Bulk port (2026-11-20): new user + group fields for the ported
+      // LUNA MD plugins. Mirrors the defaults in db.js getUser/getGroup;
+      // only fills fields that are still undefined, never overwrites.
+      const userDefaults = {
+        premiumTime: 0,
+        lastmonthly: null,
+        health: 100,
+        stamina: 100,
+        registered: false,
+        name: '',
+        age: 0,
+        regTime: 0,
+        limit: 0,
+        tiketcoin: 0,
+        pet: 0,
+        fullatm: 0,
+        lastadventure: 0,
+        lasthunt: 0,
+        lastfishing: 0,
+        lastduel: 0,
+        lastwar: 0,
+        lastdungeon: 0,
+        lastmining: 0,
+        lastbansos: 0,
+        lastclaim: 0,
+        lastweekly: 0,
+        lastnebang: 0,
+        lastmulung: 0,
+        lastnguli: 0,
+        wood: 0,
+        rock: 0,
+        iron: 0,
+        string: 0,
+        coal: 0,
+        diamond: 0,
+        emerald: 0,
+        gold: 0,
+        trash: 0,
+        potion: 0,
+        botol: 0,
+        kaleng: 0,
+        kardus: 0,
+        pickaxe: 0,
+        pickaxedurability: 0,
+        sword: 0,
+        sworddurability: 0,
+        axe: 0,
+        axedurability: 0,
+        fishingrod: 0,
+        fishingroddurability: 0,
+        armor: 0,
+        armordurability: 0,
+        atm: 0,
+        common: 0,
+        uncommon: 0,
+        mythic: 0,
+        legendary: 0,
+        banteng: 0,
+        harimau: 0,
+        gajah: 0,
+        kambing: 0,
+        panda: 0,
+        buaya: 0,
+        kerbau: 0,
+        sapi: 0,
+        monyet: 0,
+        babihutan: 0,
+        babi: 0,
+        ayam: 0,
+        pisang: 0,
+        anggur: 0,
+        mangga: 0,
+        jeruk: 0,
+        apel: 0,
+        chicken: 0,
+        beef: 0,
+        pork: 0,
+        fish: 0,
+        catfish: 0,
+        tilapia: 0,
+        pomfret: 0,
+        shrimp: 0,
+        whale: 0,
+        crab: 0,
+        grilledchicken: 0,
+        friedchicken: 0,
+        chickenopor: 0,
+        chickencurry: 0,
+        steak: 0,
+        rendang: 0,
+        roastpork: 0,
+        grilledfish: 0,
+        grilledcatfish: 0,
+        grilledtilapia: 0,
+        grilledpomfret: 0,
+        grilledshrimp: 0,
+        grilledwhale: 0,
+        grilledcrab: 0,
+      };
+      if (!data.users) data.users = {};
+      for (const jid of Object.keys(data.users)) {
+        const user = data.users[jid];
+        if (!user || typeof user !== 'object') continue;
+        for (const [key, val] of Object.entries(userDefaults)) {
+          if (user[key] === undefined) user[key] = val;
+        }
+      }
+      const groupDefaults = {
+        isBanned: false,
+        nsfw: false,
+        welcomeEnabled: true,
+        byeText: null,
+        promoteText: null,
+        demoteText: null,
+      };
+      if (!data.groups) data.groups = {};
+      for (const jid of Object.keys(data.groups)) {
+        const group = data.groups[jid];
+        if (!group || typeof group !== 'object') continue;
+        for (const [key, val] of Object.entries(groupDefaults)) {
+          if (group[key] === undefined) group[key] = val;
+        }
+      }
+    }
   }
 ];
 

@@ -1,0 +1,43 @@
+// ── INERT FRAMEWORK HOOK (staged from LUNA MD, NexoraFlex format) ──────────
+// LUNA MD "before"/"all" hook: in the old framework this ran on every message.
+// In NexoraFlex it is INERT: the loader (src/core/client.js) only registers a
+// plugin whose default export is an object with a string `name` and an
+// `execute` function, and the dispatcher (src/core/message.js) never calls
+// plugin `before`/`all` hooks. Staged as-is for future porting; do not expect
+// it to run until it is rewritten as a NexoraFlex command plugin.
+// Expected loader outcome: SKIPPED — no default export (named `before` export only).
+//   Loader warns: [PLUGIN WARN] Skipping _antispam.js: No default export found
+export async function before(m, { isAdmin, isOwner, isBotAdmin }) {
+	const user = global.db.data.users[m.sender];
+	const chat = global.db.data.chats[m.chat];
+
+	if (!m.isBaileys || m.mtype === 'protocolMessage' || m.mtype === 'pollUpdateMessage' || m.mtype === 'reactionMessage') return;
+	if (!m.msg || !m.message || m.key.remoteJid !== m.chat || user.banned || chat.isBanned) return;
+
+	this.spam = this.spam || {};
+	this.spam[m.sender] = this.spam[m.sender] || { count: 0, lastspam: 0 };
+	const now = m.messageTimestamp?.low || m.messageTimestamp;
+	const timeDifference = now - this.spam[m.sender].lastspam;
+
+	if (timeDifference < 10) {
+		this.spam[m.sender].count++;
+		if (this.spam[m.sender].count >= 5 && !isOwner && !isAdmin && !isBotAdmin) {
+			user.banned = true;
+			this.spam[m.sender].lastspam = now;
+			//const remainingCooldown = Math.ceil((this.spam[m.sender].lastspam - now) / 1000)
+
+			setTimeout(() => {
+				user.banned = false;
+				this.spam[m.sender].count = 0;
+
+				conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
+			}, 10000);
+
+			return m.reply('⚠️ You have been banned, wait 10 seconds..');
+		}
+	} else {
+		this.spam[m.sender].count = 0;
+	}
+
+	this.spam[m.sender].lastspam = now;
+}

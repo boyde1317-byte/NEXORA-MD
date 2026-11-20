@@ -613,6 +613,12 @@ try {
           return;
         }
 
+        // Banned groups cannot trigger commands by sticker either — silent,
+        // and owners are exempt so .unbanchat still works.
+        if (isGroupMsg && !stickerOwner && db.getGroup(jid)?.isBanned) {
+          return;
+        }
+
         // Sticker shortcuts pay the same coin costs as typed commands —
         // otherwise a sticker mapped to a paid command would be a free
         // bypass. Same semantics: refund when the plugin throws.
@@ -841,6 +847,13 @@ try {
   const userData = db.getUser(sender);
   if (userData?.banned) {
     await m.reply.error('You have been banned from using this bot.');
+    return;
+  }
+
+  // 7b. Banned-group check (.banchat) — banned groups are ignored silently
+  // (no reply, so the bot does not announce itself in a banned chat).
+  // Owners are exempt so .unbanchat can still run in a banned chat.
+  if (isGroupMsg && !ownerCheck && db.getGroup(jid)?.isBanned) {
     return;
   }
 
