@@ -22,13 +22,18 @@
  *   - Branding LUNA MD -> NEXORA MD; command count is real
  *     (client.commands.size) instead of the hardcoded "150+".
  *
- * NOTE: the header image is a hardcoded mmg.whatsapp.net signed URL
- * (with oh/oe expiry params) copied from the original — it will stop
- * loading when the signature expires, and there is no NEXORA asset
- * wired in its place. Same caveat as pingimg.js.
+ * NOTE: the header image used to be a hardcoded mmg.whatsapp.net signed
+ * URL (with oh/oe expiry params) copied from the original — it expired,
+ * so WhatsApp tried to download a 2.4 MB file that never arrived (the
+ * "loads on tap but never finishes" bug). It now uses the NEXORA brand
+ * banner (ASSET_URLS.menuBanner, a live jsDelivr URL, 269856 bytes,
+ * 2048x1152) with matching fileLength/dimensions, and the stale
+ * mediaKey/directPath/fileSha256 fields from the old upload are dropped
+ * (they only apply to WhatsApp-hosted encrypted media).
  */
 import crypto from 'node:crypto';
-import { getDisplayName } from '../../lib/displayName.js';
+import { ASSET_URLS } from '../../assets/assetUrls.js';
+import { resolveDisplayIdentity } from '../../lib/identity.js';
 
 const OWNER_NUMBER = '233533416608';
 
@@ -39,7 +44,9 @@ export default {
   description: 'Interactive menu with header image and category picker.',
   cooldown: 3000,
   execute: async ({ m, sock, client }) => {
-    const name = await getDisplayName(sock, m.sender);
+    // Username first, phone number next — never the raw LID digits.
+    const id = await resolveDisplayIdentity(sock, m.sender, m.isGroup ? m.from : null);
+    const name = id.username || id.number || id.pushName || 'there';
     const total = client?.commands?.size ?? 0;
     const footerText = `Good afternoon, *${name}!*\n\n╭┈┈⬡「 *BOT INFO* 」\n┃ ✧ NAME     : NEXORA MD\n┃ ✧ VERSION  : v2.2.2\n┃ ✧ UPTIME   : ${(process.uptime() / 3600).toFixed(1)}h\n┃ ✧ MODE     : PUBLIC\n┃ ✧ COMMANDS : ${total}\n╰┈┈┈┈┈┈┈┈⬡\n\n╭┈┈⬡「 *USER INFO* 」\n┃ ✧ NAME   : ${name}\n┃ ✧ ACCESS  :  USER\n┃ ✧ LIMIT  :  UNLIMITED\n╰┈┈┈┈┈┈┈┈⬡\n\n╭┈┈⬡「 *MENU LIST* 」\n┃ ✧ AI MENU\n┃ ✧ DOWNLOADER MENU\n┃ ✧ STICKER MENU\n┃ ✧ TOOLS MENU\n┃ ✧ GAME MENU\n┃ ✧ GROUP MENU\n┃ ✧ OWNER MENU\n╰┈┈┈┈⬡`;
 
@@ -51,16 +58,11 @@ export default {
       interactiveMessage: {
         header: {
           imageMessage: {
-            url: 'https://mmg.whatsapp.net/o1/v/t24/f2/m233/AQN3bMB6LRT1dXBRLfrq8tx8bMgkrbEX0O3bU6MJz07M0K8KNvD491Y7qHEOiV6CfyMJg-sf7hvvIDx2pb6gFSqc3BT4u1iVxjml54iAqg?ccb=9-4&oh=01_Q5Aa5QFY4SxNKlBNBHdBQeowuNA4_VsvKKruDcFW7wLnPYXn-A&oe=6ABCB5E0&_nc_sid=e6ed6c&mms3=true',
+            url: ASSET_URLS.menuBanner,
             mimetype: 'image/jpeg',
-            fileSha256: 'fFventqg+KcbRLWJlr7uwxdeuJIOZIPUITuNBUUF+Ug=',
-            fileLength: 2361191,
-            height: 4700,
-            width: 7052,
-            mediaKey: '3qKeAbCBMAMEObwWXd5oYxuAQskBwE96U03CmctNIC8=',
-            fileEncSha256: 'NsDmkfuAkO6mK/l+m1t6Iteq7n28QD+HV4P0epOobW0=',
-            directPath: '/o1/v/t24/f2/m233/AQN3bMB6LRT1dXBRLfrq8tx8bMgkrbEX0O3bU6MJz07M0K8KNvD491Y7qHEOiV6CfyMJg-sf7hvvIDx2pb6gFSqc3BT4u1iVxjml54iAqg?ccb=9-4&oh=01_Q5Aa5QFY4SxNKlBNBHdBQeowuNA4_VsvKKruDcFW7wLnPYXn-A&oe=6ABCB5E0&_nc_sid=e6ed6c',
-            mediaKeyTimestamp: 1788164536,
+            fileLength: 269856,
+            height: 1152,
+            width: 2048,
             jpegThumbnail: Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxMTEhUTExMWFhUXGBcYGBgYGBgYGBgYGBgYGBgYGBgYHSggGBolGxUYITEhJSkrLi4uGB8zODMtNygtLisBCgoKDg0OGxAQGy0lICUtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIALcBFAMBIgACEQEDEQH/xAAbAAEAAgMBAQAAAAAAAAAAAAAABQYBBAcDAv/EADgQAAIBAwMCBAMFBQYEBwAAAAECEQADITEEEkEFIlFhBhMxgZGhBxMyQqHwB0JSocHR8AcVM2JygpKiwtLxQ3PC/8QAGQEAAwEBAQAAAAAAAAAAAAAAAQIDBAAF/8QAHREAAgICAwEBAAAAAAAAAAAAAQIAAxESITEyQVH/2gAMAwEAAhEDEQA/APNREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREH//2Q==', 'base64'),
           },
           hasMediaAttachment: true,
