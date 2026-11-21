@@ -36,16 +36,28 @@
  */
 import crypto from 'crypto';
 import { generateWAMessageFromContent, proto } from 'baileys';
+import sharp from 'sharp';
 import brand from '../../../config/brand.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
 import { getChannelContext } from '../../lib/channelPromo.js';
-import { getDisplayName } from '../../lib/displayName.js';
+import { resolveDisplayIdentity } from '../../lib/identity.js';
 import { greyCopy } from '../../lib/dimCard.js';
 
 async function fetchBuffer(url) {
   const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return Buffer.from(await res.arrayBuffer());
+}
+
+// Downscale an image buffer to a WhatsApp-friendly size so it downloads
+// instead of hanging on a slow connection. Returns the resized JPEG, or the
+// original buffer when resizing fails.
+async function shrinkImage(buf, maxWidth, quality) {
+  try {
+    return await sharp(buf).resize({ width: maxWidth, withoutEnlargement: true }).jpeg({ quality }).toBuffer();
+  } catch (_) {
+    return buf;
+  }
 }
 
 function buildTextFallback(menuData) {
@@ -69,7 +81,12 @@ export const photoFlowMenu = {
     const botName = menuData.botName || brand.name || 'NEXORA MD';
     const channel = getChannelContext();
     const channelUrl = channel.invite || '';
-    const userName = await getDisplayName(sock, m.sender);
+    // Username first, phone number when there is no username — never the
+    // opaque LID digits (see src/lib/identity.js).
+    const id = await resolveDisplayIdentity(sock, m.sender, m.isGroup ? m.from : null);
+    const userName = id.username || id.number || id.pushName || 'there';
+    const chipLabel = id.username ? `@${id.username}` : id.number ? `@${id.number}` : id.pushName ? `@${id.pushName}` : '@member';
+    const chipJid = id.phoneJid || m.sender;
 
     // Header thumbnail: brand banner, falling back to the requester's photo.
     let thumb = null;
@@ -79,6 +96,10 @@ export const photoFlowMenu = {
     if (!thumb && pp) {
       try { thumb = await fetchBuffer(pp); } catch (_) {}
     }
+    // The banner is 2048px / ~270KB (a profile-photo fallback can be far
+    // bigger) — far too large for a jpegThumbnail, which is why it loads on
+    // tap but never finishes. Shrink it to a proper thumbnail size first.
+    if (thumb) thumb = await shrinkImage(thumb, 720, 72);
 
     // House style (menu 21): the copy rides in the grey footer, the body
     // keeps a zero-width space — the verify gate checks for greyCopy/DIM_BODY.
@@ -144,13 +165,24 @@ export const photoFlowMenu = {
       await sock.sendMessage(m.from, { text: buildTextFallback(menuData) }, { quoted: m });
     }
 
-    // Photo of the person who requested it
+    // Photo of the person who requested it — shrunk so it downloads instead
+    // of hanging, and tagged by username/phone (never the LID).
     if (pp) {
-      await sock.sendMessage(m.from, {
-        image: { url: pp },
-        caption: `This is your photo @${m.sender.split('@')[0]}`,
-        mentions: [m.sender],
-      }, { quoted: m });
+      let photoBuf = null;
+      try { photoBuf = await shrinkImage(await fetchBuffer(pp), 1024, 80); } catch (_) {}
+      if (photoBuf) {
+        await sock.sendMessage(m.from, {
+          image: photoBuf,
+          caption: `This is your photo ${chipLabel}`,
+          mentions: [chipJid],
+        }, { quoted: m });
+      } else {
+        await sock.sendMessage(m.from, {
+          image: { url: pp },
+          caption: `This is your photo ${chipLabel}`,
+          mentions: [chipJid],
+        }, { quoted: m });
+      }
     }
   },
 };

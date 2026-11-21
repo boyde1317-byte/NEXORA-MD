@@ -263,8 +263,8 @@ newGame();
 `.trim();
 
 export default {
-  name: 'chess',
-  aliases: ['chess3d', 'neonchess'],
+  name: 'chess2',
+  aliases: ['chess3d2', 'neonchess2'],
   category: 'games',
   description: 'Full 3D chess in chat — play vs the bot or vs a friend, 3D/2D view, sound.',
   cooldown: 3000,

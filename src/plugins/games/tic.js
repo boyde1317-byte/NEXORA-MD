@@ -244,8 +244,8 @@ document.getElementById('backBtn').addEventListener('click', function(){
 `.trim();
 
 export default {
-  name: 'tic',
-  aliases: ['tictactoe', 'ttt'],
+  name: 'tic2',
+  aliases: ['tictactoe2', 'ttt2'],
   category: 'games',
   description: 'Tic Tac Toe — solo vs the bot, or duo vs a mentioned friend. Usage: .tic @friend',
   cooldown: 3000,

@@ -332,8 +332,8 @@ async function sendHtmlScene(sock, m, html, responseId, submessageText) {
 }
 
 export default {
-  name: 'pool',
-  aliases: ['billiard'],
+  name: 'pool2',
+  aliases: ['billiard2'],
   category: 'games',
   description: 'Playable 8-ball pool — wide arena, drag to aim, pull back to shoot.',
   cooldown: 3000,

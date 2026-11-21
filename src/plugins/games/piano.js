@@ -311,8 +311,8 @@ async function sendHtmlScene(sock, m, html, responseId, submessageText) {
 }
 
 export default {
-  name: 'piano',
-  aliases: ['composer', 'pianogame'],
+  name: 'piano2',
+  aliases: ['composer2', 'pianogame2'],
   category: 'games',
   description: 'Playable piano composer game — memorise the notes and grow your song.',
   cooldown: 3000,

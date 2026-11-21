@@ -200,8 +200,8 @@ bind(); reset(); requestAnimationFrame(loop);
 `.trim();
 
 export default {
-  name: 'gd',
-  aliases: ['geometry', 'dash'],
+  name: 'gd2',
+  aliases: ['geometry2', 'geodash'],
   category: 'games',
   description: 'Play Geometry Dash in-chat — tap to jump, double jump, ship mode.',
   cooldown: 3000,

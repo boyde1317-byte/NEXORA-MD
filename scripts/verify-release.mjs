@@ -1501,6 +1501,12 @@ const loadedPlugins = [];
 const pluginImportErrors = [];
 for (const file of pluginFiles) {
   const rel = file.replace(root + '/', '');
+  // REM framework hooks are not plugins: they export `before`/`all`
+  // handlers (or a bare function) and the loader skips them with a warning.
+  // They are staged here for future porting, so the plugin checks skip them
+  // too instead of demanding a plugin-shaped default export.
+  const base = rel.split('/').pop();
+  if (base.startsWith('_') || base === 'on1.js') continue;
   try {
     const mod = await import(file);
     const plugin = mod.default;

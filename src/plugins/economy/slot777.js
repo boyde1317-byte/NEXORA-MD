@@ -106,7 +106,7 @@ btn.addEventListener("click",function(e){e.preventDefault();spin()});upd();
 `.trim();
 
 export default {
-  name: 'slot777',
+  name: 'slot7772',
   aliases: [],
   category: 'economy',
   description: 'Slot 777 — playable slot machine card (client-side reels, 1,000 GP to start).',
