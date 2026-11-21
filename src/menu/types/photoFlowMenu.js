@@ -40,6 +40,7 @@ import brand from '../../../config/brand.js';
 import { ASSET_URLS } from '../../assets/assetUrls.js';
 import { getChannelContext } from '../../lib/channelPromo.js';
 import { getDisplayName } from '../../lib/displayName.js';
+import { greyCopy } from '../../lib/dimCard.js';
 
 async function fetchBuffer(url) {
   const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
@@ -79,6 +80,11 @@ export const photoFlowMenu = {
       try { thumb = await fetchBuffer(pp); } catch (_) {}
     }
 
+    // House style (menu 21): the copy rides in the grey footer, the body
+    // keeps a zero-width space — the verify gate checks for greyCopy/DIM_BODY.
+    const bodyText = `*${botName} MENU*\n\nHi ${userName} — ${menuData.totalCommands || 0} commands across ${Object.keys(menuData.categories || {}).length} categories.\n\nYour photo is below 👇`;
+    const grey = greyCopy(bodyText, channelUrl || `${botName} • ${brand.signature || 'By Moonson'}`);
+
     const msg = generateWAMessageFromContent(m.from, {
       messageContextInfo: { messageSecret: crypto.randomBytes(32) },
       interactiveMessage: proto.Message.InteractiveMessage.create({
@@ -89,10 +95,10 @@ export const photoFlowMenu = {
           ...(thumb ? { locationMessage: { jpegThumbnail: thumb } } : {}),
         }),
         body: proto.Message.InteractiveMessage.Body.create({
-          text: `*${botName} MENU*\n\nHi ${userName} — ${menuData.totalCommands || 0} commands across ${Object.keys(menuData.categories || {}).length} categories.\n\nYour photo is below 👇`,
+          text: grey.body,
         }),
         footer: proto.Message.InteractiveMessage.Footer.create({
-          text: channelUrl || `${botName} • ${brand.signature || 'By Moonson'}`,
+          text: grey.footer,
         }),
         nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
           buttons: [

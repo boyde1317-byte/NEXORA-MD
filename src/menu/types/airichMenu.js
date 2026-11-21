@@ -1,6 +1,11 @@
 /**
  * airichMenu.js — menu style 23 ("airichMenu") — the AIRich developer card.
  *
+ * Note: this is a GenAI rich card (botForwardedMessage), not an
+ * interactiveMessage — it has no body to grey, so the verify gate's
+ * grey-footer rule skips it (see scripts/verify-release.mjs). Its small
+ * footer line is the metadata text primitive at the end of the card.
+ *
  * Ported from LUNA MD plugins/menu3.js (the "menu3 / menugp" card) as a
  * NexoraFlex menu TYPE: renderer({ sock, m, menuData }) instead of a
  * plugin handler. Pick it with `.setmenu 23` / `.menu airichMenu`.

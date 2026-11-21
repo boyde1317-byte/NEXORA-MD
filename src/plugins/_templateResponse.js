@@ -1,3 +1,4 @@
+/* global appenTextMessage baileys */
 // ── INERT FRAMEWORK HOOK (staged from LUNA MD, NexoraFlex format) ──────────
 // LUNA MD "before"/"all" hook: in the old framework this ran on every message.
 // In NexoraFlex it is INERT: the loader (src/core/client.js) only registers a

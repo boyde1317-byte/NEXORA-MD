@@ -1382,11 +1382,21 @@ await check('every menu style keeps its copy in the grey footer', async () => {
   // the two that already did this by hand; every other style has to opt in.
   const dir = join(root, 'src/menu/types');
   const handrolled = ['galaxyMenu.js', 'atlasMenu.js', 'yonoMenu.js'];
+  // zapoMenu is intentionally left as-is (owner's call, 2026-11-21): its copy
+  // lives in the A2UI widget tree and the native-flow card is deliberately
+  // empty, so the grey-footer rule does not apply to it.
+  const exempt = ['zapoMenu.js'];
   const styles = readdirSync(dir).filter((f) => f.endsWith('.js'));
   let checked = 0;
   for (const file of styles) {
     const src = await readFile(join(dir, file), 'utf8');
     if (!src.includes('renderer')) continue;
+    // AIRich styles send a GenAI rich card (botForwardedMessage) with no
+    // interactiveMessage body at all, so there is no body copy to move into
+    // a grey footer — the rule below has nothing to check on them. Their
+    // small text is the metadata line at the end of the card.
+    if (src.includes('new AIRich(')) continue;
+    if (exempt.includes(file)) continue;
     if (handrolled.includes(file)) {
       assert(src.includes('footer'), `${file} lost its footer copy`);
       checked += 1;
