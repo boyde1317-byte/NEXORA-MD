@@ -19,19 +19,15 @@ export default {
     if (isNaN(amount)) return await m.reply.error('Invalid amount provided.');
     
     try {
-      const data = await Providers.currency(base);
-      if (!data.rates || !data.rates[target]) {
-        throw new Error(`Target currency ${target} not found.`);
-      }
-      
-      const rate = data.rates[target];
+      const data = await Providers.currency(base, target);
+      const rate = data.rate;
       const result = amount * rate;
       
       const text = `💱 *CURRENCY CONVERSION*\n\n` +
         `*Amount:* ${amount} ${base}\n` +
         `*Rate:* 1 ${base} = ${rate} ${target}\n` +
         `*Result:* *${result.toFixed(2)} ${target}*\n\n` +
-        `_Last Updated: ${data.time_last_update_utc.split(' ')[0]}_`;
+        `_Last Updated: ${data.date}_`;
 
       await copyResultCard(sock, m.from, {
         text,

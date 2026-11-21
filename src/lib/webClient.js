@@ -238,7 +238,14 @@ export const Providers = {
   // ── WHOIS (RDAP — free, no key) ───────────────────────────────────────────
   // https://about.rdap.org/ — RDAP is the modern replacement for WHOIS
   whois: async (domain) => {
-    const { data } = await webClient.fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`);
+    const normalizedDomain = domain.trim().toLowerCase().replace(/^https?:\/\//, '').split('/')[0];
+    const tld = normalizedDomain.split('.').pop();
+    const rdapBase = tld === 'com' || tld === 'net'
+      ? 'https://rdap.verisign.com/com/v1/domain/'
+      : tld === 'org'
+        ? 'https://rdap.publicinterestregistry.org/rdap/org/domain/'
+        : 'https://rdap.org/domain/';
+    const { data } = await webClient.fetch(`${rdapBase}${encodeURIComponent(normalizedDomain)}`);
     // Normalize RDAP response into a simple shape the plugin expects
     const events = data.events || [];
     const getEvent = (type) => events.find(e => e.eventAction === type)?.eventDate;
@@ -278,7 +285,7 @@ export const Providers = {
   // Accepts "owner/repo" format (e.g. "facebook/react")
   github: async (repo) => {
     const { data } = await webClient.fetch(
-      `https://api.github.com/repos/${encodeURIComponent(repo)}`,
+      `https://api.github.com/repos/${repo.split('/').map(encodeURIComponent).join('/')}`,
       { headers: { 'Accept': 'application/vnd.github.v3+json' }, useCache: true }
     );
     return data;
