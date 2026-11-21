@@ -58,7 +58,7 @@ export default {
     await m.reply('🔍 _Analyzing Instagram link..._');
 
     const targetUrl = input.trim();
-    const mediaItems = [];
+    let mediaItems = [];
     let methodUsed = '';
     let usernameFound = null;
 

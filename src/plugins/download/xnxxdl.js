@@ -42,7 +42,6 @@ async function xnxxdl(URL) {
   const lowMatch = html.match(/html5player\.setVideoUrlLow\('(.*?)'\)/);
   const highMatch = html.match(/html5player\.setVideoUrlHigh\('(.*?)'\)/);
   const hlsMatch = html.match(/html5player\.setVideoHLS\('(.*?)'\)/);
-  void scriptMatch;
 
   return {
     status: 200,
