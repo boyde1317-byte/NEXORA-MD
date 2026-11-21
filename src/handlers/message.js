@@ -539,10 +539,6 @@ try {
       const resolvedName = client.aliases.get(stickerCmd) ?? stickerCmd;
       const command = client.commands.get(resolvedName);
       if (command) {
-        // Silent (private) mode — no sticker command runs at all, and no
-        // denial is sent. The toggle is a typed command, never a sticker.
-        if (db.getSettings().silentMode) return;
-
         // Sticker shortcuts must pass the SAME guards as typed commands.
         // They used to run with no checks at all, so any sticker mapped
         // to an owner-only command (or any command, for a banned user or
@@ -553,6 +549,9 @@ try {
         // typed-command guards below; do not add a new command surface
         // without them.
         const stickerOwner = await m.isOwner;
+        // Silent (private) mode — the owner keeps full use; everyone else
+        // gets nothing at all, not even a denial.
+        if (db.getSettings().silentMode && !stickerOwner) return;
         const stickerPerms = command.permissions || {};
         const stickerOwnerOnly = stickerPerms.owner ?? command.ownerOnly ?? false;
         const stickerGroupOnly = stickerPerms.groupOnly ?? command.groupOnly ?? false;
@@ -680,14 +679,11 @@ try {
   const command = client.commands.get(resolvedName);
 
   // ── Silent (private) mode ─────────────────────────────────────────────
-  // When silentMode is on, the bot answers nothing at all — no command
-  // runs, no denial, no "did you mean", no group custom command. The ONLY
-  // way back out is the owner's own .privatemode toggle (resolved name
-  // 'privatemode', any alias). A non-owner's toggle attempt is silent too.
-  if (db.getSettings().silentMode) {
-    const silentOwner = await m.isOwner;
-    if (!command || resolvedName !== 'privatemode' || !silentOwner) return;
-  }
+  // When silentMode is on, the owner keeps full use of the bot; everyone
+  // else gets nothing at all — no command runs, no denial, no "did you
+  // mean", no group custom command. (The owner's own .privatemode toggle
+  // is the way back out.)
+  if (db.getSettings().silentMode && !(await m.isOwner)) return;
 
   if (!command) {
     // ── Group custom commands (.setcmd) ─────────────────────────────────

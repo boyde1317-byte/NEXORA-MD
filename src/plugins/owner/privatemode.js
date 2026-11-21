@@ -1,11 +1,11 @@
 /**
  * privatemode.js — .privatemode [on|off] — owner-only private (silent) mode.
  *
- * When private mode is ON, the bot goes completely silent from commands:
- * it answers nothing at all — no command runs, no denial, no "did you
- * mean", no sticker shortcut, no group custom command. The ONLY command
- * that still works is the owner's own .privatemode (any of its aliases),
- * which is the way back out. A non-owner's toggle attempt is silent too.
+ * When private mode is ON, the bot goes completely silent to everyone
+ * except the owner: non-owners get nothing at all — no command runs, no
+ * denial, no "did you mean", no sticker shortcut, no group custom
+ * command. The owner keeps full use of the bot, and the owner's own
+ * .privatemode is the way back out.
  *
  * This is stricter than the existing .self/.public private mode, which
  * still replies with a "private mode" warning to non-owners.
@@ -34,7 +34,7 @@ export default {
     const enable = want !== undefined ? want : !current;
     db.setSettings({ silentMode: enable });
     if (enable) {
-      return m.reply('🔒 *Private mode ON* — I am completely silent now. No command will get a reply, from anyone.\n\nOnly you can turn it back off: *.privatemode off*');
+      return m.reply('🔒 *Private mode ON* — I am completely silent to everyone except you. You can still use me normally.\n\nOnly you can turn it back off: *.privatemode off*');
     }
     return m.reply('🔓 *Private mode OFF* — I answer commands again.');
   },
