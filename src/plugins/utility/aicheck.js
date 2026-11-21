@@ -39,7 +39,7 @@ function localDetect(text) {
   if (avg > 18) score += 20;
   else if (avg > 12) score += 10;
   if (words > 50) score += 10;
-  if (!/[😂😭😅🔥👍❤️]/u.test(text)) score += 8; // Formal text = more likely AI
+  if (!/[😂😭😅🔥👍❤]/u.test(text)) score += 8; // Formal text = more likely AI
   if (/[.!?]$/.test(text.trim())) score += 5;
   return Math.min(92, Math.max(5, score));
 }
